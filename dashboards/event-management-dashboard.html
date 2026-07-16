@@ -62,6 +62,21 @@
               <label>Fest Date<input type="date" id="festDateInput"></label>
               <label>Fest Time (optional)<input type="time" id="festTimeInput"></label>
               <label>Fest Venue<input type="text" id="festVenueInput" placeholder="e.g. GPREC Campus"></label>
+              <label>Visitor Background Theme
+                <select id="festVisitorThemeInput">
+                  <option value="compass">Compass</option>
+                  <option value="festival">Festival doodles</option>
+                  <option value="minimal">Minimal</option>
+                </select>
+              </label>
+              <label>Compass Position
+                <select id="festVisitorCompassPositionInput">
+                  <option value="right">Right</option>
+                  <option value="center">Center</option>
+                  <option value="left">Left</option>
+                  <option value="bottom-right">Bottom right</option>
+                </select>
+              </label>
             </div>
             <label class="spotlight-setting-row">
               <span><strong>Show homepage banner</strong><small>Auto-hides 24 hours after the fest date/time passes.</small></span>
@@ -323,6 +338,8 @@
           const festTimeInput = document.querySelector("#festTimeInput");
           const festVenueInput = document.querySelector("#festVenueInput");
           const festBannerEnabledInput = document.querySelector("#festBannerEnabledInput");
+          const festVisitorThemeInput = document.querySelector("#festVisitorThemeInput");
+          const festVisitorCompassPositionInput = document.querySelector("#festVisitorCompassPositionInput");
           const festNameSaveButton = document.querySelector("#festNameSaveButton");
           const festNameFeedback = document.querySelector("#festNameFeedback");
           if (festNameInput) festNameInput.value = getFestName();
@@ -330,6 +347,8 @@
           if (festTimeInput) festTimeInput.value = getFestTime();
           if (festVenueInput) festVenueInput.value = getFestVenue();
           if (festBannerEnabledInput) festBannerEnabledInput.checked = getFestBannerEnabled();
+          if (festVisitorThemeInput) festVisitorThemeInput.value = getFestVisitorTheme();
+          if (festVisitorCompassPositionInput) festVisitorCompassPositionInput.value = getFestVisitorCompassPosition();
           festNameSaveButton?.addEventListener("click", () => {
             const name = festNameInput?.value.trim() || "";
             if (!name) {
@@ -342,6 +361,8 @@
             saveFestTime(festTimeInput?.value || "");
             saveFestVenue(festVenueInput?.value.trim() || "");
             saveFestBannerEnabled(Boolean(festBannerEnabledInput?.checked));
+            saveFestVisitorTheme(festVisitorThemeInput?.value || "compass");
+            saveFestVisitorCompassPosition(festVisitorCompassPositionInput?.value || "right");
             festNameFeedback.textContent = "Fest settings saved.";
             festNameFeedback.classList.add("success");
             recordActivity(`Updated fest settings ("${name}")`, "College Fest");
