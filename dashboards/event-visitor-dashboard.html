@@ -450,6 +450,8 @@
     <script>
       (() => {
         const festName = getFestName();
+        document.body.dataset.visitorTheme = getFestVisitorTheme();
+        document.body.dataset.compassPosition = getFestVisitorCompassPosition();
         document.querySelectorAll("#visitorFestNameHero, #visitorFestNameDash, #visitorFestNameBadge").forEach((el) => {
           el.textContent = festName;
         });

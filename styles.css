@@ -18971,6 +18971,25 @@ button.calendar-cell-event {
   border-style: dashed;
 }
 
+/* Match the countdown tiles' dashed, orange-tinted border so the stat tiles read as the same
+   tile family instead of a plain gray box next to a festive timer. */
+.event-visitor-page.admin-dashboard-page .visitor-dash-stats article {
+  border-style: dashed;
+  border-color: rgba(232, 93, 4, 0.45);
+  background: rgba(7, 17, 31, 0.84);
+}
+
+/* Same tilted "sticker" number treatment as .visitor-fest-countdown strong, so the stat figures
+   match the timer digits instead of sitting flat next to them. */
+.event-visitor-page.admin-dashboard-page .visitor-dash-stats strong {
+  display: inline-block;
+  text-shadow: 2px 2px 0 rgba(232, 93, 4, 0.55);
+}
+
+.event-visitor-page.admin-dashboard-page .visitor-dash-stats article:nth-child(1) strong { transform: rotate(-3deg); }
+.event-visitor-page.admin-dashboard-page .visitor-dash-stats article:nth-child(2) strong { transform: rotate(2deg); }
+.event-visitor-page.admin-dashboard-page .visitor-dash-stats article:nth-child(3) strong { transform: rotate(-2deg); }
+
 .event-visitor-page.admin-dashboard-page .visitor-fest-band {
   border-style: dashed;
 }
@@ -19366,4 +19385,80 @@ button.calendar-cell-event {
     width: 280px;
     opacity: .16;
   }
+}
+
+/* Admin-controlled visitor theme/compass placement. Applies to homepage banner, visitor login,
+   visitor dashboard hero, and the visitor help chat. */
+.home-fest-banner[data-visitor-theme="minimal"] .visitor-compass-art,
+.home-fest-banner[data-visitor-theme="festival"] .visitor-compass-art,
+.event-visitor-page[data-visitor-theme="minimal"] .visitor-compass-art,
+.event-visitor-page[data-visitor-theme="festival"] .visitor-compass-art,
+.event-visitor-page.admin-dashboard-page[data-visitor-theme="minimal"] .gprecian-welcome::before,
+.event-visitor-page.admin-dashboard-page[data-visitor-theme="festival"] .gprecian-welcome::before {
+  display: none;
+}
+
+.event-visitor-page[data-visitor-theme="festival"] .visitor-fest-login::before,
+.home-fest-banner[data-visitor-theme="festival"] .home-fest-doodles {
+  opacity: .78;
+}
+
+.home-fest-banner[data-compass-position="left"] .visitor-compass-art {
+  right: auto;
+  left: -120px;
+}
+
+.home-fest-banner[data-compass-position="center"] .visitor-compass-art {
+  right: 50%;
+  transform: translateX(50%);
+}
+
+.home-fest-banner[data-compass-position="bottom-right"] .visitor-compass-art {
+  top: auto;
+  right: -96px;
+  bottom: -130px;
+}
+
+.event-visitor-page[data-compass-position="left"] .visitor-fest-hero .visitor-compass-art {
+  right: auto;
+  left: clamp(-160px, -12vw, -70px);
+}
+
+.event-visitor-page[data-compass-position="center"] .visitor-fest-hero .visitor-compass-art {
+  right: 50%;
+  transform: translateX(50%);
+}
+
+.event-visitor-page[data-compass-position="bottom-right"] .visitor-fest-hero .visitor-compass-art {
+  top: auto;
+  right: clamp(-150px, -10vw, -64px);
+  bottom: -80px;
+}
+
+.event-visitor-page.admin-dashboard-page[data-compass-position="left"] .visitor-dash-hero > .visitor-compass-art {
+  left: 16%;
+}
+
+.event-visitor-page.admin-dashboard-page[data-compass-position="right"] .visitor-dash-hero > .visitor-compass-art,
+.event-visitor-page.admin-dashboard-page[data-compass-position="bottom-right"] .visitor-dash-hero > .visitor-compass-art {
+  left: 82%;
+}
+
+.event-visitor-page.admin-dashboard-page[data-compass-position="bottom-right"] .visitor-dash-hero > .visitor-compass-art {
+  top: 74%;
+}
+
+.event-visitor-page.admin-dashboard-page[data-compass-position="left"] .gprecian-welcome::before {
+  right: auto;
+  left: -78px;
+}
+
+.event-visitor-page.admin-dashboard-page[data-compass-position="center"] .gprecian-welcome::before {
+  right: 50%;
+  transform: translate(50%, 0) rotate(-7deg);
+}
+
+.event-visitor-page.admin-dashboard-page[data-compass-position="bottom-right"] .gprecian-welcome::before {
+  right: -96px;
+  bottom: 48px;
 }
