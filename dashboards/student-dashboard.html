@@ -1,0 +1,1545 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Student Learning Portal | GPREC</title>
+    <meta name="description" content="Custom GPREC student learning portal with courses, assignments, materials, notices, grades, and academic activities.">
+    <link rel="icon" href="https://www.gprec.ac.in/wp-content/uploads/2017/08/fav.png" sizes="32x32">
+    <link rel="stylesheet" href="../styles.css">
+  </head>
+  <body class="student-portal-page portal-page">
+    <header class="student-topbar portal-topbar">
+      <a class="student-brand" href="../index.html">
+        <img src="../gprec-logo-enhanced.png" alt="G Pulla Reddy Engineering College">
+      </a>
+      <div class="student-user">
+        <div class="notification-bell-wrap">
+          <button type="button" class="notification-bell" id="notificationBellButton" aria-label="Notifications">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 8a6 6 0 1 1 12 0c0 4 1.5 5.5 2 6H4c.5-.5 2-2 2-6Z"/><path d="M10 20a2 2 0 0 0 4 0"/></svg>
+            <span class="notification-badge is-hidden" id="notificationBadge">0</span>
+          </button>
+          <div class="notification-dropdown is-hidden" id="notificationDropdown">
+            <div class="notification-dropdown-head">Notifications</div>
+            <div id="notificationList"></div>
+          </div>
+        </div>
+        <div class="notification-bell-wrap app-drawer-wrap is-hidden">
+          <button type="button" class="notification-bell app-drawer-button" id="appDrawerButton" aria-label="Apps">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><rect class="app-switcher-frame" x="4.5" y="4.5" width="15" height="15" rx="4.5"/><path class="app-switcher-dots" d="M9 9h.01M15 9h.01M9 15h.01M15 15h.01"/><path class="app-switcher-spark" d="M18.5 5.5v3M17 7h3"/></svg>
+          </button>
+          <div class="notification-dropdown app-drawer-dropdown is-hidden" id="appDrawerDropdown">
+            <div class="notification-dropdown-head">Apps</div>
+            <a class="app-drawer-link" href="event-management-dashboard.html">
+              <span class="app-drawer-link-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 3v4M17 3v4M4 8h16M5 5h14a1 1 0 0 1 1 1v14H4V6a1 1 0 0 1 1-1Z"/><path d="M8 12h3M8 16h8"/></svg></span>
+              <span class="app-drawer-link-copy"><strong>Event Manager</strong><small>Fest activities & posters</small></span>
+              <span class="app-drawer-link-arrow" aria-hidden="true">›</span>
+            </a>
+          </div>
+        </div>
+        <div class="student-user-menu">
+          <span class="student-user-avatar">SC</span>
+          <button type="button" class="student-user-toggle" aria-label="Account menu" aria-expanded="false">
+            <span class="student-user-name-block">
+              <strong>Sai Chandan</strong>
+              <small id="dashboardStudentId">20X51A0501</small>
+            </span>
+          </button>
+          <div class="student-user-dropdown">
+            <a href="../logins/student-login.html">Logout</a>
+          </div>
+        </div>
+      </div>
+    </header>
+
+    <main class="student-dashboard-shell">
+      <nav class="student-menu" aria-label="Student dashboard menu">
+        <div class="student-menu-title">
+          <strong>Student Menu</strong>
+          <button type="button" class="menu-collapse-toggle" id="menuCollapseToggle" aria-label="Collapse menu">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M15 5 9 12l6 7"/></svg>
+          </button>
+        </div>
+        <details class="student-menu-group">
+          <summary title="Home"><span class="menu-group-label"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 11 12 4l8 7"/><path d="M6 10v9a1 1 0 0 0 1 1h3v-6h4v6h3a1 1 0 0 0 1-1v-9"/></svg><span class="menu-group-text">Home</span></span></summary>
+          <a href="#contact-us" data-dashboard-link>Contact Us</a>
+          <a class="active" href="#spotlight" data-dashboard-link>Spotlight</a>
+        </details>
+        <details class="student-menu-group">
+          <summary title="Academics"><span class="menu-group-label"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 5.5A2.5 2.5 0 0 1 6.5 4H12v16H6.5A2.5 2.5 0 0 0 4 22V5.5Z"/><path d="M20 5.5A2.5 2.5 0 0 0 17.5 4H12v16h5.5a2.5 2.5 0 0 1 2.5 2V5.5Z"/></svg><span class="menu-group-text">Academics</span></span></summary>
+          <a href="#academics" data-dashboard-link>Academic Dashboard</a>
+          <a href="#attendance" data-dashboard-link>Attendance</a>
+          <a href="#timetable" data-dashboard-link>Class Timetable</a>
+          <a href="#curriculum" data-dashboard-link>Curriculum</a>
+          <a href="#department-hod" data-dashboard-link>Department HOD</a>
+          <a href="#faculty" data-dashboard-link>Faculty</a>
+          <a href="#grades" data-dashboard-link>Grades</a>
+          <a href="#online-classes" data-dashboard-link>Online Classes</a>
+          <a href="#online-courses" data-dashboard-link>Online Courses</a>
+        </details>
+        <details class="student-menu-group">
+          <summary title="Build Your Resume"><span class="menu-group-label"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 3h9l3 3v15a1 1 0 0 1-1 1H6a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1Z"/><path d="M9 12h6M9 16h6M9 8h3"/></svg><span class="menu-group-text">Build Your Resume</span></span></summary>
+          <a href="#resume-builder" data-dashboard-link>Resume Builder</a>
+        </details>
+        <details class="student-menu-group">
+          <summary title="Calendar"><span class="menu-group-label"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="4" y="5" width="16" height="15" rx="2"/><path d="M4 10h16M8 3v4M16 3v4"/></svg><span class="menu-group-text">Calendar</span></span></summary>
+          <a href="#calendar" data-dashboard-link>Calendar</a>
+        </details>
+        <details class="student-menu-group">
+          <summary title="Class Messages"><span class="menu-group-label"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 5h16v11H8l-4 4Z"/></svg><span class="menu-group-text">Class Messages</span></span></summary>
+          <a href="#class-messages" data-dashboard-link>View Messages</a>
+        </details>
+        <details class="student-menu-group">
+          <summary title="Complaints"><span class="menu-group-label"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 4 3 20h18Z"/><path d="M12 10v4"/><path d="M12 17h.01"/></svg><span class="menu-group-text">Complaints</span></span></summary>
+          <a href="#complaints" data-dashboard-link>My Complaints</a>
+        </details>
+        <details class="student-menu-group">
+          <summary title="Events"><span class="menu-group-label"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="4" y="5" width="16" height="15" rx="2"/><path d="M4 10h16M8 3v4M16 3v4"/></svg><span class="menu-group-text">Events</span></span></summary>
+          <a href="#events" data-dashboard-link>Campus Events</a>
+          <a href="#webinars" data-dashboard-link>Webinars</a>
+        </details>
+        <details class="student-menu-group">
+          <summary title="Examinations"><span class="menu-group-label"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="5" y="4" width="14" height="17" rx="2"/><path d="M9 3h6v3H9z"/><path d="m9 13 2 2 4-4"/></svg><span class="menu-group-text">Examinations</span></span></summary>
+          <a href="#exam-center" data-dashboard-link>Exam Center</a>
+          <a href="#exam-schedule" data-dashboard-link>Exam Schedule</a>
+          <a href="#hall-ticket" data-dashboard-link>Hall Ticket</a>
+        </details>
+        <details class="student-menu-group">
+          <summary title="Hostel"><span class="menu-group-label"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="5" y="3" width="14" height="18" rx="1"/><path d="M9 8h1M14 8h1M9 12h1M14 12h1M9 16h1M14 16h1"/><path d="M10 21v-4h4v4"/></svg><span class="menu-group-text">Hostel</span></span></summary>
+          <a href="#hostel" data-dashboard-link>Hostel</a>
+          <a href="#hostel-leave-request" data-dashboard-link id="hostelLeaveRequestNavLink">Hostel Leave Request</a>
+          <a href="#outing-request" data-dashboard-link id="outingRequestNavLink">Outing Request</a>
+        </details>
+        <details class="student-menu-group">
+          <summary title="Library"><span class="menu-group-label"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 4h6a2 2 0 0 1 2 2v14a2 2 0 0 0-2-2H4Z"/><path d="M20 4h-6a2 2 0 0 0-2 2v14a2 2 0 0 1 2-2h6Z"/></svg><span class="menu-group-text">Library</span></span></summary>
+          <a href="#library-recommendations" data-dashboard-link>Book Recommendations</a>
+          <a href="#library" data-dashboard-link>My Books</a>
+        </details>
+        <details class="student-menu-group">
+          <summary title="My Info"><span class="menu-group-label"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="8" r="4"/><path d="M4 21c1.5-4 4.5-6 8-6s6.5 2 8 6"/></svg><span class="menu-group-text">My Info</span></span></summary>
+          <a href="#bank-details" data-dashboard-link>Bank Details</a>
+          <a href="#documents" data-dashboard-link>Documents</a>
+          <a href="#my-info" data-dashboard-link>Profile</a>
+        </details>
+        <details class="student-menu-group">
+          <summary title="Placements"><span class="menu-group-label"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="8" width="18" height="12" rx="2"/><path d="M8 8V6a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/><path d="M3 13h18"/></svg><span class="menu-group-text">Placements</span></span></summary>
+          <a href="#placements" data-dashboard-link>Placement Drives</a>
+          <a href="#internships" data-dashboard-link>Internship Drives</a>
+          <a href="#mock-interviews" data-dashboard-link>Mock Interviews</a>
+          <a href="#aptitude-tests" data-dashboard-link>Aptitude Tests</a>
+          <a href="#interview-schedule" data-dashboard-link>Interview Schedule</a>
+          <a href="#job-recommendations" data-dashboard-link>Job Recommendations</a>
+        </details>
+        <details class="student-menu-group">
+          <summary title="Projects"><span class="menu-group-label"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 2h6l3 3v15a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2V5Z"/><path d="M9 9h6M9 13h6M9 17h3"/></svg><span class="menu-group-text">Projects</span></span></summary>
+          <a href="#projects" data-dashboard-link>My Projects</a>
+        </details>
+        <details class="student-menu-group">
+          <summary title="Research"><span class="menu-group-label"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m21 21-4.3-4.3"/></svg><span class="menu-group-text">Research</span></span></summary>
+          <a href="#research" data-dashboard-link>My Research</a>
+        </details>
+        <details class="student-menu-group">
+          <summary title="Services"><span class="menu-group-label"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="3"/><path d="M19 12a7 7 0 0 0-.1-1.2l2-1.6-2-3.4-2.4 1a7 7 0 0 0-2-1.2L14 3h-4l-.5 2.6a7 7 0 0 0-2 1.2l-2.4-1-2 3.4 2 1.6A7 7 0 0 0 5 12a7 7 0 0 0 .1 1.2l-2 1.6 2 3.4 2.4-1a7 7 0 0 0 2 1.2L10 21h4l.5-2.6a7 7 0 0 0 2-1.2l2.4 1 2-3.4-2-1.6c.1-.4.1-.8.1-1.2Z"/></svg><span class="menu-group-text">Services</span></span></summary>
+          <a href="#applications" data-dashboard-link>Applications</a>
+          <a href="#payments" data-dashboard-link>Online Payments</a>
+          <a href="#scholarship" data-dashboard-link>Scholarship</a>
+        </details>
+        <details class="student-menu-group" id="transportationNavGroup">
+          <summary title="Transportation"><span class="menu-group-label"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="6" width="18" height="11" rx="2"/><path d="M3 12h18M7 17v2M17 17v2"/><circle cx="7.5" cy="17" r="0.5"/><circle cx="16.5" cy="17" r="0.5"/></svg><span class="menu-group-text">Transportation</span></span></summary>
+          <a href="#bus-service" data-dashboard-link>Bus Service</a>
+          <a href="#vehicle-pass" data-dashboard-link>Vehicle Pass</a>
+        </details>
+      </nav>
+
+      <section class="portal-section dashboard-panel is-active" id="spotlight">
+        <div class="portal-block-head"><h2>Spotlight</h2><span>Notices &amp; updates</span></div>
+        <div class="spotlight-columns">
+          <div class="spotlight-grid" id="spotlightGrid"></div>
+          <div class="spotlight-grid" id="spotlightPosterGrid" data-spotlight-poster-grid></div>
+        </div>
+      </section>
+
+      <section class="portal-section dashboard-panel" id="calendar">
+        <div class="portal-block-head"><h2>Calendar</h2><span>Academic dates and reminders</span></div>
+        <div class="calendar-layout">
+          <div class="calendar-card">
+            <div class="calendar-nav">
+              <button type="button" id="calendarTodayButton">Today</button>
+              <div class="calendar-nav-arrows">
+                <button type="button" id="calendarPrevMonth" aria-label="Previous month">&#8249;</button>
+                <strong id="calendarMonthLabel"></strong>
+                <button type="button" id="calendarNextMonth" aria-label="Next month">&#8250;</button>
+              </div>
+              <div class="calendar-view-select">
+                <button type="button" id="calendarViewToggle" aria-haspopup="true" aria-expanded="false">
+                  <span id="calendarViewLabel">Month</span>
+                  <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg>
+                </button>
+                <div class="calendar-view-menu is-hidden" id="calendarViewMenu">
+                  <button type="button" data-calendar-view="day">Day<span>D</span></button>
+                  <button type="button" data-calendar-view="week">Week<span>W</span></button>
+                  <button type="button" data-calendar-view="month" class="active">Month<span>M</span></button>
+                  <button type="button" data-calendar-view="year">Year<span>Y</span></button>
+                  <button type="button" data-calendar-view="schedule">Schedule<span>A</span></button>
+                </div>
+              </div>
+            </div>
+            <div class="calendar-weekdays">
+              <span>Sun</span><span>Mon</span><span>Tue</span><span>Wed</span><span>Thu</span><span>Fri</span><span>Sat</span>
+            </div>
+            <div class="calendar-grid" id="calendarGrid"></div>
+          </div>
+          <div class="calendar-side">
+            <div class="admin-card admin-form-card">
+              <h3>Add Personal Reminder</h3>
+              <p>Only visible to you - not shown to anyone else.</p>
+              <label>Title<input type="text" id="calendarReminderTitle" placeholder="e.g. Submit assignment"></label>
+              <label>Date<input type="date" id="calendarReminderDate"></label>
+              <label>Time (optional)<input type="time" id="calendarReminderTime"></label>
+              <label>Description (optional)<textarea id="calendarReminderDescription" rows="2"></textarea></label>
+              <button type="button" id="calendarAddReminderButton">Add Reminder</button>
+              <p class="portal-feedback" id="calendarReminderFeedback" aria-live="polite"></p>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section class="portal-section dashboard-panel" id="contact-us">
+        <div class="portal-block-head">
+          <h2>Contact Us</h2>
+          <span>Student support</span>
+        </div>
+        <div class="portal-card-grid compact">
+          <article><strong>Academic Office</strong><span>academics@gprec.ac.in</span><small>Timetable, curriculum, attendance</small></article>
+          <article><strong>Exam Cell</strong><span>examcell@gprec.ac.in</span><small>Hall tickets, results, exam fee</small></article>
+          <article><strong>Student Section</strong><span>studentsection@gprec.ac.in</span><small>Certificates, scholarship, profile corrections</small></article>
+        </div>
+      </section>
+
+      <section class="portal-section dashboard-panel" id="academics">
+        <div class="portal-block-head">
+          <h2>Academics</h2>
+          <span>Timetable, curriculum, grades</span>
+        </div>
+        <div class="current-day-panel">
+          <div class="portal-block-head">
+            <h2>Current Day Timetable</h2>
+            <span id="currentDayTimetableDate">-</span>
+          </div>
+          <div class="today-slider" id="currentDayTimetableBody" aria-label="Current day classes"></div>
+          <p class="lookup-empty is-hidden" id="currentDayTimetableEmpty">No more classes scheduled for today.</p>
+        </div>
+        <div class="academic-main">
+            <section class="portal-block" id="courses">
+              <div class="portal-block-head">
+                <h2>My Courses</h2>
+                <div class="course-carousel-actions">
+                  <button class="course-prev" type="button" aria-label="Previous courses">‹</button>
+                  <button class="course-next" type="button" aria-label="Next courses">›</button>
+                </div>
+              </div>
+              <div class="course-carousel">
+                <div class="course-detail-grid">
+                  <a class="course-tile" href="../details/subject-detail.html?course=DBMS"><div class="course-detail-head"><span>DBMS</span><strong>Database Management Systems</strong></div><p>Dr. K. Ramesh | Room C-304</p><div class="attendance-pill"><strong>94%</strong><span>Attendance</span></div><small>Open subject</small></a>
+                  <a class="course-tile" href="../details/subject-detail.html?course=OS"><div class="course-detail-head"><span>OS</span><strong>Operating Systems</strong></div><p>Prof. S. Lakshmi | Room C-302</p><div class="attendance-pill"><strong>91%</strong><span>Attendance</span></div><small>Open subject</small></a>
+                  <a class="course-tile" href="../details/subject-detail.html?course=CN"><div class="course-detail-head"><span>CN</span><strong>Computer Networks</strong></div><p>Mr. P. Kumar | Network Lab</p><div class="attendance-pill"><strong>89%</strong><span>Attendance</span></div><small>Open subject</small></a>
+                  <a class="course-tile" href="../details/subject-detail.html?course=SE"><div class="course-detail-head"><span>SE</span><strong>Software Engineering</strong></div><p>Dr. M. Kavitha | Room C-305</p><div class="attendance-pill"><strong>95%</strong><span>Attendance</span></div><small>Open subject</small></a>
+                </div>
+              </div>
+            </section>
+        </div>
+      </section>
+
+      <section class="portal-section dashboard-panel" id="timetable">
+        <div class="portal-block-head">
+          <h2>Class Timetable</h2>
+          <span>CSE III-A weekly view</span>
+        </div>
+        <div class="fee-notice-list" id="classCancellationNotices"></div>
+        <div class="timetable-days" role="tablist" aria-label="Select day">
+          <button type="button" class="timetable-day active" data-day="monday" role="tab" aria-selected="true">Mon<small>3 classes</small></button>
+          <button type="button" class="timetable-day" data-day="tuesday" role="tab" aria-selected="false">Tue<small>3 classes</small></button>
+          <button type="button" class="timetable-day" data-day="wednesday" role="tab" aria-selected="false">Wed<small>3 classes</small></button>
+          <button type="button" class="timetable-day" data-day="thursday" role="tab" aria-selected="false">Thu<small>3 classes</small></button>
+          <button type="button" class="timetable-day" data-day="friday" role="tab" aria-selected="false">Fri<small>3 classes</small></button>
+        </div>
+        <div class="timetable-schedule">
+          <div class="timetable-day-panel is-active" data-day-panel="monday">
+            <div><strong>DBMS</strong><span>Database Management Systems</span><small>9:30 AM - 10:20 AM</small></div>
+            <div><strong>OS</strong><span>Operating Systems</span><small>10:30 AM - 11:20 AM</small></div>
+            <div><strong>SE</strong><span>Software Engineering</span><small>2:00 PM - 2:50 PM</small></div>
+          </div>
+          <div class="timetable-day-panel" data-day-panel="tuesday">
+            <div><strong>CN</strong><span>Computer Networks</span><small>9:30 AM - 10:20 AM</small></div>
+            <div><strong>OS</strong><span>Operating Systems</span><small>10:30 AM - 11:20 AM</small></div>
+            <div><strong>DBMS-L</strong><span>DBMS Lab</span><small>1:30 PM - 3:20 PM</small></div>
+          </div>
+          <div class="timetable-day-panel" data-day-panel="wednesday">
+            <div><strong>SE</strong><span>Software Engineering</span><small>9:30 AM - 10:20 AM</small></div>
+            <div><strong>CN-L</strong><span>Computer Networks Lab</span><small>11:30 AM - 1:20 PM</small></div>
+            <div><strong>LIB</strong><span>Library Hour</span><small>2:00 PM - 2:50 PM</small></div>
+          </div>
+          <div class="timetable-day-panel" data-day-panel="thursday">
+            <div><strong>DBMS</strong><span>Database Management Systems</span><small>9:30 AM - 10:20 AM</small></div>
+            <div><strong>CN</strong><span>Computer Networks</span><small>11:30 AM - 12:20 PM</small></div>
+            <div><strong>SE</strong><span>Software Engineering</span><small>2:00 PM - 2:50 PM</small></div>
+          </div>
+          <div class="timetable-day-panel" data-day-panel="friday">
+            <div><strong>OS</strong><span>Operating Systems</span><small>9:30 AM - 10:20 AM</small></div>
+            <div><strong>DBMS</strong><span>Database Management Systems</span><small>10:30 AM - 11:20 AM</small></div>
+            <div><strong>CN</strong><span>Computer Networks</span><small>2:00 PM - 2:50 PM</small></div>
+          </div>
+        </div>
+      </section>
+
+      <section class="portal-section dashboard-panel" id="department-hod">
+        <div class="portal-block-head">
+          <h2>Department HOD</h2>
+          <span id="studentHodDeptLabel">CSE Department</span>
+        </div>
+        <div class="faculty-profile-list" id="studentHodCard"></div>
+      </section>
+
+      <section class="portal-section dashboard-panel" id="faculty">
+        <div class="portal-block-head">
+          <h2>Faculty</h2>
+          <span id="studentFacultyDeptLabel">CSE Department</span>
+        </div>
+        <div class="faculty-profile-list" id="studentFacultyGrid"></div>
+      </section>
+
+      <section class="portal-section dashboard-panel" id="online-courses">
+        <div class="portal-block-head"><h2>Online Courses</h2><span>Browse and complete courses designed by faculty</span></div>
+
+        <div class="portal-block-head"><h3>Available Courses</h3></div>
+        <div class="bus-service-list" id="availableCoursesListBody"></div>
+        <p class="lookup-empty is-hidden" id="availableCoursesEmpty">No new courses to enroll in right now.</p>
+
+        <div class="portal-block-head"><h3>My Courses</h3></div>
+        <div class="bus-service-list" id="myEnrolledCoursesListBody"></div>
+        <p class="lookup-empty is-hidden" id="myEnrolledCoursesEmpty">You haven't enrolled in any courses yet.</p>
+      </section>
+
+      <section class="portal-section dashboard-panel" id="online-classes">
+        <div class="portal-block-head"><h2>Online Classes</h2><span>Live classes scheduled by your faculty</span></div>
+        <div class="bus-service-list" id="onlineClassesListBody"></div>
+        <p class="lookup-empty is-hidden" id="onlineClassesEmpty">No online classes scheduled right now.</p>
+      </section>
+
+      <section class="portal-section dashboard-panel" id="curriculum">
+        <div class="portal-block-head"><h2>Curriculum</h2><span>Regulation R20 | CSE III-A</span></div>
+        <div class="portal-card-grid compact">
+          <article><strong>Regulation</strong><span>R20</span><small>Applicable from 2020 admitted batch onward.</small></article>
+          <article><strong>Program</strong><span>B.Tech CSE</span><small>Class CSE III-A, VI Semester.</small></article>
+          <article><strong>Curriculum Document</strong><span>Full syllabus and scheme of instruction.</span><a href="#">View curriculum</a></article>
+        </div>
+        <div class="admin-table-card">
+          <h3>Subjects</h3>
+          <table>
+            <thead><tr><th>Code</th><th>Subject</th><th>Semester</th><th>Credits</th><th>Type</th></tr></thead>
+            <tbody id="studentCurriculumBody"></tbody>
+          </table>
+          <p class="lookup-empty" id="studentCurriculumEmpty">Curriculum has not been published for your department yet.</p>
+        </div>
+      </section>
+
+      <section class="portal-section dashboard-panel" id="grades">
+        <div class="portal-block-head"><h2>Grades</h2><span id="gradesHeadSummary">-</span></div>
+        <div class="portal-card-grid compact">
+          <article><strong>Latest SGPA</strong><span id="gradesLatestSgpa">-</span><small id="gradesLatestTermLabel">-</small></article>
+          <article><strong>CGPA</strong><span id="gradesCgpa">-</span><small>Cumulative across all semesters</small></article>
+          <article><strong>Credits Earned</strong><span id="gradesCreditsEarned">-</span><small id="gradesCreditsEarnedNote">Based on curriculum records on file</small></article>
+          <article><strong>Result History</strong><span>Semester wise GPA and backlog status.</span><button class="result-toggle" type="button">Show Results</button></article>
+        </div>
+
+        <div class="portal-block-head"><h3>Internal Marks (This Semester)</h3></div>
+        <div class="admin-table-card">
+          <table>
+            <thead><tr><th>Subject</th><th>Mid-1</th><th>Mid-2</th><th>Assignment</th><th>Total /30</th><th>Lab /30</th></tr></thead>
+            <tbody id="internalMarksDisplayBody"></tbody>
+          </table>
+        </div>
+        <p class="lookup-empty is-hidden" id="internalMarksDisplayEmpty">No internal marks have been entered yet.</p>
+
+        <div class="result-inspiration is-hidden" id="gradesInspirationCard">
+          <strong id="gradesInspirationTitle">-</strong>
+          <span id="gradesInspirationText">-</span>
+        </div>
+        <div class="result-card is-hidden">
+          <div class="result-meta-line">
+            <span><strong>Period of Study:</strong> <span id="resultPeriodOfStudy">-</span></span>
+            <span><strong>Scheme:</strong> <span id="resultScheme">-</span></span>
+            <span class="result-updated-note is-hidden" id="resultLastUpdatedWrap"><strong>Last updated:</strong> <span id="resultLastUpdated">-</span></span>
+          </div>
+          <div class="result-table">
+            <div><strong>Year / Sem</strong><strong>GPA</strong><strong>Backlogs</strong></div>
+            <div id="resultTableBody"></div>
+          </div>
+          <div class="result-disclaimer">
+            <strong>NOTE:</strong>
+            <ul>
+              <li>Any discrepancy in the above information must be brought to the notice of the Controller of Examinations.</li>
+              <li>Grades that appear in the Grades Sheet are final.</li>
+              <li>The candidate should secure a minimum of 75% aggregate attendance to get promoted to the next year / semester.</li>
+              <li>The above details are for information purposes only - this is not an official document.</li>
+            </ul>
+          </div>
+        </div>
+      </section>
+
+      <section class="portal-section dashboard-panel" id="attendance">
+        <div class="portal-block-head"><h2>Attendance</h2><span>VI Semester | 01 Jan 2026 - 30 Jun 2026</span></div>
+        <div class="attendance-filter">
+          <label>Attendance as on date
+            <input type="date" id="attendanceAsOnDate" value="2026-06-30" min="2026-01-01" max="2026-06-30">
+          </label>
+          <button type="button" id="attendanceApplyButton" class="attendance-apply-button">Apply</button>
+        </div>
+        <div class="admin-table-card">
+          <table>
+            <thead><tr><th>Subject</th><th>Classes Held</th><th>Classes Attended</th><th>Attendance %</th></tr></thead>
+            <tbody id="attendanceTableBody"></tbody>
+          </table>
+        </div>
+        <p class="service-amount">Overall Attendance (selected range)<strong id="attendanceOverall">-</strong></p>
+      </section>
+
+      <section class="portal-section dashboard-panel" id="hall-ticket">
+        <div class="portal-block-head"><h2>Hall Ticket</h2><span>Exam related</span></div>
+        <div class="portal-card-grid compact">
+          <article><strong>Current Semester Hall Ticket</strong><span id="hallTicketStatus">Available for download after exam cell release.</span><button class="result-toggle" type="button" id="viewHallTicketButton">View Hall Ticket</button></article>
+        </div>
+      </section>
+
+      <section class="portal-section dashboard-panel" id="exam-schedule">
+        <div class="portal-block-head">
+          <h2>Exam Schedule</h2>
+          <select class="admin-select" id="examScheduleSemesterSelect" aria-label="Select semester">
+            <option value="current">VI Semester (Current)</option>
+            <option value="V Semester">V Semester</option>
+            <option value="IV Semester">IV Semester</option>
+          </select>
+        </div>
+        <div class="admin-table-card">
+          <table>
+            <thead><tr><th>Subject</th><th>Date</th><th>Time</th></tr></thead>
+            <tbody id="studentExamTimetableBody"></tbody>
+          </table>
+        </div>
+      </section>
+
+      <section class="portal-section dashboard-panel" id="exam-center">
+        <div class="portal-block-head"><h2>Exam Center</h2><span>Exam related</span></div>
+        <p class="portal-note is-hidden" id="examCellUpdateNotice"></p>
+        <div class="portal-info-note"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="11" x2="12" y2="16"></line><circle cx="12" cy="7.5" r="0.6" fill="currentColor" stroke="none"></circle></svg><span>Be present in the exam hall 30 minutes before the exam start time.</span></div>
+        <div class="admin-table-card">
+          <table>
+            <thead><tr><th>Subject</th><th>Date</th><th>Time</th><th>Seat Number</th><th>Location</th></tr></thead>
+            <tbody id="studentExamCellBody"></tbody>
+          </table>
+        </div>
+      </section>
+
+      <section class="portal-section dashboard-panel hostel-section" id="hostel">
+        <div class="portal-block-head"><h2>Hostel</h2><span id="hostelSectionSubtitle">Active hosteler</span></div>
+        <div class="portal-card-grid" id="hostelInfoGrid">
+          <article><strong>Hostel Allocation</strong><span id="hostelAllocationText">-</span></article>
+          <article><strong>Mess Details</strong><span id="hostelMessText">-</span></article>
+        </div>
+        <p class="portal-note is-hidden" id="hostelNotApplicable">You're registered as a day scholar - hostel allocation and mess details aren't applicable.</p>
+      </section>
+
+      <section class="portal-section dashboard-panel" id="outing-request">
+        <div class="portal-block-head"><h2>Outing Request</h2><span>Request an outing and track approval status</span></div>
+        <div class="portal-block-head"><h3>New Outing Request</h3></div>
+        <form class="certificate-form" id="outingRequestForm">
+          <label>Outing Type
+            <select id="outingTypeSelect" required>
+              <option value="">Select outing type</option>
+              <option value="Weekday Outing">Weekday Outing</option>
+              <option value="Weekend Outing">Weekend Outing</option>
+            </select>
+          </label>
+          <label>Purpose of Visit
+            <input type="text" id="outingReason" placeholder="e.g. Medical visit" required>
+          </label>
+          <label>Place of Visit
+            <input type="text" id="outingPlace" placeholder="e.g. City Hospital, Nandyal Road" required>
+          </label>
+          <label>Student Mobile Number
+            <input type="text" id="outingStudentMobile" placeholder="e.g. 98765 43210" required>
+          </label>
+          <label>Parent Mobile Number
+            <input type="text" id="outingParentMobile" placeholder="e.g. 98765 00000" required>
+          </label>
+          <div class="is-hidden" id="weekdayOutingFields">
+            <label>Date
+              <input type="date" id="outingDate">
+            </label>
+            <label>Out Time
+              <input type="time" id="outingOutTimeOnly">
+            </label>
+            <label>Return Time
+              <input type="time" id="outingReturnTimeOnly">
+            </label>
+          </div>
+          <div class="is-hidden" id="weekendOutingFields">
+            <label>Out Date &amp; Time
+              <input type="datetime-local" id="outingOutDateTime">
+            </label>
+            <label>Return Date &amp; Time
+              <input type="datetime-local" id="outingReturnDateTime">
+            </label>
+          </div>
+          <button class="payment-open-button" type="submit">Submit Outing Request</button>
+          <p class="portal-feedback is-hidden" id="outingRequestFeedback"></p>
+        </form>
+
+        <div class="portal-block-head"><h3>My Outing Requests</h3></div>
+        <div class="admin-table-card">
+          <table>
+            <thead><tr><th>Outing Type</th><th>Purpose of Visit</th><th>Place of Visit</th><th>Out Time</th><th>Return Time</th><th>Status</th><th>Download Pass</th></tr></thead>
+            <tbody id="studentOutingBody"></tbody>
+          </table>
+          <p class="lookup-empty" id="studentOutingEmpty">No outing requests yet.</p>
+        </div>
+      </section>
+
+      <section class="portal-section dashboard-panel" id="hostel-leave-request">
+        <div class="portal-block-head"><h2>Hostel Leave Request</h2><span>Request multi-day leave from the hostel</span></div>
+        <form class="certificate-form" id="hostelLeaveRequestForm">
+          <label>Leave Type
+            <select id="hostelLeaveType" required>
+              <option value="">Select leave type</option>
+              <option>Home Leave</option>
+              <option>Medical Leave</option>
+              <option>Emergency Leave</option>
+            </select>
+          </label>
+          <label>From Date
+            <input type="date" id="hostelLeaveFromDate" required>
+          </label>
+          <label>To Date
+            <input type="date" id="hostelLeaveToDate" required>
+          </label>
+          <label>Reason
+            <textarea rows="3" id="hostelLeaveReason" placeholder="Reason for leave" required></textarea>
+          </label>
+          <label>Parent Mobile Number
+            <input type="text" id="hostelLeaveParentMobile" placeholder="e.g. 98765 00000" required>
+          </label>
+          <button class="payment-open-button" type="submit">Submit Leave Request</button>
+          <p class="portal-feedback is-hidden" id="hostelLeaveRequestFeedback"></p>
+        </form>
+
+        <div class="portal-block-head"><h3>My Hostel Leave Requests</h3></div>
+        <div class="admin-table-card">
+          <table>
+            <thead><tr><th>Leave Type</th><th>From</th><th>To</th><th>Reason</th><th>Status</th><th>Download Pass</th></tr></thead>
+            <tbody id="studentHostelLeaveBody"></tbody>
+          </table>
+          <p class="lookup-empty" id="studentHostelLeaveEmpty">No hostel leave requests yet.</p>
+        </div>
+      </section>
+
+      <section class="portal-section dashboard-panel" id="library">
+        <div class="portal-block-head">
+          <h2>Library</h2>
+          <span>Books currently issued to you</span>
+        </div>
+        <div class="admin-table-card">
+          <table>
+            <thead><tr><th>Book</th><th>Author</th><th>Issued On</th><th>Due Date to Return</th><th>Status</th></tr></thead>
+            <tbody id="studentLibraryBody"></tbody>
+          </table>
+          <p class="lookup-empty" id="studentLibraryEmpty">No books issued to you right now.</p>
+        </div>
+      </section>
+
+      <section class="portal-section dashboard-panel" id="library-recommendations">
+        <div class="portal-block-head">
+          <h2>Book Recommendations</h2>
+          <span>Powered by Open Library - picked for your branch</span>
+        </div>
+        <div class="book-search-bar">
+          <input type="text" id="bookSearchInput" placeholder="Search by title, or describe what you want to read...">
+          <button type="button" id="bookSearchButton">Search</button>
+          <button type="button" class="ai-assist-button" id="bookAiSearchButton">✨ Ask AI</button>
+          <button type="button" class="is-hidden" id="bookSearchClearButton">Clear</button>
+          <button type="button" id="bookFavoritesButton">My Favorites</button>
+        </div>
+        <div class="book-recommendation-grid" id="bookRecommendationGrid"></div>
+        <p class="lookup-empty" id="bookRecommendationEmpty">Loading recommendations...</p>
+      </section>
+
+      <section class="portal-section dashboard-panel" id="bus-service">
+        <div class="portal-block-head"><h2>Bus Service</h2><span>Day scholars only - request a bus, admin approves</span></div>
+        <p class="portal-note is-hidden" id="busServiceNotApplicable">Transportation is only available to day scholars - hostel residents already have on-campus accommodation.</p>
+        <div id="busServiceContent" class="gated-content">
+          <div class="portal-block-head"><h3>My Request</h3></div>
+          <div class="portal-card-grid" id="myBusRequestGrid">
+            <article><strong>Status</strong><span id="myBusRequestStatus">No request yet</span></article>
+          </div>
+          <p class="portal-feedback is-hidden" id="myBusRequestNote"></p>
+          <div class="pass-action-row">
+            <button type="button" class="pass-action-button is-hidden" id="downloadBusPassButton">Download Bus Pass</button>
+            <button type="button" class="pass-action-button pass-action-button-reject is-hidden" id="requestBusCancellationButton">Cancel Current Bus Pass (to switch routes)</button>
+          </div>
+          <p class="portal-feedback is-hidden" id="busCancellationFeedback"></p>
+          <div class="portal-block-head"><h3>Available Buses</h3></div>
+          <div class="bus-service-list" id="busServiceListBody"></div>
+          <p class="lookup-empty is-hidden" id="busServiceListEmpty">No buses have been published yet.</p>
+          <p class="portal-feedback is-hidden" id="busServiceListFeedback"></p>
+        </div>
+      </section>
+
+      <section class="portal-section dashboard-panel" id="vehicle-pass">
+        <div class="portal-block-head"><h2>Vehicle Pass</h2><span>Day scholars only - for your own car/two-wheeler</span></div>
+        <p class="portal-note is-hidden" id="vehiclePassNotApplicable">Transportation is only available to day scholars - hostel residents already have on-campus accommodation.</p>
+        <div id="vehiclePassContent" class="gated-content">
+          <div class="portal-card-grid" id="myVehiclePassGrid">
+            <article><strong>Status</strong><span id="myVehiclePassStatus">No application yet</span></article>
+          </div>
+          <p class="portal-feedback is-hidden" id="myVehiclePassNote"></p>
+          <button type="button" class="pass-action-button is-hidden" id="downloadVehiclePassButton">Download Vehicle Pass</button>
+          <div class="result-disclaimer">
+            <strong>Campus Safety Rules:</strong>
+            <ul>
+              <li>Always wear a helmet (two-wheeler) or fasten your seatbelt (car) while on campus roads - no exceptions.</li>
+              <li>Do not exceed the campus speed limit of 10 km/h inside the premises.</li>
+              <li>Park only in the designated parking areas - never block walkways, entrances, or emergency exits.</li>
+              <li>Carry your original driving license and vehicle RC at all times, along with this pass.</li>
+              <li>No triple riding, rash driving, or mobile phone use while driving on campus.</li>
+              <li>Report any accident or breakdown to campus security immediately.</li>
+            </ul>
+          </div>
+          <div class="portal-block-head" id="vehiclePassFormHead"><h3>Apply for a Vehicle Pass</h3></div>
+          <form class="certificate-form" id="vehiclePassForm">
+            <label>Vehicle Type
+              <select id="vehiclePassTypeInput" required>
+                <option value="">Select vehicle type</option>
+                <option value="Two-Wheeler">Two-Wheeler</option>
+              </select>
+            </label>
+            <label>Vehicle Number (RC)
+              <input type="text" id="vehiclePassNumberInput" placeholder="e.g. AP 21 XX 1234" required>
+            </label>
+            <label>Driving License Number
+              <input type="text" id="vehiclePassLicenseInput" placeholder="e.g. AP01 20230012345" required>
+            </label>
+            <label>License Photo
+              <input type="file" id="vehiclePassLicenseDocInput" accept="image/*,.pdf" required>
+            </label>
+            <label>RC Photo
+              <input type="file" id="vehiclePassRcDocInput" accept="image/*,.pdf" required>
+            </label>
+            <button type="submit">Submit Application</button>
+            <p class="portal-feedback is-hidden" id="vehiclePassFeedback"></p>
+          </form>
+        </div>
+      </section>
+
+      <section class="portal-section dashboard-panel" id="applications">
+        <div class="portal-block-head"><h2>Applications</h2><span>Download and submit exam cell application forms</span></div>
+
+        <div class="admin-table-card">
+          <table>
+            <thead><tr><th>Application</th><th></th></tr></thead>
+            <tbody>
+              <tr>
+                <td>Procedure to Apply for Transcripts</td>
+                <td><a class="notice-download" href="https://www.gprec.ac.in/examsection/Procedure%20to%20apply%20for%20%20transcripts.docx" target="_blank" rel="noreferrer">Download</a></td>
+              </tr>
+              <tr>
+                <td>Application for Original PC, Consolidated Grade Sheet, TC, Study Certificate</td>
+                <td><a class="notice-download" href="https://www.gprec.ac.in/examsection/Application-for-original-PC-and-other-certificates.docx" target="_blank" rel="noreferrer">Download</a></td>
+              </tr>
+              <tr>
+                <td>Procedure to Apply for Duplicate Certificates</td>
+                <td><a class="notice-download" href="https://www.gprec.ac.in/examsection/Application%20for%20Duplicate%20Certificates.docx" target="_blank" rel="noreferrer">Download</a></td>
+              </tr>
+              <tr>
+                <td>Application for Duplicate Marks Memo</td>
+                <td><a class="notice-download" href="https://www.gprec.ac.in/examsection/application_for_duplicate%20marks%20memo_new1.pdf" target="_blank" rel="noreferrer">Download</a></td>
+              </tr>
+              <tr>
+                <td>Proforma of Notary Affidavit (Duplicate Certificates)</td>
+                <td><a class="notice-download" href="https://www.gprec.ac.in/examsection/notary%20affidavit%20for%20duplicate%20certificates.pdf" target="_blank" rel="noreferrer">Download</a></td>
+              </tr>
+              <tr>
+                <td>Condonation Application</td>
+                <td><a class="notice-download" href="https://www.gprec.ac.in/examsection/Condonation%20Application(New-AUG%202020).pdf" target="_blank" rel="noreferrer">Download</a></td>
+              </tr>
+              <tr>
+                <td>Challan Form</td>
+                <td><a class="notice-download" href="../pages/challan-form.html" target="_blank" rel="noreferrer">Open Form</a></td>
+              </tr>
+              <tr>
+                <td>Convocation Application (SKU)</td>
+                <td><a class="notice-download" href="https://www.gprec.ac.in/GP/convocation%20application%20sku.pdf" target="_blank" rel="noreferrer">Download</a></td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+      <section class="portal-section dashboard-panel" id="payments">
+        <div class="portal-block-head">
+          <h2>Online Payments</h2>
+          <span>Fill the application and pay in one place</span>
+        </div>
+
+        <div class="fee-notice-list" id="pendingFeesList"></div>
+
+        <form class="certificate-form service-request-card">
+          <div class="service-card-head">
+            <p class="eyebrow">Student Request</p>
+            <h2>Select what you are paying for</h2>
+          </div>
+          <div class="service-type-tabs" role="tablist" aria-label="Select payment type">
+            <button type="button" class="service-type active" data-service="tuition">Tuition Fee</button>
+            <button type="button" class="service-type" data-service="exam">Exam Fee</button>
+            <button type="button" class="service-type" data-service="hostel">Hostel Fee</button>
+            <button type="button" class="service-type" data-service="certificate">Certificate Fee</button>
+            <button type="button" class="service-type" data-service="condonation">Condonation Fee</button>
+            <button type="button" class="service-type" data-service="lost-id">Lost ID Card</button>
+            <button type="button" class="service-type" data-service="tp-fee">T&amp;P Fee</button>
+            <button type="button" class="service-type" data-service="transportation-fee">Transportation Fee</button>
+          </div>
+
+          <div class="service-fields is-active" data-service-fields="tuition">
+            <div class="application-picker">
+              <button type="button" class="application-card active" data-application="semester-tuition" data-amount="48500">
+                <strong>Semester Tuition</strong><span>Regular semester tuition fee</span>
+              </button>
+              <button type="button" class="application-card" data-application="backlog-fee" data-amount="1500">
+                <strong>Backlog Fee</strong><span>Dues for backlog subjects</span>
+              </button>
+            </div>
+            <div class="application-fields is-active" data-application-fields="semester-tuition">
+              <label>Semester
+                <select required>
+                  <option>VI Semester</option>
+                  <option>V Semester</option>
+                  <option>IV Semester</option>
+                </select>
+              </label>
+            </div>
+            <div class="application-fields" data-application-fields="backlog-fee">
+              <div id="backlogSubjectField"></div>
+            </div>
+            <p class="service-amount">Amount Payable<strong data-amount-display>&#8377;48,500</strong></p>
+          </div>
+
+          <div class="service-fields" data-service-fields="exam">
+            <div class="application-picker">
+              <button type="button" class="application-card active" data-application="regular-exam" data-amount="850">
+                <strong>Regular Examination</strong><span>Current semester end exam</span>
+              </button>
+              <button type="button" class="application-card" data-application="supplementary-exam" data-amount="1200">
+                <strong>Supplementary Examination</strong><span>Reappear for failed subjects</span>
+              </button>
+              <button type="button" class="application-card" data-application="revaluation" data-amount="500">
+                <strong>Revaluation</strong><span>Recheck an already written paper</span>
+              </button>
+            </div>
+            <div class="application-fields is-active" data-application-fields="regular-exam">
+              <label>Semester
+                <select required>
+                  <option>VI Semester</option>
+                  <option>V Semester</option>
+                </select>
+              </label>
+            </div>
+            <div class="application-fields" data-application-fields="supplementary-exam">
+              <label>Failed Subjects
+                <input type="text" placeholder="e.g. DBMS, OS" required>
+              </label>
+            </div>
+            <div class="application-fields" data-application-fields="revaluation">
+              <label>Subject
+                <input type="text" placeholder="Subject code, e.g. DBMS" required>
+              </label>
+              <label>Roll Number
+                <input type="text" placeholder="20X51A0501" required>
+              </label>
+            </div>
+            <p class="service-amount">Amount Payable<strong data-amount-display>&#8377;850</strong></p>
+          </div>
+
+          <div class="service-fields" data-service-fields="hostel">
+            <div class="application-picker">
+              <button type="button" class="application-card active" data-application="room-rent" data-amount="18000">
+                <strong>Room Rent</strong><span>Semester hostel room rent</span>
+              </button>
+              <button type="button" class="application-card" data-application="mess-advance" data-amount="14000">
+                <strong>Mess Advance</strong><span>Semester mess advance payment</span>
+              </button>
+              <button type="button" class="application-card" data-application="caution-deposit" data-amount="5000">
+                <strong>Caution Deposit</strong><span>Refundable hostel deposit</span>
+              </button>
+            </div>
+            <div class="application-fields is-active" data-application-fields="room-rent">
+              <label>Hostel
+                <select required>
+                  <option>Boys Hostel</option>
+                  <option>Girls Hostel</option>
+                </select>
+              </label>
+              <label>Semester
+                <select required>
+                  <option>VI Semester</option>
+                  <option>V Semester</option>
+                </select>
+              </label>
+            </div>
+            <div class="application-fields" data-application-fields="mess-advance">
+              <label>Hostel
+                <select required>
+                  <option>Boys Hostel</option>
+                  <option>Girls Hostel</option>
+                </select>
+              </label>
+              <label>Semester
+                <select required>
+                  <option>VI Semester</option>
+                  <option>V Semester</option>
+                </select>
+              </label>
+              <label>Mess Plan
+                <select id="messPlanSelect" required>
+                  <option>Veg</option>
+                  <option>Non-Veg</option>
+                </select>
+              </label>
+            </div>
+            <div class="application-fields" data-application-fields="caution-deposit">
+              <label>Hostel
+                <select required>
+                  <option>Boys Hostel</option>
+                  <option>Girls Hostel</option>
+                </select>
+              </label>
+            </div>
+            <p class="service-amount">Amount Payable<strong data-amount-display>&#8377;18,000</strong></p>
+          </div>
+
+          <div class="service-fields" data-service-fields="certificate">
+            <div class="application-picker">
+              <button type="button" class="application-card active" data-application="bonafide" data-amount="100">
+                <strong>Bona fide Certificate</strong><span>Proof of enrollment</span>
+              </button>
+              <button type="button" class="application-card" data-application="cmm" data-amount="200">
+                <strong>CMM</strong><span>Consolidated marks memo</span>
+              </button>
+              <button type="button" class="application-card" data-application="study-conduct" data-amount="100">
+                <strong>Study and Conduct</strong><span>Study duration and conduct record</span>
+              </button>
+              <button type="button" class="application-card" data-application="tc" data-amount="300">
+                <strong>Transfer Certificate</strong><span>College transfer or exit</span>
+              </button>
+            </div>
+            <div class="application-fields is-active" data-application-fields="bonafide">
+              <label>Purpose
+                <textarea rows="3" maxlength="220" placeholder="e.g. Bank loan, passport, scholarship" required></textarea>
+              </label>
+            </div>
+            <div class="application-fields" data-application-fields="tc">
+              <label>Reason for Transfer
+                <textarea rows="3" maxlength="220" placeholder="Enter reason for transfer certificate" required></textarea>
+              </label>
+            </div>
+            <div class="application-fields" data-application-fields="cmm">
+              <label>Semesters Required (up to)
+                <select required>
+                  <option>I-I</option>
+                  <option>I-II</option>
+                  <option>II-I</option>
+                  <option>II-II</option>
+                  <option>III-I</option>
+                  <option>III-II</option>
+                  <option>IV-I</option>
+                  <option>IV-II</option>
+                </select>
+              </label>
+            </div>
+            <div class="application-fields" data-application-fields="study-conduct">
+              <label>Purpose
+                <textarea rows="3" maxlength="220" placeholder="Enter purpose for this certificate" required></textarea>
+              </label>
+            </div>
+
+            <div class="reservation-details is-hidden" data-shared-fields>
+              <p class="field-block-title">Reservation Details</p>
+              <div class="reservation-grid">
+                <label>Religion
+                  <input type="text" placeholder="e.g. Hindu" required>
+                </label>
+                <label>Caste
+                  <input type="text" placeholder="e.g. Reddy" required>
+                </label>
+                <label>Reservation
+                  <select required>
+                    <option value="">Reservation</option>
+                    <option>OC</option>
+                    <option>BC-A</option>
+                    <option>BC-B</option>
+                    <option>BC-C</option>
+                    <option>BC-D</option>
+                    <option>BC-E</option>
+                    <option>SC</option>
+                    <option>ST</option>
+                  </select>
+                </label>
+              </div>
+            </div>
+
+            <div class="reservation-details is-hidden" data-shared-fields>
+              <p class="field-block-title">Month &amp; Year of Passing the Final Exam</p>
+              <div class="reservation-grid">
+                <label>Month
+                  <select required>
+                    <option value="">Select Month</option>
+                    <option>January</option>
+                    <option>February</option>
+                    <option>March</option>
+                    <option>April</option>
+                    <option>May</option>
+                    <option>June</option>
+                    <option>July</option>
+                    <option>August</option>
+                    <option>September</option>
+                    <option>October</option>
+                    <option>November</option>
+                    <option>December</option>
+                  </select>
+                </label>
+                <label>Year
+                  <select required>
+                    <option value="">Select Year</option>
+                    <option>2026</option>
+                    <option>2025</option>
+                    <option>2024</option>
+                    <option>2023</option>
+                    <option>2022</option>
+                  </select>
+                </label>
+              </div>
+            </div>
+
+            <p class="service-amount">Amount Payable<strong data-amount-display>&#8377;100</strong></p>
+          </div>
+
+          <div class="service-fields" data-service-fields="condonation">
+            <div class="application-picker">
+              <button type="button" class="application-card active" data-application="condonation-standard" data-amount="500">
+                <strong>Condonation (65% - 74%)</strong><span>Standard attendance shortage condonation</span>
+              </button>
+              <button type="button" class="application-card" data-application="condonation-committee" data-amount="1000">
+                <strong>Condonation (Below 65%)</strong><span>Requires special committee approval</span>
+              </button>
+            </div>
+            <div class="application-fields is-active" data-application-fields="condonation-standard">
+              <label>Semester
+                <select required>
+                  <option>VI Semester</option>
+                  <option>V Semester</option>
+                  <option>IV Semester</option>
+                </select>
+              </label>
+              <label>Subject(s) with Shortage
+                <input type="text" placeholder="e.g. DBMS, OS" required>
+              </label>
+              <label>Current Attendance %
+                <input type="number" min="0" max="100" placeholder="e.g. 68" required>
+              </label>
+            </div>
+            <div class="application-fields" data-application-fields="condonation-committee">
+              <label>Semester
+                <select required>
+                  <option>VI Semester</option>
+                  <option>V Semester</option>
+                  <option>IV Semester</option>
+                </select>
+              </label>
+              <label>Subject(s) with Shortage
+                <input type="text" placeholder="e.g. DBMS, OS" required>
+              </label>
+              <label>Current Attendance %
+                <input type="number" min="0" max="100" placeholder="e.g. 58" required>
+              </label>
+              <label>Reason for Shortage
+                <textarea rows="3" maxlength="220" placeholder="e.g. Medical leave, family emergency" required></textarea>
+              </label>
+            </div>
+            <p class="service-amount">Amount Payable<strong data-amount-display>&#8377;500</strong></p>
+          </div>
+
+          <div class="service-fields" data-service-fields="lost-id">
+            <div class="application-picker">
+              <button type="button" class="application-card active" data-application="lost-id" data-amount="150">
+                <strong>Lost ID Card</strong><span>Replacement for lost or damaged ID</span>
+              </button>
+            </div>
+            <div class="application-fields is-active" data-application-fields="lost-id">
+              <label>Reason for Replacement
+                <textarea rows="3" maxlength="220" placeholder="e.g. Lost, damaged, or stolen ID card" required></textarea>
+              </label>
+            </div>
+            <p class="service-amount">Amount Payable<strong data-amount-display>&#8377;150</strong></p>
+          </div>
+
+          <div class="service-fields" data-service-fields="tp-fee">
+            <div class="application-picker">
+              <button type="button" class="application-card active" data-application="tp-fee" data-amount="2500">
+                <strong>Training &amp; Placement Fee</strong><span>Annual placement cell fee</span>
+              </button>
+            </div>
+            <div class="application-fields is-active" data-application-fields="tp-fee">
+              <label>Academic Year
+                <select required>
+                  <option value="">Select academic year</option>
+                  <option>2023-2024</option>
+                  <option>2024-2025</option>
+                  <option>2025-2026</option>
+                  <option>2026-2027</option>
+                </select>
+              </label>
+            </div>
+            <p class="service-amount">Amount Payable<strong data-amount-display>&#8377;2,500</strong></p>
+          </div>
+
+          <div class="service-fields" data-service-fields="transportation-fee">
+            <div class="application-picker">
+              <button type="button" class="application-card active" data-application="transportation-fee" data-amount="3000">
+                <strong>Bus Service Fee</strong><span>Pay this after requesting a bus, so admin can approve your request</span>
+              </button>
+            </div>
+            <div class="application-fields is-active" data-application-fields="transportation-fee">
+              <label>Academic Year
+                <select required>
+                  <option value="">Select academic year</option>
+                  <option>2023-2024</option>
+                  <option>2024-2025</option>
+                  <option>2025-2026</option>
+                  <option>2026-2027</option>
+                </select>
+              </label>
+            </div>
+            <p class="service-amount">Amount Payable<strong data-amount-display>&#8377;3,000</strong></p>
+          </div>
+
+          <div class="portal-block-head"><h3>Payment Gateway Charges</h3></div>
+          <div class="disclosure-table-wrap">
+            <table class="disclosure-table">
+              <thead><tr><th>Payment Mode</th><th>Charges</th></tr></thead>
+              <tbody>
+                <tr><td>Debit Card other than RUPAY</td><td>0.90% plus taxes</td></tr>
+                <tr><td>RUPAY Card*</td><td>NIL</td></tr>
+                <tr><td>Credit Card</td><td>1.20% plus taxes</td></tr>
+                <tr><td>Internet Banking (SBI/ICICI/HDFC)</td><td>Rs. 10.00 + taxes</td></tr>
+                <tr><td>Internet Banking (KOTAK/YES/AXIS)</td><td>Rs. 10.00 + taxes</td></tr>
+                <tr><td>Internet Banking (Others/UBI)</td><td>Rs. 10.00 + taxes</td></tr>
+                <tr><td>UPI*</td><td>NIL</td></tr>
+              </tbody>
+            </table>
+          </div>
+          <p class="portal-note">*As per GOI guidelines (presently not supported).</p>
+          <div class="portal-info-note"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="11" x2="12" y2="16"></line><circle cx="12" cy="7.5" r="0.6" fill="currentColor" stroke="none"></circle></svg><ol>
+            <li>The college does not store any credit card or debit card details.</li>
+            <li>Neither does it share personal details with others.</li>
+            <li>Do the transaction with utmost care.</li>
+            <li>Keep the acknowledgement receipt safe for future use.</li>
+          </ol></div>
+
+          <label class="declaration-check">
+            <input type="checkbox" required>
+            <span>I confirm that my personal details, academic details, dues status, and request information are correct. I agree to the college declaration for processing this request.</span>
+          </label>
+          <button class="payment-open-button" type="submit">Pay Now</button>
+
+          <a class="application-download" href="#" download="gprec-payment-receipt.pdf">Download Payment Receipt</a>
+          <a class="application-download" id="tempIdCardDownload" href="#" download="gprec-temporary-id-card.pdf">Download Temporary ID Card</a>
+        </form>
+
+        <div class="portal-block-head"><h3>Payment History</h3><span>Download receipts for payments made</span></div>
+        <div class="admin-table-card">
+          <table>
+            <thead><tr><th>Fee Type</th><th>Detail</th><th>Amount</th><th>Date</th><th>Status</th><th></th></tr></thead>
+            <tbody id="paymentHistoryBody"></tbody>
+          </table>
+          <p class="lookup-empty" id="paymentHistoryEmpty">No payments made yet. Fill an application above and pay to see your receipt here.</p>
+        </div>
+      </section>
+
+      <section class="portal-section dashboard-panel" id="scholarship">
+        <div class="portal-block-head"><h2>Scholarship</h2><span>Student financial aid status</span></div>
+        <div class="portal-card-grid compact">
+          <article><strong>Renewal Status</strong><span>Pending document verification.</span><small>Submit latest income certificate and previous semester marks memo.</small></article>
+          <article><strong>Application ID</strong><span>GPREC-SCH-2026-0501</span><small>Academic year 2026-27</small></article>
+          <article><strong>Student Section</strong><span>studentsection@gprec.ac.in</span><small>Contact for scholarship corrections and renewal help.</small></article>
+        </div>
+      </section>
+
+      <section class="portal-section dashboard-panel" id="complaints">
+        <div class="portal-block-head"><h2>Complaints</h2><span>Academic complaints go to your HOD, hostel complaints go to the Hostel Warden</span></div>
+        <form class="certificate-form" id="complaintForm">
+          <label>Category
+            <select id="complaintCategory" required>
+              <option value="">Select category</option>
+              <option value="Academic">Academic (goes to your HOD)</option>
+              <option value="Hostel" id="complaintHostelOption">Hostel (goes to the Hostel Warden)</option>
+            </select>
+          </label>
+          <label>Subject
+            <input type="text" id="complaintSubject" placeholder="e.g. Fan not working" required>
+          </label>
+          <label>Description
+            <textarea rows="4" id="complaintDescription" placeholder="Describe the issue in detail" required></textarea>
+          </label>
+          <button class="payment-open-button" type="submit">Submit Complaint</button>
+          <p class="portal-feedback is-hidden" id="complaintFeedback"></p>
+        </form>
+
+        <div class="portal-block-head"><h3>My Complaints</h3></div>
+        <div class="admin-table-card">
+          <table>
+            <thead><tr><th>Category</th><th>Subject</th><th>Status</th><th></th></tr></thead>
+            <tbody id="myComplaintsBody"></tbody>
+          </table>
+          <p class="lookup-empty" id="myComplaintsEmpty">No complaints submitted yet.</p>
+        </div>
+      </section>
+
+      <section class="portal-section dashboard-panel" id="class-messages">
+        <div class="portal-block-head"><h2>Class Messages</h2><span>Messages from your subject faculty</span></div>
+        <div class="request-card-list" id="classMessagesList"></div>
+        <p class="lookup-empty is-hidden" id="classMessagesEmpty">No messages from faculty yet.</p>
+      </section>
+
+      <section class="portal-section dashboard-panel" id="webinars">
+        <div class="portal-block-head"><h2>Webinars</h2><span>Live sessions posted by the college</span></div>
+        <div class="bus-service-list" id="webinarsListBody"></div>
+        <p class="lookup-empty is-hidden" id="webinarsEmpty">No webinars scheduled right now.</p>
+      </section>
+
+      <section class="portal-section dashboard-panel" id="events">
+        <div class="portal-block-head"><h2>Campus Events</h2><span>Apply and pay if a fee applies</span></div>
+        <div class="event-grid" id="campusEventGrid"></div>
+        <p class="lookup-empty is-hidden" id="campusEventEmpty">No campus events published yet.</p>
+
+        <div class="event-apply-form is-hidden" id="eventApplyForm">
+          <div class="service-card-head">
+            <p class="eyebrow">Event Registration</p>
+            <h2 id="eventApplyTitle">Event Name</h2>
+          </div>
+          <label>Participant Name
+            <input type="text" id="eventParticipantName" value="Sai Chandan" required>
+          </label>
+          <label>Roll Number
+            <input type="text" id="dashboardEventRollNumber" value="20X51A0501" readonly required>
+          </label>
+          <label>Team Members (optional)
+            <textarea rows="2" maxlength="220" id="eventTeamMembers" placeholder="Names of teammates, if any"></textarea>
+          </label>
+          <p class="service-amount is-hidden" id="eventFeeRow">Registration Fee<strong id="eventFeeAmount">&#8377;0</strong></p>
+          <label class="declaration-check">
+            <input type="checkbox" required>
+            <span>I confirm the above details are correct and agree to the event participation rules.</span>
+          </label>
+          <button type="button" class="event-payment-open-button" id="eventSubmitButton">Submit Registration</button>
+          <p class="portal-feedback is-hidden" id="eventFeedback"></p>
+
+          <a class="application-download is-hidden" id="eventReceiptDownload" href="#" download="gprec-event-receipt.pdf">Download Registration Receipt</a>
+          <a class="application-download is-hidden" id="eventTicketDownload" href="#" download="gprec-event-pass.png">Download Event Pass (Ticket)</a>
+          <p class="portal-note is-hidden" id="eventTicketHint">If the download doesn't start, press and hold the ticket image to save it.</p>
+        </div>
+      </section>
+
+      <section class="portal-section dashboard-panel" id="placements">
+        <div class="portal-block-head"><h2>Placement Drives</h2><span>Apply based on your eligibility</span></div>
+        <div class="portal-info-note"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="11" x2="12" y2="16"></line><circle cx="12" cy="7.5" r="0.6" fill="currentColor" stroke="none"></circle></svg><span>Eligibility is checked automatically against your CGPA, branch, and backlog record. Posted by the Placement Cell.</span></div>
+        <div class="event-grid" id="placementDriveGrid"></div>
+        <p class="lookup-empty" id="placementDriveEmpty">No placement drives posted yet.</p>
+      </section>
+
+      <section class="portal-section dashboard-panel" id="internships">
+        <div class="portal-block-head"><h2>Internship Drives</h2><span>Apply based on your eligibility</span></div>
+        <div class="portal-info-note"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="11" x2="12" y2="16"></line><circle cx="12" cy="7.5" r="0.6" fill="currentColor" stroke="none"></circle></svg><span>Eligibility is checked automatically against your CGPA, branch, and backlog record. Posted by the Placement Cell.</span></div>
+        <div class="event-grid" id="internshipDriveGrid"></div>
+        <p class="lookup-empty" id="internshipDriveEmpty">No internship drives posted yet.</p>
+      </section>
+
+      <section class="portal-section dashboard-panel" id="mock-interviews">
+        <div class="portal-block-head"><h2>Mock Interviews</h2><span>Open to every student</span></div>
+        <div class="portal-info-note"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="11" x2="12" y2="16"></line><circle cx="12" cy="7.5" r="0.6" fill="currentColor" stroke="none"></circle></svg><span>Practice interview sessions posted by the Placement Cell. Register for a slot below.</span></div>
+        <div class="event-grid" id="mockInterviewGrid"></div>
+        <p class="lookup-empty" id="mockInterviewEmpty">No mock interview sessions posted yet.</p>
+      </section>
+
+      <section class="portal-section dashboard-panel" id="aptitude-tests">
+        <div class="portal-block-head"><h2>Aptitude Tests</h2><span>Open to every student</span></div>
+        <div class="portal-info-note"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="11" x2="12" y2="16"></line><circle cx="12" cy="7.5" r="0.6" fill="currentColor" stroke="none"></circle></svg><span>Practice aptitude test sessions posted by the Placement Cell. Register for a slot below.</span></div>
+        <div class="event-grid" id="aptitudeTestGrid"></div>
+        <p class="lookup-empty" id="aptitudeTestEmpty">No aptitude test sessions posted yet.</p>
+      </section>
+
+      <section class="portal-section dashboard-panel" id="interview-schedule">
+        <div class="portal-block-head"><h2>Interview Schedule</h2><span>Your upcoming interview slots</span></div>
+        <div class="portal-info-note"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="11" x2="12" y2="16"></line><circle cx="12" cy="7.5" r="0.6" fill="currentColor" stroke="none"></circle></svg><span>Interview rounds scheduled by the Placement Cell for drives you applied to.</span></div>
+        <div class="admin-table-card">
+          <table>
+            <thead><tr><th>Company</th><th>Role</th><th>Type</th><th>Round</th><th>Date</th><th>Time</th><th>Venue</th><th>Notes</th></tr></thead>
+            <tbody id="myInterviewScheduleBody"></tbody>
+          </table>
+          <p class="lookup-empty is-hidden" id="myInterviewScheduleEmpty">No interview slots scheduled yet.</p>
+        </div>
+      </section>
+
+      <section class="portal-section dashboard-panel" id="job-recommendations">
+        <div class="portal-block-head"><h2>Job Recommendations</h2><span>Off-campus opportunities</span></div>
+        <div class="portal-info-note"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="11" x2="12" y2="16"></line><circle cx="12" cy="7.5" r="0.6" fill="currentColor" stroke="none"></circle></svg><span>Off-campus openings posted by the Placement Cell. Apply directly via the external link.</span></div>
+        <div class="event-grid" id="jobRecommendationGrid"></div>
+        <p class="lookup-empty" id="jobRecommendationEmpty">No job recommendations posted yet.</p>
+      </section>
+
+      <section class="portal-section dashboard-panel" id="projects">
+        <div class="portal-block-head"><h2>Projects</h2><span>Submit an idea, get it approved, then follow your guide's timeline</span></div>
+
+        <div class="portal-block-head"><h3>Submit New Project Idea</h3></div>
+        <form class="certificate-form" id="projectSubmitForm">
+          <label>Project Category
+            <select id="projectCategorySelect" required>
+              <option value="">Select category</option>
+              <option value="Mini Project I">Mini Project I</option>
+              <option value="Mini Project II">Mini Project II</option>
+              <option value="Major Project">Major Project</option>
+            </select>
+          </label>
+          <label>Not sure what to build? (optional)
+            <input type="text" id="projectTopicKeywordsInput" placeholder="e.g. AI, IoT, web security">
+          </label>
+          <button type="button" class="ai-assist-button" id="suggestProjectTopicsButton">✨ Suggest Topics</button>
+          <p class="portal-feedback is-hidden" id="projectTopicSuggestFeedback"></p>
+          <div class="topic-suggestion-list is-hidden" id="projectTopicSuggestions"></div>
+          <label>Project Title
+            <input type="text" id="projectTitleInput" placeholder="e.g. Smart Attendance System using Face Recognition" required>
+          </label>
+          <label>Idea / Proposal
+            <textarea id="projectDescriptionInput" rows="3" placeholder="Describe your project idea" required></textarea>
+          </label>
+          <button type="button" class="ai-assist-button" data-ai-improve="projectDescriptionInput">✨ Improve with AI</button>
+          <label>Team Members (optional)
+            <input type="text" id="projectTeamSearchInput" placeholder="Search by roll number (your department only)" autocomplete="off">
+          </label>
+          <div class="teammate-search-results is-hidden" id="teammateSearchResults"></div>
+          <div class="teammate-chip-list" id="teammateChipList"></div>
+          <label class="is-hidden" id="teamLeadField">Team Lead
+            <select id="teamLeadSelect"></select>
+          </label>
+          <label>Guide / Mentor
+            <select id="projectGuideInput" required>
+              <option value="">Select a faculty guide</option>
+            </select>
+          </label>
+          <button class="payment-open-button" type="submit">Submit Idea</button>
+          <p class="admin-add-feedback" id="projectSubmitFeedback" aria-live="polite"></p>
+        </form>
+
+        <div class="portal-block-head"><h3>My Projects</h3></div>
+        <div class="project-card-list" id="myProjectsList"></div>
+        <p class="lookup-empty is-hidden" id="myProjectsEmpty">No projects submitted yet.</p>
+      </section>
+
+      <section class="portal-section dashboard-panel" id="research">
+        <div class="portal-block-head"><h2>Research</h2><span>Submit a proposal, get it approved, then follow your supervisor's timeline</span></div>
+
+        <div class="portal-block-head"><h3>Submit New Research Proposal</h3></div>
+        <form class="certificate-form" id="researchSubmitForm">
+          <label>Research Type
+            <select id="researchCategorySelect" required>
+              <option value="">Select type</option>
+              <option value="Journal Article">Journal Article</option>
+              <option value="Conference Paper">Conference Paper</option>
+              <option value="Patent">Patent</option>
+            </select>
+          </label>
+          <label>Not sure what to research? (optional)
+            <input type="text" id="researchTopicKeywordsInput" placeholder="e.g. renewable energy, machine learning">
+          </label>
+          <button type="button" class="ai-assist-button" id="suggestResearchTopicsButton">✨ Suggest Topics</button>
+          <p class="portal-feedback is-hidden" id="researchTopicSuggestFeedback"></p>
+          <div class="topic-suggestion-list is-hidden" id="researchTopicSuggestions"></div>
+          <label>Research Topic
+            <input type="text" id="researchTitleInput" placeholder="e.g. Energy-Efficient Routing in IoT Networks" required>
+          </label>
+          <label>Abstract / Synopsis
+            <textarea id="researchDescriptionInput" rows="3" placeholder="Summarize the research problem and approach" required></textarea>
+          </label>
+          <button type="button" class="ai-assist-button" data-ai-improve="researchDescriptionInput">✨ Improve with AI</button>
+          <label>Research Supervisor
+            <select id="researchGuideInput" required>
+              <option value="">Select a faculty supervisor</option>
+            </select>
+          </label>
+          <button class="payment-open-button" type="submit">Submit Proposal</button>
+          <p class="admin-add-feedback" id="researchSubmitFeedback" aria-live="polite"></p>
+        </form>
+
+        <div class="portal-block-head"><h3>My Research</h3></div>
+        <div class="project-card-list" id="myResearchList"></div>
+        <p class="lookup-empty is-hidden" id="myResearchEmpty">No research submitted yet.</p>
+      </section>
+
+      <section class="portal-section dashboard-panel" id="resume-builder">
+        <div class="portal-block-head"><h2>Build Your Resume</h2><span>Pick a template, fill in your details, and polish your writing with AI</span></div>
+
+        <div class="resume-builder-layout">
+          <div class="resume-builder-form">
+            <label>Template
+              <select id="resumeTemplateSelect">
+                <option value="classic">Classic</option>
+                <option value="modern">Modern (sidebar)</option>
+                <option value="minimal">Minimal</option>
+                <option value="ats">ATS-Friendly (Plain Text)</option>
+              </select>
+            </label>
+            <p class="field-hint">Applying online? Use "ATS-Friendly" or "Classic" - many real Applicant Tracking Systems misread the Modern template's two-column layout.</p>
+
+            <div class="profile-accordion">
+              <details class="profile-accordion-item" open>
+                <summary>Profile</summary>
+                <div class="profile-accordion-body">
+                  <label>Full Name<input type="text" id="resumeNameInput" placeholder="Your full name"></label>
+                  <label>Email<input type="text" id="resumeEmailInput" placeholder="you@example.com"></label>
+                  <label>Phone<input type="text" id="resumePhoneInput" placeholder="98765 43210"></label>
+                  <label>LinkedIn / GitHub / Portfolio (one per line)
+                    <textarea id="resumeLinksInput" placeholder="linkedin.com/in/yourname"></textarea>
+                  </label>
+                </div>
+              </details>
+
+              <details class="profile-accordion-item">
+                <summary>Career Objective / Summary</summary>
+                <div class="profile-accordion-body">
+                  <label>Career Objective / Summary
+                    <textarea id="resumeSummaryInput" placeholder="A short 2-3 line professional summary"></textarea>
+                  </label>
+                  <button type="button" class="ai-assist-button" data-ai-improve="resumeSummaryInput">✨ Improve with AI</button>
+                </div>
+              </details>
+
+              <details class="profile-accordion-item">
+                <summary>Education &amp; Skills</summary>
+                <div class="profile-accordion-body">
+                  <label>Education (one per line)
+                    <textarea id="resumeEducationInput" placeholder="B.Tech in Computer Science, GPREC, 2022-2026"></textarea>
+                  </label>
+                  <label>Skills (comma separated)
+                    <textarea id="resumeSkillsInput" placeholder="Python, React, SQL, Communication"></textarea>
+                  </label>
+                  <button type="button" class="ai-assist-button" data-ai-improve="resumeSkillsInput">✨ Improve with AI</button>
+                  <label>Languages Known (comma separated)
+                    <input type="text" id="resumeLanguagesInput" placeholder="English, Telugu, Hindi">
+                  </label>
+                </div>
+              </details>
+
+              <details class="profile-accordion-item">
+                <summary>Projects &amp; Experience</summary>
+                <div class="profile-accordion-body">
+                  <label>Projects (one per line)
+                    <textarea id="resumeProjectsInput" placeholder="Smart Attendance System - Built using Python and OpenCV"></textarea>
+                  </label>
+                  <label>Internships / Experience (one per line)
+                    <textarea id="resumeExperienceInput" placeholder="Summer Intern, ABC Pvt Ltd - Worked on..."></textarea>
+                  </label>
+                </div>
+              </details>
+
+              <details class="profile-accordion-item">
+                <summary>Certifications &amp; Achievements</summary>
+                <div class="profile-accordion-body">
+                  <label>Certifications (one per line)
+                    <textarea id="resumeCertificationsInput" placeholder="AWS Cloud Practitioner - 2025"></textarea>
+                  </label>
+                  <label>Achievements / Awards (one per line)
+                    <textarea id="resumeAchievementsInput" placeholder="1st Place, Smart India Hackathon 2025"></textarea>
+                  </label>
+                  <label>Extracurricular Activities / Leadership (one per line)
+                    <textarea id="resumeExtracurricularInput" placeholder="Coordinator, College Technical Fest 2025"></textarea>
+                  </label>
+                </div>
+              </details>
+
+              <details class="profile-accordion-item">
+                <summary>Custom Sections</summary>
+                <div class="profile-accordion-body">
+                  <div id="resumeCustomSections"></div>
+                  <button type="button" id="addCustomSectionButton">+ Add Custom Section</button>
+                </div>
+              </details>
+            </div>
+          </div>
+
+          <div class="resume-preview-wrap">
+            <div class="resume-preview resume-template-classic" id="resumePreview"></div>
+
+            <div class="portal-block-head"><h3>ATS Score Check</h3><span>See how well this resume would survive an Applicant Tracking System scan</span></div>
+            <button type="button" id="checkAtsScoreButton">Check ATS Score</button>
+            <div class="is-hidden" id="atsScoreResult">
+              <p class="ats-score-number" id="atsScoreNumber"></p>
+              <ul class="ats-score-checklist" id="atsScoreChecklist"></ul>
+            </div>
+
+            <button type="button" class="payment-open-button" id="resumeDownloadButton">Download as PDF</button>
+          </div>
+        </div>
+      </section>
+
+      <section class="portal-section dashboard-panel" id="my-info">
+        <div class="portal-block-head">
+          <h2>Profile</h2>
+          <span>Student bio details</span>
+        </div>
+        <div class="student-profile-view" id="studentProfileView"></div>
+      </section>
+
+      <section class="portal-section dashboard-panel" id="bank-details">
+        <div class="portal-block-head"><h2>Bank Details</h2><span>For scholarship and refund disbursement</span></div>
+        <form class="certificate-form" id="scholarshipBankForm">
+          <label>Account Holder Name
+            <input type="text" id="scholarshipBankAccountHolder" required>
+          </label>
+          <label>Bank Name
+            <input type="text" id="scholarshipBankName" required>
+          </label>
+          <label>Account Number
+            <input type="text" id="scholarshipBankAccountNumber" required>
+          </label>
+          <label>IFSC Code
+            <input type="text" id="scholarshipBankIfsc" required>
+          </label>
+          <label>Branch
+            <input type="text" id="scholarshipBankBranch" required>
+          </label>
+          <button class="payment-open-button" type="submit">Save Bank Details</button>
+          <p class="portal-feedback is-hidden" id="scholarshipBankFeedback"></p>
+        </form>
+      </section>
+
+      <section class="portal-section dashboard-panel" id="documents">
+        <div class="portal-block-head"><h2>Documents</h2><span>SSC, intermediate, admission, and ID proof records</span></div>
+        <form class="certificate-form" id="uploadDocumentForm">
+          <label>Document Type
+            <select id="documentTypeInput" required>
+              <option value="">Select a document type</option>
+              <option>SSC Certificate</option>
+              <option>Intermediate Certificate</option>
+              <option>Admission Proof</option>
+              <option>ID Proof</option>
+              <option>Transfer Certificate</option>
+              <option>Other</option>
+            </select>
+          </label>
+          <label>File
+            <input type="file" id="documentFileInput" accept=".pdf,.jpg,.jpeg,.png" required>
+          </label>
+          <button class="payment-open-button" type="submit">Upload Document</button>
+          <p class="portal-feedback is-hidden" id="documentUploadFeedback"></p>
+        </form>
+
+        <div class="portal-block-head"><h3>My Documents</h3></div>
+        <div class="admin-table-card">
+          <table>
+            <thead><tr><th>Document Type</th><th>File</th><th>Uploaded On</th><th></th></tr></thead>
+            <tbody id="documentListBody"></tbody>
+          </table>
+          <p class="lookup-empty is-hidden" id="documentListEmpty">No documents uploaded yet.</p>
+        </div>
+      </section>
+    </main>
+
+    <div class="modal-overlay is-hidden" id="calendarEventModalOverlay">
+      <div class="modal-box calendar-event-modal">
+        <div class="modal-head">
+          <div class="calendar-event-modal-title">
+            <span class="calendar-event-modal-dot" id="calendarEventModalDot"></span>
+            <h3 id="calendarEventModalTitle"></h3>
+          </div>
+          <div class="calendar-event-modal-actions">
+            <button type="button" id="calendarEventModalDelete" class="is-hidden" aria-label="Delete reminder" title="Delete">
+              <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h16M9 7V4h6v3M6 7l1 13h10l1-13"/></svg>
+            </button>
+            <button type="button" id="calendarEventModalClose" aria-label="Close">&times;</button>
+          </div>
+        </div>
+        <p id="calendarEventModalDate"></p>
+        <p id="calendarEventModalDescription"></p>
+      </div>
+    </div>
+
+
+    <div class="gprecian" aria-live="polite">
+      <section class="gprecian-panel" aria-label="GPRECian student help chat">
+        <div class="gprecian-head">
+          <div class="gprecian-title">
+            <span class="gprecian-avatar bot-avatar"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m4 6 8-3 8 3-8 3zM7 8v3M17 8v3M9 12a3 3 0 1 0 6 0M5 21c.7-3.2 3.4-5 7-5s6.3 1.8 7 5"/></svg></span>
+            <div>
+              <strong>GPRECian Bot</strong>
+              <span>AI student help</span>
+            </div>
+          </div>
+          <div class="gprecian-actions">
+            <button class="gprecian-expand" type="button" aria-label="Expand chat window"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M15 3h6v6M9 21H3v-6M21 3l-7 7M3 21l7-7"/></svg></button>
+            <button class="gprecian-close" type="button" aria-label="Close GPRECian chat">×</button>
+          </div>
+        </div>
+        <div class="gprecian-welcome" id="gprecianWelcome">
+          <p class="gprecian-welcome-greeting" id="gprecianWelcomeGreeting">Hello</p>
+          <p class="gprecian-welcome-question">How can I help you today?</p>
+          <p class="gprecian-welcome-subtext">Ask me about your attendance, timetable, exams, hostel, outing requests, fees, or complaints.</p>
+          <div class="gprecian-chips" aria-label="Suggested questions">
+            <button type="button" data-question="attendance">Attendance</button>
+            <button type="button" data-question="exam schedule">Exam Schedule</button>
+            <button type="button" data-question="outing request">Outing Request</button>
+            <button type="button" data-question="complaint">Complaints</button>
+          </div>
+        </div>
+        <div class="gprecian-messages is-hidden"></div>
+        <form class="gprecian-form">
+          <input type="text" aria-label="Ask GPRECian a question" placeholder="Ask a question..." autocomplete="off" id="gprecianInput">
+          <button type="submit" aria-label="Send message"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"/></svg></button>
+          <div class="gprecian-suggestions is-hidden" id="gprecianSuggestions"></div>
+        </form>
+        <p class="gprecian-disclaimer">AI-generated answers may be inaccurate - verify important details with the college.</p>
+      </section>
+      <button class="gprecian-toggle" type="button" aria-label="Open GPRECian chat">
+        <span><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m4 6 8-3 8 3-8 3zM7 8v3M17 8v3M9 12a3 3 0 1 0 6 0M5 21c.7-3.2 3.4-5 7-5s6.3 1.8 7 5"/></svg></span>
+        <strong>GPRECian Bot</strong>
+      </button>
+    </div>
+
+    <div class="modal-overlay is-hidden" id="bookReaderModalOverlay">
+      <div class="modal-box book-reader-modal-box">
+        <div class="modal-head">
+          <h3 id="bookReaderModalTitle">Read Online</h3>
+          <button type="button" class="notice-download" id="bookReaderModalClose">Close</button>
+        </div>
+        <iframe id="bookReaderFrame" title="Book reader" src="" loading="lazy"></iframe>
+      </div>
+    </div>
+
+    <!--
+      Payments here open the college's real PayU hosted checkout link (see admin-config.json's
+      "payuPaymentLink" field; merchant dashboard: https://onboarding.payu.in, docs:
+      https://docs.payu.in) in a new tab. Configure the backend webhook so
+      there's no webhook or return-URL to confirm the payment actually completed - it's recorded
+      locally as soon as the tab opens, trusting the payer to finish paying. A production
+      deployment should add a backend that listens for PayU's payment confirmation webhook
+      before treating a payment as real.
+    -->
+    <script src="../qrcode-generator.js"></script>
+    <script src="../script.js"></script>
+  </body>
+</html>

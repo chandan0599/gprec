@@ -1,0 +1,196 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Event Pass Scan | GPREC</title>
+    <meta name="description" content="Verify a campus event pass and check in an attendee at G. Pulla Reddy Engineering College.">
+    <link rel="icon" href="https://www.gprec.ac.in/wp-content/uploads/2017/08/fav.png" sizes="32x32">
+    <link rel="stylesheet" href="../styles.css">
+  </head>
+  <body class="student-portal-page assignment-page">
+    <header class="login-header">
+      <a class="login-brand" href="../index.html"><img src="../gprec-logo-enhanced.png" alt="G Pulla Reddy Engineering College"></a>
+      <a class="login-home" href="../dashboards/event-volunteer-dashboard.html"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m3 11 9-8 9 8M5 10v11h14V10M9 21v-6h6v6"/></svg>Volunteer Dashboard</a>
+    </header>
+    <main class="student-service-page">
+      <section class="service-hero">
+        <p class="eyebrow">Event Gate</p>
+        <h1>Ticket Check-In</h1>
+        <p>This QR was scanned from an event pass. Confirm the details below, then check the attendee in.</p>
+      </section>
+
+      <div class="certificate-form service-request-card" id="gateScanCard">
+        <div class="service-card-head">
+          <p class="eyebrow" id="gateScanPassType">Event Pass</p>
+          <h2 id="gateScanTitle">Loading…</h2>
+        </div>
+        <div id="gateScanBody"></div>
+        <p class="portal-feedback is-hidden" id="gateScanFeedback"></p>
+      </div>
+
+      <div class="certificate-form service-request-card is-hidden" id="manualFallbackCard">
+        <div class="service-card-head">
+          <p class="eyebrow">QR Scan Fallback</p>
+          <h2>Manual Check-In</h2>
+        </div>
+        <p>If the QR will not scan, select the event and enter either the GPREC roll number or outside visitor email.</p>
+        <div class="admin-add-grid">
+          <label>Event<select id="fallbackEventSelect"></select></label>
+          <label>GPREC Roll Number<input type="text" id="fallbackRollInput" placeholder="20X51A0501"></label>
+          <label>Outside Visitor Email<input type="email" id="fallbackEmailInput" placeholder="attendee@email.com"></label>
+        </div>
+        <div class="action-cell gate-scan-actions">
+          <button type="button" class="payment-open-button" id="fallbackCheckInButton">Check In Manually</button>
+        </div>
+        <p class="portal-feedback is-hidden" id="fallbackFeedback"></p>
+      </div>
+    </main>
+    <script src="../qrcode-generator.js"></script>
+    <script src="../script.js"></script>
+    <script>
+      (() => {
+        const params = new URLSearchParams(window.location.search);
+        const eventId = params.get("eventId");
+        const regId = params.get("reg");
+        const token = params.get("t");
+
+        const titleEl = document.querySelector("#gateScanTitle");
+        const bodyEl = document.querySelector("#gateScanBody");
+        const feedbackEl = document.querySelector("#gateScanFeedback");
+        const fallbackCard = document.querySelector("#manualFallbackCard");
+        const fallbackEventSelect = document.querySelector("#fallbackEventSelect");
+        const fallbackRollInput = document.querySelector("#fallbackRollInput");
+        const fallbackEmailInput = document.querySelector("#fallbackEmailInput");
+        const fallbackButton = document.querySelector("#fallbackCheckInButton");
+        const fallbackFeedback = document.querySelector("#fallbackFeedback");
+
+        const showFeedback = (text, isSuccess) => {
+          feedbackEl.textContent = text;
+          feedbackEl.classList.remove("is-hidden");
+          feedbackEl.classList.toggle("success", Boolean(isSuccess));
+        };
+
+        const showFallbackFeedback = (text, isSuccess) => {
+          fallbackFeedback.textContent = text;
+          fallbackFeedback.classList.remove("is-hidden");
+          fallbackFeedback.classList.toggle("success", Boolean(isSuccess));
+        };
+
+        const setupManualFallback = () => {
+          const isSignedIn = Boolean(localStorage.getItem("gprecSessionToken") && ["student", "admin"].includes(localStorage.getItem("gprecActiveRole")));
+          if (!fallbackCard || !isSignedIn) return;
+          const events = getCampusEvents();
+          fallbackEventSelect.innerHTML = events.map((event) => `<option value="${event.id}">${event.title}</option>`).join("");
+          if (eventId && events.some((event) => event.id === eventId)) fallbackEventSelect.value = eventId;
+          fallbackCard.classList.remove("is-hidden");
+        };
+
+        const render = (registration) => {
+          titleEl.textContent = registration.participantName || registration.rollNumber || "Attendee";
+          const feeText = registration.fee ? `Rs. ${Number(registration.fee).toLocaleString("en-IN")}` : "Free";
+          const rows = registration.isExternal
+            ? [
+                ["Attendee Type", "Outside Visitor"],
+                ["Event", registration.eventName],
+                ["Name", registration.participantName],
+                ["Email", registration.email],
+                ["Phone", registration.phone],
+                ["College / Organization", registration.college],
+                ["Fee", feeText],
+                ["Payment Status", registration.paymentStatus]
+              ]
+            : [
+                ["Attendee Type", "GPREC Student"],
+                ["Event", registration.eventName],
+                ["Name", registration.participantName],
+                ["Roll Number", registration.rollNumber],
+                ["Team Members", registration.teamMembers],
+                ["Fee", feeText],
+                ["Payment Status", registration.paymentStatus]
+              ];
+          const checkIn = registration.checkIn;
+          bodyEl.innerHTML = `
+            <div class="disclosure-table-wrap gate-scan-table-wrap">
+              <table class="disclosure-table">
+                <tbody>
+                  ${rows.map(([label, value]) => `<tr><td>${label}</td><td>${value || "-"}</td></tr>`).join("")}
+                </tbody>
+              </table>
+            </div>
+            ${checkIn
+              ? `<p class="portal-feedback success">Already checked in at ${formatOutingDateTime(checkIn.scannedAt)} (by ${checkIn.scannedBy}). No further action needed.</p>`
+              : `<div class="action-cell gate-scan-actions">
+                  <button type="button" class="payment-open-button" id="checkInButton">Check In</button>
+                </div>`}
+          `;
+          document.querySelector("#checkInButton")?.addEventListener("click", checkInAttendee);
+        };
+
+        const renderLoginRequired = () => {
+          titleEl.textContent = "Student volunteer login required";
+          const returnUrl = `event-pass-scan.html${window.location.search}`;
+          bodyEl.innerHTML = `
+            <p>Sign in with the student volunteer's roll number and date of birth on this same server, then the scanned ticket can be verified.</p>
+            <p>Use the mobile URL with port <strong>8766</strong>; scanning from another port will not share the login session.</p>
+            <div class="action-cell gate-scan-actions">
+              <a class="payment-open-button" href="../logins/student-login.html?next=${encodeURIComponent(returnUrl)}">Open Event Volunteer Login</a>
+            </div>
+          `;
+        };
+
+        const checkInAttendee = () => {
+          const response = gprecDbRequest("/campus-event/gate-log", { method: "POST", body: { eventId, regId, token } });
+          if (response && response.ok) {
+            showFeedback("Checked in.", true);
+            render(response.registration);
+          } else {
+            showFeedback((response && response.error) || "Could not record this check-in. Please try again.", false);
+          }
+        };
+
+        fallbackButton?.addEventListener("click", () => {
+          const selectedEventId = fallbackEventSelect.value;
+          const rollNumber = fallbackRollInput.value.trim().toUpperCase();
+          const email = fallbackEmailInput.value.trim().toLowerCase();
+          if (!selectedEventId || (!rollNumber && !email)) {
+            showFallbackFeedback("Select an event and enter either a GPREC roll number or an outside visitor email.", false);
+            return;
+          }
+          if (rollNumber && email) {
+            showFallbackFeedback("Use only one field: roll number for GPREC students, email for outside visitors.", false);
+            return;
+          }
+          const response = gprecDbPost("/campus-event/manual-checkin", { eventId: selectedEventId, rollNumber, email });
+          if (response && response.ok) {
+            showFallbackFeedback(`${rollNumber || email} checked in.`, true);
+            fallbackRollInput.value = "";
+            fallbackEmailInput.value = "";
+          } else {
+            showFallbackFeedback((response && response.error) || "Could not check this attendee in.", false);
+          }
+        });
+
+        setupManualFallback();
+
+        if (eventId && (!regId || !token)) {
+          titleEl.textContent = "Manual fallback ready";
+          bodyEl.innerHTML = "<p>Use the QR Scan Fallback below to check in an attendee by roll number or outside visitor email.</p>";
+        } else if (!eventId || !regId || !token) {
+          titleEl.textContent = "Invalid QR code";
+          bodyEl.innerHTML = "<p>This link is missing the information a real event-pass QR should carry.</p>";
+        } else if (!localStorage.getItem("gprecSessionToken") || !["student", "admin"].includes(localStorage.getItem("gprecActiveRole"))) {
+          renderLoginRequired();
+        } else {
+          const response = gprecDbRequest("/campus-event/gate-lookup", { method: "POST", body: { eventId, regId, token } });
+          if (response && response.ok) {
+            render(response.registration);
+          } else {
+            titleEl.textContent = "Ticket not found";
+            bodyEl.innerHTML = `<p>${(response && response.error) || "This ticket is not valid, not paid/registered, or the QR code doesn't match."}</p>`;
+          }
+        }
+      })();
+    </script>
+  </body>
+</html>

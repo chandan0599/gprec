@@ -1,0 +1,295 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Non-Teaching Staff Dashboard | GPREC</title>
+    <meta name="description" content="GPREC non-teaching staff dashboard with profile, leave application, and calendar.">
+    <link rel="icon" href="https://www.gprec.ac.in/wp-content/uploads/2017/08/fav.png" sizes="32x32">
+    <link rel="stylesheet" href="../styles.css">
+  </head>
+  <body class="student-portal-page portal-page">
+    <header class="student-topbar portal-topbar">
+      <a class="student-brand" href="../index.html">
+        <img src="../gprec-logo-enhanced.png" alt="G Pulla Reddy Engineering College">
+      </a>
+      <div class="student-user">
+        <div class="notification-bell-wrap">
+          <button type="button" class="notification-bell" id="notificationBellButton" aria-label="Notifications">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 8a6 6 0 1 1 12 0c0 4 1.5 5.5 2 6H4c.5-.5 2-2 2-6Z"/><path d="M10 20a2 2 0 0 0 4 0"/></svg>
+            <span class="notification-badge is-hidden" id="notificationBadge">0</span>
+          </button>
+          <div class="notification-dropdown is-hidden" id="notificationDropdown">
+            <div class="notification-dropdown-head">Notifications</div>
+            <div id="notificationList"></div>
+          </div>
+        </div>
+        <div class="student-user-menu">
+          <span class="student-user-avatar" id="nonTeachingInitials">NT</span>
+          <button type="button" class="student-user-toggle" aria-label="Account menu" aria-expanded="false">
+            <span class="student-user-name-block">
+              <strong id="nonTeachingDashboardName">Staff</strong>
+              <small id="nonTeachingDashboardDesignation">-</small>
+            </span>
+          </button>
+          <div class="student-user-dropdown">
+            <a href="../logins/non-teaching-login.html">Logout</a>
+          </div>
+        </div>
+      </div>
+    </header>
+
+    <main class="student-dashboard-shell">
+      <nav class="student-menu" aria-label="Non-teaching staff dashboard menu">
+        <div class="student-menu-title">
+          <strong>Staff Menu</strong>
+          <button type="button" class="menu-collapse-toggle" id="menuCollapseToggle" aria-label="Collapse menu">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M15 5 9 12l6 7"/></svg>
+          </button>
+        </div>
+        <details class="student-menu-group" open>
+          <summary title="Home"><span class="menu-group-label"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 11 12 4l8 7"/><path d="M6 10v9a1 1 0 0 0 1 1h3v-6h4v6h3a1 1 0 0 0 1-1v-9"/></svg><span class="menu-group-text">Home</span></span></summary>
+          <a class="active" href="#spotlight" data-dashboard-link>Profile</a>
+        </details>
+        <details class="student-menu-group">
+          <summary title="Calendar"><span class="menu-group-label"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="4" y="5" width="16" height="15" rx="2"/><path d="M4 10h16M8 3v4M16 3v4"/></svg><span class="menu-group-text">Calendar</span></span></summary>
+          <a href="#calendar" data-dashboard-link>Calendar</a>
+        </details>
+        <details class="student-menu-group">
+          <summary title="Leave"><span class="menu-group-label"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 4H6a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h3"/><path d="M14 8l4 4-4 4"/><path d="M18 12H9"/></svg><span class="menu-group-text">Leave</span></span></summary>
+          <a href="#leave-application" data-dashboard-link>Leave Application</a>
+        </details>
+        <details class="student-menu-group">
+          <summary title="Payroll"><span class="menu-group-label"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="6" width="18" height="12" rx="2"/><circle cx="12" cy="12" r="3"/><path d="M6 9h.01M18 15h.01"/></svg><span class="menu-group-text">Payroll</span></span></summary>
+          <a href="#bank-details" data-dashboard-link>Bank Details</a>
+          <a href="#form16" data-dashboard-link>Form 16</a>
+          <a href="#payslip" data-dashboard-link>Payslip</a>
+          <a href="#salary-structure" data-dashboard-link>Salary Structure</a>
+        </details>
+      </nav>
+
+      <section class="portal-section dashboard-panel is-active" id="spotlight">
+        <p class="dashboard-greeting" id="dashboardGreeting"></p>
+        <div class="portal-block-head"><h2>Staff Profile</h2><span>Non-teaching staff record</span></div>
+        <div class="student-profile-summary">
+          <div class="student-profile-photo">
+            <img id="nonTeachingProfilePhoto" src="" alt="Staff profile photo">
+          </div>
+          <div class="student-profile-meta">
+            <p class="eyebrow">Staff Profile</p>
+            <h3 id="nonTeachingProfileName">-</h3>
+            <div class="profile-id-row">
+              <span id="nonTeachingProfileDesignation">-</span>
+              <span id="nonTeachingProfileSection">-</span>
+            </div>
+          </div>
+        </div>
+        <div class="portal-card-grid compact">
+          <article><strong>Email</strong><span id="nonTeachingProfileEmail">-</span></article>
+        </div>
+        <div class="spotlight-grid" id="nonTeachingPosterGrid" data-spotlight-poster-grid></div>
+      </section>
+
+      <section class="portal-section dashboard-panel" id="calendar">
+        <div class="portal-block-head"><h2>Calendar</h2><span>Duty dates and reminders</span></div>
+        <div class="calendar-layout">
+          <div class="calendar-card">
+            <div class="calendar-nav">
+              <button type="button" id="calendarTodayButton">Today</button>
+              <div class="calendar-nav-arrows">
+                <button type="button" id="calendarPrevMonth" aria-label="Previous month">&#8249;</button>
+                <strong id="calendarMonthLabel"></strong>
+                <button type="button" id="calendarNextMonth" aria-label="Next month">&#8250;</button>
+              </div>
+              <div class="calendar-view-select">
+                <button type="button" id="calendarViewToggle" aria-haspopup="true" aria-expanded="false">
+                  <span id="calendarViewLabel">Month</span>
+                  <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg>
+                </button>
+                <div class="calendar-view-menu is-hidden" id="calendarViewMenu">
+                  <button type="button" data-calendar-view="day">Day<span>D</span></button>
+                  <button type="button" data-calendar-view="week">Week<span>W</span></button>
+                  <button type="button" data-calendar-view="month" class="active">Month<span>M</span></button>
+                  <button type="button" data-calendar-view="year">Year<span>Y</span></button>
+                  <button type="button" data-calendar-view="schedule">Schedule<span>A</span></button>
+                </div>
+              </div>
+            </div>
+            <div class="calendar-weekdays">
+              <span>Sun</span><span>Mon</span><span>Tue</span><span>Wed</span><span>Thu</span><span>Fri</span><span>Sat</span>
+            </div>
+            <div class="calendar-grid" id="calendarGrid"></div>
+          </div>
+          <div class="calendar-side">
+            <div class="admin-card admin-form-card">
+              <h3>Add Personal Reminder</h3>
+              <p>Only visible to you - not shown to anyone else.</p>
+              <label>Title<input type="text" id="calendarReminderTitle" placeholder="e.g. Submit stock report"></label>
+              <label>Date<input type="date" id="calendarReminderDate"></label>
+              <label>Time (optional)<input type="time" id="calendarReminderTime"></label>
+              <label>Description (optional)<textarea id="calendarReminderDescription" rows="2"></textarea></label>
+              <button type="button" id="calendarAddReminderButton">Add Reminder</button>
+              <p class="portal-feedback" id="calendarReminderFeedback" aria-live="polite"></p>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section class="portal-section dashboard-panel" id="leave-application">
+        <div class="portal-block-head"><h2>Leave Application</h2><span>Submit a leave request</span></div>
+        <form class="certificate-form" id="staffLeaveApplicationForm">
+          <label>Leave Type
+            <select id="staffLeaveTypeSelect" required>
+              <option value="">Select leave type</option>
+              <option>Casual Leave</option>
+              <option>Sick Leave</option>
+              <option>Earned Leave</option>
+            </select>
+          </label>
+          <label>From Date
+            <input type="date" id="staffLeaveFromDate" required>
+          </label>
+          <label>To Date
+            <input type="date" id="staffLeaveToDate" required>
+          </label>
+          <label>Reason
+            <textarea rows="3" id="staffLeaveReason" placeholder="Reason for leave" required></textarea>
+          </label>
+          <button class="payment-open-button" type="submit">Submit Leave Request</button>
+          <p class="portal-feedback is-hidden" id="staffLeaveApplicationFeedback"></p>
+        </form>
+
+        <div class="portal-block-head"><h3>My Leave Requests</h3></div>
+        <div class="admin-table-card">
+          <table>
+            <thead><tr><th>Leave Type</th><th>From</th><th>To</th><th>Reason</th><th>Status</th><th></th></tr></thead>
+            <tbody id="staffLeaveRequestsBody"></tbody>
+          </table>
+          <p class="lookup-empty" id="staffLeaveRequestsEmpty">No leave requests submitted yet.</p>
+        </div>
+      </section>
+
+      <section class="portal-section dashboard-panel" id="payslip">
+        <div class="portal-block-head"><h2>Payslip</h2><span>Download your monthly payslip</span></div>
+        <div class="portal-card-grid compact">
+          <article><strong>Employee Name</strong><span id="payslipStaffName">-</span></article>
+          <article><strong>Designation</strong><span id="payslipStaffDesignation">-</span></article>
+          <article><strong>Section</strong><span id="payslipStaffSection">-</span></article>
+        </div>
+        <form class="certificate-form" id="payslipForm">
+          <label>Select Month
+            <select id="payslipMonthSelect" required></select>
+          </label>
+          <button class="payment-open-button" type="submit">Download Payslip</button>
+        </form>
+      </section>
+
+      <section class="portal-section dashboard-panel" id="salary-structure">
+        <div class="portal-block-head"><h2>Salary Structure</h2><span>Monthly pay breakdown</span></div>
+        <div class="portal-card-grid compact">
+          <article><strong>Basic Pay</strong><span>Rs. 28,000</span></article>
+          <article><strong>Dearness Allowance (DA)</strong><span>Rs. 2,800</span></article>
+          <article><strong>House Rent Allowance (HRA)</strong><span>Rs. 5,600</span></article>
+          <article><strong>Gross Pay</strong><span>Rs. 36,400</span></article>
+          <article><strong>Provident Fund (PF)</strong><span>Rs. 3,360</span></article>
+          <article><strong>Professional Tax</strong><span>Rs. 200</span></article>
+          <article><strong>Total Deductions</strong><span>Rs. 3,560</span></article>
+          <article><strong>Net Pay</strong><span>Rs. 32,840</span></article>
+        </div>
+        <div class="portal-info-note"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="11" x2="12" y2="16"></line><circle cx="12" cy="7.5" r="0.6" fill="currentColor" stroke="none"></circle></svg><span>This is the standard monthly pay structure applied to your payslip.</span></div>
+      </section>
+
+      <section class="portal-section dashboard-panel" id="bank-details">
+        <div class="portal-block-head"><h2>Bank Details</h2><span>Salary credit account on file</span></div>
+        <form class="certificate-form" id="bankDetailsForm">
+          <label>Account Holder Name
+            <input type="text" id="bankAccountHolder" required>
+          </label>
+          <label>Bank Name
+            <input type="text" id="bankName" required>
+          </label>
+          <label>Account Number
+            <input type="text" id="bankAccountNumber" required>
+          </label>
+          <label>IFSC Code
+            <input type="text" id="bankIfsc" required>
+          </label>
+          <label>Branch
+            <input type="text" id="bankBranch" required>
+          </label>
+          <button class="payment-open-button" type="submit">Save Bank Details</button>
+          <p class="portal-feedback is-hidden" id="bankDetailsFeedback"></p>
+        </form>
+      </section>
+
+      <section class="portal-section dashboard-panel" id="form16">
+        <div class="portal-block-head"><h2>Form 16</h2><span>Annual tax statement</span></div>
+        <form class="certificate-form" id="form16Form">
+          <label>Select Financial Year
+            <select id="form16YearSelect" required></select>
+          </label>
+          <button class="payment-open-button" type="submit">Download Form 16</button>
+        </form>
+      </section>
+    </main>
+
+    <div class="modal-overlay is-hidden" id="calendarEventModalOverlay">
+      <div class="modal-box calendar-event-modal">
+        <div class="modal-head">
+          <div class="calendar-event-modal-title">
+            <span class="calendar-event-modal-dot" id="calendarEventModalDot"></span>
+            <h3 id="calendarEventModalTitle"></h3>
+          </div>
+          <div class="calendar-event-modal-actions">
+            <button type="button" id="calendarEventModalDelete" class="is-hidden" aria-label="Delete reminder" title="Delete">
+              <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h16M9 7V4h6v3M6 7l1 13h10l1-13"/></svg>
+            </button>
+            <button type="button" id="calendarEventModalClose" aria-label="Close">&times;</button>
+          </div>
+        </div>
+        <p id="calendarEventModalDate"></p>
+        <p id="calendarEventModalDescription"></p>
+      </div>
+    </div>
+
+    <div class="gprecian" aria-live="polite">
+      <section class="gprecian-panel" aria-label="GPRECian non-teaching staff help chat">
+        <div class="gprecian-head">
+          <div class="gprecian-title">
+            <span class="gprecian-avatar bot-avatar"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m4 6 8-3 8 3-8 3zM7 8v3M17 8v3M9 12a3 3 0 1 0 6 0M5 21c.7-3.2 3.4-5 7-5s6.3 1.8 7 5"/></svg></span>
+            <div>
+              <strong>GPRECian Bot</strong>
+              <span>AI staff help</span>
+            </div>
+          </div>
+          <div class="gprecian-actions">
+            <button class="gprecian-expand" type="button" aria-label="Expand chat window"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M15 3h6v6M9 21H3v-6M21 3l-7 7M3 21l7-7"/></svg></button>
+            <button class="gprecian-close" type="button" aria-label="Close GPRECian chat">×</button>
+          </div>
+        </div>
+        <div class="gprecian-welcome" id="gprecianWelcome">
+          <p class="gprecian-welcome-greeting" id="gprecianWelcomeGreeting">Hello</p>
+          <p class="gprecian-welcome-question">How can I help you today?</p>
+          <p class="gprecian-welcome-subtext">Ask me about your leave status, or set a reminder.</p>
+          <div class="gprecian-chips" aria-label="Suggested questions">
+            <button type="button" data-question="leave status">Leave Status</button>
+            <button type="button" data-question="set a reminder">Set a Reminder</button>
+          </div>
+        </div>
+        <div class="gprecian-messages is-hidden"></div>
+        <form class="gprecian-form">
+          <input type="text" aria-label="Ask GPRECian a question" placeholder="Ask a question..." autocomplete="off" id="gprecianInput">
+          <button type="submit" aria-label="Send message"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"/></svg></button>
+          <div class="gprecian-suggestions is-hidden" id="gprecianSuggestions"></div>
+        </form>
+        <p class="gprecian-disclaimer">AI-generated answers may be inaccurate - verify important details with the college.</p>
+      </section>
+      <button class="gprecian-toggle" type="button" aria-label="Open GPRECian chat">
+        <span><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m4 6 8-3 8 3-8 3zM7 8v3M17 8v3M9 12a3 3 0 1 0 6 0M5 21c.7-3.2 3.4-5 7-5s6.3 1.8 7 5"/></svg></span>
+        <strong>GPRECian Bot</strong>
+      </button>
+    </div>
+
+    <script src="../script.js"></script>
+  </body>
+</html>

@@ -1,0 +1,93 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Assignment Submission | GPREC</title>
+    <meta name="description" content="Demo assignment detail and submission page for GPREC student portal.">
+    <link rel="icon" href="https://www.gprec.ac.in/wp-content/uploads/2017/08/fav.png" sizes="32x32">
+    <link rel="stylesheet" href="../styles.css">
+  </head>
+  <body class="student-portal-page assignment-page">
+    <header class="student-topbar">
+      <a class="student-brand" href="../dashboards/student-dashboard.html">
+        <img src="../gprec-logo-enhanced.png" alt="G Pulla Reddy Engineering College">
+      </a>
+      <div class="student-user">
+        <div class="notification-bell-wrap">
+          <button type="button" class="notification-bell" id="notificationBellButton" aria-label="Notifications">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 8a6 6 0 1 1 12 0c0 4 1.5 5.5 2 6H4c.5-.5 2-2 2-6Z"/><path d="M10 20a2 2 0 0 0 4 0"/></svg>
+            <span class="notification-badge is-hidden" id="notificationBadge">0</span>
+          </button>
+          <div class="notification-dropdown is-hidden" id="notificationDropdown">
+            <div class="notification-dropdown-head">Notifications</div>
+            <div id="notificationList"></div>
+          </div>
+        </div>
+        <div class="student-user-menu">
+          <span class="student-user-avatar">SC</span>
+          <button type="button" class="student-user-toggle" aria-label="Account menu" aria-expanded="false">
+            <span class="student-user-name-block">
+              <strong>Sai Chandan</strong>
+              <small id="dashboardStudentId">20X51A0501</small>
+            </span>
+          </button>
+          <div class="student-user-dropdown">
+            <a href="../dashboards/student-dashboard.html">Dashboard</a>
+          </div>
+        </div>
+      </div>
+    </header>
+
+    <main class="assignment-layout">
+      <a class="detail-back-link" href="../dashboards/student-dashboard.html#academics">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M19 12H5M11 18l-6-6 6-6"/></svg>
+        Back
+      </a>
+
+      <section class="assignment-detail-card">
+        <p class="eyebrow" id="assignmentEyebrow">Assignment</p>
+        <h1 id="assignmentTitle">-</h1>
+        <p id="assignmentDescription">-</p>
+        <div class="assignment-meta">
+          <div><span>Teacher</span><strong id="assignmentTeacher">-</strong></div>
+          <div><span>Class</span><strong>CSE III-A</strong></div>
+          <div><span>Due Date</span><strong id="assignmentDueDate">-</strong></div>
+          <div><span>Status</span><strong id="assignmentStatus">Not submitted</strong></div>
+        </div>
+        <div class="assignment-instructions">
+          <h2>Instructions</h2>
+          <ul>
+            <li>Upload PDF, document, presentation, images, or ZIP containing your answers.</li>
+            <li>Add a photo of handwritten rough work if required.</li>
+            <li>You can upload multiple files with this submission form.</li>
+          </ul>
+        </div>
+        <div class="assignment-attachments is-hidden" id="assignmentAttachments">
+          <h2>Assignment attachment</h2>
+          <a id="assignmentDocumentLink" download>-</a>
+        </div>
+      </section>
+
+      <section class="assignment-submit-card">
+        <h2>Submit Assignment</h2>
+        <form class="assignment-form" id="assignmentSubmitForm">
+          <p class="portal-note" id="assignmentFileNameSuggestion">-</p>
+          <label>Upload documents
+            <input type="file" id="assignmentDocuments" multiple accept=".pdf,.doc,.docx,.ppt,.pptx,.zip,.jpg,.jpeg,.png">
+          </label>
+          <label>Add assignment photos
+            <input type="file" id="assignmentPhotos" multiple accept="image/*">
+          </label>
+          <label>Submission comments
+            <textarea rows="5" id="assignmentComment" placeholder="Add comments for teacher..."></textarea>
+          </label>
+          <button type="submit">Submit Assignment</button>
+          <p class="portal-feedback is-hidden" id="assignmentSubmitFeedback"></p>
+        </form>
+      </section>
+    </main>
+
+    <script src="../script.js"></script>
+  </body>
+</html>

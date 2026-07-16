@@ -1,0 +1,49 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Non-Teaching Staff Login | GPREC</title>
+    <meta name="description" content="GPREC non-teaching staff login using official college Gmail credentials.">
+    <link rel="icon" href="https://www.gprec.ac.in/wp-content/uploads/2017/08/fav.png" sizes="32x32">
+    <link rel="stylesheet" href="../styles.css">
+  </head>
+  <body class="login-page">
+    <svg class="icon-sprite" aria-hidden="true" focusable="false">
+      <symbol id="icon-briefcase" viewBox="0 0 24 24"><path d="M10 6V5a2 2 0 0 1 2-2h0a2 2 0 0 1 2 2v1M4 8h16v11H4zM4 12h16M10 12v2h4v-2"/></symbol>
+    </svg>
+    <header class="login-header">
+      <a class="login-brand" href="../index.html"><img src="../gprec-logo-enhanced.png" alt="G Pulla Reddy Engineering College"></a>
+      <a class="login-home" href="../index.html"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m3 11 9-8 9 8M5 10v11h14V10M9 21v-6h6v6"/></svg>Home</a>
+    </header>
+    <main class="role-login-main">
+      <section class="role-login-copy">
+        <p class="eyebrow">Non-Teaching Staff Portal</p>
+        <h1>Office, library, accounts, and support staff access.</h1>
+        <p>Use your official college Gmail to apply for leave, track its approval status, and view your calendar of duty dates.</p>
+        <div class="role-points">
+          <span>Leave application</span>
+          <span>Approval status</span>
+          <span>Calendar & reminders</span>
+        </div>
+      </section>
+      <article class="portal-card role-login-card faculty-portal">
+        <div class="portal-head">
+          <span><svg><use href="#icon-briefcase"></use></svg></span>
+          <div>
+            <h3>Non-Teaching Staff Login</h3>
+            <p>Use official college Gmail credentials.</p>
+          </div>
+        </div>
+        <form class="portal-form non-teaching-login-form">
+          <label>College Gmail<input type="email" id="nonTeachingLoginEmail" placeholder="name@gprec.ac.in" autocomplete="username"></label>
+          <label>Password<input type="password" id="nonTeachingLoginPassword" placeholder="Enter password" autocomplete="current-password"></label>
+          <label><span>Security Check (<span class="captcha-question">? + ?</span>)</span><input type="text" class="captcha-input" inputmode="numeric" autocomplete="off" placeholder="Enter the sum"></label>
+          <button type="submit">Login as Staff</button>
+          <p class="auth-switch"><a href="forgot-password.html?role=non_teaching">Forgot password?</a></p>
+        </form>
+      </article>
+    </main>
+    <script src="../script.js"></script>
+  </body>
+</html>

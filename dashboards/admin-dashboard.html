@@ -1,0 +1,2072 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Admin Dashboard | GPREC</title>
+    <meta name="description" content="GPREC college admin dashboard for users & access, approvals, notices, and reports.">
+    <link rel="icon" href="https://www.gprec.ac.in/wp-content/uploads/2017/08/fav.png" sizes="32x32">
+    <link rel="stylesheet" href="../styles.css">
+  </head>
+  <body class="admin-dashboard-page">
+    <header class="student-topbar admin-topbar">
+      <a class="student-brand" href="../index.html">
+        <img src="../gprec-logo-enhanced.png" alt="G Pulla Reddy Engineering College">
+      </a>
+      <div class="student-user">
+        <div class="notification-bell-wrap">
+          <button type="button" class="notification-bell" id="notificationBellButton" aria-label="Notifications">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 8a6 6 0 1 1 12 0c0 4 1.5 5.5 2 6H4c.5-.5 2-2 2-6Z"/><path d="M10 20a2 2 0 0 0 4 0"/></svg>
+            <span class="notification-badge is-hidden" id="notificationBadge">0</span>
+          </button>
+          <div class="notification-dropdown is-hidden" id="notificationDropdown">
+            <div class="notification-dropdown-head">Notifications</div>
+            <div id="notificationList"></div>
+          </div>
+        </div>
+        <div class="notification-bell-wrap app-drawer-wrap is-hidden">
+          <button type="button" class="notification-bell app-drawer-button" id="appDrawerButton" aria-label="Apps">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><rect class="app-switcher-frame" x="4.5" y="4.5" width="15" height="15" rx="4.5"/><path class="app-switcher-dots" d="M9 9h.01M15 9h.01M9 15h.01M15 15h.01"/><path class="app-switcher-spark" d="M18.5 5.5v3M17 7h3"/></svg>
+          </button>
+          <div class="notification-dropdown app-drawer-dropdown is-hidden" id="appDrawerDropdown">
+            <div class="notification-dropdown-head">Apps</div>
+            <a class="app-drawer-link" href="event-management-dashboard.html">
+              <span class="app-drawer-link-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 3v4M17 3v4M4 8h16M5 5h14a1 1 0 0 1 1 1v14H4V6a1 1 0 0 1 1-1Z"/><path d="M8 12h3M8 16h8"/></svg></span>
+              <span class="app-drawer-link-copy"><strong>Event Manager</strong><small>Fest activities & posters</small></span>
+              <span class="app-drawer-link-arrow" aria-hidden="true">›</span>
+            </a>
+          </div>
+        </div>
+        <div class="student-user-menu">
+          <span class="student-user-avatar">AD</span>
+          <button type="button" class="student-user-toggle" aria-label="Account menu" aria-expanded="false">
+            <span class="student-user-name-block">
+              <strong id="adminRoleName">College Admin</strong>
+              <small>GPREC Administration</small>
+            </span>
+          </button>
+          <div class="student-user-dropdown">
+            <a href="../logins/admin-login.html">Logout</a>
+          </div>
+        </div>
+      </div>
+    </header>
+
+    <main class="admin-shell">
+      <aside class="admin-sidebar">
+        <div class="student-menu-title">
+          <strong>Admin Console</strong>
+          <button type="button" class="menu-collapse-toggle" id="menuCollapseToggle" aria-label="Collapse menu">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M15 5 9 12l6 7"/></svg>
+          </button>
+        </div>
+        <div class="admin-nav active" data-admin-target="#admin-overview" title="Overview" role="button" tabindex="0"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="3" width="8" height="8" rx="1"/><rect x="13" y="3" width="8" height="8" rx="1"/><rect x="3" y="13" width="8" height="8" rx="1"/><rect x="13" y="13" width="8" height="8" rx="1"/></svg><span class="admin-nav-text">Overview</span></div>
+        <div class="admin-nav" data-admin-target="#calendar" title="Calendar" role="button" tabindex="0"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="4" y="5" width="16" height="15" rx="2"/><path d="M4 10h16M8 3v4M16 3v4"/></svg><span class="admin-nav-text">Calendar</span></div>
+        <div class="admin-nav" data-admin-target="#campus-events-content" title="Campus Events" role="button" tabindex="0"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 3v4M17 3v4M4 8h16M5 5h14a1 1 0 0 1 1 1v14H4V6a1 1 0 0 1 1-1Z"/><path d="M8 12h3M8 16h8"/></svg><span class="admin-nav-text">Campus Events</span></div>
+        <div class="admin-nav" data-admin-target="#contact-messages" title="Contact Messages" role="button" tabindex="0"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 6h16v12H4zM4 7l8 6 8-6"/></svg><span class="admin-nav-text">Contact Messages</span></div>
+        <div class="admin-nav" data-admin-target="#data-integrations" title="Data Integrations" role="button" tabindex="0"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 7V5a2 2 0 0 1 2-2h2M17 3h2a2 2 0 0 1 2 2v2M21 17v2a2 2 0 0 1-2 2h-2M7 21H5a2 2 0 0 1-2-2v-2"/></svg><span class="admin-nav-text">Data Integrations</span></div>
+        <div class="admin-nav" data-admin-target="#feature-ideas" data-admin-roles="College Admin" title="Feature Ideas" role="button" tabindex="0"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 21h6M10 17h4M8.2 14.2a6 6 0 1 1 7.6 0c-.9.7-1.3 1.6-1.4 2.8H9.6c-.1-1.2-.5-2.1-1.4-2.8Z"/></svg><span class="admin-nav-text">Feature Ideas</span></div>
+        <div class="admin-nav" data-admin-target="#fee-management" title="Fee Management" role="button" tabindex="0"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg><span class="admin-nav-text">Fee Management</span></div>
+        <div class="admin-nav" data-admin-target="#hod-leave-approvals" title="HOD Leave Requests" role="button" tabindex="0"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="4" y="5" width="16" height="15" rx="2"/><path d="M4 10h16M8 3v4M16 3v4"/></svg><span class="admin-nav-text">HOD Leave Requests</span></div>
+        <div class="admin-nav" data-admin-target="#media" title="Media" role="button" tabindex="0"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="4" width="18" height="16" rx="2"/><circle cx="8.5" cy="9.5" r="1.5"/><path d="m4 17 5-5 4 4 3-3 4 4"/></svg><span class="admin-nav-text">Media</span></div>
+        <div class="admin-nav" data-admin-target="#staff-leave-approvals" data-admin-roles="College Admin" title="Non-Teaching Staff Leave" role="button" tabindex="0"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="4" y="5" width="16" height="15" rx="2"/><path d="M4 10h16M8 3v4M16 3v4"/></svg><span class="admin-nav-text">Non-Teaching Staff Leave</span></div>
+        <div class="admin-nav" data-admin-target="#notices-content" title="Notices" role="button" tabindex="0"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 2h9l5 5v15H6Z"/><path d="M15 2v5h5"/></svg><span class="admin-nav-text">Notices</span></div>
+        <div class="admin-nav" data-admin-target="#reports-audit" title="Reports & Audit" role="button" tabindex="0"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 20V10"/><path d="M10 20V4"/><path d="M16 20v-7"/><path d="M22 20H2"/></svg><span class="admin-nav-text">Reports & Audit</span></div>
+        <div class="admin-nav" data-admin-target="#site-maintenance" data-admin-roles="College Admin" title="Site Maintenance" role="button" tabindex="0"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94z"/></svg><span class="admin-nav-text">Site Maintenance</span></div>
+        <div class="admin-nav" data-admin-target="#transportation-admin" data-admin-roles="College Admin" title="Transportation" role="button" tabindex="0"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="7" width="18" height="10" rx="2"/><circle cx="7.5" cy="17" r="1.5"/><circle cx="16.5" cy="17" r="1.5"/><path d="M3 11h18"/></svg><span class="admin-nav-text">Transportation</span></div>
+        <div class="admin-nav" data-admin-target="#users-access" title="Users & Access" role="button" tabindex="0"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="9" cy="8" r="3"/><path d="M2 20c0-3 3-5 7-5s7 2 7 5"/><circle cx="17" cy="8" r="3"/><path d="M14 15c3 .3 5 2 5 5"/></svg><span class="admin-nav-text">Users & Access</span></div>
+        <div class="admin-nav" data-admin-target="#web-page-content" title="Web Page Content" role="button" tabindex="0"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 5h16v14H4zM4 9h16M8 5v4"/></svg><span class="admin-nav-text">Web Page Content</span></div>
+        <div class="admin-nav" data-admin-target="#webinars-content" title="Webinars" role="button" tabindex="0"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="6" width="14" height="12" rx="2"/><path d="m17 10 4-3v10l-4-3"/></svg><span class="admin-nav-text">Webinars</span></div>
+      </aside>
+
+      <section class="admin-workspace">
+        <section class="admin-panel is-active" id="admin-overview">
+          <div class="admin-hero">
+            <div>
+              <p class="eyebrow">Role Based Admin</p>
+              <h1>GPREC Operations Console</h1>
+              <p>Manage departments, academic data, notices, student records, users, and audit reports from one dashboard.</p>
+            </div>
+            <span id="adminRoleBadge">College Admin</span>
+          </div>
+          <div class="admin-metric-grid">
+            <article><strong id="adminOverviewStudentCount">0</strong><span>Active students</span></article>
+            <article><strong id="adminOverviewFacultyStaffCount">0</strong><span>Faculty &amp; staff</span></article>
+            <article><strong id="adminOverviewUserCount">0</strong><span>Admin users</span></article>
+            <article><strong id="adminOverviewDeptCount">0</strong><span>Departments</span></article>
+          </div>
+          <article class="admin-card">
+            <h2>System Health</h2>
+            <div class="status-list">
+              <span><strong>Student Portal</strong> Online</span>
+              <span><strong>Payments</strong> Demo gateway active</span>
+              <span><strong>Data Sync</strong> Last sync 09:30 AM</span>
+            </div>
+          </article>
+          <div class="admin-table-card">
+            <h3>Portal Dashboards</h3>
+            <p>Every role-based dashboard in this portal, at a glance.</p>
+            <table>
+              <thead><tr><th>Dashboard</th><th>For</th><th>Users</th><th></th></tr></thead>
+              <tbody id="portalDashboardsOverviewBody"></tbody>
+            </table>
+          </div>
+          <div class="admin-table-card">
+            <h3>Data Integrations</h3>
+            <p>Every external system this portal connects to, at a glance. Configure these under Users &amp; Access &gt; Data Integrations.</p>
+            <table>
+              <thead><tr><th>Integration</th><th>Status</th></tr></thead>
+              <tbody id="integrationsOverviewBody"></tbody>
+            </table>
+          </div>
+        </section>
+
+        <section class="admin-panel" id="site-maintenance">
+          <div class="admin-section-head">
+            <div><p class="eyebrow">Site Maintenance</p><h2>Take the public website and dashboards offline for everyone except admins.</h2></div>
+          </div>
+          <article class="admin-card admin-form-card">
+            <h3>Maintenance Notice</h3>
+            <p>Show a heads-up banner before you actually turn maintenance on, so visitors get advance warning instead of being surprised by the block screen. Pick which pages show it below.</p>
+            <div class="admin-table-card">
+              <table>
+                <thead><tr><th>Section</th><th>Show Notice</th></tr></thead>
+                <tbody id="maintenanceNoticeZoneGrid">
+                  <tr>
+                    <td><strong>All (entire site)</strong></td>
+                    <td class="toggle-cell"><label class="toggle-switch toggle-switch-right"><input type="checkbox" id="maintenanceNoticeZoneAll" aria-label="Show notice on the entire site"><span class="toggle-slider"></span></label></td>
+                  </tr>
+                  <tr>
+                    <td>Public Website</td>
+                    <td class="toggle-cell"><label class="toggle-switch toggle-switch-right"><input type="checkbox" data-notice-zone="publicSite" aria-label="Show notice on Public Website"><span class="toggle-slider"></span></label></td>
+                  </tr>
+                  <tr>
+                    <td>Student Dashboard</td>
+                    <td class="toggle-cell"><label class="toggle-switch toggle-switch-right"><input type="checkbox" data-notice-zone="student" aria-label="Show notice on Student Dashboard"><span class="toggle-slider"></span></label></td>
+                  </tr>
+                  <tr>
+                    <td>Faculty Dashboard</td>
+                    <td class="toggle-cell"><label class="toggle-switch toggle-switch-right"><input type="checkbox" data-notice-zone="faculty" aria-label="Show notice on Faculty Dashboard"><span class="toggle-slider"></span></label></td>
+                  </tr>
+                  <tr>
+                    <td>Parent Dashboard</td>
+                    <td class="toggle-cell"><label class="toggle-switch toggle-switch-right"><input type="checkbox" data-notice-zone="parent" aria-label="Show notice on Parent Dashboard"><span class="toggle-slider"></span></label></td>
+                  </tr>
+                  <tr>
+                    <td>Alumni Dashboard</td>
+                    <td class="toggle-cell"><label class="toggle-switch toggle-switch-right"><input type="checkbox" data-notice-zone="alumni" aria-label="Show notice on Alumni Dashboard"><span class="toggle-slider"></span></label></td>
+                  </tr>
+                  <tr>
+                    <td>Placement Dashboard</td>
+                    <td class="toggle-cell"><label class="toggle-switch toggle-switch-right"><input type="checkbox" data-notice-zone="placement" aria-label="Show notice on Placement Dashboard"><span class="toggle-slider"></span></label></td>
+                  </tr>
+                  <tr>
+                    <td>Exam Cell Dashboard</td>
+                    <td class="toggle-cell"><label class="toggle-switch toggle-switch-right"><input type="checkbox" data-notice-zone="examCell" aria-label="Show notice on Exam Cell Dashboard"><span class="toggle-slider"></span></label></td>
+                  </tr>
+                  <tr>
+                    <td>Hostel Dashboard</td>
+                    <td class="toggle-cell"><label class="toggle-switch toggle-switch-right"><input type="checkbox" data-notice-zone="hostel" aria-label="Show notice on Hostel Dashboard"><span class="toggle-slider"></span></label></td>
+                  </tr>
+                  <tr>
+                    <td>Department Dashboard</td>
+                    <td class="toggle-cell"><label class="toggle-switch toggle-switch-right"><input type="checkbox" data-notice-zone="department" aria-label="Show notice on Department Dashboard"><span class="toggle-slider"></span></label></td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+            <label>Notice text<textarea id="maintenanceNoticeMessage" rows="2" placeholder="Heads up: this site will be down for maintenance on Sunday, 10 PM - 2 AM."></textarea></label>
+            <div class="maintenance-message-chips" data-chip-target="maintenanceNoticeMessage" role="group" aria-label="Suggested notice messages">
+              <button type="button" data-maintenance-message="Heads up: this site will be down for scheduled maintenance soon. Please save your work.">Heads up</button>
+              <button type="button" data-maintenance-message="We'll be performing maintenance shortly. Some features may be temporarily unavailable.">Maintenance shortly</button>
+              <button type="button" data-maintenance-message="Scheduled maintenance is coming up. The site may be briefly unavailable.">Scheduled soon</button>
+              <button type="button" data-maintenance-message="This site will undergo maintenance soon. We'll be back before you know it.">Back soon</button>
+            </div>
+            <button type="button" id="saveMaintenanceNoticeButton">Save Notice</button>
+            <p class="portal-feedback" id="maintenanceNoticeFeedback" aria-live="polite"></p>
+          </article>
+
+          <article class="admin-card admin-form-card">
+            <h3>Maintenance Mode</h3>
+            <p>Turn maintenance on for the whole site, or just the parts you're working on. You stay signed in as admin and can still browse everywhere to check your changes - everyone else sees the maintenance screen only on the sections turned on below.</p>
+            <div class="admin-table-card">
+              <table>
+                <thead><tr><th>Section</th><th>Maintenance</th></tr></thead>
+                <tbody id="maintenanceZoneGrid">
+                  <tr>
+                    <td><strong>All (entire site)</strong></td>
+                    <td class="toggle-cell"><label class="toggle-switch toggle-switch-right"><input type="checkbox" id="maintenanceZoneAll" aria-label="Toggle maintenance for the entire site"><span class="toggle-slider"></span></label></td>
+                  </tr>
+                  <tr>
+                    <td>Public Website</td>
+                    <td class="toggle-cell"><label class="toggle-switch toggle-switch-right"><input type="checkbox" data-maintenance-zone="publicSite" aria-label="Toggle maintenance for Public Website"><span class="toggle-slider"></span></label></td>
+                  </tr>
+                  <tr>
+                    <td>Student Dashboard</td>
+                    <td class="toggle-cell"><label class="toggle-switch toggle-switch-right"><input type="checkbox" data-maintenance-zone="student" aria-label="Toggle maintenance for Student Dashboard"><span class="toggle-slider"></span></label></td>
+                  </tr>
+                  <tr>
+                    <td>Faculty Dashboard</td>
+                    <td class="toggle-cell"><label class="toggle-switch toggle-switch-right"><input type="checkbox" data-maintenance-zone="faculty" aria-label="Toggle maintenance for Faculty Dashboard"><span class="toggle-slider"></span></label></td>
+                  </tr>
+                  <tr>
+                    <td>Parent Dashboard</td>
+                    <td class="toggle-cell"><label class="toggle-switch toggle-switch-right"><input type="checkbox" data-maintenance-zone="parent" aria-label="Toggle maintenance for Parent Dashboard"><span class="toggle-slider"></span></label></td>
+                  </tr>
+                  <tr>
+                    <td>Alumni Dashboard</td>
+                    <td class="toggle-cell"><label class="toggle-switch toggle-switch-right"><input type="checkbox" data-maintenance-zone="alumni" aria-label="Toggle maintenance for Alumni Dashboard"><span class="toggle-slider"></span></label></td>
+                  </tr>
+                  <tr>
+                    <td>Placement Dashboard</td>
+                    <td class="toggle-cell"><label class="toggle-switch toggle-switch-right"><input type="checkbox" data-maintenance-zone="placement" aria-label="Toggle maintenance for Placement Dashboard"><span class="toggle-slider"></span></label></td>
+                  </tr>
+                  <tr>
+                    <td>Exam Cell Dashboard</td>
+                    <td class="toggle-cell"><label class="toggle-switch toggle-switch-right"><input type="checkbox" data-maintenance-zone="examCell" aria-label="Toggle maintenance for Exam Cell Dashboard"><span class="toggle-slider"></span></label></td>
+                  </tr>
+                  <tr>
+                    <td>Hostel Dashboard</td>
+                    <td class="toggle-cell"><label class="toggle-switch toggle-switch-right"><input type="checkbox" data-maintenance-zone="hostel" aria-label="Toggle maintenance for Hostel Dashboard"><span class="toggle-slider"></span></label></td>
+                  </tr>
+                  <tr>
+                    <td>Department Dashboard</td>
+                    <td class="toggle-cell"><label class="toggle-switch toggle-switch-right"><input type="checkbox" data-maintenance-zone="department" aria-label="Toggle maintenance for Department Dashboard"><span class="toggle-slider"></span></label></td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+            <label>Message shown to visitors (optional)<textarea id="maintenanceModeMessage" rows="2" placeholder="We're temporarily offline for maintenance. We'll be back online shortly."></textarea></label>
+            <div class="maintenance-message-chips" data-chip-target="maintenanceModeMessage" role="group" aria-label="Suggested maintenance messages">
+              <button type="button" data-maintenance-message="We're temporarily offline for maintenance. We'll be back online shortly.">Temporarily offline</button>
+              <button type="button" data-maintenance-message="We're upgrading our systems right now. We'll be back shortly.">System upgrade</button>
+              <button type="button" data-maintenance-message="This section is temporarily unavailable while we make improvements.">Temporarily unavailable</button>
+              <button type="button" data-maintenance-message="We're fixing a few issues right now. Thanks for your patience - we'll be back soon.">Fixing an issue</button>
+            </div>
+            <button type="button" id="saveMaintenanceModeButton">Save</button>
+            <p class="portal-feedback" id="maintenanceModeFeedback" aria-live="polite"></p>
+          </article>
+        </section>
+
+        <section class="admin-panel" id="feature-ideas">
+          <div class="admin-section-head">
+            <div><p class="eyebrow">Feature Ideas</p><h2>Describe a feature in plain English and AI drafts an approach and starter code for a developer to review.</h2></div>
+          </div>
+          <article class="admin-card admin-form-card">
+            <h3>Ask AI to Draft a Feature</h3>
+            <p>This does not change the live site by itself. It suggests an approach and a short code snippet that you or your developer can review and add in manually.</p>
+            <label>Describe the feature<textarea id="featureIdeaInput" rows="3" placeholder="e.g. Add a dark mode toggle to the site"></textarea></label>
+            <div class="maintenance-message-chips" data-chip-target="featureIdeaInput" role="group" aria-label="Suggested feature ideas">
+              <button type="button" data-maintenance-message="Add a dark mode toggle to the site, matching the existing navy/orange color scheme.">Dark mode toggle</button>
+              <button type="button" data-maintenance-message="Add a countdown banner on the homepage showing days left until the admissions deadline.">Admissions countdown</button>
+              <button type="button" data-maintenance-message="Add a print button on the student fee receipt so students can print or save it as a PDF.">Print fee receipt</button>
+              <button type="button" data-maintenance-message="Add a FAQ accordion section to the Admissions page for common questions.">FAQ accordion</button>
+              <button type="button" data-maintenance-message="Add an export-to-CSV button for the Admin Users table.">Export admin users CSV</button>
+            </div>
+            <button type="button" id="featureIdeaAskButton">Ask AI</button>
+            <p class="portal-feedback" id="featureIdeaFeedback" aria-live="polite"></p>
+            <div class="feature-idea-result is-hidden" id="featureIdeaResult">
+              <h4>Suggested Approach, File(s), and Code</h4>
+              <div id="featureIdeaOutput"></div>
+            </div>
+          </article>
+        </section>
+
+        <section class="admin-panel" id="calendar">
+          <div class="admin-section-head">
+            <div><p class="eyebrow">Calendar</p><h2>Academic dates and reminders shown on the student and faculty dashboards.</h2></div>
+          </div>
+          <div class="calendar-layout">
+            <div class="calendar-card">
+              <div class="calendar-nav">
+                <button type="button" id="calendarTodayButton">Today</button>
+                <div class="calendar-nav-arrows">
+                  <button type="button" id="calendarPrevMonth" aria-label="Previous month">&#8249;</button>
+                  <strong id="calendarMonthLabel"></strong>
+                  <button type="button" id="calendarNextMonth" aria-label="Next month">&#8250;</button>
+                </div>
+                <div class="calendar-view-select">
+                  <button type="button" id="calendarViewToggle" aria-haspopup="true" aria-expanded="false">
+                    <span id="calendarViewLabel">Month</span>
+                    <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg>
+                  </button>
+                  <div class="calendar-view-menu is-hidden" id="calendarViewMenu">
+                    <button type="button" data-calendar-view="day">Day<span>D</span></button>
+                    <button type="button" data-calendar-view="week">Week<span>W</span></button>
+                    <button type="button" data-calendar-view="month" class="active">Month<span>M</span></button>
+                    <button type="button" data-calendar-view="year">Year<span>Y</span></button>
+                    <button type="button" data-calendar-view="schedule">Schedule<span>A</span></button>
+                  </div>
+                </div>
+              </div>
+              <div class="calendar-weekdays">
+                <span>Sun</span><span>Mon</span><span>Tue</span><span>Wed</span><span>Thu</span><span>Fri</span><span>Sat</span>
+              </div>
+              <div class="calendar-grid" id="calendarGrid"></div>
+            </div>
+            <div class="calendar-side">
+              <article class="admin-card admin-form-card">
+                <h3>Add Reminder</h3>
+                <label>Type
+                  <select id="calendarReminderKind">
+                    <option value="reminder">Reminder</option>
+                    <option value="holiday-college">College Holiday</option>
+                  </select>
+                </label>
+                <label>Title<input type="text" id="calendarReminderTitle" placeholder="e.g. Admission deadline"></label>
+                <label>Date<input type="date" id="calendarReminderDate"></label>
+                <label>Time (optional)<input type="time" id="calendarReminderTime"></label>
+                <label>Description (optional)<textarea id="calendarReminderDescription" rows="2"></textarea></label>
+                <button type="button" id="calendarAddReminderButton">Add Reminder</button>
+                <p class="portal-feedback" id="calendarReminderFeedback" aria-live="polite"></p>
+              </article>
+            </div>
+          </div>
+        </section>
+
+        <section class="admin-panel" id="campus-events-content">
+          <div class="admin-section-head">
+            <div><p class="eyebrow">Campus Events</p><h2>Create student-facing events and export registered participants.</h2></div>
+          </div>
+          <article class="admin-card admin-form-card">
+            <h3>Create Campus Event</h3>
+            <div class="admin-add-grid">
+              <label>Title<input type="text" id="campusEventTitleInput" placeholder="e.g. TechnoVision 2026"></label>
+              <label>Date<input type="date" id="campusEventDateInput"></label>
+              <label>Time (optional)<input type="time" id="campusEventTimeInput"></label>
+              <label>Venue<input type="text" id="campusEventVenueInput" placeholder="e.g. Main Auditorium"></label>
+              <label>Registration Fee (optional)<input type="number" class="no-number-spinner" id="campusEventFeeInput" min="0" step="1" value="0" placeholder="Leave 0 for free"></label>
+              <label>Faculty Head Email<input type="email" id="campusEventFacultyHeadInput" placeholder="e.g. ramesh.cse@gprec.ac.in"></label>
+              <label>Registration Capacity (optional)<input type="number" class="no-number-spinner" id="campusEventCapacityInput" min="0" step="1" placeholder="Leave blank for unlimited"></label>
+              <label>Event Manager Name<input type="text" id="campusEventManagerNameInput" placeholder="e.g. Event Coordinator"></label>
+              <label>Manager Email<input type="email" id="campusEventManagerEmailInput" placeholder="e.g. events@gprec.ac.in"></label>
+              <label>Manager Phone<input type="tel" id="campusEventManagerPhoneInput" placeholder="Payment/pass support number"></label>
+              <label>Homepage Banner Start (optional)<input type="date" id="campusEventBannerStartInput"></label>
+              <label>Homepage Banner End (optional)<input type="date" id="campusEventBannerEndInput"></label>
+            </div>
+            <label>Description<textarea id="campusEventDescriptionInput" placeholder="What is this event about?"></textarea></label>
+            <label class="declaration-check"><input type="checkbox" id="campusEventPublicInput"><span>Open to outside colleges (public registration, no GPREC login required - paid events use the PayU link set up in Settings)</span></label>
+            <button type="button" id="campusEventAddButton">Publish Event</button>
+            <p class="admin-add-feedback" id="campusEventAddFeedback" aria-live="polite"></p>
+          </article>
+          <div class="admin-table-card">
+            <h3>Published Events</h3>
+            <button type="button" id="campusEventExportAllButton">Export All Check-Ins</button>
+            <table>
+              <thead><tr><th>Date</th><th>Event</th><th>Fee</th><th>Manager Contact</th><th>Registered</th><th>Export</th><th></th></tr></thead>
+              <tbody id="campusEventManagerBody"></tbody>
+            </table>
+            <p class="lookup-empty is-hidden" id="campusEventManagerEmpty">No campus events published yet.</p>
+          </div>
+        </section>
+
+        <section class="admin-panel" id="users-access">
+          <div class="admin-section-head">
+            <div><p class="eyebrow">Users & Access</p><h2>Role permissions and login controls.</h2></div>
+          </div>
+          <article class="admin-card admin-form-card main-admin-only" id="adminCreatorCard">
+            <h3>Add Admin User</h3>
+            <p>Only the main college admin can add new admin email IDs and assign roles.</p>
+            <div class="admin-add-grid">
+              <label>Name<input id="newAdminName" type="text" placeholder="Office / person name"></label>
+              <label>Email<input id="newAdminEmail" type="email" placeholder="name@gprec.ac.in"></label>
+              <label>Role
+                <select id="newAdminRole">
+                  <option>College Admin</option>
+                  <option>CSE Department Admin</option>
+                  <option>ECE Department Admin</option>
+                  <option>EEE Department Admin</option>
+                  <option>ME Department Admin</option>
+                  <option>CE Department Admin</option>
+                  <option>Boys Hostel Warden</option>
+                  <option>Girls Hostel Warden</option>
+                  <option>Event Volunteer</option>
+                </select>
+              </label>
+              <label>Department<input id="newAdminDepartment" type="text" placeholder="All / CSE / Boys Hostel"></label>
+              <label>Student Roll No (if this person is a student volunteer)<input id="newAdminStudentRoll" type="text" placeholder="e.g. 20X51A0501 - uses their existing photo"></label>
+              <label>Photo (optional, if not a student)<input id="newAdminPhoto" type="file" accept="image/*"></label>
+            </div>
+            <button id="addAdminButton" type="button">Add Admin</button>
+            <p class="admin-add-feedback" id="adminAddFeedback" aria-live="polite"></p>
+          </article>
+          <div class="admin-table-card">
+            <h3>Admin Users</h3>
+            <table>
+              <thead><tr><th>Name</th><th>Email</th><th>Role</th><th>Department</th><th>Status</th><th></th></tr></thead>
+              <tbody id="adminDirectoryBody">
+                <tr><td>Principal Office</td><td>admin@gprec.ac.in</td><td>College Admin</td><td>All</td><td><span class="ok">Active</span></td></tr>
+                <tr><td>CSE HOD Office</td><td>cse.admin@gprec.ac.in</td><td>Department Admin</td><td>CSE</td><td><span class="ok">Active</span></td></tr>
+              </tbody>
+            </table>
+          </div>
+          <article class="admin-card admin-form-card" id="credentialCreatorCard">
+            <h3>Manage Login Credentials</h3>
+            <p>Set or reset the login password for an admin, faculty, or non-teaching staff email. A secure password is generated for you to share with them - they'll be asked to choose their own on first login, and every 90 days after that.</p>
+            <div class="admin-add-grid">
+              <label>Role
+                <select id="credentialRoleType">
+                  <option value="admin">Admin</option>
+                  <option value="faculty">Faculty</option>
+                  <option value="non_teaching">Non-Teaching Staff</option>
+                </select>
+              </label>
+              <label>Email<input id="credentialEmail" type="email" placeholder="name@gprec.ac.in"></label>
+              <label>Recovery Mobile<input id="credentialMobile" type="tel" placeholder="Used to verify forgot-password requests"></label>
+            </div>
+            <button id="setCredentialButton" type="button">Generate &amp; Set Password</button>
+            <p class="admin-add-feedback" id="credentialAddFeedback" aria-live="polite"></p>
+          </article>
+          <div class="admin-table-card">
+            <h3>Login Credential Status</h3>
+            <table>
+              <thead><tr><th>Email</th><th>Role</th><th>Status</th><th>Password Set</th></tr></thead>
+              <tbody id="credentialStatusBody"></tbody>
+            </table>
+          </div>
+          <article class="admin-card admin-form-card" id="photoBulkUploadCard">
+            <h3>Profile Photos - Bulk Upload</h3>
+            <p>Select photo files named after the roll number (students, e.g. <code>20X51A0501.jpg</code>) or email (faculty, e.g. <code>ramesh.cse@gprec.ac.in.jpg</code>). Each file is matched by its filename and linked automatically - unmatched files are listed so you can rename and retry.</p>
+            <div class="admin-add-grid">
+              <label>Photos For
+                <select id="photoBulkRoleType">
+                  <option value="student">Students</option>
+                  <option value="faculty">Faculty</option>
+                </select>
+              </label>
+              <label>Photo Files<input type="file" id="photoBulkInput" accept="image/*" multiple></label>
+            </div>
+            <button type="button" id="photoBulkUploadButton">Upload &amp; Link Photos</button>
+            <p class="admin-add-feedback" id="photoBulkFeedback" aria-live="polite"></p>
+          </article>
+          <div class="admin-table-card" id="photoDirectoryCard">
+            <h3>Profile Photos</h3>
+            <div class="admin-add-grid">
+              <label>Show
+                <select id="photoDirectoryRoleType">
+                  <option value="student">Students</option>
+                  <option value="faculty">Faculty</option>
+                </select>
+              </label>
+              <label>Search<input type="text" id="photoDirectorySearch" placeholder="Search by roll no, name or email"></label>
+            </div>
+            <table>
+              <thead><tr><th>Photo</th><th>Name</th><th>ID / Email</th><th></th></tr></thead>
+              <tbody id="photoDirectoryBody"></tbody>
+            </table>
+            <input type="file" id="photoRowChangeInput" accept="image/*" class="is-hidden">
+          </div>
+        </section>
+
+        <section class="admin-panel" id="fee-management">
+          <div class="admin-section-head">
+            <div><p class="eyebrow">Fee Management</p><h2>Set base fee amounts and per-student tuition overrides.</h2></div>
+          </div>
+          <article class="admin-card admin-form-card">
+            <h3>Base Fee Amounts</h3>
+            <p>Change the default amount charged for each payment type across the student and alumni portals.</p>
+            <div class="admin-table-card">
+              <table>
+                <thead><tr><th>Fee Section</th><th>Application</th><th>Amount (Rs.)</th><th></th></tr></thead>
+                <tbody id="feeAmountBody"></tbody>
+              </table>
+            </div>
+          </article>
+          <article class="admin-card admin-form-card">
+            <h3>Bulk Update Due Fees (CSV Upload)</h3>
+            <p>Tuition Fee and Hostel Fee amounts vary per student, so they're set here instead of in Base Fee Amounts above. Upload a CSV file (export it from Excel with File &gt; Save As &gt; CSV) to set each student's total fee and amount already paid, in bulk - the pending (due) amount shown on their dashboard is calculated automatically as Total Fee minus Paid Amount. Columns, in order: <strong>Roll Number, Fee Type, Detail, Total Fee, Paid Amount, Application</strong> (use <code>semester-tuition</code> for Tuition, <code>room-rent</code> or <code>caution-deposit</code> for Hostel). Select the due date that applies to this whole file below before uploading. Uploading replaces the pending fees list for every roll number included in the file. Rows where Paid Amount already covers the Total Fee are skipped (nothing left due).</p>
+            <div class="admin-add-grid">
+              <label>Due Date for this Upload<input type="date" id="pendingFeeCsvDueDate"></label>
+              <label>CSV File<input type="file" id="pendingFeeCsvInput" accept=".csv"></label>
+            </div>
+            <button type="button" id="pendingFeeCsvUploadButton">Upload and Apply</button>
+            <button type="button" id="pendingFeeCsvSampleButton">Download Sample CSV</button>
+            <p class="admin-add-feedback" id="pendingFeeCsvFeedback" aria-live="polite"></p>
+            <div class="admin-table-card">
+              <table>
+                <thead><tr><th>Roll Number</th><th>Fee Type</th><th>Detail</th><th>Total Fee</th><th>Paid</th><th>Pending (Due)</th><th>Due Date</th><th></th></tr></thead>
+                <tbody id="pendingFeeOverrideBody"></tbody>
+              </table>
+              <p class="lookup-empty" id="pendingFeeOverrideEmpty">No bulk-uploaded pending fees yet.</p>
+            </div>
+          </article>
+        </section>
+
+        <section class="admin-panel" id="hod-leave-approvals">
+          <div class="admin-section-head">
+            <div><p class="eyebrow">HOD Leave Requests</p><h2>Approve or reject leave requests from Heads of Department.</h2></div>
+          </div>
+          <div class="admin-table-card">
+            <h3>All Requests</h3>
+            <table>
+              <thead><tr><th>HOD Name</th><th>Department</th><th>Leave Type</th><th>From</th><th>To</th><th>Reason</th><th>Status</th><th>Action</th></tr></thead>
+              <tbody id="hodLeaveApprovalsBody"></tbody>
+            </table>
+          </div>
+        </section>
+
+        <section class="admin-panel" id="staff-leave-approvals">
+          <div class="admin-section-head">
+            <div><p class="eyebrow">Non-Teaching Staff Leave</p><h2>Approve or reject leave requests from office, library, accounts, and support staff.</h2></div>
+          </div>
+          <div class="admin-table-card">
+            <h3>All Requests</h3>
+            <table>
+              <thead><tr><th>Name</th><th>Section</th><th>Leave Type</th><th>From</th><th>To</th><th>Reason</th><th>Status</th><th>Action</th></tr></thead>
+              <tbody id="staffLeaveApprovalsBody"></tbody>
+            </table>
+          </div>
+        </section>
+
+        <section class="admin-panel" id="transportation-admin">
+          <div class="admin-section-head">
+            <div><p class="eyebrow">Transportation</p><h2>Manage bus routes, buses, bus requests, and vehicle passes.</h2></div>
+          </div>
+
+          <article class="admin-card admin-form-card">
+            <h3>Add Bus Route</h3>
+            <div class="admin-add-grid">
+              <label>Route Name<input type="text" id="busRouteNameInput" placeholder="e.g. Route 4 - Kurnool City"></label>
+              <label>Stops<input type="text" id="busRouteStopsInput" placeholder="e.g. Bus Stand, Nandyal Road, City Centre"></label>
+              <label>Approx. Pickup Time (morning)<input type="text" id="busRoutePickupTimeInput" placeholder="e.g. 7:30 AM"></label>
+              <label>Approx. Drop Time (evening)<input type="text" id="busRouteDropTimeInput" placeholder="e.g. 4:30 PM"></label>
+            </div>
+            <button type="button" id="addBusRouteButton">Add Route</button>
+            <p class="admin-add-feedback" id="busRouteAddFeedback" aria-live="polite"></p>
+          </article>
+          <div class="admin-table-card">
+            <table>
+              <thead><tr><th>Route Name</th><th>Stops</th><th>Pickup</th><th>Drop</th><th></th></tr></thead>
+              <tbody id="busRouteManagerBody"></tbody>
+            </table>
+          </div>
+
+          <article class="admin-card admin-form-card">
+            <h3>Add Bus</h3>
+            <div class="admin-add-grid">
+              <label>Bus Number<input type="text" id="busNumberInput" placeholder="e.g. AP 21 Z 1234"></label>
+              <label>Route
+                <select id="busRouteSelectInput"><option value="">Select a route</option></select>
+              </label>
+              <label>Driver Name<input type="text" id="busDriverNameInput" placeholder="Driver name"></label>
+              <label>Driver Mobile<input type="text" id="busDriverMobileInput" placeholder="10-digit mobile"></label>
+            </div>
+            <button type="button" id="addBusButton">Add Bus</button>
+            <p class="admin-add-feedback" id="busAddFeedback" aria-live="polite"></p>
+          </article>
+          <div class="admin-table-card">
+            <table>
+              <thead><tr><th>Bus Number</th><th>Route</th><th>Driver</th><th>Driver Mobile</th><th></th></tr></thead>
+              <tbody id="busManagerBody"></tbody>
+            </table>
+          </div>
+
+          <div class="admin-table-card">
+            <h3>Bus Requests</h3>
+            <table>
+              <thead><tr><th>Name</th><th>Type</th><th>Bus</th><th>Route</th><th>Pickup / Drop</th><th>Fee</th><th>Requested</th><th>Status</th><th>Action</th></tr></thead>
+              <tbody id="busRequestsAdminBody"></tbody>
+            </table>
+          </div>
+
+          <div class="admin-table-card">
+            <h3>Vehicle Passes</h3>
+            <table>
+              <thead><tr><th>Name</th><th>Type</th><th>Vehicle</th><th>License</th><th>Documents</th><th>Verification</th><th>Status</th><th>Action</th></tr></thead>
+              <tbody id="vehiclePassesAdminBody"></tbody>
+            </table>
+          </div>
+        </section>
+
+        <section class="admin-panel" id="notices-content">
+          <div class="admin-section-head">
+            <div><p class="eyebrow">Notices</p><h2>Publish portal notices.</h2></div>
+          </div>
+          <article class="admin-card admin-form-card">
+            <h3>Create Notice</h3>
+            <div class="admin-add-grid">
+              <label>Audience
+                <select id="noticeAudienceInput">
+                  <option>All Users</option>
+                  <option>Students</option>
+                  <option>Faculty</option>
+                  <option>Parents</option>
+                  <option>Alumni</option>
+                  <option>Admin Staff</option>
+                  <option>Public Announcement</option>
+                </select>
+              </label>
+              <label>Title<input type="text" id="noticeTitleInput" placeholder="Notice title"></label>
+              <label>Attachment (optional)<input type="file" id="noticeAttachmentInput"></label>
+            </div>
+            <label>Message<textarea id="noticeMessageInput" placeholder="Type notice details"></textarea></label>
+            <button type="button" class="ai-assist-button" data-ai-improve="noticeMessageInput">✨ Improve with AI</button>
+            <button type="button" id="publishNoticeButton">Publish Notice</button>
+            <p class="admin-add-feedback" id="noticeAddFeedback" aria-live="polite"></p>
+          </article>
+          <div class="admin-table-card">
+            <table>
+              <thead><tr><th>Audience</th><th>Title</th><th>Attachment</th><th></th></tr></thead>
+              <tbody id="noticeManagerBody"></tbody>
+            </table>
+          </div>
+        </section>
+
+        <section class="admin-panel" id="webinars-content">
+          <div class="admin-section-head">
+            <div><p class="eyebrow">Webinars</p><h2>Publish live webinars for students and faculty.</h2></div>
+          </div>
+          <article class="admin-card admin-form-card">
+            <h3>Create Webinar</h3>
+            <div class="admin-add-grid">
+              <label>Title<input type="text" id="webinarTitleInput" placeholder="e.g. Careers in AI"></label>
+              <label>Scheduled Date &amp; Time<input type="datetime-local" id="webinarScheduledInput"></label>
+              <label>Live Link<input type="url" id="webinarLiveLinkInput" placeholder="https://meet.google.com/..."></label>
+            </div>
+            <label>Description<textarea id="webinarDescriptionInput" placeholder="What is this webinar about?"></textarea></label>
+            <button type="button" id="publishWebinarButton">Publish Webinar</button>
+            <p class="admin-add-feedback" id="webinarAddFeedback" aria-live="polite"></p>
+          </article>
+          <div class="admin-table-card">
+            <table>
+              <thead><tr><th>Scheduled</th><th>Title</th><th>Scope</th><th>Live Link</th><th></th></tr></thead>
+              <tbody id="webinarManagerBody"></tbody>
+            </table>
+            <p class="lookup-empty is-hidden" id="webinarManagerEmpty">No webinars published yet.</p>
+          </div>
+        </section>
+
+        <section class="admin-panel" id="contact-messages">
+          <div class="admin-section-head">
+            <div><p class="eyebrow">Contact Messages</p><h2>Messages submitted from the public Contact Us page.</h2></div>
+          </div>
+          <div class="admin-table-card">
+            <table>
+              <thead><tr><th>Sent</th><th>Name</th><th>Email</th><th>Subject</th><th>Message</th><th></th></tr></thead>
+              <tbody id="contactMessagesBody"></tbody>
+            </table>
+            <p class="lookup-empty" id="contactMessagesEmpty">No messages yet.</p>
+          </div>
+        </section>
+
+        <section class="admin-panel" id="web-page-content">
+          <div class="admin-section-head">
+            <div><p class="eyebrow">Web Page Content</p><h2>Edit content on the public Careers, Contact Us, Mandatory Disclosures, and R&amp;D pages.</h2></div>
+            <select class="admin-select" id="webPageSelect">
+              <option value="admissions">Admissions</option>
+              <option value="careers">Careers</option>
+              <option value="contact-us">Contact Us</option>
+              <option value="departments">Departments (Nav Menu)</option>
+              <option value="disclosures">Mandatory Disclosures</option>
+              <option value="exam-cell">Exam Cell</option>
+              <option value="fee-structure">Fee Structure</option>
+              <option value="research-dev">Research &amp; Development</option>
+              <option value="scholarships">Scholarships</option>
+            </select>
+          </div>
+
+          <div class="web-page-section is-active" data-web-page="admissions">
+            <div class="web-page-subtabs">
+              <button type="button" class="web-page-subtab is-active" data-web-subsection="btech">B.Tech</button>
+              <button type="button" class="web-page-subtab" data-web-subsection="lateral">Lateral Entry</button>
+              <button type="button" class="web-page-subtab" data-web-subsection="mtech">M.Tech</button>
+            </div>
+
+            <div class="web-page-subsection is-active" data-web-subsection="btech">
+              <article class="admin-card admin-form-card">
+                <h3>B.Tech Admissions (Four Year Programmes)</h3>
+                <label>Category A &ndash; Convener Seats (70%)<textarea id="admissionsBtechCategoryAInput"></textarea></label>
+                <label>Category B &ndash; Management Quota Seats (30%)<textarea id="admissionsBtechCategoryBInput"></textarea></label>
+                <button type="button" id="admissionsBtechSaveButton">Save</button>
+                <p class="admin-add-feedback" id="admissionsBtechSaveFeedback" aria-live="polite"></p>
+              </article>
+            </div>
+
+            <div class="web-page-subsection" data-web-subsection="lateral">
+              <article class="admin-card admin-form-card">
+                <h3>B.Tech Lateral Entry (Diploma Holders)</h3>
+                <label>Lateral Entry Details<textarea id="admissionsLateralEntryInput"></textarea></label>
+                <button type="button" id="admissionsLateralSaveButton">Save</button>
+                <p class="admin-add-feedback" id="admissionsLateralSaveFeedback" aria-live="polite"></p>
+              </article>
+            </div>
+
+            <div class="web-page-subsection" data-web-subsection="mtech">
+              <article class="admin-card admin-form-card">
+                <h3>M.Tech Admissions</h3>
+                <label>A &ndash; Category Seats (70%)<textarea id="admissionsMtechCategoryAInput"></textarea></label>
+                <label>B &ndash; Category Seats (30%)<textarea id="admissionsMtechCategoryBInput"></textarea></label>
+                <button type="button" id="admissionsMtechSaveButton">Save</button>
+                <p class="admin-add-feedback" id="admissionsMtechSaveFeedback" aria-live="polite"></p>
+              </article>
+            </div>
+
+          </div>
+
+          <div class="web-page-section" data-web-page="fee-structure">
+            <article class="admin-card admin-form-card">
+              <h3>Fee Structure</h3>
+              <label>B.Tech Programmes (Four Year Courses)<textarea id="feeStructureBtechInput"></textarea></label>
+              <label>B.Tech Lateral Entry &amp; M.Tech Programmes<textarea id="feeStructureOtherInput"></textarea></label>
+              <button type="button" id="feeStructureSaveButton">Save</button>
+              <p class="admin-add-feedback" id="feeStructureSaveFeedback" aria-live="polite"></p>
+            </article>
+          </div>
+
+          <div class="web-page-section" data-web-page="scholarships">
+            <article class="admin-card admin-form-card">
+              <h3>Scholarships</h3>
+              <label>B.Tech Programmes (Four Year Courses)<textarea id="scholarshipsBtechInput"></textarea></label>
+              <label>B.Tech Programmes (Diploma Holder / Lateral Entry)<textarea id="scholarshipsLateralInput"></textarea></label>
+              <label>M.Tech Programmes<textarea id="scholarshipsMtechInput"></textarea></label>
+              <button type="button" id="scholarshipsSaveButton">Save</button>
+              <p class="admin-add-feedback" id="scholarshipsSaveFeedback" aria-live="polite"></p>
+            </article>
+          </div>
+
+          <div class="web-page-section" data-web-page="careers">
+            <article class="admin-card admin-form-card">
+              <h3>Add Job Listing</h3>
+              <div class="admin-add-grid">
+                <label>Title<input type="text" id="careerTitleInput" placeholder="e.g. Assistant Professor"></label>
+                <label>Notification URL<input type="text" id="careerNotificationInput" placeholder="Link to notification PDF"></label>
+                <label>Guidelines URL<input type="text" id="careerGuidelinesInput" placeholder="Link to guidelines PDF"></label>
+              </div>
+              <label>Description<textarea id="careerDescriptionInput" placeholder="Short description of the role/eligibility"></textarea></label>
+              <button type="button" id="careerAddButton">Add Listing</button>
+              <p class="admin-add-feedback" id="careerAddFeedback" aria-live="polite"></p>
+            </article>
+            <div class="admin-table-card">
+              <table>
+                <thead><tr><th>Title</th><th>Notification</th><th>Guidelines</th><th></th></tr></thead>
+                <tbody id="careerAdminBody"></tbody>
+              </table>
+              <p class="lookup-empty" id="careerAdminEmpty">No listings yet.</p>
+            </div>
+          </div>
+
+          <div class="web-page-section" data-web-page="departments">
+            <div class="admin-section-head">
+              <div><p class="eyebrow">Departments</p><h2>Pick a department to edit below, or add a new one. The tabs are the same pattern for every department &ndash; only the content differs.</h2></div>
+              <select class="admin-select" id="departmentEditSelect" aria-label="Select department to edit">
+                <option value="">+ Add New Department</option>
+              </select>
+            </div>
+
+            <article class="admin-card admin-form-card">
+              <h3 id="departmentFormTitle">Add Department</h3>
+              <div class="admin-add-grid">
+                <label>Name<input type="text" id="departmentNameInput" placeholder="e.g. Civil Engineering (CIV)"></label>
+                <label>Code (used in its page link)<input type="text" id="departmentCodeInput" placeholder="e.g. CIV"></label>
+              </div>
+              <label>About this Department<textarea id="departmentAboutInput" placeholder="Short description shown on the department's own page"></textarea></label>
+            </article>
+
+            <div class="web-page-subtabs">
+              <button type="button" class="web-page-subtab is-active" data-web-subsection="dept-profile">Department</button>
+              <button type="button" class="web-page-subtab" data-web-subsection="dept-programs">Programs Offered</button>
+              <button type="button" class="web-page-subtab" data-web-subsection="dept-bos">Board of Studies</button>
+              <button type="button" class="web-page-subtab" data-web-subsection="dept-activities">Student Activities</button>
+              <button type="button" class="web-page-subtab" data-web-subsection="dept-infrastructure">Infrastructure</button>
+              <button type="button" class="web-page-subtab" data-web-subsection="dept-achievements">Achievements</button>
+              <button type="button" class="web-page-subtab" data-web-subsection="dept-gallery">Gallery</button>
+            </div>
+
+            <div class="web-page-subsection is-active" data-web-subsection="dept-profile">
+              <article class="admin-card admin-form-card">
+                <h3>Vision, Mission &amp; Outcomes</h3>
+                <label>Vision<textarea id="departmentVisionInput" placeholder="Department vision statement"></textarea></label>
+                <label>Mission (one point per line)<textarea id="departmentMissionInput" placeholder="One mission point per line"></textarea></label>
+                <label>Programme Educational Objectives &ndash; PEOs (one per line)<textarea id="departmentPeosInput"></textarea></label>
+                <label>Programme Outcomes &ndash; POs (one per line)<textarea id="departmentPosInput"></textarea></label>
+                <label>Program Specific Outcomes &ndash; PSOs (one per line)<textarea id="departmentPsosInput"></textarea></label>
+              </article>
+            </div>
+
+            <div class="web-page-subsection" data-web-subsection="dept-programs">
+              <article class="admin-card admin-form-card">
+                <h3>Programs Offered</h3>
+                <label>One per line: <code>Name | Intake</code><textarea id="departmentProgramsInput" placeholder="B.Tech (Civil Engineering) | 120"></textarea></label>
+              </article>
+            </div>
+
+            <div class="web-page-subsection" data-web-subsection="dept-bos">
+              <article class="admin-card admin-form-card">
+                <h3>Board of Studies</h3>
+                <label>One per line: <code>Position | Name | Affiliation</code><textarea id="departmentBosInput" placeholder="Chairman / HOD (Internal) | Dr. Name | GPREC"></textarea></label>
+              </article>
+            </div>
+
+            <div class="web-page-subsection" data-web-subsection="dept-activities">
+              <article class="admin-card admin-form-card">
+                <h3>Student Activities</h3>
+                <label>One per line<textarea id="departmentActivitiesInput"></textarea></label>
+              </article>
+            </div>
+
+            <div class="web-page-subsection" data-web-subsection="dept-infrastructure">
+              <article class="admin-card admin-form-card">
+                <h3>Infrastructure</h3>
+                <label>Facilities / Laboratories (one per line)<textarea id="departmentFacilitiesInput"></textarea></label>
+                <label>Department Library Holdings (one per line: <code>Item | Quantity</code>)<textarea id="departmentLibraryInput" placeholder="Text / Reference Books | 402"></textarea></label>
+              </article>
+            </div>
+
+            <div class="web-page-subsection" data-web-subsection="dept-achievements">
+              <article class="admin-card admin-form-card">
+                <h3>Achievements</h3>
+                <label>Department Achievements (one per line: <code>Event | Dates</code>)<textarea id="departmentAchievementsInput" placeholder="Study Tour to ATAL Tunnel | 17-21 Nov 2021"></textarea></label>
+                <label>Student Achievements Note<textarea id="departmentAchievementsNoteInput" placeholder="e.g. Multiple students qualified GATE each year..."></textarea></label>
+                <label>L&amp;T Scholarship Recipients (one per line: <code>Year | Roll No | Name | Institution</code>)<textarea id="departmentLtScholarshipInput" placeholder="2018-19 | 159X1A0114 | Student Name | NIT Trichy"></textarea></label>
+              </article>
+            </div>
+
+            <div class="web-page-subsection" data-web-subsection="dept-gallery">
+              <article class="admin-card admin-form-card">
+                <h3>Gallery</h3>
+                <p class="field-hint" id="departmentGalleryHint">Save the department above first (Add/Update Department), then upload its gallery photos here.</p>
+                <div class="admin-add-grid">
+                  <label>Photo<input type="file" accept="image/*" id="departmentGalleryPhotoInput"></label>
+                  <label>Caption<input type="text" id="departmentGalleryCaptionInput" placeholder="e.g. Technical Tour - Tungabhadra Dam"></label>
+                </div>
+                <button type="button" id="departmentGalleryAddButton">Add Photo</button>
+                <p class="admin-add-feedback" id="departmentGalleryFeedback" aria-live="polite"></p>
+              </article>
+              <div class="admin-table-card">
+                <table>
+                  <thead><tr><th>Photo</th><th>Caption</th><th></th></tr></thead>
+                  <tbody id="departmentGalleryAdminBody"></tbody>
+                </table>
+                <p class="lookup-empty" id="departmentGalleryAdminEmpty">No gallery photos yet.</p>
+              </div>
+            </div>
+
+            <article class="admin-card admin-form-card">
+              <button type="button" id="departmentAddButton">Add Department</button>
+              <button type="button" id="departmentCancelEditButton" class="is-hidden">Cancel Edit</button>
+              <p class="admin-add-feedback" id="departmentAddFeedback" aria-live="polite"></p>
+            </article>
+
+            <div class="admin-table-card">
+              <table>
+                <thead><tr><th>Name</th><th>Code</th><th></th></tr></thead>
+                <tbody id="departmentAdminBody"></tbody>
+              </table>
+              <p class="lookup-empty" id="departmentAdminEmpty">No departments yet.</p>
+            </div>
+          </div>
+
+          <div class="web-page-section" data-web-page="contact-us">
+            <div class="web-page-subtabs">
+              <button type="button" class="web-page-subtab is-active" data-web-subsection="details">Contact Details</button>
+              <button type="button" class="web-page-subtab" data-web-subsection="departments">Department Contacts</button>
+            </div>
+
+            <div class="web-page-subsection is-active" data-web-subsection="details">
+              <article class="admin-card admin-form-card">
+                <h3>Contact Details</h3>
+                <label>Address<textarea id="contactInfoAddress"></textarea></label>
+                <div class="admin-add-grid">
+                  <label>Phone<input type="text" id="contactInfoPhone"></label>
+                  <label>Fax<input type="text" id="contactInfoFax"></label>
+                </div>
+                <div class="admin-add-grid">
+                  <label>Email 1<input type="text" id="contactInfoEmail1"></label>
+                  <label>Email 2<input type="text" id="contactInfoEmail2"></label>
+                </div>
+                <label>How to Reach<textarea id="contactInfoHowToReach"></textarea></label>
+                <button type="button" id="contactInfoSaveButton">Save Contact Details</button>
+                <p class="admin-add-feedback" id="contactInfoFeedback" aria-live="polite"></p>
+              </article>
+            </div>
+
+            <div class="web-page-subsection" data-web-subsection="departments">
+              <article class="admin-card admin-form-card">
+                <h3>Add Department Contact</h3>
+                <div class="admin-add-grid">
+                  <label>Office<input type="text" id="contactDeptOfficeInput" placeholder="e.g. Admissions"></label>
+                  <label>Email<input type="text" id="contactDeptEmailInput" placeholder="e.g. admissions@gprec.ac.in"></label>
+                  <label>Phone / Contact<input type="text" id="contactDeptPhoneInput" placeholder="e.g. 9493458458 (Name)"></label>
+                </div>
+                <button type="button" id="contactDeptAddButton">Add Department</button>
+                <p class="admin-add-feedback" id="contactDeptAddFeedback" aria-live="polite"></p>
+              </article>
+              <div class="admin-table-card">
+                <table>
+                  <thead><tr><th>Office</th><th>Email</th><th>Phone / Contact</th><th></th></tr></thead>
+                  <tbody id="contactDeptAdminBody"></tbody>
+                </table>
+                <p class="lookup-empty" id="contactDeptAdminEmpty">No department contacts yet.</p>
+              </div>
+            </div>
+          </div>
+
+          <div class="web-page-section" data-web-page="disclosures">
+            <div class="web-page-subtabs">
+              <button type="button" class="web-page-subtab is-active" data-web-subsection="categories">Categories &amp; Documents</button>
+              <button type="button" class="web-page-subtab" data-web-subsection="nba">NBA Accreditation Table</button>
+            </div>
+
+            <div class="web-page-subsection is-active" data-web-subsection="categories">
+              <article class="admin-card admin-form-card">
+                <h3>Add Category</h3>
+                <div class="admin-add-grid">
+                  <label>Category Name<input type="text" id="disclosureCategoryNameInput" placeholder="e.g. Green Initiatives"></label>
+                  <label>Logo URL (optional)<input type="text" id="disclosureCategoryLogoInput" placeholder="https://..."></label>
+                </div>
+                <button type="button" id="disclosureCategoryAddButton">Add Category</button>
+                <p class="admin-add-feedback" id="disclosureCategoryAddFeedback" aria-live="polite"></p>
+              </article>
+              <article class="admin-card admin-form-card">
+                <h3>Add Document</h3>
+                <label>Category
+                  <select id="disclosureCategorySelect"></select>
+                </label>
+                <label>Category Logo URL<input type="text" id="disclosureCategoryLogoEditInput" placeholder="https://..."></label>
+                <button type="button" id="disclosureCategoryLogoSaveButton">Save Logo</button>
+                <button type="button" id="disclosureCategoryRemoveButton" class="btn-reject">Remove This Category</button>
+                <div class="admin-add-grid">
+                  <label>Title<input type="text" id="disclosureItemTitleInput" placeholder="Document title"></label>
+                  <label>URL<input type="text" id="disclosureItemUrlInput" placeholder="https://..."></label>
+                  <label>Section (optional)<input type="text" id="disclosureItemSectionInput" placeholder="e.g. EOA Reports"></label>
+                </div>
+                <button type="button" id="disclosureItemAddButton">Add Document</button>
+                <p class="admin-add-feedback" id="disclosureItemAddFeedback" aria-live="polite"></p>
+              </article>
+              <div class="admin-table-card">
+                <table>
+                  <thead><tr><th>Title</th><th>URL</th><th>Section</th><th></th></tr></thead>
+                  <tbody id="disclosureItemAdminBody"></tbody>
+                </table>
+                <p class="lookup-empty" id="disclosureItemAdminEmpty">No documents in this category yet.</p>
+              </div>
+            </div>
+
+            <div class="web-page-subsection" data-web-subsection="nba">
+              <article class="admin-card admin-form-card">
+                <h3>Add NBA Accreditation (shown as a table on the NBA tab)</h3>
+                <div class="admin-add-grid">
+                  <label>Year<input type="text" id="nbaYearInput" placeholder="e.g. 2026"></label>
+                  <label>Programs Accredited<input type="text" id="nbaProgramsInput" placeholder="e.g. CE, ME, EEE"></label>
+                  <label>URL (optional)<input type="text" id="nbaUrlInput" placeholder="https://..."></label>
+                </div>
+                <button type="button" id="nbaAddButton">Add Row</button>
+                <p class="admin-add-feedback" id="nbaAddFeedback" aria-live="polite"></p>
+              </article>
+              <div class="admin-table-card">
+                <table>
+                  <thead><tr><th>Year</th><th>Programs Accredited</th><th>URL</th><th></th></tr></thead>
+                  <tbody id="nbaAdminBody"></tbody>
+                </table>
+                <p class="lookup-empty" id="nbaAdminEmpty">No NBA accreditation rows yet.</p>
+              </div>
+            </div>
+          </div>
+
+          <div class="web-page-section" data-web-page="exam-cell">
+            <article class="admin-card admin-form-card">
+              <h3>Exam Cell Page Content</h3>
+              <label>About<textarea id="examCellAboutInput" rows="4"></textarea></label>
+              <label>Functions &amp; Responsibilities (one per line)<textarea id="examCellFunctionsInput" rows="5"></textarea></label>
+              <label>Infrastructure &amp; Systems<textarea id="examCellInfrastructureInput" rows="3"></textarea></label>
+              <label>General Examination Rules (one per line)<textarea id="examCellGeneralRulesInput" rows="6"></textarea></label>
+              <label>Malpractice Offenses &amp; Punishments (one per line, format: Offense | Punishment)<textarea id="examCellMalpracticeOffensesInput" rows="6"></textarea></label>
+              <label>Malpractice Note<textarea id="examCellMalpracticeNoteInput" rows="2"></textarea></label>
+              <label>Course Completion Policy (blank line between paragraphs; wrap a paragraph in ** ** to highlight it)<textarea id="examCellCourseCompletionInput" rows="6"></textarea></label>
+              <label>Important Links (one per line, format: Title | Note)<textarea id="examCellImportantLinksInput" rows="5"></textarea></label>
+              <label>Download Applications (one per line, format: Title | URL | Label)<textarea id="examCellDownloadApplicationsInput" rows="5"></textarea></label>
+              <button type="button" id="examCellSaveButton">Save Exam Cell Content</button>
+              <p class="admin-add-feedback" id="examCellFeedback" aria-live="polite"></p>
+            </article>
+          </div>
+
+          <div class="web-page-section" data-web-page="research-dev">
+            <div class="web-page-subtabs">
+              <button type="button" class="web-page-subtab is-active" data-web-subsection="about">About R&amp;D</button>
+              <button type="button" class="web-page-subtab" data-web-subsection="funded">Funded Projects</button>
+              <button type="button" class="web-page-subtab" data-web-subsection="scholars">Research Scholars</button>
+              <button type="button" class="web-page-subtab" data-web-subsection="consultancy">Consultancy</button>
+              <button type="button" class="web-page-subtab" data-web-subsection="publications">Publications</button>
+              <button type="button" class="web-page-subtab" data-web-subsection="patents">Patents</button>
+              <button type="button" class="web-page-subtab" data-web-subsection="proposals">Call for Research Proposals</button>
+            </div>
+
+            <div class="web-page-subsection is-active" data-web-subsection="about">
+              <article class="admin-card admin-form-card">
+                <h3>About R&amp;D Text</h3>
+                <label>R&amp;D Committee<textarea id="aboutRdCommitteeInput"></textarea></label>
+                <label>Objectives<textarea id="aboutRdObjectivesInput"></textarea></label>
+                <label>Faculty &amp; Student Incentives<textarea id="aboutRdIncentivesInput"></textarea></label>
+                <label>In-House Project Scheme<textarea id="aboutRdSchemeInput"></textarea></label>
+                <button type="button" id="aboutRdSaveButton">Save About R&amp;D Text</button>
+                <p class="admin-add-feedback" id="aboutRdSaveFeedback" aria-live="polite"></p>
+              </article>
+            </div>
+
+            <div class="web-page-subsection" data-web-subsection="funded">
+              <div class="admin-section-head">
+                <div><p class="eyebrow">Funded Projects</p><h2>Choose which table to edit.</h2></div>
+                <select class="admin-select" id="fundedProjectViewSelect" aria-label="Select which table to edit">
+                  <option value="externally">Externally Funded Projects</option>
+                  <option value="ongoing">Ongoing In-House Projects</option>
+                </select>
+              </div>
+
+              <div class="funded-project-view is-active" data-funded-view="externally">
+                <article class="admin-card admin-form-card">
+                  <h3>Add Funded Project</h3>
+                  <div class="admin-add-grid">
+                    <label>Year<input type="text" id="fundedProjectYearInput" placeholder="e.g. 2025-26"></label>
+                    <label>Scheme<input type="text" id="fundedProjectSchemeInput" placeholder="e.g. AICTE-MODROBS"></label>
+                    <label>Coordinator<input type="text" id="fundedProjectCoordinatorInput" placeholder="Coordinator name"></label>
+                    <label>Dept.<input type="text" id="fundedProjectDeptInput" placeholder="e.g. CSE"></label>
+                    <label>Non-Recurring (Rs.)<input type="text" id="fundedProjectNonRecurringInput" placeholder="e.g. 1,00,000"></label>
+                    <label>Recurring (Rs.)<input type="text" id="fundedProjectRecurringInput" placeholder="e.g. 50,000"></label>
+                  </div>
+                  <button type="button" id="fundedProjectAddButton">Add Project</button>
+                  <p class="admin-add-feedback" id="fundedProjectAddFeedback" aria-live="polite"></p>
+                </article>
+                <div class="admin-table-card">
+                  <table>
+                    <thead><tr><th>Year</th><th>Scheme</th><th>Coordinator</th><th>Dept.</th><th>Non-Recurring</th><th>Recurring</th><th></th></tr></thead>
+                    <tbody id="fundedProjectAdminBody"></tbody>
+                  </table>
+                  <p class="lookup-empty" id="fundedProjectAdminEmpty">No funded projects yet.</p>
+                </div>
+              </div>
+
+              <div class="funded-project-view" data-funded-view="ongoing">
+                <article class="admin-card admin-form-card">
+                  <h3>Add Ongoing In-House Project</h3>
+                  <div class="admin-add-grid">
+                    <label>Principal Investigator<input type="text" id="ongoingProjectPiInput" placeholder="Name"></label>
+                    <label>Dept.<input type="text" id="ongoingProjectDeptInput" placeholder="e.g. CE"></label>
+                    <label>Financial Assistance (Rs.)<input type="text" id="ongoingProjectAmountInput" placeholder="e.g. 1,50,000"></label>
+                    <label>Status
+                      <select id="ongoingProjectStatusInput">
+                        <option>Ongoing</option>
+                        <option>Completed</option>
+                      </select>
+                    </label>
+                  </div>
+                  <label>Project Title<textarea id="ongoingProjectTitleInput" placeholder="Project title"></textarea></label>
+                  <button type="button" id="ongoingProjectAddButton">Add Project</button>
+                  <p class="admin-add-feedback" id="ongoingProjectAddFeedback" aria-live="polite"></p>
+                </article>
+                <div class="admin-table-card">
+                  <table>
+                    <thead><tr><th>#</th><th>Principal Investigator</th><th>Dept.</th><th>Project Title</th><th>Amount</th><th>Status</th><th></th></tr></thead>
+                    <tbody id="ongoingProjectAdminBody"></tbody>
+                  </table>
+                  <p class="lookup-empty" id="ongoingProjectAdminEmpty">No ongoing projects yet.</p>
+                </div>
+              </div>
+            </div>
+
+            <div class="web-page-subsection" data-web-subsection="scholars">
+              <article class="admin-card admin-form-card">
+                <h3>Add Research Scholar</h3>
+                <div class="admin-add-grid">
+                  <label>Scholar Name<input type="text" id="scholarNameInput" placeholder="Full name"></label>
+                  <label>Enrolment No.<input type="text" id="scholarEnrolmentInput" placeholder="e.g. 24PH0001"></label>
+                  <label>Supervisor<input type="text" id="scholarSupervisorInput" placeholder="Supervisor name"></label>
+                  <label>Status
+                    <select id="scholarStatusInput">
+                      <option>Ongoing</option>
+                      <option>Submitted</option>
+                      <option>Awarded</option>
+                    </select>
+                  </label>
+                </div>
+                <label>Topic<textarea id="scholarTopicInput" placeholder="Research topic"></textarea></label>
+                <button type="button" id="scholarAddButton">Add Scholar</button>
+                <p class="admin-add-feedback" id="scholarAddFeedback" aria-live="polite"></p>
+              </article>
+              <div class="admin-table-card">
+                <table>
+                  <thead><tr><th>#</th><th>Scholar</th><th>Enrolment No.</th><th>Topic</th><th>Supervisor</th><th>Status</th><th></th></tr></thead>
+                  <tbody id="scholarAdminBody"></tbody>
+                </table>
+                <p class="lookup-empty" id="scholarAdminEmpty">No research scholars yet.</p>
+              </div>
+            </div>
+
+            <div class="web-page-subsection" data-web-subsection="consultancy">
+              <article class="admin-card admin-form-card">
+                <h3>Add Consultancy Equipment</h3>
+                <div class="admin-add-grid">
+                  <label>Experimental Setup<input type="text" id="consultancySetupInput" placeholder="e.g. FFT Analyzer"></label>
+                  <label>Contact<input type="text" id="consultancyContactInput" placeholder="Faculty contact"></label>
+                </div>
+                <button type="button" id="consultancyAddButton">Add Equipment</button>
+                <p class="admin-add-feedback" id="consultancyAddFeedback" aria-live="polite"></p>
+              </article>
+              <div class="admin-table-card">
+                <table>
+                  <thead><tr><th>Experimental Setup</th><th>Contact</th><th></th></tr></thead>
+                  <tbody id="consultancyAdminBody"></tbody>
+                </table>
+                <p class="lookup-empty" id="consultancyAdminEmpty">No consultancy equipment yet.</p>
+              </div>
+            </div>
+
+            <div class="web-page-subsection" data-web-subsection="publications">
+              <article class="admin-card admin-form-card">
+                <h3>Add Publication Record</h3>
+                <div class="admin-add-grid">
+                  <label>Year<input type="text" id="publicationYearInput" placeholder="e.g. 2025-26"></label>
+                  <label>Dept.<input type="text" id="publicationDeptInput" placeholder="e.g. CSE"></label>
+                  <label>SCI/SCIE<input type="number" id="publicationSciInput" placeholder="0"></label>
+                  <label>Scopus/ESCI<input type="number" id="publicationScopusInput" placeholder="0"></label>
+                  <label>Others<input type="number" id="publicationOthersInput" placeholder="0"></label>
+                  <label>Conference<input type="number" id="publicationConferenceInput" placeholder="0"></label>
+                </div>
+                <button type="button" id="publicationAddButton">Add Record</button>
+                <p class="admin-add-feedback" id="publicationAddFeedback" aria-live="polite"></p>
+              </article>
+              <div id="publicationAdminBody"></div>
+              <p class="lookup-empty" id="publicationAdminEmpty">No publication records yet.</p>
+            </div>
+
+            <div class="web-page-subsection" data-web-subsection="patents">
+              <article class="admin-card admin-form-card">
+                <h3>Add Patent Document</h3>
+                <div class="admin-add-grid">
+                  <label>Title<input type="text" id="patentItemTitleInput" placeholder="e.g. 2025-26"></label>
+                  <label>URL<input type="text" id="patentItemUrlInput" placeholder="https://..."></label>
+                </div>
+                <button type="button" id="patentItemAddButton">Add Document</button>
+                <p class="admin-add-feedback" id="patentItemAddFeedback" aria-live="polite"></p>
+              </article>
+              <div class="admin-table-card">
+                <table>
+                  <thead><tr><th>Title</th><th>URL</th><th></th></tr></thead>
+                  <tbody id="patentItemAdminBody"></tbody>
+                </table>
+                <p class="lookup-empty" id="patentItemAdminEmpty">No patent documents yet.</p>
+              </div>
+            </div>
+
+            <div class="web-page-subsection" data-web-subsection="proposals">
+              <article class="admin-card admin-form-card">
+                <h3>Add Funding Agency Link</h3>
+                <div class="admin-add-grid">
+                  <label>Title<input type="text" id="proposalItemTitleInput" placeholder="e.g. SERB - Science and Engineering Research Board"></label>
+                  <label>URL<input type="text" id="proposalItemUrlInput" placeholder="https://..."></label>
+                  <label>Section (optional)<input type="text" id="proposalItemSectionInput" placeholder="e.g. Government Agencies"></label>
+                </div>
+                <button type="button" id="proposalItemAddButton">Add Link</button>
+                <p class="admin-add-feedback" id="proposalItemAddFeedback" aria-live="polite"></p>
+              </article>
+              <div class="admin-table-card">
+                <table>
+                  <thead><tr><th>Title</th><th>URL</th><th>Section</th><th></th></tr></thead>
+                  <tbody id="proposalItemAdminBody"></tbody>
+                </table>
+                <p class="lookup-empty" id="proposalItemAdminEmpty">No funding agency links yet.</p>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <section class="admin-panel" id="media">
+          <div class="admin-section-head">
+            <div><p class="eyebrow">Media</p><h2>Manage every photo, video, and social link shown on the public website.</h2></div>
+            <select class="admin-select" id="mediaSectionSelect" aria-label="Select media section">
+              <option value="home-hero">Home Page Slider</option>
+              <option value="about-history">About Us History Gallery</option>
+              <option value="photos">Website Photo Manager</option>
+              <option value="campus">Campus Life Slides</option>
+              <option value="video">Video Gallery</option>
+              <option value="photo-gallery">Photo Gallery</option>
+              <option value="courses">Academic Courses</option>
+              <option value="voices">Student Voices</option>
+              <option value="placements">Campus Placements</option>
+              <option value="affiliations">Affiliations</option>
+              <option value="social">Footer &amp; Social Settings</option>
+              <option value="campus360">360&deg; Campus View</option>
+              <option value="funding">Alumni Funding Campaigns</option>
+              <option value="spotlight-posters">Spotlight Posters & Ads</option>
+            </select>
+          </div>
+
+          <div class="media-section is-active" data-media-section="home-hero">
+            <article class="admin-card admin-form-card">
+              <h3>Add Slide</h3>
+              <div class="admin-add-grid">
+                <label>Alt Text<input type="text" id="homeHeroAltInput" placeholder="e.g. GPREC campus main building"></label>
+                <label>Photo<input type="file" accept="image/*" id="homeHeroPhotoInput"><small class="field-hint">Recommended: 1600 x 900px, landscape, JPG/PNG</small></label>
+              </div>
+              <button type="button" id="addHomeHeroSlideButton">Add Slide</button>
+              <p class="admin-add-feedback" id="homeHeroFeedback" aria-live="polite"></p>
+            </article>
+            <div class="admin-table-card">
+              <table>
+                <thead><tr><th>Photo</th><th>Alt Text</th><th></th></tr></thead>
+                <tbody id="homeHeroManagerBody"></tbody>
+              </table>
+            </div>
+          </div>
+
+          <div class="media-section" data-media-section="about-history">
+            <article class="admin-card admin-form-card">
+              <h3>Add Slide</h3>
+              <div class="admin-add-grid">
+                <label>Caption<input type="text" id="aboutHistoryCaptionInput" placeholder="e.g. Inauguration Ceremony, 1985"></label>
+                <label>Photo<input type="file" accept="image/*" id="aboutHistoryPhotoInput"><small class="field-hint">Recommended: 1200 x 600px, landscape, JPG/PNG</small></label>
+              </div>
+              <button type="button" id="addAboutHistorySlideButton">Add Slide</button>
+              <p class="admin-add-feedback" id="aboutHistoryFeedback" aria-live="polite"></p>
+            </article>
+            <div class="admin-table-card">
+              <table>
+                <thead><tr><th>Photo</th><th>Caption</th><th></th></tr></thead>
+                <tbody id="aboutHistoryManagerBody"></tbody>
+              </table>
+            </div>
+          </div>
+
+          <div class="media-section" data-media-section="photos">
+            <div class="admin-table-card">
+              <table>
+                <thead><tr><th>Page / Section</th><th>Recommended Size</th><th>Current Photo</th><th>Upload</th><th></th></tr></thead>
+                <tbody id="sitePhotoManagerBody"></tbody>
+              </table>
+            </div>
+          </div>
+
+          <div class="media-section" data-media-section="campus">
+            <article class="admin-card admin-form-card">
+              <h3>Add Slide</h3>
+              <div class="admin-add-grid">
+                <label>Title<input type="text" id="campusSlideTitleInput" placeholder="e.g. Sports and Games"></label>
+                <label>Description<input type="text" id="campusSlideDescInput" placeholder="Short one-line description"></label>
+                <label>Page Link (optional)<input type="text" id="campusSlideLinkInput" placeholder="https://... (leave blank for no link)"></label>
+                <label>Photo<input type="file" accept="image/*" id="campusSlidePhotoInput"><small class="field-hint">Recommended: 800 x 520px, landscape, JPG/PNG</small></label>
+              </div>
+              <button type="button" id="addCampusSlideButton">Add Slide</button>
+              <p class="admin-add-feedback" id="campusSlideFeedback" aria-live="polite"></p>
+            </article>
+            <div class="admin-table-card">
+              <table>
+                <thead><tr><th>Photo</th><th>Title</th><th>Description</th><th></th></tr></thead>
+                <tbody id="campusSlideManagerBody"></tbody>
+              </table>
+            </div>
+          </div>
+
+          <div class="media-section" data-media-section="video">
+            <article class="admin-card admin-form-card">
+              <h3>Add Video</h3>
+              <div class="admin-add-grid">
+                <label>Title<input type="text" id="videoTitleInput" placeholder="e.g. Annual Day Highlights"></label>
+                <label>YouTube URL<input type="text" id="videoUrlInput" placeholder="https://www.youtube.com/watch?v=..."></label>
+              </div>
+              <button type="button" id="addVideoButton">Add Video</button>
+              <p class="admin-add-feedback" id="videoAddFeedback" aria-live="polite"></p>
+            </article>
+            <div class="admin-table-card">
+              <table>
+                <thead><tr><th>Thumbnail</th><th>Title</th><th></th></tr></thead>
+                <tbody id="videoManagerBody"></tbody>
+              </table>
+            </div>
+          </div>
+
+          <div class="media-section" data-media-section="photo-gallery">
+            <article class="admin-card admin-form-card">
+              <h3>Add Photo</h3>
+              <div class="admin-add-grid">
+                <label>Caption (optional)<input type="text" id="photoGalleryCaptionInput" placeholder="e.g. Annual Day 2026"></label>
+                <label>Photo<input type="file" accept="image/*" id="photoGalleryPhotoInput"><small class="field-hint">Recommended: 800 x 600px, 4:3, JPG/PNG</small></label>
+              </div>
+              <button type="button" id="addPhotoGalleryButton">Add Photo</button>
+              <p class="admin-add-feedback" id="photoGalleryFeedback" aria-live="polite"></p>
+            </article>
+            <div class="admin-table-card">
+              <table>
+                <thead><tr><th>Photo</th><th>Caption</th><th></th></tr></thead>
+                <tbody id="photoGalleryManagerBody"></tbody>
+              </table>
+            </div>
+          </div>
+
+          <div class="media-section" data-media-section="courses">
+            <article class="admin-card admin-form-card">
+              <h3>Add Course</h3>
+              <div class="admin-add-grid">
+                <label>Level
+                  <select id="courseLevelInput">
+                    <option value="UG">Under Graduate (UG)</option>
+                    <option value="PG">Post Graduate (PG)</option>
+                  </select>
+                </label>
+                <label>Code<input type="text" id="courseCodeInput" placeholder="e.g. CSE"></label>
+                <label>Name<input type="text" id="courseNameInput" placeholder="e.g. Computer Science and Engineering"></label>
+                <label>Tagline<input type="text" id="courseTaglineInput" placeholder="e.g. Software and computing"></label>
+                <label>Page Link (optional)<input type="text" id="courseLinkInput" placeholder="https://..."></label>
+              </div>
+              <button type="button" id="addCourseButton">Add Course</button>
+              <p class="admin-add-feedback" id="courseAddFeedback" aria-live="polite"></p>
+            </article>
+            <div class="admin-table-card">
+              <table>
+                <thead><tr><th>Level</th><th>Code</th><th>Name</th><th></th></tr></thead>
+                <tbody id="courseManagerBody"></tbody>
+              </table>
+            </div>
+          </div>
+
+          <div class="media-section" data-media-section="voices">
+            <article class="admin-card admin-form-card">
+              <h3>Add Voice</h3>
+              <div class="admin-add-grid">
+                <label>Name<input type="text" id="voiceNameInput" placeholder="e.g. J Prem"></label>
+                <label>Role<input type="text" id="voiceRoleInput" placeholder="e.g. Alumnus, CSE"></label>
+                <label>Quote<input type="text" id="voiceQuoteInput" placeholder="Short testimonial quote"></label>
+                <label>Photo<input type="file" accept="image/*" id="voicePhotoInput"><small class="field-hint">Recommended: 200 x 200px, square, JPG/PNG</small></label>
+              </div>
+              <button type="button" id="addVoiceButton">Add Voice</button>
+              <p class="admin-add-feedback" id="voiceAddFeedback" aria-live="polite"></p>
+            </article>
+            <div class="admin-table-card">
+              <table>
+                <thead><tr><th>Photo</th><th>Name</th><th>Role</th><th></th></tr></thead>
+                <tbody id="voiceManagerBody"></tbody>
+              </table>
+            </div>
+          </div>
+
+          <div class="media-section" data-media-section="placements">
+            <article class="admin-card admin-form-card">
+              <h3>Add Recruiter</h3>
+              <div class="admin-add-grid">
+                <label>Company Name<input type="text" id="placementNameInput" placeholder="e.g. TCS"></label>
+                <label>Logo<input type="file" accept="image/*" id="placementLogoInput"><small class="field-hint">Recommended: 300 x 150px, transparent PNG preferred</small></label>
+              </div>
+              <button type="button" id="addPlacementButton">Add Recruiter</button>
+              <p class="admin-add-feedback" id="placementAddFeedback" aria-live="polite"></p>
+            </article>
+            <div class="admin-table-card">
+              <table>
+                <thead><tr><th>Logo</th><th>Company Name</th><th></th></tr></thead>
+                <tbody id="placementManagerBody"></tbody>
+              </table>
+            </div>
+          </div>
+
+          <div class="media-section" data-media-section="affiliations">
+            <article class="admin-card admin-form-card">
+              <h3>Add Affiliation</h3>
+              <div class="admin-add-grid">
+                <label>Name<input type="text" id="affiliationNameInput" placeholder="e.g. NAAC"></label>
+                <label>Logo<input type="file" accept="image/*" id="affiliationLogoInput"><small class="field-hint">Recommended: 300 x 150px, transparent PNG preferred</small></label>
+              </div>
+              <button type="button" id="addAffiliationButton">Add Affiliation</button>
+              <p class="admin-add-feedback" id="affiliationAddFeedback" aria-live="polite"></p>
+            </article>
+            <div class="admin-table-card">
+              <table>
+                <thead><tr><th>Logo</th><th>Name</th><th></th></tr></thead>
+                <tbody id="affiliationManagerBody"></tbody>
+              </table>
+            </div>
+          </div>
+
+          <div class="media-section" data-media-section="social">
+            <article class="admin-card admin-form-card">
+              <h3>Footer Contact Info</h3>
+              <div class="admin-add-grid">
+                <label>Address<input type="text" id="footerAddressInput" placeholder="G Pulla Reddy Nagar, Nandyal Road, Kurnool - 518 007, AP, India."></label>
+                <label>Phone<input type="text" id="footerPhoneInput" placeholder="08518-270957 (O) / 08518-280719 (D)"></label>
+                <label>Email<input type="text" id="footerEmailInput" placeholder="info@gprec.ac.in"></label>
+              </div>
+              <button type="button" id="saveFooterContactButton">Save Footer Contact Info</button>
+              <p class="admin-add-feedback" id="footerContactFeedback" aria-live="polite"></p>
+            </article>
+            <article class="admin-card admin-form-card">
+              <h3>Social Media Links</h3>
+              <div class="admin-add-grid">
+                <label>Facebook<input type="text" id="socialFacebookInput" placeholder="https://www.facebook.com/..."></label>
+                <label>X (Twitter)<input type="text" id="socialXInput" placeholder="https://x.com/..."></label>
+                <label>LinkedIn<input type="text" id="socialLinkedinInput" placeholder="https://www.linkedin.com/..."></label>
+                <label>YouTube<input type="text" id="socialYoutubeInput" placeholder="https://www.youtube.com/..."></label>
+                <label>WhatsApp<input type="text" id="socialWhatsappInput" placeholder="https://wa.me/..."></label>
+              </div>
+              <button type="button" id="saveSocialLinksButton">Save Social Links</button>
+              <p class="admin-add-feedback" id="socialLinksFeedback" aria-live="polite"></p>
+            </article>
+          </div>
+
+          <div class="media-section" data-media-section="campus360">
+            <article class="admin-card admin-form-card">
+              <div class="admin-add-grid">
+                <label>Status Note<input type="text" id="campus360NoteInput" placeholder="Tap play for a real 360&deg; look around this location."></label>
+                <label>Preview Screen Size
+                  <select id="campus360PreviewSizeInput">
+                    <option value="large">Large preview</option>
+                    <option value="medium">Medium preview</option>
+                    <option value="compact">Compact preview</option>
+                  </select>
+                </label>
+                <label>Background Image Strength
+                  <select id="campus360BackgroundStrengthInput">
+                    <option value="subtle">Subtle</option>
+                    <option value="clear">Clear</option>
+                    <option value="hidden">Hidden</option>
+                  </select>
+                </label>
+                <label>Tile Label Style
+                  <select id="campus360TileLabelInput">
+                    <option value="overlay">Overlay on image</option>
+                    <option value="below">Text below image</option>
+                    <option value="hidden">Hide labels</option>
+                  </select>
+                </label>
+                <label>Thumbnail Crop
+                  <select id="campus360TileCropInput">
+                    <option value="crop">Crop to fill</option>
+                    <option value="fit">Fit full image</option>
+                  </select>
+                </label>
+                <label>Background Music Volume
+                  <select id="campus360AudioVolumeInput">
+                    <option value="off">Off (muted)</option>
+                    <option value="quiet">Quiet</option>
+                    <option value="medium">Medium</option>
+                    <option value="full">Full</option>
+                  </select>
+                </label>
+                <label>Background Music File<input type="file" accept="audio/*" id="campus360AudioFileInput"><small class="field-hint">Optional - upload to replace the current track (MP3). Leave empty to keep it.</small></label>
+              </div>
+              <button type="button" id="saveCampus360NoteButton">Save 360 Settings</button>
+              <p class="admin-add-feedback" id="campus360NoteFeedback" aria-live="polite"></p>
+            </article>
+
+            <div class="admin-section-head">
+              <div><p class="eyebrow">360&deg; Categories</p><h2>Pick a category to manage its locations, or add a new one.</h2></div>
+              <select class="admin-select" id="campus360CategorySelect" aria-label="Select 360° category"></select>
+            </div>
+
+            <article class="admin-card admin-form-card" id="campus360NewCategoryCard">
+              <h3>Add New Category</h3>
+              <div class="admin-add-grid">
+                <label>Category Name<input type="text" id="campus360NewCategoryNameInput" placeholder="e.g. Hostel &amp; Mess"></label>
+              </div>
+              <button type="button" id="addCampus360CategoryButton">Add Category</button>
+              <p class="admin-add-feedback" id="campus360CategoryFeedback" aria-live="polite"></p>
+            </article>
+
+            <article class="admin-card admin-form-card is-hidden" id="campus360LocationFormCard">
+              <h3 id="campus360LocFormHeading">Add Location</h3>
+              <div class="admin-add-grid">
+                <label>Location Title<input type="text" id="campus360LocTitleInput" placeholder="e.g. New Library Block"></label>
+                <label>Front<input type="file" accept="image/*" id="campus360LocFrontInput"></label>
+                <label>Right<input type="file" accept="image/*" id="campus360LocRightInput"></label>
+                <label>Back<input type="file" accept="image/*" id="campus360LocBackInput"></label>
+                <label>Left<input type="file" accept="image/*" id="campus360LocLeftInput"></label>
+                <label>Up<input type="file" accept="image/*" id="campus360LocUpInput"></label>
+                <label>Down<input type="file" accept="image/*" id="campus360LocDownInput"></label>
+              </div>
+              <small class="field-hint" id="campus360LocFormHint">Upload all 6 directional photos (front, right, back, left, up, down) to add a new location.</small>
+              <div class="action-cell">
+                <button type="button" id="campus360LocSaveButton">Add Location</button>
+                <button type="button" id="campus360LocCancelButton" class="is-hidden">Cancel</button>
+                <button type="button" id="campus360RemoveCategoryButton">Remove This Category</button>
+              </div>
+              <p class="admin-add-feedback" id="campus360LocFeedback" aria-live="polite"></p>
+            </article>
+            <div class="admin-table-card is-hidden" id="campus360LocationTableCard">
+              <table>
+                <thead><tr><th>Photo</th><th>Title</th><th></th></tr></thead>
+                <tbody id="campus360LocManagerBody"></tbody>
+              </table>
+            </div>
+          </div>
+
+          <div class="media-section" data-media-section="funding">
+            <article class="admin-card admin-form-card">
+              <h3>Add Funding Campaign</h3>
+              <div class="admin-add-grid">
+                <label>Title<input type="text" id="fundingCampaignTitleInput" placeholder="e.g. Scholarship Fund"></label>
+                <label>Goal (INR)<input type="number" id="fundingCampaignGoalInput" min="1" step="1000" placeholder="e.g. 500000"></label>
+              </div>
+              <label>Description<input type="text" id="fundingCampaignDescriptionInput" placeholder="Short description shown on the campaign card"></label>
+              <button type="button" id="addFundingCampaignButton">Add Campaign</button>
+              <p class="admin-add-feedback" id="fundingCampaignAddFeedback" aria-live="polite"></p>
+            </article>
+            <div class="admin-table-card">
+              <table>
+                <thead><tr><th>Title</th><th>Goal</th><th>Raised</th><th></th></tr></thead>
+                <tbody id="fundingCampaignManagerBody"></tbody>
+              </table>
+              <p class="lookup-empty" id="fundingCampaignManagerEmpty">No funding campaigns yet. Add one above.</p>
+            </div>
+          </div>
+
+          <div class="media-section" data-media-section="spotlight-posters">
+            <article class="admin-card admin-form-card role-restricted-card" data-required-role="College Admin">
+              <h3>Add Spotlight Poster / Advertisement</h3>
+              <p class="role-lock-message">Only the College Admin role can add posters and advertisements.</p>
+              <div class="admin-add-grid">
+                <label>Title<input type="text" id="spotlightPosterTitleInput" placeholder="e.g. Sparsha 2026 Cultural Fest"></label>
+                <label>Type
+                  <select id="spotlightPosterTypeInput">
+                    <option>Event Poster</option>
+                    <option>College Poster</option>
+                    <option>Advertisement</option>
+                  </select>
+                </label>
+                <label>Poster Image<input type="file" accept="image/*" id="spotlightPosterImageInput"><small class="field-hint">Recommended: 600 x 400px or similar landscape ratio</small></label>
+                <label>Link URL (optional)<input type="text" id="spotlightPosterLinkInput" placeholder="e.g. #events or https://..."></label>
+              </div>
+              <button type="button" id="addSpotlightPosterButton">Add Poster</button>
+              <p class="admin-add-feedback" id="spotlightPosterAddFeedback" aria-live="polite"></p>
+            </article>
+            <article class="admin-card admin-form-card role-restricted-card" data-required-role="College Admin">
+              <h3>Poster Display Settings</h3>
+              <p class="role-lock-message">Only the College Admin role can change where posters and advertisements are shown.</p>
+              <div class="spotlight-settings-grid">
+                <label class="spotlight-setting-row">
+                  <span><strong>Visitor event login page</strong><small>Shown below the public event account sign-in area.</small></span>
+                  <span class="toggle-switch toggle-switch-right"><input type="checkbox" id="spotlightPosterVisitorLoginInput"><span class="toggle-slider"></span></span>
+                </label>
+                <label class="spotlight-setting-row">
+                  <span><strong>Student dashboard Spotlight</strong><small>Shown with notices and updates in the student dashboard.</small></span>
+                  <span class="toggle-switch toggle-switch-right"><input type="checkbox" id="spotlightPosterDashboardInput"><span class="toggle-slider"></span></span>
+                </label>
+                <label class="spotlight-setting-row">
+                  <span><strong>Public website Spotlight</strong><small>Reserved for public Spotlight feeds when available.</small></span>
+                  <span class="toggle-switch toggle-switch-right"><input type="checkbox" id="spotlightPosterPublicInput"><span class="toggle-slider"></span></span>
+                </label>
+              </div>
+              <div class="admin-add-grid">
+                <label>Maximum visible posters / advertisements
+                  <input type="number" id="spotlightPosterMaxVisibleInput" min="1" max="12" step="1" value="6">
+                  <small class="field-hint">Newest posters are shown first.</small>
+                </label>
+              </div>
+              <button type="button" id="saveSpotlightPosterSettingsButton">Save Display Settings</button>
+              <p class="admin-add-feedback" id="spotlightPosterSettingsFeedback" aria-live="polite"></p>
+            </article>
+            <div class="admin-table-card">
+              <table>
+                <thead><tr><th>Poster</th><th>Title</th><th>Type</th><th></th></tr></thead>
+                <tbody id="spotlightPosterManagerBody"></tbody>
+              </table>
+              <p class="lookup-empty" id="spotlightPosterManagerEmpty">No spotlight posters yet. Add one above.</p>
+            </div>
+          </div>
+        </section>
+
+        <section class="admin-panel" id="data-integrations">
+          <div class="admin-section-head">
+            <div><p class="eyebrow">Data Integrations</p><h2>Every external system this portal connects to, in one place.</h2></div>
+            <select class="admin-select" id="integrationSelect" aria-label="Select integration">
+              <option value="ai">AI Provider</option>
+              <option value="google">Google Sign-In</option>
+              <option value="google-calendar">Google Calendar API</option>
+              <option value="payu">PayU Payments</option>
+              <option value="library">Library API</option>
+              <option value="database">Database Connection</option>
+              <option value="sms">Parent OTP SMS</option>
+              <option value="kyc">Vehicle Pass (KYC)</option>
+            </select>
+          </div>
+          <article class="admin-card admin-form-card" data-integration="ai">
+            <h3>AI Provider Configuration</h3>
+            <div class="ai-settings-note">
+              <span class="ai-settings-note-icon">i</span>
+              <ul>
+                <li>The key saved here is used by the browser integration; for public deployment, route provider calls through a secured backend.</li>
+                <li>Avoid using a paid/production key in the browser because visitors can inspect network requests.</li>
+                <li>Google Gemini works directly from the browser; OpenAI and Anthropic usually require a server route.</li>
+                <li>If the AI request fails, GPRECian Bot automatically falls back to built-in keyword answers.</li>
+                <li>Role-specific real-data lookups answer first; live AI only handles general questions and should not be relied on for high-risk personal-record decisions.</li>
+              </ul>
+            </div>
+            <div class="admin-add-grid">
+              <label>Provider
+                <select id="aiProviderInput">
+                  <option value="" disabled>Select a Provider</option>
+                  <option value="gemini">Google (Gemini)</option>
+                  <option value="openai">OpenAI (GPT)</option>
+                  <option value="claude">Anthropic (Claude)</option>
+                  <option value="ollama">Ollama (Local, no API key)</option>
+                </select>
+              </label>
+              <label>Model Name<input type="text" id="aiModelInput" placeholder="e.g. gpt-4o-mini, claude-sonnet-5, gemini-2.5-flash, llama3.2"></label>
+              <label>API Key<input type="password" id="aiApiKeyInput" placeholder="Not needed for Ollama" autocomplete="off"></label>
+              <label id="aiBaseUrlField" class="is-hidden">Ollama Server URL<input type="text" id="aiBaseUrlInput" placeholder="http://localhost:11434"></label>
+            </div>
+            <p class="field-hint is-hidden" id="aiOllamaHint">
+              Ollama runs on your own machine, so no API key is needed - just install Ollama, pull a model (e.g.
+              <code>ollama pull llama3.2</code>), and make sure it's running (<code>ollama serve</code> or the Ollama
+              app) at the URL above. Since browsers block cross-origin requests by default, Ollama also needs
+              <code>OLLAMA_ORIGINS</code> set to allow this site's address (e.g. <code>OLLAMA_ORIGINS=*</code> for
+              local testing) before the connection below will succeed. The visitor's browser calls it directly, so
+              this only works while testing on the same machine Ollama is running on - it cannot serve AI answers to
+              other visitors' browsers.
+            </p>
+            <div id="aiOllamaConnectionField" class="is-hidden">
+              <button type="button" id="checkOllamaConnectionButton">Check Ollama Connection</button>
+              <p id="ollamaConnectionStatus"></p>
+              <div class="admin-table-card is-hidden" id="ollamaModelsTableCard">
+                <table>
+                  <thead><tr><th>Model</th><th>Size</th><th>Family</th><th>Parameters</th></tr></thead>
+                  <tbody id="ollamaModelsBody"></tbody>
+                </table>
+              </div>
+            </div>
+            <button type="button" id="saveAiSettingsButton">Save AI Settings</button>
+            <p class="admin-add-feedback" id="aiSettingsFeedback" aria-live="polite"></p>
+            <p id="aiSettingsStatus"></p>
+
+            <div class="portal-block-head"><h3>Live AI Usage</h3><span>Guardrails: max 400 chars in / 700 chars out per reply, 8 live AI calls per minute, unsafe-topic block, prompt-injection filter, off-topic redirect</span></div>
+            <div class="admin-metric-grid" id="aiUsageStatsGrid">
+              <article><strong id="aiUsageAttempts">0</strong><span>Attempts</span></article>
+              <article><strong id="aiUsageSuccesses">0</strong><span>Successful</span></article>
+              <article><strong id="aiUsageFailures">0</strong><span>Failed</span></article>
+              <article><strong id="aiUsageSuccessRate">-</strong><span>Success Rate</span></article>
+              <article><strong id="aiUsageAvgLatency">-</strong><span>Avg Response Time</span></article>
+              <article><strong id="aiUsageRateLimited">0</strong><span>Rate-limited</span></article>
+              <article><strong id="aiUsageBlocked">0</strong><span>Blocked (guardrail)</span></article>
+              <article><strong id="aiUsageOffTopic">0</strong><span>Off-topic (redirected)</span></article>
+            </div>
+            <p id="aiUsageLastActivity"></p>
+
+            <div class="admin-table-card">
+              <table>
+                <thead><tr><th>Time</th><th>Provider</th><th>Model</th><th>Status</th><th>Latency</th><th>Error</th></tr></thead>
+                <tbody id="aiRequestLogBody"></tbody>
+              </table>
+              <p class="lookup-empty" id="aiRequestLogEmpty">No AI requests recorded yet.</p>
+            </div>
+            <button type="button" id="resetAiUsageStatsButton" class="btn-reject">Reset Usage Stats &amp; Log</button>
+
+            <div class="portal-block-head"><h3>AI Knowledge Base</h3><span>Grounds live AI answers in this site's own content (RAG)</span></div>
+            <div class="ai-settings-note">
+              <span class="ai-settings-note-icon">i</span>
+              <ul>
+                <li>Live AI receives relevant website content such as FAQs, notices, admissions, fee, scholarship, and department details before answering.</li>
+                <li>Each knowledge item keeps its real page link or downloadable notice attachment, so GPRECian can suggest usable links.</li>
+                <li>Refresh pulls the latest portal/database content first, then syncs semantic-search embeddings for the chatbot.</li>
+              </ul>
+            </div>
+            <button type="button" id="refreshKnowledgeBaseButton">Refresh Knowledge Base</button>
+            <button type="button" id="viewKnowledgeBaseButton" class="btn-set-first">View Knowledge Base Contents</button>
+            <p id="knowledgeBaseStatus"></p>
+            <div class="admin-table-card is-hidden" id="knowledgeBaseTableCard">
+              <table>
+                <thead><tr><th>Source</th><th>Content</th><th>Link</th></tr></thead>
+                <tbody id="knowledgeBaseTableBody"></tbody>
+              </table>
+            </div>
+          </article>
+
+          <article class="admin-card">
+            <div class="portal-block-head"><h3>Bot Feedback / Training Queue</h3><span>The bot's actual "learning" mechanism</span></div>
+            <div class="ai-settings-note">
+              <span class="ai-settings-note-icon">i</span>
+              <ul>
+                <li>Flagged bot answers land here for review; this does not retrain the AI model itself.</li>
+                <li>Write the correct answer and approve it to embed that correction into the knowledge base.</li>
+                <li>Approved corrections help the same or similarly-worded questions get the right answer going forward.</li>
+              </ul>
+            </div>
+            <div class="bot-feedback-card">
+              <div class="bot-feedback-list" id="botFeedbackBody"></div>
+              <p class="lookup-empty is-hidden" id="botFeedbackEmpty">No flagged answers right now.</p>
+            </div>
+          </article>
+
+          <article class="admin-card admin-form-card" data-integration="google">
+            <h3>Alumni Google Sign-In</h3>
+            <div class="ai-settings-note">
+              <span class="ai-settings-note-icon">i</span>
+              <ul>
+                <li><code>admin-config.json</code> uses <code>googleClientId</code> as the default source for Alumni Google Sign-In.</li>
+                <li>Saving a value here updates that config file after your browser asks you to choose it, and also keeps a browser fallback.</li>
+                <li>Leave this blank to use whatever is already set in <code>admin-config.json</code>.</li>
+                <li>Google Sign-In works only over http/https with the Client ID origin registered in Google Cloud Console.</li>
+              </ul>
+            </div>
+            <label>Google Client ID (override)<input type="text" id="googleClientIdInput" placeholder="e.g. 123456-abc.apps.googleusercontent.com"></label>
+            <button type="button" id="saveGoogleClientIdButton">Save Override</button>
+            <p class="admin-add-feedback" id="googleClientIdFeedback" aria-live="polite"></p>
+            <p id="googleClientIdStatus"></p>
+          </article>
+
+          <article class="admin-card admin-form-card" data-integration="google-calendar">
+            <h3>Google Calendar API (Indian Holidays)</h3>
+            <div class="ai-settings-note">
+              <span class="ai-settings-note-icon">i</span>
+              <ul>
+                <li>Indian national holidays are fetched live from Google's public "Holidays in India" calendar.</li>
+                <li>No national holidays will show on the calendar until an API key is saved here.</li>
+                <li>Create a Google Cloud project, enable Google Calendar API, generate an API key, and restrict it to this site's HTTP referrer.</li>
+                <li>A referrer-restricted key is safe to store in the browser because it will not work from other sites.</li>
+              </ul>
+            </div>
+            <label>Google Calendar API Key<input type="text" id="googleCalendarApiKeyInput" placeholder="e.g. AIzaSy..."></label>
+            <button type="button" id="saveGoogleCalendarApiKeyButton">Save</button>
+            <p class="portal-feedback" id="googleCalendarApiKeyFeedback" aria-live="polite"></p>
+            <p id="googleCalendarApiKeyStatus"></p>
+          </article>
+
+          <article class="admin-card admin-form-card" data-integration="payu">
+            <h3>Payment Gateway (PayU)</h3>
+            <div class="ai-settings-note">
+              <span class="ai-settings-note-icon">i</span>
+              <ul>
+                <li><code>admin-config.json</code> stores the real PayU hosted checkout link used by Online Payments, event registration fees, and Alumni Funding.</li>
+                <li>Saving a link here updates that config file after your browser asks you to choose <code>admin-config.json</code>, and also keeps a browser fallback.</li>
+                <li>Leave this blank to use whatever is already set in <code>admin-config.json</code>.</li>
+                <li>Because this is a browser checkout, configure a backend webhook to confirm PayU payments before treating a payment as real.</li>
+              </ul>
+            </div>
+            <label>PayU Payment Link (override)<input type="text" id="payuPaymentLinkInput" placeholder="e.g. https://api.payu.in/webcheckoutpro/..."></label>
+            <button type="button" id="savePayuPaymentLinkButton">Save Override</button>
+            <p class="admin-add-feedback" id="payuPaymentLinkFeedback" aria-live="polite"></p>
+            <p id="payuPaymentLinkStatus"></p>
+          </article>
+
+          <article class="admin-card admin-form-card" data-integration="library">
+            <h3>Library API Integration</h3>
+            <p>Point this at the college's actual library management system (Koha, SOUL, LibSys, or a custom API). Once connected, the student Library page and all book lookups use that system directly.</p>
+            <div class="admin-add-grid">
+              <label>API Base URL<input type="text" id="libraryApiBaseUrl" placeholder="e.g. https://library.gprec.ac.in/api"></label>
+              <label>API Key / Token<input type="text" id="libraryApiKey" placeholder="Bearer token or API key"></label>
+            </div>
+            <button type="button" id="libraryApiSaveButton">Save</button>
+            <button type="button" id="libraryApiTestButton">Test Connection</button>
+            <button type="button" id="libraryApiClearButton">Disconnect</button>
+            <p class="admin-add-feedback" id="libraryApiFeedback" aria-live="polite"></p>
+            <p id="libraryApiStatus"></p>
+          </article>
+
+          <article class="admin-card admin-form-card" data-integration="sms">
+            <h3>Parent OTP SMS (MSG91)</h3>
+            <p>
+              Without this configured, the Parent Login OTP is generated and verified for real on the server but
+              only ever shown on-screen in the browser (there's no SMS gateway by default). Saving valid MSG91
+              credentials here makes the OTP actually get texted to the parent's phone instead. You'll need an MSG91
+              account with a DLT-registered sender ID and an approved SMS template containing exactly one variable
+              for the OTP - enter that variable's exact name below (MSG91 templates commonly use <code>OTP</code>
+              or <code>var1</code>; it must match whatever you registered on the MSG91/DLT portal, or delivery will
+              fail even with correct credentials).
+            </p>
+            <p>
+              Suggested DLT template text (register this exact wording on MSG91, with <code>{{OTP}}</code> as the
+              one variable):<br>
+              <em>"Dear Parent, your OTP for GPREC Parent Portal login is {{OTP}}. It is valid for 5 minutes.
+              Do not share this OTP with anyone, including GPREC staff. - G Pulla Reddy Engineering College"</em>
+            </p>
+            <div class="admin-add-grid">
+              <label>Auth Key<input type="password" id="smsAuthKeyInput" placeholder="MSG91 Auth Key" autocomplete="off"></label>
+              <label>Sender ID<input type="text" id="smsSenderIdInput" placeholder="e.g. GPREC (6-char DLT sender ID)"></label>
+              <label>Template ID<input type="text" id="smsTemplateIdInput" placeholder="DLT-approved template ID from MSG91"></label>
+              <label>Template Variable Name<input type="text" id="smsTemplateVariableInput" placeholder="OTP"></label>
+            </div>
+            <button type="button" id="smsSettingsSaveButton">Save</button>
+            <p class="admin-add-feedback" id="smsSettingsFeedback" aria-live="polite"></p>
+            <p id="smsSettingsStatus"></p>
+            <div class="admin-add-grid">
+              <label>Send a test OTP to<input type="text" id="smsTestMobileInput" placeholder="10-digit mobile number"></label>
+            </div>
+            <button type="button" id="smsTestButton">Send Test SMS</button>
+            <p class="admin-add-feedback" id="smsTestFeedback" aria-live="polite"></p>
+
+            <h4>WhatsApp fallback (optional)</h4>
+            <p>
+              If SMS isn't configured above, or a send fails, the OTP is delivered over WhatsApp instead (using the
+              same MSG91 Auth Key) before falling back to on-screen display. Needs a WhatsApp Business number
+              connected in MSG91 and an approved WhatsApp template with one body variable for the OTP.
+            </p>
+            <p>
+              Suggested WhatsApp template text (register this on MSG91/Meta, with <code>{{1}}</code> as the one
+              body variable):<br>
+              <em>"Dear Parent, your OTP for GPREC Parent Portal login is {{1}}. It is valid for 5 minutes.
+              Do not share this OTP with anyone, including GPREC staff. - G Pulla Reddy Engineering College"</em>
+            </p>
+            <div class="admin-add-grid">
+              <label>WhatsApp Business Number<input type="text" id="smsWhatsappNumberInput" placeholder="e.g. 919999999999"></label>
+              <label>WhatsApp Template Name<input type="text" id="smsWhatsappTemplateInput" placeholder="Approved template name in MSG91"></label>
+              <label>Template Body Variable Key<input type="text" id="smsWhatsappBodyVarInput" placeholder="body_1"></label>
+            </div>
+
+            <h4>Grades notification (Exam Cell)</h4>
+            <p>
+              Lets the Exam Cell send a one-off SMS/WhatsApp to a parent from the Grades Preview screen after
+              looking up a student's result. Needs its own approved template (different wording than the OTP one
+              above) with a single variable carrying the full result summary.
+            </p>
+            <p>
+              Suggested SMS template text (with <code>{{MESSAGE}}</code> as the one variable):<br>
+              <em>"Dear Parent, {{MESSAGE}}. For full details, login to the GPREC Parent Portal.
+              - G Pulla Reddy Engineering College"</em>
+            </p>
+            <p>
+              Suggested WhatsApp template text (with <code>{{1}}</code> as the one body variable):<br>
+              <em>"Dear Parent, {{1}}. For full details, login to the GPREC Parent Portal."</em>
+            </p>
+            <div class="admin-add-grid">
+              <label>SMS Template ID<input type="text" id="smsGradesTemplateIdInput" placeholder="DLT-approved template ID"></label>
+              <label>SMS Template Variable Name<input type="text" id="smsGradesTemplateVariableInput" placeholder="MESSAGE"></label>
+              <label>WhatsApp Template Name<input type="text" id="smsGradesWhatsappTemplateInput" placeholder="Approved template name in MSG91"></label>
+            </div>
+
+            <h4>Attendance notification (Faculty)</h4>
+            <p>
+              Lets faculty send a one-off SMS/WhatsApp to a parent from the Attendance Marking screen for a
+              student whose attendance has fallen below the 75% requirement. Needs its own approved template
+              (can reuse the same template as Grades above if your DLT registration allows one generic
+              single-variable template for both).
+            </p>
+            <p>
+              Suggested SMS template text (with <code>{{MESSAGE}}</code> as the one variable):<br>
+              <em>"Dear Parent, {{MESSAGE}}. For full details, login to the GPREC Parent Portal.
+              - G Pulla Reddy Engineering College"</em>
+            </p>
+            <p>
+              Suggested WhatsApp template text (with <code>{{1}}</code> as the one body variable):<br>
+              <em>"Dear Parent, {{1}}. For full details, login to the GPREC Parent Portal."</em>
+            </p>
+            <div class="admin-add-grid">
+              <label>SMS Template ID<input type="text" id="smsAttendanceTemplateIdInput" placeholder="DLT-approved template ID"></label>
+              <label>SMS Template Variable Name<input type="text" id="smsAttendanceTemplateVariableInput" placeholder="MESSAGE"></label>
+              <label>WhatsApp Template Name<input type="text" id="smsAttendanceWhatsappTemplateInput" placeholder="Approved template name in MSG91"></label>
+            </div>
+            <button type="button" id="smsSettingsSaveButtonBottom">Save</button>
+            <p class="admin-add-feedback" id="smsSettingsFeedbackBottom" aria-live="polite"></p>
+          </article>
+
+          <article class="admin-card admin-form-card" data-integration="kyc">
+            <h3>Vehicle Pass Verification (KYC)</h3>
+            <p>
+              Sarathi (driving license) and VAHAN (vehicle registration) don't offer a public API directly.
+              <a href="https://www.apisetu.gov.in" target="_blank" rel="noopener">API Setu</a>, the Government of
+              India's own API gateway (run by NeGD/MeitY), exposes official DL and RC verification APIs from the
+              Ministry of Road Transport at no per-call cost - this card is built for that. It requires registering
+              GPREC as a consumer organization on API Setu first (a one-time government approval process, not
+              instant); once approved, paste the base URL/paths/key API Setu issues you below.
+            </p>
+            <p>
+              Without this configured, Vehicle Pass applications still work normally - they're just marked "Not
+              configured, manual review required" so you can check the uploaded license/RC photos yourself before
+              approving.
+            </p>
+            <div class="admin-add-grid">
+              <label>Provider Name<input type="text" id="kycProviderInput" placeholder="API Setu" value="API Setu"></label>
+              <label>Auth Key<input type="password" id="kycAuthKeyInput" placeholder="API Setu subscriber key" autocomplete="off"></label>
+              <label>Base URL<input type="text" id="kycBaseUrlInput" placeholder="Issued by API Setu after approval"></label>
+              <label>DL Verify Path<input type="text" id="kycDlPathInput" placeholder="/v1/driving-license/verify"></label>
+              <label>RC Verify Path<input type="text" id="kycRcPathInput" placeholder="/v1/rc/verify"></label>
+            </div>
+            <button type="button" id="kycSettingsSaveButton">Save</button>
+            <p class="admin-add-feedback" id="kycSettingsFeedback" aria-live="polite"></p>
+            <p id="kycSettingsStatus"></p>
+            <div class="admin-add-grid">
+              <label>Test License Number<input type="text" id="kycTestLicenseInput" placeholder="Any test DL number"></label>
+              <label>Test Vehicle Number<input type="text" id="kycTestVehicleInput" placeholder="Any test RC number"></label>
+            </div>
+            <button type="button" id="kycTestButton">Test Verification</button>
+            <p class="admin-add-feedback" id="kycTestFeedback" aria-live="polite"></p>
+          </article>
+
+          <article class="admin-card admin-form-card" data-integration="database">
+            <h3>Database Connection</h3>
+            <p>Connect the portal to the college database or backend API used for fees, library, notices, sections, and student records.</p>
+            <div class="ai-settings-note">
+              <span class="ai-settings-note-icon">i</span>
+              <ul>
+                <li>A browser cannot open a raw MySQL/PostgreSQL connection directly because those protocols are not HTTP.</li>
+                <li>MySQL and PostgreSQL fields are stored as a backend JDBC connection workflow, such as <code>jdbc:mysql://host:port/database</code>.</li>
+                <li>REST/HTTP API and PHP Server can be tested live from this page because they are regular HTTP endpoints.</li>
+                <li>PHP Server uses HTTP Basic Auth because many custom PHP endpoints are protected with username/password.</li>
+              </ul>
+            </div>
+            <label>Database Type
+              <select id="databaseTypeInput">
+                <option value="rest">REST / HTTP API</option>
+                <option value="php">PHP Server</option>
+                <option value="mysql">MySQL (JDBC)</option>
+                <option value="postgres">PostgreSQL (JDBC)</option>
+              </select>
+            </label>
+
+            <div class="admin-add-grid" data-database-fields="rest">
+              <label>API Base URL<input type="text" id="databaseApiBaseUrl" placeholder="e.g. https://api.gprec.ac.in/db"></label>
+              <label>API Key / Token<input type="text" id="databaseApiKey" placeholder="Bearer token or API key"></label>
+            </div>
+            <div class="admin-add-grid is-hidden" data-database-fields="php">
+              <label>PHP Endpoint URL<input type="text" id="phpBaseUrlInput" placeholder="e.g. https://gprec.ac.in/api/index.php"></label>
+              <label>Username<input type="text" id="phpUsernameInput" placeholder="e.g. site_user" autocomplete="off"></label>
+              <label>Password<input type="password" id="phpPasswordInput" placeholder="Password" autocomplete="off"></label>
+            </div>
+            <div class="admin-add-grid is-hidden" data-database-fields="mysql">
+              <label>Host<input type="text" id="mysqlHostInput" placeholder="e.g. db.gprec.ac.in"></label>
+              <label>Port<input type="text" id="mysqlPortInput" placeholder="3306"></label>
+              <label>Database Name<input type="text" id="mysqlDatabaseInput" placeholder="e.g. gprec_portal"></label>
+              <label>Username<input type="text" id="mysqlUserInput" placeholder="db_user"></label>
+              <label>Password<input type="password" id="mysqlPasswordInput" placeholder="Password" autocomplete="off"></label>
+              <p class="jdbc-url-preview" id="mysqlJdbcPreview">jdbc:mysql://host:3306/database</p>
+            </div>
+            <div class="admin-add-grid is-hidden" data-database-fields="postgres">
+              <label>Host<input type="text" id="postgresHostInput" placeholder="e.g. db.gprec.ac.in"></label>
+              <label>Port<input type="text" id="postgresPortInput" placeholder="5432"></label>
+              <label>Database Name<input type="text" id="postgresDatabaseInput" placeholder="e.g. gprec_portal"></label>
+              <label>Username<input type="text" id="postgresUserInput" placeholder="db_user"></label>
+              <label>Password<input type="password" id="postgresPasswordInput" placeholder="Password" autocomplete="off"></label>
+              <p class="jdbc-url-preview" id="postgresJdbcPreview">jdbc:postgresql://host:5432/database</p>
+            </div>
+
+            <button type="button" id="databaseApiSaveButton">Save</button>
+            <button type="button" id="databaseApiTestButton">Test Connection</button>
+            <button type="button" id="databaseApiClearButton">Disconnect</button>
+            <p class="admin-add-feedback" id="databaseApiFeedback" aria-live="polite"></p>
+            <p id="databaseApiStatus"></p>
+          </article>
+
+          <div class="admin-table-card" id="dbHealthCard" data-integration="database">
+            <h3>Live Database Health</h3>
+            <p>Checks the real Postgres database this portal actually reads and writes to (through the local portal API server) - independent of the connection settings above, which only affect where the app looks for its API.</p>
+            <button type="button" id="dbHealthCheckButton">Check Health</button>
+            <p id="dbHealthStatus" aria-live="polite"></p>
+            <table>
+              <thead><tr><th>Table</th><th>Rows</th></tr></thead>
+              <tbody id="dbHealthTableBody"></tbody>
+            </table>
+
+            <div class="db-health-charts">
+              <div class="db-health-chart-card">
+                <h4>Server Sessions</h4>
+                <canvas id="dbChartSessions" width="260" height="140"></canvas>
+                <div class="db-health-chart-legend">
+                  <span><i class="dot-a"></i>Active</span>
+                  <span><i class="dot-b"></i>Idle</span>
+                </div>
+              </div>
+              <div class="db-health-chart-card">
+                <h4>Transactions / sec</h4>
+                <canvas id="dbChartTransactions" width="260" height="140"></canvas>
+                <div class="db-health-chart-legend">
+                  <span><i class="dot-a"></i>Commit</span>
+                  <span><i class="dot-b"></i>Rollback</span>
+                </div>
+              </div>
+              <div class="db-health-chart-card">
+                <h4>Block I/O / sec</h4>
+                <canvas id="dbChartBlockIo" width="260" height="140"></canvas>
+                <div class="db-health-chart-legend">
+                  <span><i class="dot-a"></i>Read</span>
+                  <span><i class="dot-b"></i>Hit</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <section class="admin-panel" id="reports-audit">
+          <div class="admin-section-head">
+            <div><p class="eyebrow">Reports & Audit</p><h2>Operational reports and activity trail.</h2></div>
+          </div>
+          <div class="admin-grid three">
+            <article class="admin-card"><h3>Academic Reports</h3><p>Attendance, assignment, results, timetable, and course completion exports.</p><select class="admin-select" id="academicReportType" aria-label="Select report type"><option value="attendance">Attendance</option><option value="assignments">Assignments</option><option value="results">Results</option><option value="timetable">Timetable</option></select><button type="button" id="generateAcademicReportButton">Generate Report</button></article>
+            <article class="admin-card"><h3>Financial Reports</h3><p>Payment gateway transactions, certificate fees, exam fees, and dues.</p><button type="button" id="openFinanceExportButton">Open Finance Export</button></article>
+            <article class="admin-card"><h3>Audit Trail</h3><p>Role/credential changes, notice publishing, hostel request approvals, complaint resolutions, and other admin actions on file.</p><button type="button" id="viewAuditButton">View Audit</button></article>
+          </div>
+          <div class="admin-table-card">
+            <h3>Recent Audit Activity</h3>
+            <table>
+              <thead><tr><th>Time</th><th>User</th><th>Action</th><th>Module</th></tr></thead>
+              <tbody id="auditActivityBody"></tbody>
+            </table>
+            <p class="portal-note is-hidden" id="auditActivityEmpty">No admin activity recorded yet.</p>
+          </div>
+
+          <div class="admin-table-card admin-card" id="dataRetentionCard">
+            <h3>Data Retention Policy</h3>
+            <p>How long each table's data is kept and what happens to it afterward. This is a reference classification, not an automatic deletion job - nothing here is ever purged by the app itself.</p>
+            <table>
+              <thead><tr><th>Table</th><th>Owner Module</th><th>Behavior</th><th>Retention</th><th>PII</th><th>Disposal Action</th></tr></thead>
+              <tbody id="dataRetentionBody"></tbody>
+            </table>
+            <button type="button" id="checkRetentionStatusButton">Check Retention Status</button>
+            <p class="admin-add-feedback" id="dataRetentionCheckFeedback" aria-live="polite"></p>
+          </div>
+          <div class="admin-table-card is-hidden" id="dataRetentionResultsCard">
+            <h3>Rows Past Retention Cutoff</h3>
+            <table>
+              <thead><tr><th>Table</th><th>Retention</th><th>Rows Eligible</th></tr></thead>
+              <tbody id="dataRetentionResultsBody"></tbody>
+            </table>
+            <p class="lookup-empty is-hidden" id="dataRetentionResultsEmpty">No table currently has rows past its retention cutoff.</p>
+          </div>
+        </section>
+      </section>
+    </main>
+
+    <div class="modal-overlay is-hidden" id="calendarEventModalOverlay">
+      <div class="modal-box calendar-event-modal">
+        <div class="modal-head">
+          <div class="calendar-event-modal-title">
+            <span class="calendar-event-modal-dot" id="calendarEventModalDot"></span>
+            <h3 id="calendarEventModalTitle"></h3>
+          </div>
+          <div class="calendar-event-modal-actions">
+            <button type="button" id="calendarEventModalDelete" class="is-hidden" aria-label="Delete reminder" title="Delete">
+              <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h16M9 7V4h6v3M6 7l1 13h10l1-13"/></svg>
+            </button>
+            <button type="button" id="calendarEventModalClose" aria-label="Close">&times;</button>
+          </div>
+        </div>
+        <p id="calendarEventModalDate"></p>
+        <p id="calendarEventModalDescription"></p>
+      </div>
+    </div>
+
+
+    <div class="gprecian" aria-live="polite">
+      <section class="gprecian-panel" aria-label="GPRECian admin help chat">
+        <div class="gprecian-head">
+          <div class="gprecian-title">
+            <span class="gprecian-avatar bot-avatar"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m4 6 8-3 8 3-8 3zM7 8v3M17 8v3M9 12a3 3 0 1 0 6 0M5 21c.7-3.2 3.4-5 7-5s6.3 1.8 7 5"/></svg></span>
+            <div>
+              <strong>GPRECian Bot</strong>
+              <span>AI admin help</span>
+            </div>
+          </div>
+          <div class="gprecian-actions">
+            <button class="gprecian-expand" type="button" aria-label="Expand chat window"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M15 3h6v6M9 21H3v-6M21 3l-7 7M3 21l7-7"/></svg></button>
+            <button class="gprecian-close" type="button" aria-label="Close GPRECian chat">×</button>
+          </div>
+        </div>
+        <div class="gprecian-welcome" id="gprecianWelcome">
+          <p class="gprecian-welcome-greeting" id="gprecianWelcomeGreeting">Hello</p>
+          <p class="gprecian-welcome-question">How can I help you today?</p>
+          <p class="gprecian-welcome-subtext">Ask me about publishing notices, managing media, approvals, or reports.</p>
+          <div class="gprecian-chips" aria-label="Suggested questions">
+            <button type="button" data-question="publish notice">Publish Notice</button>
+            <button type="button" data-question="manage media">Manage Media</button>
+            <button type="button" data-question="approvals">Approvals</button>
+            <button type="button" data-question="reports">Reports</button>
+          </div>
+        </div>
+        <div class="gprecian-messages is-hidden"></div>
+        <form class="gprecian-form">
+          <input type="text" aria-label="Ask GPRECian a question" placeholder="Ask a question..." autocomplete="off" id="gprecianInput">
+          <button type="submit" aria-label="Send message"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"/></svg></button>
+          <div class="gprecian-suggestions is-hidden" id="gprecianSuggestions"></div>
+        </form>
+        <p class="gprecian-disclaimer">AI-generated answers may be inaccurate - verify important details with the college.</p>
+      </section>
+      <button class="gprecian-toggle" type="button" aria-label="Open GPRECian chat">
+        <span><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m4 6 8-3 8 3-8 3zM7 8v3M17 8v3M9 12a3 3 0 1 0 6 0M5 21c.7-3.2 3.4-5 7-5s6.3 1.8 7 5"/></svg></span>
+        <strong>GPRECian Bot</strong>
+      </button>
+    </div>
+
+    <script src="../script.js"></script>
+  </body>
+</html>

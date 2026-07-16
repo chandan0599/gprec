@@ -1,0 +1,49 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Faculty Login | GPREC</title>
+    <meta name="description" content="GPREC faculty login using official college Gmail credentials.">
+    <link rel="icon" href="https://www.gprec.ac.in/wp-content/uploads/2017/08/fav.png" sizes="32x32">
+    <link rel="stylesheet" href="../styles.css">
+  </head>
+  <body class="login-page faculty-login-page">
+    <svg class="icon-sprite" aria-hidden="true" focusable="false">
+      <symbol id="icon-users" viewBox="0 0 24 24"><path d="M16 19c0-2.2-1.8-4-4-4s-4 1.8-4 4M12 12a4 4 0 1 0 0-8 4 4 0 0 0 0 8ZM20 19c0-1.7-1.1-3.2-2.7-3.8M17 5.3a3 3 0 0 1 0 5.4M4 19c0-1.7 1.1-3.2 2.7-3.8M7 5.3a3 3 0 0 0 0 5.4"/></symbol>
+    </svg>
+    <header class="login-header">
+      <a class="login-brand" href="../index.html"><img src="../gprec-logo-enhanced.png" alt="G Pulla Reddy Engineering College"></a>
+      <a class="login-home" href="../index.html"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m3 11 9-8 9 8M5 10v11h14V10M9 21v-6h6v6"/></svg>Home</a>
+    </header>
+    <main class="role-login-main">
+      <section class="role-login-copy">
+        <p class="eyebrow">Faculty Portal</p>
+        <h1>Teaching and department service access.</h1>
+        <p>Use your official college Gmail and password for faculty services, course resources, department records, and course portal access.</p>
+        <div class="role-points">
+          <span>Faculty services</span>
+          <span>Department records</span>
+          <span>Payroll information</span>
+        </div>
+      </section>
+      <article class="portal-card role-login-card faculty-portal">
+        <div class="portal-head">
+          <span><svg><use href="#icon-users"></use></svg></span>
+          <div>
+            <h3>Faculty Login</h3>
+            <p>Use official college Gmail credentials.</p>
+          </div>
+        </div>
+        <form class="portal-form faculty-login-form">
+          <label>College Gmail<input type="email" id="facultyLoginEmail" placeholder="name@gprec.ac.in" autocomplete="username"></label>
+          <label>Password<input type="password" id="facultyLoginPassword" placeholder="Enter password" autocomplete="current-password"></label>
+          <label><span>Security Check (<span class="captcha-question">? + ?</span>)</span><input type="text" class="captcha-input" inputmode="numeric" autocomplete="off" placeholder="Enter the sum"></label>
+          <button type="submit">Login as Faculty</button>
+          <p class="auth-switch"><a href="forgot-password.html?role=faculty">Forgot password?</a></p>
+        </form>
+      </article>
+    </main>
+    <script src="../script.js"></script>
+  </body>
+</html>

@@ -1,0 +1,155 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Fee Challan Form | GPREC</title>
+    <meta name="description" content="Generate an Exam / Condonation / PCCMM or Tuition Fee challan for G. Pulla Reddy Engineering College.">
+    <link rel="icon" href="https://www.gprec.ac.in/wp-content/uploads/2017/08/fav.png" sizes="32x32">
+    <link rel="stylesheet" href="../styles.css">
+  </head>
+  <body class="student-portal-page assignment-page">
+    <header class="login-header">
+      <a class="login-brand" href="../index.html"><img src="../gprec-logo-enhanced.png" alt="G Pulla Reddy Engineering College"></a>
+      <a class="login-home" href="exam-cell.html"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m3 11 9-8 9 8M5 10v11h14V10M9 21v-6h6v6"/></svg>Exam Cell</a>
+    </header>
+    <main class="student-service-page">
+      <section class="service-hero">
+        <p class="eyebrow">Exam Cell Services</p>
+        <h1>Generate your fee challan online.</h1>
+        <p>Enter your roll number, choose the purpose, and the amount to generate a reference challan for Exam/Condonation/PCCMM Fee or Tuition Fee. Present it at the bank counter to complete the payment.</p>
+      </section>
+
+      <form class="certificate-form service-request-card" id="challanForm">
+        <div class="service-card-head">
+          <p class="eyebrow">Student Request</p>
+          <h2>Challan Details</h2>
+        </div>
+
+        <label>Roll Number
+          <input type="text" name="dfRollNo" id="challanRollNo" required placeholder="e.g. 22X51A0501">
+        </label>
+        <label>Full Name
+          <input type="text" name="studentName" id="challanName" required placeholder="Auto-fills if your roll number is on record - editable">
+        </label>
+        <label>Purpose
+          <input type="text" name="ddlPurpose" id="challanPurpose" required placeholder="e.g. Exam/Condonation/PCCMM Fee">
+        </label>
+        <div class="disclosure-table-wrap">
+          <table class="disclosure-table">
+            <thead><tr><th>If paying for...</th><th>Write this in Purpose</th></tr></thead>
+            <tbody>
+              <tr><td>Exam fee, condonation fee, or PC/CMM fee</td><td>Exam/Condonation/PCCMM Fee</td></tr>
+              <tr><td>Tuition fee</td><td>Tuition Fee</td></tr>
+              <tr><td>Hostel fee</td><td>Hostel Fee</td></tr>
+              <tr><td>Bus/transport fee</td><td>Bus Fee</td></tr>
+              <tr><td>Anything else</td><td>Name it directly, e.g. "Duplicate Certificate Fee"</td></tr>
+            </tbody>
+          </table>
+        </div>
+        <label>Amount (Rs)
+          <input type="text" name="dfAmount" id="challanAmountInput" required pattern="[0-9]+" title="Digits only" placeholder="e.g. 500">
+        </label>
+        <p class="service-amount" id="challanAmountWords">Rs. 0/- (Rupees Zero Only)</p>
+
+        <label class="declaration-check">
+          <input type="checkbox" required>
+          <span>I confirm the details above are correct and I am generating this challan for my own fee payment.</span>
+        </label>
+
+        <button class="payment-open-button" type="submit" id="challanSubmit">Generate Challan</button>
+        <p class="portal-feedback is-hidden" id="challanFeedback"></p>
+      </form>
+    </main>
+    <script src="../script.js"></script>
+    <script>
+      (() => {
+        // Indian numbering system (Hundred/Thousand/Lakh/Crore), not the international
+        // Million/Billion grouping - matches how the amount is written on the physical challan.
+        const ONES = ["", "One", "Two", "Three", "Four", "Five", "Six", "Seven", "Eight", "Nine", "Ten",
+          "Eleven", "Twelve", "Thirteen", "Fourteen", "Fifteen", "Sixteen", "Seventeen", "Eighteen", "Nineteen"];
+        const TENS = ["", "", "Twenty", "Thirty", "Forty", "Fifty", "Sixty", "Seventy", "Eighty", "Ninety"];
+        const twoDigitsInWords = (n) => (n < 20 ? ONES[n] : `${TENS[Math.floor(n / 10)]}${n % 10 ? " " + ONES[n % 10] : ""}`);
+        const threeDigitsInWords = (n) =>
+          n < 100 ? twoDigitsInWords(n) : `${ONES[Math.floor(n / 100)]} Hundred${n % 100 ? " " + twoDigitsInWords(n % 100) : ""}`;
+        const amountInWords = (amount) => {
+          if (amount === 0) return "Zero";
+          const crore = Math.floor(amount / 10000000);
+          const lakh = Math.floor((amount % 10000000) / 100000);
+          const thousand = Math.floor((amount % 100000) / 1000);
+          const hundred = amount % 1000;
+          return [
+            crore && `${threeDigitsInWords(crore)} Crore`,
+            lakh && `${threeDigitsInWords(lakh)} Lakh`,
+            thousand && `${threeDigitsInWords(thousand)} Thousand`,
+            hundred && threeDigitsInWords(hundred)
+          ]
+            .filter(Boolean)
+            .join(" ");
+        };
+
+        const amountInput = document.querySelector("#challanAmountInput");
+        const amountWords = document.querySelector("#challanAmountWords");
+        amountInput?.addEventListener("input", () => {
+          const amount = Number(amountInput.value.replace(/[^0-9]/g, "")) || 0;
+          if (amountWords) amountWords.textContent = `Rs. ${amount}/- (Rupees ${amountInWords(amount)} Only)`;
+        });
+
+        const form = document.querySelector("#challanForm");
+        const feedback = document.querySelector("#challanFeedback");
+        const submitButton = document.querySelector("#challanSubmit");
+        const nameInput = document.querySelector("#challanName");
+        const rollNoInput = document.querySelector("#challanRollNo");
+        const showFeedback = (text, isSuccess) => {
+          if (!feedback) return;
+          feedback.textContent = text;
+          feedback.classList.remove("is-hidden");
+          feedback.classList.toggle("success", Boolean(isSuccess));
+        };
+
+        // Auto-fills the Name field once a roll number is entered, but never overwrites text the
+        // student has already typed themselves - our own students table only has a small seeded
+        // set of records, so most real roll numbers won't match and the field just stays editable.
+        rollNoInput?.addEventListener("blur", () => {
+          const rollNo = rollNoInput.value.trim();
+          if (!rollNo || nameInput.value.trim() || typeof gprecDbRequest !== "function") return;
+          const lookup = gprecDbRequest(`/students/lookup-name?rollNo=${encodeURIComponent(rollNo)}`);
+          if (lookup?.name) nameInput.value = lookup.name;
+        });
+
+        form?.addEventListener("submit", async (event) => {
+          event.preventDefault();
+          const rollNo = rollNoInput.value.trim();
+          const name = nameInput.value.trim();
+          const purpose = document.querySelector("#challanPurpose").value.trim();
+          const amountNumber = Number(amountInput.value.replace(/[^0-9]/g, "")) || 0;
+          if (!rollNo || !name || !purpose || !amountNumber) return;
+
+          submitButton.disabled = true;
+          submitButton.textContent = "Generating…";
+
+          try {
+            const copies = await makeChallanPdfs(name, rollNo, purpose, amountNumber, amountInWords(amountNumber));
+            // Chrome (and other browsers) silently blocks all but the first of several
+            // auto-triggered downloads fired back-to-back in the same tick, treating it like a
+            // popup flood - staggering each click onto its own timer lets all three land.
+            copies.forEach((copy, index) => {
+              window.setTimeout(() => {
+                const link = document.createElement("a");
+                link.href = URL.createObjectURL(copy.blob);
+                link.download = `gprec-challan-${rollNo}-${copy.fileSuffix}.pdf`;
+                link.click();
+              }, index * 400);
+            });
+            showFeedback("Challan generated (College/Student/Bank copies downloaded separately). Present them at the bank counter to complete the payment.", true);
+          } catch (err) {
+            showFeedback("Could not generate the challan. Please try again.", false);
+          } finally {
+            submitButton.disabled = false;
+            submitButton.textContent = "Generate Challan";
+          }
+        });
+      })();
+    </script>
+  </body>
+</html>

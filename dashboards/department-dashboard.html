@@ -1,0 +1,340 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Department Admin Dashboard | GPREC</title>
+    <meta name="description" content="GPREC department admin dashboard for courses, faculty load, timetable, and department directory.">
+    <link rel="icon" href="https://www.gprec.ac.in/wp-content/uploads/2017/08/fav.png" sizes="32x32">
+    <link rel="stylesheet" href="../styles.css">
+  </head>
+  <body class="admin-dashboard-page">
+    <header class="student-topbar admin-topbar">
+      <a class="student-brand" href="../index.html">
+        <img src="../gprec-logo-enhanced.png" alt="G Pulla Reddy Engineering College">
+      </a>
+      <div class="student-user">
+        <div class="notification-bell-wrap">
+          <button type="button" class="notification-bell" id="notificationBellButton" aria-label="Notifications">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 8a6 6 0 1 1 12 0c0 4 1.5 5.5 2 6H4c.5-.5 2-2 2-6Z"/><path d="M10 20a2 2 0 0 0 4 0"/></svg>
+            <span class="notification-badge is-hidden" id="notificationBadge">0</span>
+          </button>
+          <div class="notification-dropdown is-hidden" id="notificationDropdown">
+            <div class="notification-dropdown-head">Notifications</div>
+            <div id="notificationList"></div>
+          </div>
+        </div>
+        <div class="student-user-menu">
+          <span class="student-user-avatar">AD</span>
+          <button type="button" class="student-user-toggle" aria-label="Account menu" aria-expanded="false">
+            <span class="student-user-name-block">
+              <strong id="adminRoleName">Department Admin</strong>
+              <small>GPREC Administration</small>
+            </span>
+          </button>
+          <div class="student-user-dropdown">
+            <a href="../logins/admin-login.html">Logout</a>
+          </div>
+        </div>
+      </div>
+    </header>
+
+    <main class="admin-shell">
+      <aside class="admin-sidebar">
+        <div class="student-menu-title">
+          <strong>Department Console</strong>
+          <button type="button" class="menu-collapse-toggle" id="menuCollapseToggle" aria-label="Collapse menu">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M15 5 9 12l6 7"/></svg>
+          </button>
+        </div>
+        <div class="admin-nav active" data-admin-target="#department-admin" title="Overview" role="button" tabindex="0"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="3" width="8" height="8" rx="1"/><rect x="13" y="3" width="8" height="8" rx="1"/><rect x="3" y="13" width="8" height="8" rx="1"/><rect x="13" y="13" width="8" height="8" rx="1"/></svg><span class="admin-nav-text">Overview</span></div>
+        <div class="admin-nav" data-admin-target="#calendar" title="Calendar" role="button" tabindex="0"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="4" y="5" width="16" height="15" rx="2"/><path d="M4 10h16M8 3v4M16 3v4"/></svg><span class="admin-nav-text">Calendar</span></div>
+        <div class="admin-nav" data-admin-target="#department-curriculum" title="Curriculum" role="button" tabindex="0"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 4h6a2 2 0 0 1 2 2v14a2 2 0 0 0-2-2H4Z"/><path d="M20 4h-6a2 2 0 0 0-2 2v14a2 2 0 0 1 2-2h6Z"/></svg><span class="admin-nav-text">Curriculum</span></div>
+        <div class="admin-nav" data-admin-target="#department-faculty" title="HOD &amp; Faculty" role="button" tabindex="0"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m12 3 9 5-9 5-9-5 9-5Z"/><path d="m3 13 9 5 9-5"/></svg><span class="admin-nav-text">HOD &amp; Faculty</span></div>
+        <div class="admin-nav" data-admin-target="#department-notices" title="Notices" role="button" tabindex="0"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 8a6 6 0 1 1 12 0c0 4 1.5 5.5 2 6H4c.5-.5 2-2 2-6Z"/><path d="M10 20a2 2 0 0 0 4 0"/></svg><span class="admin-nav-text">Notices</span></div>
+        <div class="admin-nav" data-admin-target="#department-sections" title="Student Sections" role="button" tabindex="0"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="9" cy="8" r="3"/><path d="M2 20c0-3 3-5 7-5s7 2 7 5"/><circle cx="17" cy="8" r="3"/><path d="M14 15c3 .3 5 2 5 5"/></svg><span class="admin-nav-text">Student Sections</span></div>
+        <div class="admin-nav" data-admin-target="#department-timetable" title="Timetable" role="button" tabindex="0"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="4" y="5" width="16" height="15" rx="2"/><path d="M4 10h16M8 3v4M16 3v4"/></svg><span class="admin-nav-text">Timetable</span></div>
+        <div class="admin-nav" data-admin-target="#department-reports" title="Reports" role="button" tabindex="0"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 21h16"/><path d="M6 21V10M12 21V4M18 21v-7"/></svg><span class="admin-nav-text">Reports</span></div>
+      </aside>
+
+      <section class="admin-workspace">
+        <section class="admin-panel is-active" id="department-admin">
+          <div class="admin-section-head">
+            <div><p class="eyebrow">Department Wise Admin</p><h2>Manage department academics and users.</h2></div>
+            <select class="admin-select" id="departmentAdminSelect" aria-label="Select department">
+              <option>CSE</option><option>ECE</option><option>EEE</option><option>ME</option><option>CE</option><option>CST</option><option>CSM</option><option>CSD</option><option>CSB</option>
+            </select>
+            <span class="admin-dept-badge is-hidden" id="departmentAdminBadge"></span>
+          </div>
+          <div class="admin-metric-grid">
+            <article><strong id="deptStatSubjects">0</strong><span>Curriculum subjects</span></article>
+            <article><strong id="deptStatTimetable">0</strong><span>Timetable slots</span></article>
+            <article><strong id="deptStatSections">0</strong><span>Student section assignments</span></article>
+            <article><strong id="deptStatFaculty">0</strong><span>Faculty in department</span></article>
+          </div>
+
+          <div class="admin-section-head">
+            <div><p class="eyebrow">Quick Links</p><h2>Jump to a section.</h2></div>
+          </div>
+          <div class="admin-grid two">
+            <article class="admin-card"><h3>Student Sections</h3><p>Assign which section each student belongs to, one by one or via CSV upload.</p><button type="button" data-goto-nav="#department-sections">Manage Sections</button></article>
+            <article class="admin-card"><h3>Curriculum</h3><p>Upload the subject list for this department.</p><button type="button" data-goto-nav="#department-curriculum">Manage Curriculum</button></article>
+            <article class="admin-card"><h3>Timetable</h3><p>Upload the weekly class schedule for this department.</p><button type="button" data-goto-nav="#department-timetable">Manage Timetable</button></article>
+            <article class="admin-card"><h3>HOD &amp; Faculty</h3><p>Set the Head of Department and add faculty members shown to students.</p><button type="button" data-goto-nav="#department-faculty">Manage HOD &amp; Faculty</button></article>
+            <article class="admin-card"><h3>Notices</h3><p>Post announcements seen only by students of this department.</p><button type="button" data-goto-nav="#department-notices">Manage Notices</button></article>
+            <article class="admin-card"><h3>Reports</h3><p>Attendance shortage and section-wise attendance CSV exports for this department.</p><button type="button" data-goto-nav="#department-reports">View Reports</button></article>
+          </div>
+        </section>
+
+        <section class="admin-panel" id="department-reports">
+          <div class="admin-section-head">
+            <div><p class="eyebrow">Reports</p><h2>Attendance reports for the department selected on Overview.</h2></div>
+          </div>
+          <article class="admin-card">
+            <h3>Students Below 75% Attendance</h3>
+            <p>One row per student, aggregated across every subject, for the department selected above.</p>
+            <button type="button" id="generateAttendanceShortageButton">Generate &amp; Download CSV</button>
+            <p class="admin-add-feedback" id="attendanceShortageFeedback" aria-live="polite"></p>
+          </article>
+          <article class="admin-card">
+            <h3>Section-wise Attendance Report</h3>
+            <p>Every class session for the department selected above - one row per student per session, with its section, subject, and date. Leave To Date empty (or same as From Date) for a single day; leave both empty for everything on file.</p>
+            <div class="date-range-toolbar">
+              <label>Section
+                <select id="attendanceSectionFilter">
+                  <option value="">All Sections</option>
+                </select>
+              </label>
+              <label>From Date<input type="date" id="attendanceSectionDateFrom"></label>
+              <label>To Date<input type="date" id="attendanceSectionDateTo"></label>
+              <button type="button" id="generateAttendanceSectionReportButton">Generate &amp; Download CSV</button>
+            </div>
+            <p class="admin-add-feedback" id="attendanceSectionReportFeedback" aria-live="polite"></p>
+          </article>
+        </section>
+
+        <section class="admin-panel" id="department-sections">
+          <div class="admin-section-head">
+            <div><p class="eyebrow">Student Sections</p><h2>Assign which section each student belongs to - controls which section's timetable they see.</h2></div>
+          </div>
+          <article class="admin-card admin-form-card">
+            <p>Columns, in order: <strong>Roll Number, Section</strong>. Uploading adds/updates these roll numbers' section assignments without affecting other students already set.</p>
+            <div class="admin-add-grid">
+              <label>CSV File<input type="file" id="studentSectionCsvInput" accept=".csv"></label>
+            </div>
+            <button type="button" id="studentSectionCsvUploadButton">Upload and Apply</button>
+            <button type="button" id="studentSectionCsvSampleButton">Download Sample CSV</button>
+            <p class="admin-add-feedback" id="studentSectionCsvFeedback" aria-live="polite"></p>
+
+            <div class="admin-table-card">
+              <table>
+                <thead><tr><th>Roll Number</th><th>Section</th><th></th></tr></thead>
+                <tbody id="studentSectionBody"></tbody>
+              </table>
+              <p class="lookup-empty" id="studentSectionEmpty">No section assignments set - students default to the section on their profile.</p>
+            </div>
+          </article>
+        </section>
+
+        <section class="admin-panel" id="department-curriculum">
+          <div class="admin-section-head">
+            <div><p class="eyebrow">Curriculum</p><h2>Bulk-update the subject list via CSV for the department selected in Overview.</h2></div>
+          </div>
+          <article class="admin-card admin-form-card">
+            <h3>Curriculum (CSV Upload)</h3>
+            <p>Columns, in order: <strong>Subject Code, Subject Name, Semester, Credits, Type</strong> (Type: Theory or Lab). Replaces the curriculum list shown to students of this department (same for every section).</p>
+            <div class="admin-add-grid">
+              <label>CSV File<input type="file" id="curriculumCsvInput" accept=".csv"></label>
+            </div>
+            <button type="button" id="curriculumCsvUploadButton">Upload and Apply</button>
+            <button type="button" id="curriculumCsvSampleButton">Download Sample CSV</button>
+            <p class="admin-add-feedback" id="curriculumCsvFeedback" aria-live="polite"></p>
+            <div class="admin-table-card">
+              <table>
+                <thead><tr><th>Code</th><th>Subject</th><th>Sem</th><th>Credits</th><th>Type</th></tr></thead>
+                <tbody id="curriculumPreviewBody"></tbody>
+              </table>
+              <p class="lookup-empty" id="curriculumPreviewEmpty">No curriculum uploaded yet for this department.</p>
+            </div>
+          </article>
+        </section>
+
+        <section class="admin-panel" id="department-timetable">
+          <div class="admin-section-head">
+            <div><p class="eyebrow">Timetable</p><h2>Bulk-update the weekly class schedule via CSV for the department selected in Overview.</h2></div>
+          </div>
+          <article class="admin-card admin-form-card">
+            <h3>Class Timetable (CSV Upload)</h3>
+            <p>Columns, in order: <strong>Day, Time, Subject Code, Subject Name, Faculty Email, Section</strong>. One file can cover multiple sections (e.g. CSE III-A and CSE III-B) - each row's Section decides which students see it, and which faculty member teaches it goes in their own My Timetable tagged with that section.</p>
+            <div class="admin-add-grid">
+              <label>CSV File<input type="file" id="timetableCsvInput" accept=".csv"></label>
+            </div>
+            <button type="button" id="timetableCsvUploadButton">Upload and Apply</button>
+            <button type="button" id="timetableCsvSampleButton">Download Sample CSV</button>
+            <p class="admin-add-feedback" id="timetableCsvFeedback" aria-live="polite"></p>
+            <div class="admin-table-card">
+              <table>
+                <thead><tr><th>Day</th><th>Time</th><th>Code</th><th>Subject</th><th>Faculty Email</th><th>Section</th></tr></thead>
+                <tbody id="timetablePreviewBody"></tbody>
+              </table>
+              <p class="lookup-empty" id="timetablePreviewEmpty">No timetable uploaded yet for this department.</p>
+            </div>
+          </article>
+        </section>
+
+        <section class="admin-panel" id="department-faculty">
+          <div class="admin-section-head">
+            <div><p class="eyebrow">Department HOD &amp; Faculty</p><h2>Shown on the student Department HOD and Faculty pages.</h2></div>
+          </div>
+          <div class="admin-section-head">
+            <div><p class="eyebrow">Bulk Upload</p><h3>Add HOD and faculty for this department at once (CSV Upload)</h3></div>
+          </div>
+          <article class="admin-card admin-form-card">
+            <p>Columns, in order: <strong>Email, Role</strong> (Role: HOD or Faculty). Each email must already exist in the faculty database - unrecognized emails are skipped and reported. If more than one row is marked HOD, the last one wins.</p>
+            <div class="admin-add-grid">
+              <label>CSV File<input type="file" id="facultyCsvInput" accept=".csv"></label>
+            </div>
+            <button type="button" id="facultyCsvUploadButton">Upload and Apply</button>
+            <button type="button" id="facultyCsvSampleButton">Download Sample CSV</button>
+            <p class="admin-add-feedback" id="facultyCsvFeedback" aria-live="polite"></p>
+          </article>
+
+          <div class="admin-table-card">
+            <h3>Current Faculty</h3>
+            <table>
+              <thead><tr><th>Name</th><th>Designation</th><th>Email</th><th></th></tr></thead>
+              <tbody id="facultyDirectoryBody"></tbody>
+            </table>
+          </div>
+        </section>
+
+        <section class="admin-panel" id="department-notices">
+          <div class="admin-section-head">
+            <div><p class="eyebrow">Notices</p><h2>Post announcements seen only by students of the department selected in Overview.</h2></div>
+          </div>
+          <article class="admin-card admin-form-card">
+            <h3>Post a Notice</h3>
+            <label>Title<input type="text" id="deptNoticeTitle" placeholder="e.g. Mid Exam Schedule Released"></label>
+            <label>Message<textarea rows="3" id="deptNoticeMessage" placeholder="Notice details"></textarea></label>
+            <label>Attachment (optional)<input type="file" id="deptNoticeAttachment"></label>
+            <button type="button" id="deptNoticePostButton">Post Notice</button>
+            <p class="admin-add-feedback" id="deptNoticeFeedback" aria-live="polite"></p>
+          </article>
+          <div class="admin-table-card">
+            <h3>Posted Notices</h3>
+            <table>
+              <thead><tr><th>Title</th><th>Message</th><th>Posted</th><th>Attachment</th><th></th></tr></thead>
+              <tbody id="deptNoticeBody"></tbody>
+            </table>
+            <p class="lookup-empty" id="deptNoticeEmpty">No notices posted yet for this department.</p>
+          </div>
+        </section>
+
+        <section class="admin-panel" id="calendar">
+          <div class="admin-section-head">
+            <div><p class="eyebrow">Calendar</p><h2>Academic dates and reminders shown on the student and faculty dashboards.</h2></div>
+          </div>
+          <div class="calendar-layout">
+            <div class="calendar-card">
+              <div class="calendar-nav">
+                <button type="button" id="calendarTodayButton">Today</button>
+                <div class="calendar-nav-arrows">
+                  <button type="button" id="calendarPrevMonth" aria-label="Previous month">&#8249;</button>
+                  <strong id="calendarMonthLabel"></strong>
+                  <button type="button" id="calendarNextMonth" aria-label="Next month">&#8250;</button>
+                </div>
+                <div class="calendar-view-select">
+                  <button type="button" id="calendarViewToggle" aria-haspopup="true" aria-expanded="false">
+                    <span id="calendarViewLabel">Month</span>
+                    <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg>
+                  </button>
+                  <div class="calendar-view-menu is-hidden" id="calendarViewMenu">
+                    <button type="button" data-calendar-view="day">Day<span>D</span></button>
+                    <button type="button" data-calendar-view="week">Week<span>W</span></button>
+                    <button type="button" data-calendar-view="month" class="active">Month<span>M</span></button>
+                    <button type="button" data-calendar-view="year">Year<span>Y</span></button>
+                    <button type="button" data-calendar-view="schedule">Schedule<span>A</span></button>
+                  </div>
+                </div>
+              </div>
+              <div class="calendar-weekdays">
+                <span>Sun</span><span>Mon</span><span>Tue</span><span>Wed</span><span>Thu</span><span>Fri</span><span>Sat</span>
+              </div>
+              <div class="calendar-grid" id="calendarGrid"></div>
+            </div>
+            <div class="calendar-side">
+              <article class="admin-card admin-form-card">
+                <h3>Add Reminder</h3>
+                <label>Title<input type="text" id="calendarReminderTitle" placeholder="e.g. Department seminar"></label>
+                <label>Date<input type="date" id="calendarReminderDate"></label>
+                <label>Time (optional)<input type="time" id="calendarReminderTime"></label>
+                <label>Description (optional)<textarea id="calendarReminderDescription" rows="2"></textarea></label>
+                <button type="button" id="calendarAddReminderButton">Add Reminder</button>
+                <p class="portal-feedback" id="calendarReminderFeedback" aria-live="polite"></p>
+              </article>
+            </div>
+          </div>
+        </section>
+      </section>
+    </main>
+
+    <div class="modal-overlay is-hidden" id="calendarEventModalOverlay">
+      <div class="modal-box calendar-event-modal">
+        <div class="modal-head">
+          <div class="calendar-event-modal-title">
+            <span class="calendar-event-modal-dot" id="calendarEventModalDot"></span>
+            <h3 id="calendarEventModalTitle"></h3>
+          </div>
+          <div class="calendar-event-modal-actions">
+            <button type="button" id="calendarEventModalDelete" class="is-hidden" aria-label="Delete reminder" title="Delete">
+              <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h16M9 7V4h6v3M6 7l1 13h10l1-13"/></svg>
+            </button>
+            <button type="button" id="calendarEventModalClose" aria-label="Close">&times;</button>
+          </div>
+        </div>
+        <p id="calendarEventModalDate"></p>
+        <p id="calendarEventModalDescription"></p>
+      </div>
+    </div>
+
+    <div class="gprecian" aria-live="polite">
+      <section class="gprecian-panel" aria-label="GPRECian department admin help chat">
+        <div class="gprecian-head">
+          <div class="gprecian-title">
+            <span class="gprecian-avatar bot-avatar"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m4 6 8-3 8 3-8 3zM7 8v3M17 8v3M9 12a3 3 0 1 0 6 0M5 21c.7-3.2 3.4-5 7-5s6.3 1.8 7 5"/></svg></span>
+            <div>
+              <strong>GPRECian Bot</strong>
+              <span>AI department admin help</span>
+            </div>
+          </div>
+          <div class="gprecian-actions">
+            <button class="gprecian-expand" type="button" aria-label="Expand chat window"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M15 3h6v6M9 21H3v-6M21 3l-7 7M3 21l7-7"/></svg></button>
+            <button class="gprecian-close" type="button" aria-label="Close GPRECian chat">×</button>
+          </div>
+        </div>
+        <div class="gprecian-welcome" id="gprecianWelcome">
+          <p class="gprecian-welcome-greeting" id="gprecianWelcomeGreeting">Hello</p>
+          <p class="gprecian-welcome-question">How can I help you today?</p>
+          <p class="gprecian-welcome-subtext">Ask me to set a reminder or post a notice for your department.</p>
+          <div class="gprecian-chips" aria-label="Suggested questions">
+            <button type="button" data-question="set a reminder">Set a Reminder</button>
+            <button type="button" data-question="post a notice">Post a Notice</button>
+          </div>
+        </div>
+        <div class="gprecian-messages is-hidden"></div>
+        <form class="gprecian-form">
+          <input type="text" aria-label="Ask GPRECian a question" placeholder="Ask a question..." autocomplete="off" id="gprecianInput">
+          <button type="submit" aria-label="Send message"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"/></svg></button>
+          <div class="gprecian-suggestions is-hidden" id="gprecianSuggestions"></div>
+        </form>
+        <p class="gprecian-disclaimer">AI-generated answers may be inaccurate - verify important details with the college.</p>
+      </section>
+      <button class="gprecian-toggle" type="button" aria-label="Open GPRECian chat">
+        <span><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m4 6 8-3 8 3-8 3zM7 8v3M17 8v3M9 12a3 3 0 1 0 6 0M5 21c.7-3.2 3.4-5 7-5s6.3 1.8 7 5"/></svg></span>
+        <strong>GPRECian Bot</strong>
+      </button>
+    </div>
+
+    <script src="../script.js"></script>
+  </body>
+</html>

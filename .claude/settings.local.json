@@ -1,0 +1,17 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(open \"file:///Users/lakkavaramsaichandan/GPREC/student-dashboard.html#faculty\")",
+      "Bash(open \"file:///Users/lakkavaramsaichandan/GPREC/admin-dashboard.html#department-admin\")",
+      "Bash(grep -n \"document.title = \\\\`\\\\${course.name} | GPREC\\\\`;\" /Users/lakkavaramsaichandan/GPREC/script.js)",
+      "Bash(python3 -c ' *)",
+      "Bash(osascript -l JavaScript -e ' *)",
+      "Bash(open /Users/lakkavaramsaichandan/GPREC/alumni-dashboard.html)",
+      "Bash(python3)",
+      "Bash(\"/Applications/Google Chrome.app/Contents/MacOS/Google Chrome\" --headless --disable-gpu --virtual-time-budget=5000 --dump-dom \"file://$\\(pwd\\)/demo-id.html\")",
+      "Bash(cp dept.html dept_debug.html)",
+      "Bash(\"/Applications/Google Chrome.app/Contents/MacOS/Google Chrome\" --headless --disable-gpu --virtual-time-budget=10000 --dump-dom \"file://$\\(pwd\\)/dept_debug.html\")",
+      "Bash(python3 -)"
+    ]
+  }
+}

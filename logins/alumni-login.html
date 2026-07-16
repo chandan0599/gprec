@@ -1,0 +1,136 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Alumni Login | GPREC</title>
+    <meta name="description" content="GPREC alumni login and alumni requirements.">
+    <link rel="icon" href="https://www.gprec.ac.in/wp-content/uploads/2017/08/fav.png" sizes="32x32">
+    <link rel="stylesheet" href="../styles.css">
+  </head>
+  <body class="login-page alumni-login-page">
+    <svg class="icon-sprite" aria-hidden="true" focusable="false">
+      <symbol id="icon-award" viewBox="0 0 24 24"><path d="M12 15a6 6 0 1 0 0-12 6 6 0 0 0 0 12ZM9 14l-2 7 5-3 5 3-2-7"/></symbol>
+      <symbol id="icon-file" viewBox="0 0 24 24"><path d="M6 3h8l4 4v14H6zM14 3v5h5M9 13h6M9 17h6"/></symbol>
+    </svg>
+    <header class="login-header">
+      <a class="login-brand" href="../index.html"><img src="../gprec-logo-enhanced.png" alt="G Pulla Reddy Engineering College"></a>
+      <a class="login-home" href="../index.html"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m3 11 9-8 9 8M5 10v11h14V10M9 21v-6h6v6"/></svg>Home</a>
+    </header>
+    <main class="role-login-main alumni-role-main">
+      <section class="role-login-copy">
+        <p class="eyebrow">Alumni Portal</p>
+        <h1>Stay connected with GPREC alumni services.</h1>
+        <p>Login with your registered email and batch year to manage your profile, alumni network access, and college association requests.</p>
+        <div class="role-points">
+          <span>Profile access</span>
+          <span>Batch network</span>
+          <span>Alumni requests</span>
+        </div>
+      </section>
+      <article class="portal-card role-login-card alumni-portal">
+        <div class="portal-head">
+          <span><svg><use href="#icon-award"></use></svg></span>
+          <div>
+            <h3 id="alumniAuthTitle">Alumni Sign In</h3>
+            <p id="alumniAuthSubtitle">Sign in with your registered email and password.</p>
+          </div>
+        </div>
+        <script src="https://accounts.google.com/gsi/client" async defer onload="initAlumniGoogleSignIn()"></script>
+
+        <div class="auth-view is-active" data-auth-view="signin">
+          <!--
+            Google Sign-In (Google Identity Services):
+            1. Create an OAuth Client ID at https://console.cloud.google.com/apis/credentials
+               (Application type: Web application).
+            2. Add this site's exact URL (e.g. https://yourdomain.com) as an Authorized
+               JavaScript origin. Google Sign-In does NOT work when the page is opened directly
+               as a file (file://...) - it must be served over http/https.
+            3. Put that Client ID in the "googleClientId" field of admin-config.json (project
+               root). This page fetches it at load time, so you only ever edit that JSON file,
+               not this HTML. Note: fetch() of a local JSON file also requires http/https
+               hosting - same requirement as Google Sign-In itself, so this doesn't add a new
+               limitation.
+            For production authentication, verify the Google sign-in token on the backend
+            before trusting it.
+          -->
+          <div class="g_id_signin" data-type="standard" data-size="large" data-theme="outline" data-text="continue_with" data-shape="rectangular">
+            <!-- Placeholder shown until a real Client ID is configured and Google's script
+                 successfully renders its own button in its place (see initAlumniGoogleSignIn
+                 in script.js). Keeps the layout looking complete instead of an empty gap. -->
+            <button type="button" class="google-fallback-btn" id="googleFallbackButton">
+              <svg viewBox="0 0 48 48" width="18" height="18" aria-hidden="true">
+                <path fill="#FFC107" d="M43.611,20.083H42V20H24v8h11.303c-1.649,4.657-6.08,8-11.303,8c-6.627,0-12-5.373-12-12s5.373-12,12-12c3.059,0,5.842,1.154,7.961,3.039l5.657-5.657C34.046,6.053,29.268,4,24,4C12.955,4,4,12.955,4,24s8.955,20,20,20s20-8.955,20-20C44,22.659,43.862,21.35,43.611,20.083z"/>
+                <path fill="#FF3D00" d="M6.306,14.691l6.571,4.819C14.655,15.108,18.961,12,24,12c3.059,0,5.842,1.154,7.961,3.039l5.657-5.657C34.046,6.053,29.268,4,24,4C16.318,4,9.656,8.337,6.306,14.691z"/>
+                <path fill="#4CAF50" d="M24,44c5.166,0,9.86-1.977,13.409-5.192l-6.19-5.238C29.211,35.091,26.715,36,24,36c-5.202,0-9.619-3.317-11.283-7.946l-6.522,5.025C9.505,39.556,16.227,44,24,44z"/>
+                <path fill="#1976D2" d="M43.611,20.083H42V20H24v8h11.303c-0.792,2.237-2.231,4.166-4.087,5.571c0.001-0.001,0.002-0.001,0.003-0.002l6.19,5.238C36.971,39.205,44,34,44,24C44,22.659,43.862,21.35,43.611,20.083z"/>
+              </svg>
+              Continue with Google
+            </button>
+          </div>
+          <div class="portal-divider"><span>or</span></div>
+          <form class="alumni-auth-form alumni-signin-form">
+            <label>Email<input type="email" id="alumniSigninEmail" placeholder="alumni@email.com" autocomplete="username"></label>
+            <label>Password<input type="password" id="alumniSigninPassword" placeholder="Enter your password" autocomplete="current-password"></label>
+            <label><span>Security Check (<span class="captcha-question">? + ?</span>)</span><input type="text" class="captcha-input" inputmode="numeric" autocomplete="off" placeholder="Enter the sum"></label>
+            <button type="submit" id="alumniSigninButton">Sign In</button>
+          </form>
+          <p class="auth-switch">New here? <button type="button" class="link-button" data-auth-switch="signup">Create an account</button></p>
+          <p class="auth-switch"><button type="button" class="link-button is-muted" data-auth-switch="forgot">Forgot password?</button></p>
+        </div>
+
+        <div class="auth-view" data-auth-view="signup">
+          <form class="alumni-auth-form alumni-signup-form">
+            <label>Full Name<input type="text" id="alumniSignupName" placeholder="Your full name"></label>
+            <label>Email<input type="email" id="alumniSignupEmail" placeholder="alumni@email.com" autocomplete="username"></label>
+            <label>Batch Year<input type="number" id="alumniSignupBatch" placeholder="Example: 2020" min="1989" max="2026"></label>
+            <label>Password<input type="password" id="alumniSignupPassword" placeholder="Create a password" autocomplete="new-password"></label>
+            <label>Confirm Password<input type="password" id="alumniSignupConfirm" placeholder="Re-enter password" autocomplete="new-password"></label>
+            <label><span>Security Check (<span class="captcha-question">? + ?</span>)</span><input type="text" class="captcha-input" inputmode="numeric" autocomplete="off" placeholder="Enter the sum"></label>
+            <button type="submit" id="alumniSignupButton">Sign Up</button>
+          </form>
+          <p class="auth-switch">Already have an account? <button type="button" class="link-button" data-auth-switch="signin">Sign In</button></p>
+        </div>
+
+        <div class="auth-view" data-auth-view="forgot">
+          <form class="alumni-auth-form alumni-forgot-form">
+            <label>Registered Email<input type="email" id="alumniForgotEmail" placeholder="alumni@email.com" autocomplete="username"></label>
+            <label>Batch Year (as on your account)<input type="number" id="alumniForgotBatch" placeholder="Example: 2020" min="1989" max="2026"></label>
+            <label>New Password<input type="password" id="alumniForgotPassword" placeholder="Enter new password" autocomplete="new-password"></label>
+            <label>Confirm New Password<input type="password" id="alumniForgotConfirm" placeholder="Re-enter new password" autocomplete="new-password"></label>
+            <button type="submit" id="alumniResetButton">Reset Password</button>
+          </form>
+          <p class="auth-switch"><button type="button" class="link-button" data-auth-switch="signin">Back to Sign In</button></p>
+        </div>
+
+        <div class="auth-view" data-auth-view="complete">
+          <form class="alumni-auth-form alumni-complete-form">
+            <label>Full Name<input type="text" id="alumniCompleteName" placeholder="Your full name"></label>
+            <label>Batch Year<input type="number" id="alumniCompleteBatch" placeholder="Example: 2020" min="1989" max="2026"></label>
+            <button type="button" id="alumniCompleteButton">Continue</button>
+          </form>
+        </div>
+
+        <p class="admin-add-feedback" id="alumniAuthFeedback" aria-live="polite"></p>
+
+        <div class="alumni-requirements">
+          <a href="https://alumni.gprec.ac.in/" target="_blank" rel="noreferrer"><svg><use href="#icon-award"></use></svg>Alumni Association</a>
+          <a href="https://www.gprec.ac.in/alumni/" target="_blank" rel="noreferrer"><svg><use href="#icon-file"></use></svg>Alumni Registration Requirements</a>
+          <a href="https://www.gprec.ac.in/contact-us/" target="_blank" rel="noreferrer"><svg><use href="#icon-file"></use></svg>Update Alumni Details</a>
+        </div>
+      </article>
+    </main>
+
+    <div class="modal-overlay is-hidden" id="alumniPopupOverlay">
+      <div class="modal-box">
+        <div class="modal-head">
+          <h3>Notice</h3>
+          <button type="button" class="notice-download" id="alumniPopupClose">Close</button>
+        </div>
+        <p id="alumniPopupMessage">-</p>
+      </div>
+    </div>
+
+    <script src="../script.js"></script>
+  </body>
+</html>
