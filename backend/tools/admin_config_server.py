@@ -7,7 +7,7 @@ from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
 from time import time
 
-ROOT = Path(__file__).resolve().parents[1]
+ROOT = Path(__file__).resolve().parents[2]
 CONFIG_PATH = ROOT / "admin-config.json"
 UPLOAD_ROOT = ROOT / "uploads"
 HOST = "127.0.0.1"

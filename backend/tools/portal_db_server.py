@@ -20,7 +20,7 @@ from cryptography.fernet import Fernet
 from pypdf import PdfReader
 from docx import Document as DocxDocument
 
-ROOT = Path(__file__).resolve().parents[1]
+ROOT = Path(__file__).resolve().parents[2]
 # 0.0.0.0 (not 127.0.0.1) so this is reachable from other devices on the same LAN (e.g. a phone,
 # to test QR scanning against a real camera) - still only bound to your own network interface, not
 # exposed beyond it.
@@ -50,7 +50,7 @@ RECAPTCHA_SECRET_KEY = os.environ.get("RECAPTCHA_SECRET_KEY", "")
 # should not reveal plaintext account numbers/IFSC codes. Key is generated once and persisted
 # outside the DB (a Postgres dump alone is then useless for decrypting this column); set
 # GPREC_BANK_ENCRYPTION_KEY to pin a specific key instead (e.g. in production).
-BANK_ENCRYPTION_KEY_PATH = ROOT / "tools" / ".bank_encryption.key"
+BANK_ENCRYPTION_KEY_PATH = ROOT / "backend" / "tools" / ".bank_encryption.key"
 
 
 def get_or_create_encryption_key():
