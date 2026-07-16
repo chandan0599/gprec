@@ -14326,31 +14326,6 @@ img.alumni-post-avatar {
   color: #ffc36f;
 }
 
-.event-visitor-page .visitor-login-footer {
-  margin-top: 48px;
-  border-top: 1px solid rgba(255, 255, 255, 0.14);
-  background:
-    linear-gradient(90deg, rgba(255, 154, 60, 0.08), transparent 30%),
-    linear-gradient(135deg, rgba(7, 17, 31, 0.96), rgba(3, 10, 28, 0.98));
-  box-shadow: 0 -20px 60px rgba(0, 0, 0, 0.18);
-}
-
-.event-visitor-page .visitor-login-footer img {
-  filter: drop-shadow(0 14px 24px rgba(0, 0, 0, 0.26));
-}
-
-.event-visitor-page .visitor-login-footer h3 {
-  color: #ffffff;
-}
-
-.event-visitor-page .visitor-login-footer p {
-  color: rgba(255, 255, 255, 0.76);
-}
-
-.event-visitor-page .visitor-login-footer a {
-  color: #E85D04;
-}
-
 .social-links {
   display: flex;
   flex-wrap: wrap;
@@ -19089,5 +19064,306 @@ button.calendar-cell-event {
 @media (max-width: 860px) {
   .event-visitor-page.admin-dashboard-page .visitor-fest-timeline::before {
     display: none;
+  }
+}
+
+/* Section-name doodles for the signed-in visitor dashboard. Each icon is decorative and stays
+   behind content, so it gives every section its own cue without changing the layout. */
+.event-visitor-page.admin-dashboard-page .visitor-fest-band {
+  isolation: isolate;
+}
+
+.event-visitor-page.admin-dashboard-page .visitor-fest-band > * {
+  position: relative;
+  z-index: 1;
+}
+
+.event-visitor-page.admin-dashboard-page .visitor-fest-band::before {
+  position: absolute;
+  top: 18px;
+  right: 20px;
+  z-index: 0;
+  display: block;
+  width: clamp(76px, 10vw, 124px);
+  height: clamp(76px, 10vw, 124px);
+  background-position: center;
+  background-repeat: no-repeat;
+  background-size: contain;
+  content: "";
+  opacity: .18;
+  pointer-events: none;
+  transform: rotate(-4deg);
+}
+
+.event-visitor-page.admin-dashboard-page #visitorFestAbout::before {
+  top: 22px;
+  right: 24px;
+  transform: rotate(-8deg);
+  background-image: url("data:image/svg+xml,%3Csvg width='140' height='140' viewBox='0 0 140 140' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' stroke='%23FF9A3C' stroke-width='7' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M34 94c14-36 58-56 94-36'/%3E%3Cpath d='M28 74c20-34 62-46 98-24' opacity='.6'/%3E%3Cpath d='M34 96l26 14 10-30 32-8 26-30'/%3E%3Ccircle cx='38' cy='96' r='9' fill='%23E85D04' stroke='none'/%3E%3Cpath d='M20 36h42M20 54h28' opacity='.75'/%3E%3C/g%3E%3C/svg%3E");
+}
+
+.event-visitor-page.admin-dashboard-page #visitorFestEvents::before {
+  top: auto;
+  right: 22px;
+  bottom: 20px;
+  transform: rotate(7deg);
+  background-image: url("data:image/svg+xml,%3Csvg width='140' height='140' viewBox='0 0 140 140' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' stroke='%23FF9A3C' stroke-width='7' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M28 46h84v52H28z'/%3E%3Cpath d='M28 62h84M52 46v52M88 46v52'/%3E%3Cpath d='M70 26v88' stroke='%23E85D04'/%3E%3Ccircle cx='70' cy='72' r='48' opacity='.45'/%3E%3C/g%3E%3C/svg%3E");
+}
+
+.event-visitor-page.admin-dashboard-page #visitorFestSchedule::before {
+  top: 50%;
+  right: 28px;
+  transform: translateY(-50%) rotate(4deg);
+  background-image: url("data:image/svg+xml,%3Csvg width='140' height='140' viewBox='0 0 140 140' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' stroke='%23FF9A3C' stroke-width='7' stroke-linecap='round' stroke-linejoin='round'%3E%3Ccircle cx='70' cy='70' r='46'/%3E%3Cpath d='M70 40v34l26 16' stroke='%23E85D04'/%3E%3Cpath d='M26 28l20-14M114 28 94 14' opacity='.65'/%3E%3Cpath d='M42 120h56' opacity='.65'/%3E%3C/g%3E%3C/svg%3E");
+}
+
+.event-visitor-page.admin-dashboard-page #visitorFestWorkshops::before {
+  top: auto;
+  right: auto;
+  bottom: 18px;
+  left: 22px;
+  transform: rotate(-10deg);
+  background-image: url("data:image/svg+xml,%3Csvg width='140' height='140' viewBox='0 0 140 140' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' stroke='%23FF9A3C' stroke-width='7' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M42 48 22 70l20 22M98 48l20 22-20 22'/%3E%3Cpath d='M82 34 58 106' stroke='%23E85D04'/%3E%3Crect x='24' y='24' width='92' height='92' rx='16' opacity='.45'/%3E%3C/g%3E%3C/svg%3E");
+}
+
+.event-visitor-page.admin-dashboard-page #visitorFestCelebrity::before {
+  top: 18px;
+  right: 36px;
+  transform: rotate(9deg);
+  background-image: url("data:image/svg+xml,%3Csvg width='140' height='140' viewBox='0 0 140 140' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' stroke='%23FF9A3C' stroke-width='7' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M34 104h72l-10-48H44z'/%3E%3Cpath d='M50 72h40M56 88h28' opacity='.7'/%3E%3Ccircle cx='52' cy='44' r='12' fill='%23E85D04' stroke='none'/%3E%3Ccircle cx='88' cy='44' r='12' fill='%23E85D04' stroke='none'/%3E%3Cpath d='M24 34c12-18 28-18 40 0s28 18 40 0' opacity='.65'/%3E%3C/g%3E%3C/svg%3E");
+}
+
+.event-visitor-page.admin-dashboard-page #visitorFestSponsors::before {
+  top: auto;
+  right: 42px;
+  bottom: 18px;
+  transform: rotate(-3deg);
+  background-image: url("data:image/svg+xml,%3Csvg width='140' height='140' viewBox='0 0 140 140' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' stroke='%23FF9A3C' stroke-width='7' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M30 58h80v58H30z'/%3E%3Cpath d='M70 58v58M30 80h80'/%3E%3Cpath d='M70 58c-24-6-34-20-24-32 10-10 24 2 24 32Zm0 0c24-6 34-20 24-32-10-10-24 2-24 32Z' stroke='%23E85D04'/%3E%3C/g%3E%3C/svg%3E");
+}
+
+.event-visitor-page.admin-dashboard-page #visitorFestGallery::before {
+  top: 20px;
+  right: auto;
+  left: 26px;
+  transform: rotate(6deg);
+  background-image: url("data:image/svg+xml,%3Csvg width='140' height='140' viewBox='0 0 140 140' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' stroke='%23FF9A3C' stroke-width='7' stroke-linecap='round' stroke-linejoin='round'%3E%3Crect x='28' y='38' width='84' height='66' rx='12'/%3E%3Cpath d='M46 38l8-14h32l8 14' stroke='%23E85D04'/%3E%3Ccircle cx='70' cy='72' r='18'/%3E%3Cpath d='M104 30h14M111 23v14' opacity='.7'/%3E%3C/g%3E%3C/svg%3E");
+}
+
+.event-visitor-page.admin-dashboard-page #visitorFestFaqs::before {
+  top: auto;
+  right: 18px;
+  bottom: 26px;
+  transform: rotate(8deg);
+  background-image: url("data:image/svg+xml,%3Csvg width='140' height='140' viewBox='0 0 140 140' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' stroke='%23FF9A3C' stroke-width='7' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M34 34h72v54H64l-24 20V88h-6z'/%3E%3Cpath d='M64 56c0-10 14-14 20-6 8 10-8 14-8 24' stroke='%23E85D04'/%3E%3Cpath d='M76 92h1' stroke='%23E85D04' stroke-width='10'/%3E%3C/g%3E%3C/svg%3E");
+}
+
+.event-visitor-page.admin-dashboard-page #visitorFestContact {
+  position: relative;
+}
+
+.event-visitor-page.admin-dashboard-page #visitorFestContact::after {
+  position: absolute;
+  right: 8px;
+  bottom: 2px;
+  width: 74px;
+  height: 74px;
+  background: url("data:image/svg+xml,%3Csvg width='90' height='90' viewBox='0 0 90 90' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' stroke='%23FF9A3C' stroke-width='5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M18 28h54v36H18z'/%3E%3Cpath d='m18 30 27 22 27-22' stroke='%23E85D04'/%3E%3Cpath d='M16 74h58' opacity='.65'/%3E%3C/g%3E%3C/svg%3E") center / contain no-repeat;
+  content: "";
+  opacity: .18;
+  pointer-events: none;
+}
+
+@media (max-width: 760px) {
+  .event-visitor-page.admin-dashboard-page .visitor-fest-band::before {
+    width: 72px;
+    height: 72px;
+    opacity: .11;
+  }
+}
+
+/* Keep the event visitor footer visually identical to the public footer: flat, no glossy layer. */
+.event-visitor-page .visitor-login-footer {
+  position: relative;
+  z-index: 5;
+  margin-top: 92px;
+  border-top: 0;
+  background: #071827;
+  box-shadow: none;
+  backdrop-filter: none;
+  isolation: isolate;
+}
+
+.event-visitor-page .visitor-login-footer::before {
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  background: #071827;
+  content: "";
+}
+
+.event-visitor-page .visitor-login-footer img {
+  filter: none;
+}
+
+.event-visitor-page .visitor-login-footer a {
+  color: #ffc36f;
+}
+
+/* Scatter the dashboard background art so it reads like light festival doodles instead of one
+   clustered illustration behind a section. */
+.event-visitor-page.admin-dashboard-page::before {
+  top: 112px;
+  right: -190px;
+  width: min(46vw, 520px);
+  opacity: .34;
+}
+
+.event-visitor-page.admin-dashboard-page::after {
+  background-image:
+    url("data:image/svg+xml,%3Csvg width='240' height='200' viewBox='0 0 240 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' stroke='%23FFFFFF' stroke-width='8' stroke-linecap='round' stroke-linejoin='round' opacity='.24'%3E%3Cpath d='M72 122 30 94l42-28M150 66l42 28-42 28'/%3E%3Cpath d='M120 50 92 150' stroke='%23FF9A3C' opacity='.72'/%3E%3C/g%3E%3C/svg%3E"),
+    url("data:image/svg+xml,%3Csvg width='260' height='220' viewBox='0 0 260 220' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' stroke='%23E85D04' stroke-width='9' stroke-linecap='round' stroke-linejoin='round' opacity='.42'%3E%3Cpath d='M34 150c34-54 68-54 102 0s54 40 72 18'/%3E%3Cpath d='M60 126h116M82 46h72l36 80H46z'/%3E%3Ccircle cx='84' cy='94' r='12' fill='%23FF9A3C' stroke='none'/%3E%3Ccircle cx='154' cy='94' r='12' fill='%23FF9A3C' stroke='none'/%3E%3C/g%3E%3C/svg%3E"),
+    url("data:image/svg+xml,%3Csvg width='210' height='210' viewBox='0 0 210 210' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' stroke='%23FF9A3C' stroke-width='8' stroke-linecap='round' stroke-linejoin='round' opacity='.42'%3E%3Cpath d='M104 28v154M28 104h154'/%3E%3Ccircle cx='104' cy='104' r='70'/%3E%3C/g%3E%3C/svg%3E"),
+    url("data:image/svg+xml,%3Csvg width='240' height='180' viewBox='0 0 240 180' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='%23FF9A3C' opacity='.28'%3E%3Cpath d='M56 42 80 84H32z'/%3E%3Cpath d='M168 86 196 134h-56z'/%3E%3Ccircle cx='118' cy='44' r='11'/%3E%3C/g%3E%3Cg fill='none' stroke='%23FFFFFF' stroke-width='7' stroke-linecap='round' opacity='.18'%3E%3Cpath d='M28 138h96M154 42h58'/%3E%3C/g%3E%3C/svg%3E");
+  background-position:
+    86% 22%,
+    12% 72%,
+    78% 68%,
+    50% 92%;
+  background-repeat: no-repeat;
+  background-size:
+    190px auto,
+    210px auto,
+    170px auto,
+    220px auto;
+  opacity: .68;
+}
+
+/* Keep section doodles as small, scattered corner accents. */
+.event-visitor-page.admin-dashboard-page .visitor-fest-band::before {
+  width: clamp(54px, 6.8vw, 86px);
+  height: clamp(54px, 6.8vw, 86px);
+  opacity: .12;
+}
+
+.event-visitor-page.admin-dashboard-page #visitorFestAbout::before {
+  top: 18px;
+  right: 18px;
+}
+
+.event-visitor-page.admin-dashboard-page #visitorFestEvents::before {
+  right: 18px;
+  bottom: 18px;
+}
+
+.event-visitor-page.admin-dashboard-page #visitorFestSchedule::before {
+  top: 20px;
+  right: 20px;
+  transform: rotate(4deg);
+}
+
+.event-visitor-page.admin-dashboard-page #visitorFestWorkshops::before {
+  bottom: 18px;
+  left: 18px;
+}
+
+.event-visitor-page.admin-dashboard-page #visitorFestCelebrity::before {
+  top: 18px;
+  right: 20px;
+}
+
+.event-visitor-page.admin-dashboard-page #visitorFestSponsors::before {
+  right: 22px;
+  bottom: 18px;
+}
+
+.event-visitor-page.admin-dashboard-page #visitorFestGallery::before {
+  top: 18px;
+  left: 18px;
+}
+
+.event-visitor-page.admin-dashboard-page #visitorFestFaqs::before {
+  right: 18px;
+  bottom: 18px;
+}
+
+.event-visitor-page.admin-dashboard-page #visitorFestContact::after {
+  right: 12px;
+  bottom: 8px;
+  width: 52px;
+  height: 52px;
+  opacity: .11;
+}
+
+/* Reference-style compass in the event visitor help chat background. */
+.event-visitor-page.admin-dashboard-page .gprecian-panel {
+  isolation: isolate;
+}
+
+.event-visitor-page.admin-dashboard-page .gprecian-panel::before {
+  display: none;
+}
+
+.event-visitor-page.admin-dashboard-page .gprecian-panel > * {
+  position: relative;
+  z-index: 1;
+}
+
+@media (max-width: 760px) {
+  .event-visitor-page.admin-dashboard-page .gprecian-panel::before {
+    display: none;
+  }
+}
+
+/* Use blue instead of near-black for the event visitor help chat surfaces. */
+.event-visitor-page.admin-dashboard-page .gprecian-panel,
+.event-visitor-page.admin-dashboard-page .gprecian-welcome {
+  background:
+    radial-gradient(circle at 78% 24%, rgba(255, 154, 60, 0.06), transparent 34%),
+    linear-gradient(160deg, rgba(18, 44, 122, 0.98), rgba(9, 28, 78, 0.98));
+}
+
+.event-visitor-page.admin-dashboard-page .gprecian-head,
+.event-visitor-page.admin-dashboard-page .gprecian-form {
+  background: rgba(8, 29, 82, 0.92);
+}
+
+.event-visitor-page.admin-dashboard-page .gprecian-chips button,
+.event-visitor-page.admin-dashboard-page .gprecian-form input {
+  background: rgba(255, 255, 255, 0.10);
+}
+
+.event-visitor-page.admin-dashboard-page .gprecian-welcome {
+  position: relative;
+  isolation: isolate;
+  overflow: hidden;
+}
+
+.event-visitor-page.admin-dashboard-page .gprecian-welcome::before {
+  position: absolute;
+  right: -78px;
+  top: auto;
+  bottom: 118px;
+  z-index: 0;
+  width: min(300px, 46vw);
+  aspect-ratio: 1;
+  background: url("data:image/svg+xml,%3Csvg width='520' height='520' viewBox='0 0 520 520' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' stroke='%23FF7A18' stroke-linecap='round' stroke-linejoin='round'%3E%3Ccircle cx='260' cy='260' r='218' stroke-width='10' opacity='.9'/%3E%3Ccircle cx='260' cy='260' r='132' stroke-width='8' opacity='.68'/%3E%3Ccircle cx='260' cy='260' r='70' fill='%23A9430B' stroke='none' opacity='.8'/%3E%3Ccircle cx='260' cy='260' r='38' fill='%23FF9A3C' stroke='none' opacity='.86'/%3E%3Cpath d='M260 46 306 260 260 474 214 260z' fill='%23E85D04' stroke='none' opacity='.9'/%3E%3Cpath d='M46 260 260 214 474 260 260 306z' fill='%23FF9A3C' stroke='none' opacity='.7'/%3E%3Cpath d='M142 142 260 220 378 142 300 260 378 378 260 300 142 378 220 260z' stroke-width='7' opacity='.58'/%3E%3Cpath d='M260 18v74M260 428v74M18 260h74M428 260h74' stroke-width='8' opacity='.42'/%3E%3C/g%3E%3C/svg%3E") center / contain no-repeat;
+  content: "";
+  opacity: .20;
+  pointer-events: none;
+  transform: rotate(-7deg);
+}
+
+.event-visitor-page.admin-dashboard-page .gprecian-welcome > * {
+  position: relative;
+  z-index: 1;
+}
+
+@media (max-width: 760px) {
+  .event-visitor-page.admin-dashboard-page .gprecian-welcome::before {
+    right: -92px;
+    top: auto;
+    bottom: 142px;
+    width: 280px;
+    opacity: .16;
   }
 }

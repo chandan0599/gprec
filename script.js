@@ -1,4 +1,4 @@
-// This site's pages live one level deep under dashboards/, logins/, pages/, or details/
+// This site's pages live one level deep under dashboards/ or pages/
 // (index.html, styles.css, script.js, admin-config.json stay at the repo root). Since script.js
 // is shared and loaded from every page regardless of folder, any hardcoded bare filename like
 // "student-dashboard.html" would resolve relative to whatever page is currently open, not to
@@ -17,14 +17,14 @@ const GPREC_PAGE_FOLDERS = {
   "parent-dashboard.html": "dashboards",
   "placement-dashboard.html": "dashboards",
   "student-dashboard.html": "dashboards",
-  "admin-login.html": "logins",
-  "alumni-login.html": "logins",
-  "faculty-login.html": "logins",
-  "non-teaching-login.html": "logins",
-  "parent-login.html": "logins",
-  "student-login.html": "logins",
-  "change-password.html": "logins",
-  "forgot-password.html": "logins",
+  "admin-login.html": "pages",
+  "alumni-login.html": "pages",
+  "faculty-login.html": "pages",
+  "non-teaching-login.html": "pages",
+  "parent-login.html": "pages",
+  "student-login.html": "pages",
+  "change-password.html": "pages",
+  "forgot-password.html": "pages",
   "about-us.html": "pages",
   "admissions.html": "pages",
   "campus-life.html": "pages",
@@ -36,25 +36,25 @@ const GPREC_PAGE_FOLDERS = {
   "page-template.html": "pages",
   "research-development.html": "pages",
   "scholarships.html": "pages",
-  "assignment-detail.html": "details",
-  "department-civ.html": "details",
-  "department-eee.html": "details",
-  "department-mec.html": "details",
-  "department-ece.html": "details",
-  "department-cse.html": "details",
-  "department-cst.html": "details",
-  "department-csb.html": "details",
-  "department-csm.html": "details",
-  "department-csd.html": "details",
-  "department-hbs.html": "details",
-  "subject-detail.html": "details",
+  "assignment-detail.html": "dashboards",
+  "department-civ.html": "dashboards",
+  "department-eee.html": "dashboards",
+  "department-mec.html": "dashboards",
+  "department-ece.html": "dashboards",
+  "department-cse.html": "dashboards",
+  "department-cst.html": "dashboards",
+  "department-csb.html": "dashboards",
+  "department-csm.html": "dashboards",
+  "department-csd.html": "dashboards",
+  "department-hbs.html": "dashboards",
+  "subject-detail.html": "dashboards",
   "hostel-gate-scan.html": "pages",
   "event-pass-scan.html": "pages",
   "event-register.html": "pages",
   "event-visitor-dashboard.html": "dashboards",
   "index.html": ""
 };
-const GPREC_CURRENT_FOLDER = ["dashboards", "logins", "pages", "details"].find((folder) =>
+const GPREC_CURRENT_FOLDER = ["dashboards", "pages"].find((folder) =>
   window.location.pathname.includes(`/${folder}/`)
 ) || "";
 const gprecRootPrefix = GPREC_CURRENT_FOLDER ? "../" : "";
@@ -24938,7 +24938,7 @@ const featureIdeaSystemPrompt =
   "You are a coding assistant for the GPREC college website, a static HTML/CSS/JS site with no build tools, " +
   "the configured portal data sources, and every page shares " +
   "one script.js file plus one shared styles.css file. Pages live in index.html (root), or one level deep under " +
-  "pages/, dashboards/, details/, or logins/. Match this site's existing design system in every suggestion: CSS " +
+  "pages/ or dashboards/. Match this site's existing design system in every suggestion: CSS " +
   "variables --navy (#04284a, primary brand color), --orange (#ff8702, accent), --white, --ink, --muted, --line, " +
   "--paper, --green, --red defined in :root; buttons and toggles use var(--navy) as their active/on color, never " +
   "introduce new colors; cards use the .admin-card / .admin-form-card classes with an <h3> title; on/off settings " +
@@ -24952,7 +24952,7 @@ const featureIdeaSystemPrompt =
   "dashboards/student-dashboard.html, script.js, styles.css) and roughly where in that file (e.g. \"inside the " +
   "Profile section\", \"near the other admin-card blocks\", \"appended to the end of styles.css\"). If it needs " +
   "a brand-new page instead, say so explicitly, give the new file its path following this site's convention " +
-  "(pages/ for public pages, dashboards/ for a new dashboard, details/ for a detail page - e.g. pages/blog.html), " +
+  "(pages/ for public pages or login/detail-style pages, dashboards/ for a new dashboard or drill-down detail page - e.g. pages/blog.html), " +
   "note that it should start from the structure in pages/page-template.html, and note that the new filename must " +
   "be added to the GPREC_PAGE_FOLDERS map near the top of script.js (mapping it to its folder) or links to it via " +
   "gprecPageUrl() will break, plus where a nav link to it should be added. (3) Code - one small fenced code block " +
