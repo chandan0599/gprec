@@ -18951,3 +18951,143 @@ button.calendar-cell-event {
     opacity: .26;
   }
 }
+
+/* Udaan-reference details, adapted to the existing GPREC visitor dashboard theme. */
+.event-visitor-page.admin-dashboard-page .portal-topbar {
+  border-bottom-color: rgba(255, 154, 60, 0.18);
+}
+
+.event-visitor-page.admin-dashboard-page .visitor-fest-nav a {
+  border-style: dashed;
+}
+
+.event-visitor-page.admin-dashboard-page .visitor-dash-hero {
+  padding-top: clamp(30px, 4.4vw, 46px);
+}
+
+.event-visitor-page.admin-dashboard-page .visitor-dash-hero::before {
+  filter: drop-shadow(0 12px 22px rgba(0, 0, 0, 0.16));
+}
+
+.event-visitor-page.admin-dashboard-page .visitor-dash-hero .eyebrow,
+.event-visitor-page.admin-dashboard-page .visitor-section-head .eyebrow {
+  display: inline-flex;
+  width: fit-content;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 12px;
+  border: 1px dashed rgba(255, 154, 60, 0.42);
+  border-radius: 999px;
+  background: rgba(255, 154, 60, 0.08);
+  line-height: 1;
+}
+
+.event-visitor-page.admin-dashboard-page .visitor-dash-hero .eyebrow::before,
+.event-visitor-page.admin-dashboard-page .visitor-section-head .eyebrow::before {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: #FF9A3C;
+  box-shadow: 0 0 0 3px rgba(255, 154, 60, 0.16);
+  content: "";
+}
+
+.event-visitor-page.admin-dashboard-page .visitor-fest-countdown span {
+  border-style: dashed;
+}
+
+.event-visitor-page.admin-dashboard-page .visitor-fest-band {
+  border-style: dashed;
+}
+
+.event-visitor-page.admin-dashboard-page .visitor-fest-timeline {
+  position: relative;
+}
+
+.event-visitor-page.admin-dashboard-page .visitor-fest-timeline::before {
+  position: absolute;
+  top: 28px;
+  left: 8%;
+  right: 8%;
+  border-top: 2px dashed rgba(255, 154, 60, 0.34);
+  content: "";
+  pointer-events: none;
+}
+
+.event-visitor-page.admin-dashboard-page .visitor-fest-timeline article {
+  position: relative;
+}
+
+.event-visitor-page.admin-dashboard-page .visitor-dashboard-panel .event-grid {
+  gap: 22px;
+}
+
+.event-visitor-page.admin-dashboard-page .visitor-dashboard-panel .event-card {
+  padding: 0;
+  border-color: rgba(255, 154, 60, 0.22);
+  background: rgba(7, 17, 31, 0.82);
+}
+
+.event-visitor-page.admin-dashboard-page .visitor-dashboard-panel .event-card::before {
+  position: absolute;
+  inset: 0 0 auto;
+  z-index: 0;
+  height: 7px;
+  background: linear-gradient(90deg, #FF9A3C, #E85D04, #B44500);
+  content: "";
+}
+
+.event-visitor-page.admin-dashboard-page .visitor-event-details {
+  padding: 20px 18px 16px;
+}
+
+.event-visitor-page.admin-dashboard-page .visitor-dashboard-panel .event-card-head {
+  padding-bottom: 14px;
+  border-bottom: 1px dashed rgba(255, 255, 255, 0.16);
+}
+
+.event-visitor-page.admin-dashboard-page .visitor-dashboard-panel .event-card-head strong {
+  font-size: 1.08rem;
+}
+
+.event-visitor-page.admin-dashboard-page .visitor-event-actions {
+  position: relative;
+  margin: 0;
+  padding: 18px;
+  border-top: 1px dashed rgba(255, 154, 60, 0.26);
+  background: rgba(255, 255, 255, 0.045);
+}
+
+.event-visitor-page.admin-dashboard-page .visitor-event-actions::before,
+.event-visitor-page.admin-dashboard-page .visitor-event-actions::after {
+  position: absolute;
+  top: -11px;
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  background: #0A1433;
+  content: "";
+  pointer-events: none;
+}
+
+.event-visitor-page.admin-dashboard-page .visitor-event-actions::before {
+  left: -12px;
+}
+
+.event-visitor-page.admin-dashboard-page .visitor-event-actions::after {
+  right: -12px;
+}
+
+.event-visitor-page.admin-dashboard-page .visitor-event-chip-row span {
+  border-style: dashed;
+}
+
+.event-visitor-page.admin-dashboard-page .visitor-event-more dl div {
+  border: 1px dashed rgba(255, 154, 60, 0.18);
+}
+
+@media (max-width: 860px) {
+  .event-visitor-page.admin-dashboard-page .visitor-fest-timeline::before {
+    display: none;
+  }
+}
