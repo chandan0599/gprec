@@ -1,0 +1,173 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Certificate Request | GPREC</title>
+    <meta name="description" content="Apply for a GPREC certificate online and pay the certificate fee.">
+    <link rel="icon" href="https://www.gprec.ac.in/wp-content/uploads/2017/08/fav.png" sizes="32x32">
+    <link rel="stylesheet" href="../styles.css">
+  </head>
+  <body class="student-portal-page assignment-page">
+    <header class="login-header">
+      <a class="login-brand" href="../index.html"><img src="../gprec-logo-enhanced.png" alt="G Pulla Reddy Engineering College"></a>
+      <a class="login-home" href="../index.html"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m3 11 9-8 9 8M5 10v11h14V10M9 21v-6h6v6"/></svg>Home</a>
+    </header>
+    <main class="student-service-page">
+      <section class="service-hero">
+        <p class="eyebrow">Certificate Services</p>
+        <h1>Apply for a GPREC certificate online.</h1>
+        <p>Open to current students and alumni. Enter your details, choose the certificate you need, and pay the certificate fee to get your payment receipt.</p>
+      </section>
+
+      <form class="certificate-form service-request-card">
+          <div class="service-card-head">
+            <p class="eyebrow">Student Request</p>
+            <h2>Certificate Request</h2>
+          </div>
+          <label>Full Name
+            <input type="text" id="alumniFullName" placeholder="Name as per college records" required>
+          </label>
+          <label>Roll Number
+            <input type="text" id="alumniRollNumber" placeholder="e.g. 20X51A0501" required>
+          </label>
+          <label>Passing / Batch Year
+            <input type="text" inputmode="numeric" pattern="[0-9]{4}" id="alumniBatchYear" placeholder="e.g. 2026" maxlength="4" required>
+          </label>
+          <div class="service-fields is-active" data-service-fields="certificate">
+            <div class="application-picker">
+              <button type="button" class="application-card active" data-application="tc" data-amount="300">
+                <strong>Transfer Certificate</strong><span>College transfer or exit</span>
+              </button>
+              <button type="button" class="application-card" data-application="provisional" data-amount="500">
+                <strong>Provisional Certificate</strong><span>Provisional degree proof</span>
+              </button>
+              <button type="button" class="application-card" data-application="bonafide" data-amount="100">
+                <strong>Bona fide Certificate</strong><span>Proof of enrollment</span>
+              </button>
+              <button type="button" class="application-card" data-application="cmm" data-amount="200">
+                <strong>CMM</strong><span>Consolidated marks memo</span>
+              </button>
+              <button type="button" class="application-card" data-application="study-conduct" data-amount="100">
+                <strong>Study and Conduct</strong><span>Study duration and conduct record</span>
+              </button>
+            </div>
+            <div class="application-fields is-active" data-application-fields="tc">
+              <label>Reason for Transfer
+                <textarea rows="3" maxlength="220" placeholder="Enter reason for transfer certificate" required></textarea>
+              </label>
+            </div>
+            <div class="application-fields" data-application-fields="provisional">
+              <label>Convocation Year
+                <input type="text" placeholder="e.g. 2026" required>
+              </label>
+            </div>
+            <div class="application-fields" data-application-fields="bonafide">
+              <label>Purpose
+                <textarea rows="3" maxlength="220" placeholder="e.g. Bank loan, passport, scholarship" required></textarea>
+              </label>
+            </div>
+            <div class="application-fields" data-application-fields="cmm">
+              <label>Semesters Required (up to)
+                <select required>
+                  <option>I-I</option>
+                  <option>I-II</option>
+                  <option>II-I</option>
+                  <option>II-II</option>
+                  <option>III-I</option>
+                  <option>III-II</option>
+                  <option>IV-I</option>
+                  <option>IV-II</option>
+                </select>
+              </label>
+            </div>
+            <div class="application-fields" data-application-fields="study-conduct">
+              <label>Purpose
+                <textarea rows="3" maxlength="220" placeholder="Enter purpose for this certificate" required></textarea>
+              </label>
+            </div>
+
+            <div class="reservation-details" data-shared-fields>
+              <p class="field-block-title">Reservation Details</p>
+              <div class="reservation-grid">
+                <label>Religion
+                  <input type="text" placeholder="e.g. Hindu" required>
+                </label>
+                <label>Caste
+                  <input type="text" placeholder="e.g. Reddy" required>
+                </label>
+                <label>Reservation
+                  <select required>
+                    <option value="">Reservation</option>
+                    <option>OC</option>
+                    <option>BC-A</option>
+                    <option>BC-B</option>
+                    <option>BC-C</option>
+                    <option>BC-D</option>
+                    <option>BC-E</option>
+                    <option>SC</option>
+                    <option>ST</option>
+                  </select>
+                </label>
+              </div>
+            </div>
+
+            <div class="reservation-details" data-shared-fields>
+              <p class="field-block-title">Month &amp; Year of Passing the Final Exam</p>
+              <div class="reservation-grid">
+                <label>Month
+                  <select required>
+                    <option value="">Select Month</option>
+                    <option>January</option>
+                    <option>February</option>
+                    <option>March</option>
+                    <option>April</option>
+                    <option>May</option>
+                    <option>June</option>
+                    <option>July</option>
+                    <option>August</option>
+                    <option>September</option>
+                    <option>October</option>
+                    <option>November</option>
+                    <option>December</option>
+                  </select>
+                </label>
+                <label>Year
+                  <select required>
+                    <option value="">Select Year</option>
+                    <option>2026</option>
+                    <option>2025</option>
+                    <option>2024</option>
+                    <option>2023</option>
+                    <option>2022</option>
+                    <option>2021</option>
+                    <option>2020</option>
+                  </select>
+                </label>
+              </div>
+            </div>
+
+            <p class="service-amount">Amount Payable<strong data-amount-display>&#8377;300</strong></p>
+          </div>
+
+          <label class="declaration-check">
+            <input type="checkbox" required>
+            <span>I confirm that my personal and academic details are correct and I agree to the college declaration for processing this request.</span>
+          </label>
+          <button class="payment-open-button" type="submit">Pay Now</button>
+
+          <a class="application-download" href="#" download="gprec-certificate-receipt.pdf">Download Payment Receipt</a>
+      </form>
+    </main>
+    <!--
+      Payments here open the college's real PayU hosted checkout link (see admin-config.json's
+      "payuPaymentLink" field; merchant dashboard: https://onboarding.payu.in, docs:
+      https://docs.payu.in) in a new tab. Configure the backend webhook so
+      there's no webhook or return-URL to confirm the payment actually completed - it's recorded
+      locally as soon as the tab opens, trusting the payer to finish paying. A production
+      deployment should add a backend that listens for PayU's payment confirmation webhook
+      before treating a payment as real.
+    -->
+    <script src="../script.js"></script>
+  </body>
+</html>

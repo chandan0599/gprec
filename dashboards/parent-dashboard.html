@@ -1,0 +1,397 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Parent Dashboard | GPREC</title>
+    <meta name="description" content="GPREC parent dashboard with child profile, attendance, grades, fee status, outing status, and notices.">
+    <link rel="icon" href="https://www.gprec.ac.in/wp-content/uploads/2017/08/fav.png" sizes="32x32">
+    <link rel="stylesheet" href="../styles.css">
+  </head>
+  <body class="student-portal-page portal-page">
+    <header class="student-topbar portal-topbar">
+      <a class="student-brand" href="../index.html">
+        <img src="../gprec-logo-enhanced.png" alt="G Pulla Reddy Engineering College">
+      </a>
+      <div class="student-user">
+        <div class="notification-bell-wrap">
+          <button type="button" class="notification-bell" id="notificationBellButton" aria-label="Notifications">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 8a6 6 0 1 1 12 0c0 4 1.5 5.5 2 6H4c.5-.5 2-2 2-6Z"/><path d="M10 20a2 2 0 0 0 4 0"/></svg>
+            <span class="notification-badge is-hidden" id="notificationBadge">0</span>
+          </button>
+          <div class="notification-dropdown is-hidden" id="notificationDropdown">
+            <div class="notification-dropdown-head">Notifications</div>
+            <div id="notificationList"></div>
+          </div>
+        </div>
+        <div class="student-user-menu">
+          <span class="student-user-avatar" id="parentInitials">PA</span>
+          <button type="button" class="student-user-toggle" aria-label="Account menu" aria-expanded="false">
+            <span class="student-user-name-block">
+              <strong id="parentDashboardName">Parent</strong>
+              <small id="parentDashboardChildId">-</small>
+            </span>
+          </button>
+          <div class="student-user-dropdown">
+            <a href="../logins/parent-login.html">Logout</a>
+          </div>
+        </div>
+      </div>
+    </header>
+
+    <main class="student-dashboard-shell">
+      <nav class="student-menu" aria-label="Parent dashboard menu">
+        <div class="student-menu-title">
+          <strong>Parent Menu</strong>
+          <button type="button" class="menu-collapse-toggle" id="menuCollapseToggle" aria-label="Collapse menu">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M15 5 9 12l6 7"/></svg>
+          </button>
+        </div>
+        <details class="student-menu-group" open>
+          <summary title="Home"><span class="menu-group-label"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 11 12 4l8 7"/><path d="M6 10v9a1 1 0 0 0 1 1h3v-6h4v6h3a1 1 0 0 0 1-1v-9"/></svg><span class="menu-group-text">Home</span></span></summary>
+          <a class="active" href="#spotlight" data-dashboard-link>Child Profile</a>
+          <a href="#notices" data-dashboard-link>Notices</a>
+        </details>
+        <details class="student-menu-group">
+          <summary title="Academics"><span class="menu-group-label"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 5.5A2.5 2.5 0 0 1 6.5 4H12v16H6.5A2.5 2.5 0 0 0 4 22V5.5Z"/><path d="M20 5.5A2.5 2.5 0 0 0 17.5 4H12v16h5.5a2.5 2.5 0 0 1 2.5 2V5.5Z"/></svg><span class="menu-group-text">Academics</span></span></summary>
+          <a href="#attendance" data-dashboard-link>Attendance</a>
+          <a href="#exam-schedule" data-dashboard-link>Exam Schedule</a>
+          <a href="#grades" data-dashboard-link>Grades</a>
+        </details>
+        <details class="student-menu-group">
+          <summary title="Services"><span class="menu-group-label"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="3"/><path d="M19 12a7 7 0 0 0-.1-1.2l2-1.6-2-3.4-2.4 1a7 7 0 0 0-2-1.2L14 3h-4l-.5 2.6a7 7 0 0 0-2 1.2l-2.4-1-2 3.4 2 1.6A7 7 0 0 0 5 12a7 7 0 0 0 .1 1.2l-2 1.6 2 3.4 2.4-1a7 7 0 0 0 2 1.2L10 21h4l.5-2.6a7 7 0 0 0 2-1.2l2.4 1 2-3.4-2-1.6c.1-.4.1-.8.1-1.2Z"/></svg><span class="menu-group-text">Services</span></span></summary>
+          <a href="#outing-status" data-dashboard-link>Outing Requests</a>
+          <a href="#pay-fees" data-dashboard-link>Pay Fees</a>
+          <a href="#scholarship" data-dashboard-link>Scholarship</a>
+          <a href="#visiting-status" data-dashboard-link>Visiting Requests</a>
+        </details>
+      </nav>
+
+      <section class="portal-section dashboard-panel is-active" id="spotlight">
+        <p class="dashboard-greeting" id="dashboardGreeting"></p>
+        <div class="portal-block-head"><h2>Child Profile</h2><span>Same profile record as the student portal</span></div>
+        <div class="student-profile-view" id="parentChildProfileView"></div>
+      </section>
+
+      <section class="portal-section dashboard-panel" id="notices">
+        <div class="portal-block-head"><h2>Notices</h2><span>College notices &amp; updates</span></div>
+        <div class="spotlight-grid" id="parentNoticeGrid"></div>
+        <div class="spotlight-grid" id="parentPosterGrid" data-spotlight-poster-grid></div>
+      </section>
+
+      <section class="portal-section dashboard-panel" id="attendance">
+        <div class="portal-block-head"><h2>Attendance</h2><span>Subject-wise attendance</span></div>
+        <div class="admin-table-card">
+          <table>
+            <thead><tr><th>Subject</th><th>Classes Held</th><th>Classes Attended</th><th>Attendance %</th></tr></thead>
+            <tbody id="parentAttendanceBody"></tbody>
+          </table>
+        </div>
+        <p class="service-amount">Overall Attendance<strong id="parentAttendanceOverall">-</strong></p>
+      </section>
+
+      <section class="portal-section dashboard-panel" id="grades">
+        <div class="portal-block-head"><h2>Grades</h2><span id="parentGradesSummary">-</span></div>
+        <div class="admin-table-card">
+          <table>
+            <thead><tr><th>Year / Semester</th><th>GPA</th><th>Backlogs</th></tr></thead>
+            <tbody id="parentGradesBody"></tbody>
+          </table>
+          <p class="result-updated-note" id="parentGradesLastUpdated"></p>
+          <div class="result-disclaimer">
+            <strong>NOTE:</strong>
+            <ul>
+              <li>Any discrepancy in the above information must be brought to the notice of the Controller of Examinations.</li>
+              <li>Grades that appear in the Grades Sheet are final.</li>
+              <li>The candidate should secure a minimum of 75% aggregate attendance to get promoted to the next year / semester.</li>
+              <li>The above details are for information purposes only - this is not an official document.</li>
+            </ul>
+          </div>
+        </div>
+      </section>
+
+      <section class="portal-section dashboard-panel" id="exam-schedule">
+        <div class="portal-block-head">
+          <h2>Exam Schedule</h2>
+          <select class="admin-select" id="parentExamScheduleSemesterSelect" aria-label="Select semester">
+            <option value="current">VI Semester (Current)</option>
+            <option value="V Semester">V Semester</option>
+            <option value="IV Semester">IV Semester</option>
+          </select>
+        </div>
+        <div class="admin-table-card">
+          <table>
+            <thead><tr><th>Subject</th><th>Date</th><th>Time</th></tr></thead>
+            <tbody id="parentExamScheduleBody"></tbody>
+          </table>
+        </div>
+      </section>
+
+      <section class="portal-section dashboard-panel" id="pay-fees">
+        <div class="portal-block-head">
+          <h2>Pay Fees</h2>
+          <span>Fill the application and pay in one place</span>
+        </div>
+
+        <div class="fee-notice-list" id="pendingFeesList"></div>
+
+        <form class="certificate-form service-request-card">
+          <div class="service-card-head">
+            <p class="eyebrow">Parent Request</p>
+            <h2>Select what you are paying for</h2>
+          </div>
+          <div class="service-type-tabs" role="tablist" aria-label="Select payment type">
+            <button type="button" class="service-type active" data-service="tuition">Tuition Fee</button>
+            <button type="button" class="service-type" data-service="exam">Exam Fee</button>
+          </div>
+
+          <div class="service-fields is-active" data-service-fields="tuition">
+            <div class="application-picker">
+              <button type="button" class="application-card active" data-application="semester-tuition" data-amount="48500">
+                <strong>Semester Tuition</strong><span>Regular semester tuition fee</span>
+              </button>
+              <button type="button" class="application-card" data-application="backlog-fee" data-amount="1500">
+                <strong>Backlog Fee</strong><span>Dues for backlog subjects</span>
+              </button>
+            </div>
+            <div class="application-fields is-active" data-application-fields="semester-tuition">
+              <label>Semester
+                <select required>
+                  <option>VI Semester</option>
+                  <option>V Semester</option>
+                  <option>IV Semester</option>
+                </select>
+              </label>
+            </div>
+            <div class="application-fields" data-application-fields="backlog-fee">
+              <div id="backlogSubjectField"></div>
+            </div>
+            <p class="service-amount">Amount Payable<strong data-amount-display>&#8377;48,500</strong></p>
+          </div>
+
+          <div class="service-fields" data-service-fields="exam">
+            <div class="application-picker">
+              <button type="button" class="application-card active" data-application="regular-exam" data-amount="850">
+                <strong>Regular Examination</strong><span>Current semester end exam</span>
+              </button>
+              <button type="button" class="application-card" data-application="supplementary-exam" data-amount="1200">
+                <strong>Supplementary Examination</strong><span>Reappear for failed subjects</span>
+              </button>
+              <button type="button" class="application-card" data-application="revaluation" data-amount="500">
+                <strong>Revaluation</strong><span>Recheck an already written paper</span>
+              </button>
+            </div>
+            <div class="application-fields is-active" data-application-fields="regular-exam">
+              <label>Semester
+                <select required>
+                  <option>VI Semester</option>
+                  <option>V Semester</option>
+                </select>
+              </label>
+            </div>
+            <div class="application-fields" data-application-fields="supplementary-exam">
+              <label>Failed Subjects
+                <input type="text" placeholder="e.g. DBMS, OS" required>
+              </label>
+            </div>
+            <div class="application-fields" data-application-fields="revaluation">
+              <label>Subject
+                <input type="text" placeholder="Subject code, e.g. DBMS" required>
+              </label>
+              <label>Roll Number
+                <input type="text" placeholder="20X51A0501" required>
+              </label>
+            </div>
+            <p class="service-amount">Amount Payable<strong data-amount-display>&#8377;850</strong></p>
+          </div>
+
+          <label class="declaration-check">
+            <input type="checkbox" required>
+            <span>I confirm that the details above are correct and I am the parent/guardian of this student. I agree to the college declaration for processing this payment.</span>
+          </label>
+          <button class="payment-open-button" type="submit">Pay Now</button>
+
+          <a class="application-download" href="#" download="gprec-payment-receipt.pdf">Download Payment Receipt</a>
+        </form>
+
+        <div class="portal-block-head"><h3>Payment History</h3><span>Download receipts for payments made</span></div>
+        <div class="admin-table-card">
+          <table>
+            <thead><tr><th>Fee Type</th><th>Detail</th><th>Amount</th><th>Date</th><th>Status</th><th></th></tr></thead>
+            <tbody id="paymentHistoryBody"></tbody>
+          </table>
+          <p class="lookup-empty" id="paymentHistoryEmpty">No payments made yet. Fill an application above and pay to see your receipt here.</p>
+        </div>
+      </section>
+
+      <section class="portal-section dashboard-panel" id="scholarship">
+        <div class="portal-block-head"><h2>Scholarship</h2><span>Student financial aid status</span></div>
+        <div class="portal-card-grid compact">
+          <article><strong>Renewal Status</strong><span>Pending document verification.</span><small>Submit latest income certificate and previous semester marks memo.</small></article>
+          <article><strong>Application ID</strong><span>GPREC-SCH-2026-0501</span><small>Academic year 2026-27</small></article>
+          <article><strong>Student Section</strong><span>studentsection@gprec.ac.in</span><small>Contact for scholarship corrections and renewal help.</small></article>
+        </div>
+
+        <div class="portal-block-head"><h3>Bank Details for Scholarship Amount</h3></div>
+        <div class="portal-card-grid compact">
+          <article><strong>Account Holder Name</strong><span id="parentScholarshipAccountHolder">-</span></article>
+          <article><strong>Bank Name</strong><span id="parentScholarshipBankName">-</span></article>
+          <article><strong>Account Number</strong><span id="parentScholarshipAccountNumber">-</span></article>
+          <article><strong>IFSC Code</strong><span id="parentScholarshipIfsc">-</span></article>
+          <article><strong>Branch</strong><span id="parentScholarshipBranch">-</span></article>
+        </div>
+        <div class="portal-info-note"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="11" x2="12" y2="16"></line><circle cx="12" cy="7.5" r="0.6" fill="currentColor" stroke="none"></circle></svg><span>Bank details are managed by the student from the student portal.</span></div>
+      </section>
+
+
+      <section class="portal-section dashboard-panel" id="outing-status">
+        <div class="portal-block-head"><h2>Outing Requests</h2><span>Request an outing for your child</span></div>
+
+        <div class="portal-block-head"><h3>New Outing Request</h3></div>
+        <form class="certificate-form" id="outingRequestForm">
+          <label>Outing Type
+            <select id="outingTypeSelect" required>
+              <option value="">Select outing type</option>
+              <option value="Weekday Outing">Weekday Outing</option>
+              <option value="Weekend Outing">Weekend Outing</option>
+            </select>
+          </label>
+          <label>Purpose of Visit
+            <input type="text" id="outingReason" placeholder="e.g. Medical visit" required>
+          </label>
+          <label>Place of Visit
+            <input type="text" id="outingPlace" placeholder="e.g. City Hospital, Nandyal Road" required>
+          </label>
+          <label>Student Mobile Number
+            <input type="text" id="outingStudentMobile" placeholder="e.g. 98765 43210" required>
+          </label>
+          <label>Parent Mobile Number
+            <input type="text" id="outingParentMobile" placeholder="e.g. 98765 00000" required>
+          </label>
+          <div class="is-hidden" id="weekdayOutingFields">
+            <label>Date
+              <input type="date" id="outingDate">
+            </label>
+            <label>Out Time
+              <input type="time" id="outingOutTimeOnly">
+            </label>
+            <label>Return Time
+              <input type="time" id="outingReturnTimeOnly">
+            </label>
+          </div>
+          <div class="is-hidden" id="weekendOutingFields">
+            <label>Out Date &amp; Time
+              <input type="datetime-local" id="outingOutDateTime">
+            </label>
+            <label>Return Date &amp; Time
+              <input type="datetime-local" id="outingReturnDateTime">
+            </label>
+          </div>
+          <button class="payment-open-button" type="submit">Submit Outing Request</button>
+          <p class="portal-feedback is-hidden" id="outingRequestFeedback"></p>
+        </form>
+
+        <div class="portal-block-head"><h3>Outing Requests</h3></div>
+        <div class="admin-table-card">
+          <table>
+            <thead><tr><th>Outing Type</th><th>Purpose</th><th>Place of Visit</th><th>Out Time</th><th>Return Time</th><th>Status</th><th>Download Pass</th></tr></thead>
+            <tbody id="parentOutingBody"></tbody>
+          </table>
+          <p class="lookup-empty" id="parentOutingEmpty">No outing requests found.</p>
+        </div>
+      </section>
+
+      <section class="portal-section dashboard-panel" id="visiting-status">
+        <div class="portal-block-head"><h2>Visiting Requests</h2><span>Request a hostel visit for your child</span></div>
+
+        <div class="portal-block-head"><h3>Request a Hostel Visit</h3></div>
+        <form class="certificate-form" id="parentVisitingForm">
+          <label>Visitor Name
+            <input type="text" id="visitingVisitorName" placeholder="e.g. L. Sudhakar" required>
+          </label>
+          <label>Relationship to Student
+            <select id="visitingRelationship" required>
+              <option value="">Select relationship</option>
+              <option>Father</option>
+              <option>Mother</option>
+              <option>Guardian</option>
+              <option>Sibling</option>
+              <option>Other Relative</option>
+            </select>
+          </label>
+          <label>Purpose of Visit
+            <input type="text" id="visitingPurpose" placeholder="e.g. Bring essentials, check on health" required>
+          </label>
+          <label>Visitor Mobile Number
+            <input type="text" id="visitingMobile" placeholder="e.g. 98765 00000" required>
+          </label>
+          <label>Visit Date &amp; Time
+            <input type="datetime-local" id="visitingDateTime" required>
+          </label>
+          <button class="payment-open-button" type="submit">Submit Visit Request</button>
+          <p class="portal-feedback is-hidden" id="visitingFeedback"></p>
+        </form>
+
+        <div class="portal-block-head"><h3>Visiting Requests</h3></div>
+        <div class="admin-table-card">
+          <table>
+            <thead><tr><th>Visitor</th><th>Relationship</th><th>Purpose</th><th>Visit Date &amp; Time</th><th>Status</th><th>Download Pass</th></tr></thead>
+            <tbody id="parentVisitingBody"></tbody>
+          </table>
+          <p class="lookup-empty" id="parentVisitingEmpty">No visiting requests found.</p>
+        </div>
+      </section>
+    </main>
+
+    <div class="gprecian" aria-live="polite">
+      <section class="gprecian-panel" aria-label="GPRECian parent help chat">
+        <div class="gprecian-head">
+          <div class="gprecian-title">
+            <span class="gprecian-avatar bot-avatar"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m4 6 8-3 8 3-8 3zM7 8v3M17 8v3M9 12a3 3 0 1 0 6 0M5 21c.7-3.2 3.4-5 7-5s6.3 1.8 7 5"/></svg></span>
+            <div>
+              <strong>GPRECian Bot</strong>
+              <span>AI parent help</span>
+            </div>
+          </div>
+          <div class="gprecian-actions">
+            <button class="gprecian-expand" type="button" aria-label="Expand chat window"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M15 3h6v6M9 21H3v-6M21 3l-7 7M3 21l7-7"/></svg></button>
+            <button class="gprecian-close" type="button" aria-label="Close GPRECian chat">×</button>
+          </div>
+        </div>
+        <div class="gprecian-welcome" id="gprecianWelcome">
+          <p class="gprecian-welcome-greeting" id="gprecianWelcomeGreeting">Hello</p>
+          <p class="gprecian-welcome-question">How can I help you today?</p>
+          <p class="gprecian-welcome-subtext">Ask me about your child's attendance, outing requests, visiting requests, or fees.</p>
+          <div class="gprecian-chips" aria-label="Suggested questions">
+            <button type="button" data-question="child attendance">Attendance</button>
+            <button type="button" data-question="outing request">Outing Request</button>
+            <button type="button" data-question="visiting request">Visiting Request</button>
+            <button type="button" data-question="fees">Fees</button>
+          </div>
+        </div>
+        <div class="gprecian-messages is-hidden"></div>
+        <form class="gprecian-form">
+          <input type="text" aria-label="Ask GPRECian a question" placeholder="Ask a question..." autocomplete="off" id="gprecianInput">
+          <button type="submit" aria-label="Send message"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"/></svg></button>
+          <div class="gprecian-suggestions is-hidden" id="gprecianSuggestions"></div>
+        </form>
+        <p class="gprecian-disclaimer">AI-generated answers may be inaccurate - verify important details with the college.</p>
+      </section>
+      <button class="gprecian-toggle" type="button" aria-label="Open GPRECian chat">
+        <span><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m4 6 8-3 8 3-8 3zM7 8v3M17 8v3M9 12a3 3 0 1 0 6 0M5 21c.7-3.2 3.4-5 7-5s6.3 1.8 7 5"/></svg></span>
+        <strong>GPRECian Bot</strong>
+      </button>
+    </div>
+
+    <!--
+      Payments here open the college's real PayU hosted checkout link (see admin-config.json's
+      "payuPaymentLink" field; merchant dashboard: https://onboarding.payu.in, docs:
+      https://docs.payu.in) in a new tab. Configure the backend webhook so
+      there's no webhook or return-URL to confirm the payment actually completed - it's recorded
+      locally as soon as the tab opens, trusting the payer to finish paying. A production
+      deployment should add a backend that listens for PayU's payment confirmation webhook
+      before treating a payment as real.
+    -->
+    <script src="../script.js"></script>
+  </body>
+</html>

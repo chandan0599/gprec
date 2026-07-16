@@ -1,0 +1,63 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Parent Login | GPREC</title>
+    <meta name="description" content="GPREC parent login using registered mobile number.">
+    <link rel="icon" href="https://www.gprec.ac.in/wp-content/uploads/2017/08/fav.png" sizes="32x32">
+    <link rel="stylesheet" href="../styles.css">
+  </head>
+  <body class="login-page parent-login-page">
+    <svg class="icon-sprite" aria-hidden="true" focusable="false">
+      <symbol id="icon-key" viewBox="0 0 24 24"><path d="M14 8a5 5 0 1 0-1.4 3.5L21 20v-4h-4v-4h-4l-.4-.5A5 5 0 0 0 14 8Z"/></symbol>
+    </svg>
+    <header class="login-header">
+      <a class="login-brand" href="../index.html"><img src="../gprec-logo-enhanced.png" alt="G Pulla Reddy Engineering College"></a>
+      <a class="login-home" href="../index.html"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m3 11 9-8 9 8M5 10v11h14V10M9 21v-6h6v6"/></svg>Home</a>
+    </header>
+    <main class="role-login-main">
+      <section class="role-login-copy">
+        <p class="eyebrow">Parent Portal</p>
+        <h1>Simple access for parent updates.</h1>
+        <p>Verify with your registered mobile number to review student academic communication and college updates.</p>
+        <div class="role-points">
+          <span>Attendance view</span>
+          <span>Results overview</span>
+          <span>Fee status</span>
+          <span>College notices</span>
+          <span>Parent communication</span>
+        </div>
+      </section>
+      <article class="portal-card role-login-card parent-portal">
+        <div class="portal-head">
+          <span><svg><use href="#icon-key"></use></svg></span>
+          <div>
+            <h3>Parent Login</h3>
+            <p>Verify with your registered mobile number.</p>
+          </div>
+        </div>
+        <form class="parent-otp-form" id="parentOtpForm">
+          <label>Registered Mobile<input type="tel" id="parentLoginMobile" placeholder="Parent mobile number" autocomplete="tel"></label>
+          <label><span>Security Check (<span class="captcha-question">? + ?</span>)</span><input type="text" class="captcha-input" inputmode="numeric" autocomplete="off" placeholder="Enter the sum"></label>
+          <button type="button" id="parentSendOtpButton">Send OTP</button>
+          <div class="is-hidden" id="parentOtpStep">
+            <label>Enter OTP<input type="text" id="parentLoginOtp" placeholder="6-digit OTP" inputmode="numeric" maxlength="6" autocomplete="one-time-code"></label>
+            <button type="button" id="parentVerifyOtpButton">Verify &amp; Login</button>
+            <p class="portal-note" id="parentOtpHint"></p>
+          </div>
+          <p class="portal-feedback is-hidden" id="parentLoginFeedback"></p>
+        </form>
+        <div class="parent-preview">
+          <h3>Parents can view</h3>
+          <p>Student attendance, marks summary, semester results, fee status, notices, upcoming exams, faculty messages, and college communication.</p>
+        </div>
+        <div class="parent-preview">
+          <h3>Parent access</h3>
+          <p>Use the mobile number registered as your child's guardian contact. A verification OTP is shown on screen after Send OTP.</p>
+        </div>
+      </article>
+    </main>
+    <script src="../script.js"></script>
+  </body>
+</html>

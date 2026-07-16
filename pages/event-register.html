@@ -1,0 +1,22 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Redirecting to Event Registration | GPREC</title>
+    <meta name="robots" content="noindex">
+    <script>
+      (() => {
+        const params = new URLSearchParams(window.location.search);
+        const eventId = params.get("eventId");
+        const target = new URL("../dashboards/event-visitor-dashboard.html", window.location.href);
+        if (eventId) target.searchParams.set("eventId", eventId);
+        target.searchParams.set("view", params.get("view") || "signup");
+        window.location.replace(target.href);
+      })();
+    </script>
+  </head>
+  <body>
+    <p>Redirecting to event registration...</p>
+  </body>
+</html>

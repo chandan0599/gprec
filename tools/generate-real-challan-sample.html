@@ -1,0 +1,35 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <title>Generate Real GPREC Challan Sample</title>
+  </head>
+  <body>
+    <p id="status">Generating sample challan PDF...</p>
+    <script src="../script.js"></script>
+    <script>
+      (async () => {
+        const status = document.querySelector("#status");
+        try {
+          const copies = await makeChallanPdfs(
+            "Sample Student",
+            "22X51A0501",
+            "Exam/Condonation/PCCMM Fee",
+            500,
+            "Five Hundred"
+          );
+          const collegeCopy = copies.find((copy) => copy.fileSuffix === "college-copy") || copies[0];
+          const link = document.createElement("a");
+          link.href = URL.createObjectURL(collegeCopy.blob);
+          link.download = "gprec-real-challan-sample-college-copy.pdf";
+          document.body.appendChild(link);
+          link.click();
+          status.textContent = "Generated with the real makeChallanPdfs code. Check Chrome downloads.";
+        } catch (error) {
+          console.error(error);
+          status.textContent = "Could not generate sample. Check the browser console.";
+        }
+      })();
+    </script>
+  </body>
+</html>

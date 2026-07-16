@@ -1,0 +1,135 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Event Volunteer Dashboard | GPREC</title>
+    <meta name="description" content="GPREC event volunteer dashboard for scanning and checking in event passes.">
+    <link rel="icon" href="https://www.gprec.ac.in/wp-content/uploads/2017/08/fav.png" sizes="32x32">
+    <link rel="stylesheet" href="../styles.css">
+  </head>
+  <body class="admin-dashboard-page">
+    <header class="student-topbar admin-topbar">
+      <a class="student-brand" href="../index.html">
+        <img src="../gprec-logo-enhanced.png" alt="G Pulla Reddy Engineering College">
+      </a>
+      <div class="student-user">
+        <div class="student-user-menu">
+          <span class="student-user-avatar">EV</span>
+          <button type="button" class="student-user-toggle" aria-label="Account menu" aria-expanded="false">
+            <span class="student-user-name-block">
+              <strong id="eventVolunteerName">Event Volunteer</strong>
+              <small id="eventVolunteerMeta">Event Volunteer</small>
+            </span>
+          </button>
+          <div class="student-user-dropdown">
+            <a href="../logins/student-login.html?next=event-volunteer-dashboard.html">Logout</a>
+          </div>
+        </div>
+      </div>
+    </header>
+
+    <main class="admin-shell no-sidebar-shell">
+      <section class="admin-panel is-active" id="volunteer-checkin" style="width:100%;">
+        <div class="admin-section-head">
+          <div><p class="eyebrow">Event Check-In</p><h2>Track the selected event's live gate status and open the scanner when you are ready to check attendees in.</h2></div>
+          <select class="admin-select" id="volunteerEventSelect"></select>
+        </div>
+
+        <div class="admin-metric-grid" id="volunteerEventStats">
+          <article><strong id="volunteerRegisteredCount">0</strong><span>Registered</span></article>
+          <article><strong id="volunteerCheckedInCount">0</strong><span>Checked In</span></article>
+          <article><strong id="volunteerPendingCount">0</strong><span>Pending</span></article>
+          <article><strong id="volunteerOutsideCount">0</strong><span>Outside Visitors</span></article>
+        </div>
+
+        <article class="admin-card admin-form-card">
+          <h3>Gate Tools</h3>
+          <p id="volunteerEventSummary">Select an event to see the live gate summary.</p>
+          <div class="action-cell gate-scan-actions">
+            <a class="payment-open-button" id="volunteerOpenScanner" href="../pages/event-pass-scan.html">Open Scanner / QR Fallback</a>
+          </div>
+        </article>
+
+        <div class="admin-table-card">
+          <h3>Check-In Log</h3>
+          <table>
+            <thead><tr><th>Type</th><th>Participant</th><th>Roll / Email</th><th>Checked In</th><th>By</th></tr></thead>
+            <tbody id="volunteerCheckInBody"></tbody>
+          </table>
+          <p class="lookup-empty is-hidden" id="volunteerCheckInEmpty">No check-ins recorded yet for this event.</p>
+        </div>
+      </section>
+    </main>
+
+    <script src="../script.js"></script>
+    <script>
+      (() => {
+        const eventSelect = document.querySelector("#volunteerEventSelect");
+        const logBody = document.querySelector("#volunteerCheckInBody");
+        const logEmpty = document.querySelector("#volunteerCheckInEmpty");
+        const openScanner = document.querySelector("#volunteerOpenScanner");
+        const summaryEl = document.querySelector("#volunteerEventSummary");
+        const registeredCountEl = document.querySelector("#volunteerRegisteredCount");
+        const checkedInCountEl = document.querySelector("#volunteerCheckedInCount");
+        const pendingCountEl = document.querySelector("#volunteerPendingCount");
+        const outsideCountEl = document.querySelector("#volunteerOutsideCount");
+        if (!eventSelect) return;
+
+        const events = getCampusEvents();
+        eventSelect.innerHTML = events.length
+          ? events.map((event) => `<option value="${event.id}">${event.title}</option>`).join("")
+          : `<option value="">No events available</option>`;
+        ["gprecAdminRole", "gprecAdminEmail", "gprecAdminDepartment"].forEach((key) => localStorage.removeItem(key));
+        const volunteerRoll = getCurrentStudentId();
+        const volunteerName = resolveStudentDisplayName(volunteerRoll, volunteerRoll || "Event Volunteer");
+        document.querySelector("#eventVolunteerName").textContent = volunteerName;
+        document.querySelector("#eventVolunteerMeta").textContent = volunteerRoll ? `Event Volunteer | Roll: ${volunteerRoll}` : "Event Volunteer";
+        document.querySelector(".student-user-avatar").textContent = getNameInitials(volunteerName);
+
+        const renderStats = () => {
+          const eventId = eventSelect.value;
+          const event = events.find((item) => item.id === eventId);
+          const registrations = getCampusEventRegistrations().filter((item) => item.eventId === eventId);
+          const checkedIn = registrations.filter((item) => item.checkIn);
+          const outsideVisitors = registrations.filter((item) => item.isExternal);
+          registeredCountEl.textContent = registrations.length;
+          checkedInCountEl.textContent = checkedIn.length;
+          pendingCountEl.textContent = Math.max(0, registrations.length - checkedIn.length);
+          outsideCountEl.textContent = outsideVisitors.length;
+          if (summaryEl) {
+            const latest = checkedIn
+              .slice()
+              .sort((a, b) => String(b.checkIn?.scannedAt || "").localeCompare(String(a.checkIn?.scannedAt || "")))[0];
+            summaryEl.textContent = event
+              ? `${event.title}: ${checkedIn.length} of ${registrations.length} attendees checked in${latest ? `. Latest: ${latest.participantName || latest.rollNumber || latest.email} at ${formatOutingDateTime(latest.checkIn.scannedAt)}.` : "."}`
+              : "No event is available yet.";
+          }
+          if (openScanner) openScanner.href = eventId ? `../pages/event-pass-scan.html?eventId=${encodeURIComponent(eventId)}` : "../pages/event-pass-scan.html";
+        };
+
+        const renderLog = () => {
+          const eventId = eventSelect.value;
+          const registrations = getCampusEventRegistrations().filter((item) => item.eventId === eventId && item.checkIn);
+          logEmpty.classList.toggle("is-hidden", registrations.length > 0);
+          logBody.innerHTML = registrations
+            .map(
+              (item) => `
+                <tr>
+                  <td>${item.isExternal ? "Outside" : "GPREC Student"}</td>
+                  <td>${item.participantName || "-"}</td>
+                  <td>${item.rollNumber || item.email || "-"}</td>
+                  <td>${formatOutingDateTime(item.checkIn.scannedAt)}</td>
+                  <td>${item.checkIn.scannedBy || "-"}</td>
+                </tr>
+              `
+            )
+            .join("");
+          renderStats();
+        };
+        renderLog();
+        eventSelect.addEventListener("change", renderLog);
+      })();
+    </script>
+  </body>
+</html>

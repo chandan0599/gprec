@@ -1,0 +1,87 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Subject Details | GPREC</title>
+    <meta name="description" content="GPREC student subject details with assignments, study materials, teacher details, and class schedule.">
+    <link rel="icon" href="https://www.gprec.ac.in/wp-content/uploads/2017/08/fav.png" sizes="32x32">
+    <link rel="stylesheet" href="../styles.css">
+  </head>
+  <body class="student-portal-page assignment-page subject-page">
+    <header class="student-topbar">
+      <a class="student-brand" href="../dashboards/student-dashboard.html">
+        <img src="../gprec-logo-enhanced.png" alt="G Pulla Reddy Engineering College">
+      </a>
+      <div class="student-user">
+        <div class="notification-bell-wrap">
+          <button type="button" class="notification-bell" id="notificationBellButton" aria-label="Notifications">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 8a6 6 0 1 1 12 0c0 4 1.5 5.5 2 6H4c.5-.5 2-2 2-6Z"/><path d="M10 20a2 2 0 0 0 4 0"/></svg>
+            <span class="notification-badge is-hidden" id="notificationBadge">0</span>
+          </button>
+          <div class="notification-dropdown is-hidden" id="notificationDropdown">
+            <div class="notification-dropdown-head">Notifications</div>
+            <div id="notificationList"></div>
+          </div>
+        </div>
+        <div class="student-user-menu">
+          <span class="student-user-avatar">SC</span>
+          <button type="button" class="student-user-toggle" aria-label="Account menu" aria-expanded="false">
+            <span class="student-user-name-block">
+              <strong>Sai Chandan</strong>
+              <small id="dashboardStudentId">20X51A0501</small>
+            </span>
+          </button>
+          <div class="student-user-dropdown">
+            <a href="../dashboards/student-dashboard.html">Dashboard</a>
+          </div>
+        </div>
+      </div>
+    </header>
+
+    <main class="subject-detail-shell">
+      <a class="detail-back-link" href="../dashboards/student-dashboard.html#academics">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M19 12H5M11 18l-6-6 6-6"/></svg>
+        Back
+      </a>
+
+      <section class="subject-hero-card">
+        <span id="subjectCode">CN</span>
+        <div>
+          <p class="eyebrow">Subject Details</p>
+          <h1 id="subjectName">Computer Networks</h1>
+          <p id="subjectTeacher">Mr. P. Kumar | Wed 11:30 AM | Network Lab</p>
+        </div>
+      </section>
+
+      <section class="subject-detail-grid">
+        <article>
+          <p class="eyebrow">Assignment</p>
+          <h2 id="subjectAssignment">No pending assignment</h2>
+          <p id="subjectAssignmentInfo">No assignment is pending for this subject.</p>
+          <a id="subjectAssignmentLink" class="service-open-link" href="assignment-detail.html">Open Assignment</a>
+        </article>
+        <article>
+          <p class="eyebrow">Study Material</p>
+          <h2>Course Materials</h2>
+          <p>Materials are listed based on your class and assigned teacher.</p>
+          <div class="material-list" id="subjectMaterialsList"></div>
+          <p class="lookup-empty is-hidden" id="subjectMaterialsEmpty">No materials uploaded yet for this subject.</p>
+        </article>
+        <article>
+          <p class="eyebrow">Class Schedule</p>
+          <h2 id="subjectSchedule">Wednesday | 11:30 AM - 1:20 PM</h2>
+          <p id="subjectRoom">Network Lab</p>
+        </article>
+        <article>
+          <p class="eyebrow">Progress</p>
+          <h2 id="subjectProgress">32 / 52 classes completed</h2>
+          <div class="subject-progress-bar"><span id="subjectProgressBar"></span></div>
+          <p id="subjectProgressNote">Semester class progress based on completed sessions.</p>
+        </article>
+      </section>
+    </main>
+
+    <script src="../script.js"></script>
+  </body>
+</html>

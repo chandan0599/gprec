@@ -1,0 +1,815 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Event Management Dashboard | GPREC</title>
+    <meta name="description" content="GPREC college fest event management dashboard for admins, faculty coordinators, and student volunteers.">
+    <link rel="icon" href="https://www.gprec.ac.in/wp-content/uploads/2017/08/fav.png" sizes="32x32">
+    <link rel="stylesheet" href="../styles.css">
+  </head>
+  <body class="admin-dashboard-page">
+    <header class="student-topbar admin-topbar">
+      <a class="student-brand" href="../index.html">
+        <img src="../gprec-logo-enhanced.png" alt="G Pulla Reddy Engineering College">
+      </a>
+      <div class="student-user">
+        <div class="student-user-menu">
+          <span class="student-user-avatar" id="festUserAvatar">GF</span>
+          <span class="student-user-name-block">
+            <strong id="festUserName">College Fest</strong>
+            <small id="festUserMeta">Event Management</small>
+          </span>
+        </div>
+        <a class="login-home" href="admin-dashboard.html" id="festHomeLink"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m3 11 9-8 9 8M5 10v11h14V10M9 21v-6h6v6"/></svg>Dashboard</a>
+      </div>
+    </header>
+
+    <main class="admin-shell">
+      <aside class="admin-sidebar">
+        <div class="student-menu-title">
+          <strong>Event Management</strong>
+          <button type="button" class="menu-collapse-toggle" id="menuCollapseToggle" aria-label="Collapse menu">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M15 5 9 12l6 7"/></svg>
+          </button>
+        </div>
+        <div id="festAdminMenu" class="is-hidden">
+          <a class="admin-nav-static" href="#festSettingsSection"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94z"/></svg><span class="admin-nav-text">Fest Settings</span></a>
+          <a class="admin-nav-static" href="#festCreateActivitySection"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg><span class="admin-nav-text">Create Activity</span></a>
+          <a class="admin-nav-static" href="#festActivitiesSection"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 3v4M17 3v4M4 8h16M5 5h14a1 1 0 0 1 1 1v14H4V6a1 1 0 0 1 1-1Z"/></svg><span class="admin-nav-text">Fest Activities</span></a>
+          <a class="admin-nav-static" href="#festCoordinatorsSection"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="9" cy="8" r="3"/><path d="M2 20c0-3 3-5 7-5s7 2 7 5"/><circle cx="17" cy="8" r="3"/><path d="M14 15c3 .3 5 2 5 5"/></svg><span class="admin-nav-text">Fest Coordinators</span></a>
+          <a class="admin-nav-static" href="#festPosterDesignerSection"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="4" width="18" height="16" rx="2"/><circle cx="8.5" cy="9.5" r="1.5"/><path d="m4 17 5-5 4 4 3-3 4 4"/></svg><span class="admin-nav-text">Poster &amp; Ad Designer</span></a>
+          <a class="admin-nav-static" href="#festVisitorsSection"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 6h16v12H4zM4 7l8 6 8-6"/></svg><span class="admin-nav-text">Visitor Registrations</span></a>
+        </div>
+        <div id="festFacultyMenu" class="is-hidden">
+          <a class="admin-nav-static" href="#festFacultyCreateSection"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg><span class="admin-nav-text">Create Activity</span></a>
+          <a class="admin-nav-static" href="#festFacultyActivitiesSection"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 3v4M17 3v4M4 8h16M5 5h14a1 1 0 0 1 1 1v14H4V6a1 1 0 0 1 1-1Z"/></svg><span class="admin-nav-text">My Fest Activities</span></a>
+        </div>
+        <div id="festVolunteerMenu" class="is-hidden">
+          <a class="admin-nav-static" href="#festVolunteerDutiesSection"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 3v4M17 3v4M4 8h16M5 5h14a1 1 0 0 1 1 1v14H4V6a1 1 0 0 1 1-1Z"/></svg><span class="admin-nav-text">My Fest Duties</span></a>
+        </div>
+      </aside>
+
+      <section class="admin-workspace">
+        <section class="admin-panel is-active is-hidden" id="festAdminView">
+          <div class="admin-section-head">
+            <div><p class="eyebrow">College Fest</p><h2>Publish fest activities, approve faculty coordinators, and staff activities with volunteers.</h2></div>
+          </div>
+          <article class="admin-card admin-form-card" id="festSettingsSection">
+            <h3>Fest Settings</h3>
+            <div class="admin-add-grid">
+              <label>Fest Name<input type="text" id="festNameInput" placeholder="e.g. Sparsha 2026"></label>
+              <label>Fest Date<input type="date" id="festDateInput"></label>
+              <label>Fest Time (optional)<input type="time" id="festTimeInput"></label>
+              <label>Fest Venue<input type="text" id="festVenueInput" placeholder="e.g. GPREC Campus"></label>
+            </div>
+            <label class="spotlight-setting-row">
+              <span><strong>Show homepage banner</strong><small>Auto-hides 24 hours after the fest date/time passes.</small></span>
+              <span class="toggle-switch toggle-switch-right"><input type="checkbox" id="festBannerEnabledInput" checked><span class="toggle-slider"></span></span>
+            </label>
+            <button type="button" id="festNameSaveButton">Save</button>
+            <p class="admin-add-feedback" id="festNameFeedback" aria-live="polite"></p>
+          </article>
+          <article class="admin-card admin-form-card" id="festCreateActivitySection">
+            <h3>Create Fest Activity</h3>
+            <div class="admin-add-grid">
+              <label>Title<input type="text" id="festActivityTitleInput" placeholder="e.g. Cultural Night Stage Management"></label>
+              <label>Date<input type="date" id="festActivityDateInput"></label>
+              <label>Time (optional)<input type="time" id="festActivityTimeInput"></label>
+              <label>Venue<input type="text" id="festActivityVenueInput" placeholder="e.g. Main Auditorium"></label>
+              <label>Faculty Coordinator Email<input type="email" id="festActivityCoordinatorInput" placeholder="e.g. ramesh.cse@gprec.ac.in"></label>
+            </div>
+            <label>Description<textarea id="festActivityDescriptionInput" placeholder="What does this activity involve?"></textarea></label>
+            <button type="button" id="festActivityAddButton">Publish Activity</button>
+            <p class="admin-add-feedback" id="festActivityAddFeedback" aria-live="polite"></p>
+          </article>
+          <div class="admin-table-card" id="festActivitiesSection">
+            <h3>Fest Activities</h3>
+            <table>
+              <thead><tr><th>Date</th><th>Activity</th><th>Venue</th><th>Coordinator</th><th>Volunteers</th><th></th></tr></thead>
+              <tbody id="festActivityAdminBody"></tbody>
+            </table>
+            <p class="lookup-empty is-hidden" id="festActivityAdminEmpty">No fest activities published yet.</p>
+          </div>
+          <article class="admin-card admin-form-card" id="festCoordinatorsSection">
+            <h3>Fest Coordinators</h3>
+            <p>Approve a faculty email so they can publish their own fest activities from their dashboard, not just manage ones you create for them.</p>
+            <div class="admin-add-grid">
+              <label>Faculty Email<input type="email" id="festCoordinatorEmailInput" placeholder="e.g. ramesh.cse@gprec.ac.in"></label>
+            </div>
+            <button type="button" id="festCoordinatorAddButton">Approve Coordinator</button>
+            <p class="admin-add-feedback" id="festCoordinatorAddFeedback" aria-live="polite"></p>
+            <div class="admin-table-card">
+              <table>
+                <thead><tr><th>Name</th><th>Email</th><th></th></tr></thead>
+                <tbody id="festCoordinatorBody"></tbody>
+              </table>
+              <p class="lookup-empty is-hidden" id="festCoordinatorEmpty">No approved fest coordinators yet.</p>
+            </div>
+          </article>
+          <article class="admin-card admin-form-card" id="festPosterDesignerSection">
+            <h3>Poster &amp; Ad Designer</h3>
+            <p>Pick a ready-made fest activity template and fill in the details. Publishing adds it to Posters &amp; Ads, which shows on every dashboard (Student, Faculty, Parent, Alumni, Non-Teaching, and the visitor page) automatically, each sized to fit.</p>
+            <div class="poster-builder-form">
+              <div class="admin-add-grid">
+                <label>Template<select id="posterTemplateSelect"></select></label>
+              </div>
+              <p class="eyebrow">Live Preview</p>
+              <a class="spotlight-poster-stage spotlight-poster-stage-artwork poster-builder-preview-stage" id="posterPreviewStage"></a>
+              <p class="poster-builder-preview-note">Updates as you type - this is exactly how it will appear everywhere.</p>
+              <p class="eyebrow">Fill in the text</p>
+              <div class="admin-add-grid">
+                <label>Title<input type="text" id="posterTitleInput" placeholder="e.g. Battle of Bands"></label>
+                <label>Subtitle / Info Line<input type="text" id="posterSubtitleInput" placeholder="e.g. Bring your own instruments, all genres welcome"></label>
+                <label id="posterVenueField">Venue<input type="text" id="posterVenueInput" placeholder="e.g. Main Auditorium"></label>
+                <label id="posterDateField">Date<input type="date" id="posterDateInput"></label>
+                <label id="posterTaglineField">Entry / Open To<input type="text" id="posterTaglineInput" placeholder="e.g. Open to All"></label>
+                <label>Button Text (optional)<input type="text" id="posterCtaInput" placeholder="e.g. Register Now"></label>
+                <label>Link URL (optional)<input type="text" id="posterLinkInput" placeholder="e.g. pages/event-register.html"></label>
+                <label id="posterFooterEmailField">Contact Email<input type="text" id="posterFooterEmailInput"></label>
+                <label>Type
+                  <select id="posterTypeInput">
+                    <option>Poster</option>
+                    <option>Advertisement</option>
+                  </select>
+                </label>
+              </div>
+              <button type="button" id="posterPublishButton">Publish to All Dashboards</button>
+              <p class="admin-add-feedback" id="posterPublishFeedback" aria-live="polite"></p>
+            </div>
+            <div class="admin-table-card">
+              <h3>Designed Posters</h3>
+              <table>
+                <thead><tr><th>Title</th><th>Template</th><th>Type</th><th></th></tr></thead>
+                <tbody id="posterDesignedBody"></tbody>
+              </table>
+              <p class="lookup-empty is-hidden" id="posterDesignedEmpty">No designed posters published yet.</p>
+            </div>
+          </article>
+          <div class="admin-table-card" id="festVisitorsSection">
+            <h3>Visitor Registrations</h3>
+            <p>Outside visitors who signed up for a public campus event via the visitor portal.</p>
+            <button type="button" id="festVisitorExportButton">Export CSV</button>
+            <table>
+              <thead><tr><th>Event</th><th>Name</th><th>Email</th><th>College</th><th>Phone</th><th>Fee</th><th>Status</th></tr></thead>
+              <tbody id="festVisitorRegistrationBody"></tbody>
+            </table>
+            <p class="lookup-empty is-hidden" id="festVisitorRegistrationEmpty">No visitor registrations yet.</p>
+          </div>
+        </section>
+
+        <section class="admin-panel is-active is-hidden" id="festFacultyView">
+          <div class="admin-section-head">
+            <div><p class="eyebrow">College Fest</p><h2>Publish your own fest activities and assign student volunteers.</h2></div>
+          </div>
+          <article class="admin-card admin-form-card" id="festFacultyCreateSection">
+            <h3>Create Fest Activity</h3>
+            <p class="lookup-empty is-hidden" id="festCreateActivityLocked">Ask admin to approve you as a fest coordinator before you can publish your own activities.</p>
+            <div id="festCreateActivityFields">
+              <div class="admin-add-grid">
+                <label>Title<input type="text" id="festCreateTitleInput" placeholder="e.g. Robotics Demo Stall"></label>
+                <label>Date<input type="date" id="festCreateDateInput"></label>
+                <label>Time (optional)<input type="time" id="festCreateTimeInput"></label>
+                <label>Venue<input type="text" id="festCreateVenueInput" placeholder="e.g. Block A"></label>
+              </div>
+              <label>Description<textarea id="festCreateDescriptionInput" placeholder="What does this activity involve?"></textarea></label>
+              <button type="button" id="festCreateActivityButton">Publish Activity</button>
+              <p class="admin-add-feedback" id="festCreateActivityFeedback" aria-live="polite"></p>
+            </div>
+          </article>
+          <div id="festFacultyActivitiesSection">
+            <div class="admin-table-card">
+              <h3>My Fest Activities</h3>
+              <table>
+                <thead><tr><th>Date</th><th>Activity</th><th>Venue</th><th>Volunteers</th><th></th></tr></thead>
+                <tbody id="festActivityFacultyBody"></tbody>
+              </table>
+              <p class="lookup-empty is-hidden" id="festActivityFacultyEmpty">No fest activities assigned to you yet.</p>
+            </div>
+            <article class="admin-card admin-form-card is-hidden" id="festVolunteerManageCard">
+              <h3>Assign Volunteers &mdash; <span id="festVolunteerManageTitle"></span></h3>
+              <div class="admin-add-grid">
+                <label>Student Roll Number<input type="text" id="festVolunteerRollInput" placeholder="e.g. 20X51A0501"></label>
+              </div>
+              <button type="button" id="festVolunteerAddButton">Assign Volunteer</button>
+              <p class="admin-add-feedback" id="festVolunteerAddFeedback" aria-live="polite"></p>
+              <div class="admin-table-card">
+                <table>
+                  <thead><tr><th>Roll Number</th><th>Name</th><th></th></tr></thead>
+                  <tbody id="festVolunteerListBody"></tbody>
+                </table>
+                <p class="lookup-empty is-hidden" id="festVolunteerListEmpty">No volunteers assigned yet.</p>
+              </div>
+            </article>
+          </div>
+        </section>
+
+        <section class="admin-panel is-active is-hidden" id="festVolunteerView">
+          <div class="admin-section-head">
+            <div><p class="eyebrow">College Fest</p><h2>Your assigned fest duties.</h2></div>
+          </div>
+          <div class="admin-table-card" id="festVolunteerDutiesSection">
+            <table>
+              <thead><tr><th>Date</th><th>Activity</th><th>Time</th><th>Venue</th><th>Coordinator</th></tr></thead>
+              <tbody id="festVolunteerDutyBody"></tbody>
+            </table>
+            <p class="lookup-empty is-hidden" id="festVolunteerDutyEmpty">No fest duties assigned to you yet.</p>
+          </div>
+        </section>
+
+        <section class="admin-panel" id="festNoRoleView">
+          <div class="admin-section-head">
+            <div><p class="eyebrow">College Fest</p><h2>Sign in as an admin, faculty, or student to view this dashboard.</h2></div>
+          </div>
+        </section>
+      </section>
+    </main>
+
+    <script src="../script.js"></script>
+    <script>
+      (() => {
+        const role = localStorage.getItem("gprecActiveRole");
+        const dashboardPageByRole = { admin: "admin-dashboard.html", faculty: "faculty-dashboard.html", student: "student-dashboard.html" };
+
+        // The page-load guard in script.js (GPREC_DASHBOARD_ROLE) already bounces anyone without a
+        // valid admin/faculty/student session to login before this runs, so role should always be
+        // one of the three below - this is just the defensive fallback: if it somehow isn't, land
+        // on a real dashboard instead of this page's dead-end "sign in" message.
+        if (!dashboardPageByRole[role]) {
+          window.location.replace(gprecPageUrl("admin-dashboard.html"));
+          return;
+        }
+
+        const homeLink = document.querySelector("#festHomeLink");
+        if (homeLink && dashboardPageByRole[role]) homeLink.setAttribute("href", dashboardPageByRole[role]);
+
+        const escapeHtmlSafe = (value) => escapeHtml(String(value ?? ""));
+
+        // ---- Header identity ----
+        if (role === "admin") {
+          const adminRole = localStorage.getItem("gprecAdminRole") || "College Admin";
+          const adminEmail = localStorage.getItem("gprecAdminEmail") || "";
+          document.querySelector("#festUserName").textContent = adminRole;
+          document.querySelector("#festUserMeta").textContent = adminEmail || "Event Management";
+          document.querySelector("#festUserAvatar").textContent = getNameInitials(adminRole) || "AD";
+        } else if (role === "faculty") {
+          const facultyEmail = (localStorage.getItem("gprecFacultyEmail") || "").toLowerCase();
+          const facultyRecord = lookupFacultyRecordByEmail(facultyEmail);
+          document.querySelector("#festUserName").textContent = facultyRecord?.name || "Faculty Coordinator";
+          document.querySelector("#festUserMeta").textContent = facultyRecord?.designation || "Fest Coordinator";
+          document.querySelector("#festUserAvatar").textContent = getNameInitials(facultyRecord?.name) || "FA";
+        } else if (role === "student") {
+          const roll = getCurrentStudentId();
+          const name = resolveStudentDisplayName(roll, roll || "Student Volunteer");
+          document.querySelector("#festUserName").textContent = name;
+          document.querySelector("#festUserMeta").textContent = roll ? `Fest Volunteer | Roll: ${roll}` : "Fest Volunteer";
+          document.querySelector("#festUserAvatar").textContent = getNameInitials(name) || "SV";
+        }
+
+        // ---- Show only the section for the signed-in role ----
+        ["festAdminView", "festFacultyView", "festVolunteerView", "festNoRoleView"].forEach((id) => {
+          document.querySelector(`#${id}`)?.classList.add("is-hidden");
+        });
+        const activeSectionId = { admin: "festAdminView", faculty: "festFacultyView", student: "festVolunteerView" }[role] || "festNoRoleView";
+        document.querySelector(`#${activeSectionId}`)?.classList.remove("is-hidden");
+
+        // ---- Sidebar quick-jump menu for the signed-in role's own sections ----
+        ["festAdminMenu", "festFacultyMenu", "festVolunteerMenu"].forEach((id) => {
+          document.querySelector(`#${id}`)?.classList.add("is-hidden");
+        });
+        const activeMenuId = { admin: "festAdminMenu", faculty: "festFacultyMenu", student: "festVolunteerMenu" }[role];
+        if (activeMenuId) document.querySelector(`#${activeMenuId}`)?.classList.remove("is-hidden");
+
+        // Each menu's links point at that role's own section cards by #id - clicking one shows
+        // only that section and hides its siblings (same "one panel visible at a time" behavior as
+        // every other admin-family dashboard's sidebar), instead of every card being visible at
+        // once on one long scrolling page.
+        const wireSectionSwitcher = (menuId) => {
+          const menu = document.querySelector(`#${menuId}`);
+          if (!menu) return;
+          const links = [...menu.querySelectorAll(".admin-nav-static")];
+          const sectionIds = links.map((link) => link.getAttribute("href").slice(1));
+          const showSection = (targetId) => {
+            sectionIds.forEach((id) => {
+              document.querySelector(`#${id}`)?.classList.toggle("is-hidden", id !== targetId);
+            });
+            links.forEach((link) => {
+              link.classList.toggle("active", link.getAttribute("href") === `#${targetId}`);
+            });
+          };
+          links.forEach((link) => {
+            link.addEventListener("click", (event) => {
+              event.preventDefault();
+              const targetId = link.getAttribute("href").slice(1);
+              showSection(targetId);
+              history.replaceState(null, "", `#${targetId}`);
+            });
+          });
+          if (!sectionIds.length) return;
+          // Same convention as the other admin-family dashboards' sidebar (adminNavButtons/
+          // showAdminPanel in script.js): the current section lives in the URL hash, so a refresh
+          // (or a bookmarked/shared link) lands back on the same section instead of always
+          // resetting to the first one.
+          const hashTarget = window.location.hash.slice(1);
+          showSection(sectionIds.includes(hashTarget) ? hashTarget : sectionIds[0]);
+        };
+        ["festAdminMenu", "festFacultyMenu", "festVolunteerMenu"].forEach(wireSectionSwitcher);
+
+        // ============================= Admin view =============================
+        if (role === "admin") {
+          // ---- Fest Settings (name/date/time/venue shown on event-visitor-dashboard.html) ----
+          const festNameInput = document.querySelector("#festNameInput");
+          const festDateInput = document.querySelector("#festDateInput");
+          const festTimeInput = document.querySelector("#festTimeInput");
+          const festVenueInput = document.querySelector("#festVenueInput");
+          const festBannerEnabledInput = document.querySelector("#festBannerEnabledInput");
+          const festNameSaveButton = document.querySelector("#festNameSaveButton");
+          const festNameFeedback = document.querySelector("#festNameFeedback");
+          if (festNameInput) festNameInput.value = getFestName();
+          if (festDateInput) festDateInput.value = getFestDate();
+          if (festTimeInput) festTimeInput.value = getFestTime();
+          if (festVenueInput) festVenueInput.value = getFestVenue();
+          if (festBannerEnabledInput) festBannerEnabledInput.checked = getFestBannerEnabled();
+          festNameSaveButton?.addEventListener("click", () => {
+            const name = festNameInput?.value.trim() || "";
+            if (!name) {
+              festNameFeedback.textContent = "Enter a fest name.";
+              festNameFeedback.classList.remove("success");
+              return;
+            }
+            saveFestName(name);
+            saveFestDate(festDateInput?.value || "");
+            saveFestTime(festTimeInput?.value || "");
+            saveFestVenue(festVenueInput?.value.trim() || "");
+            saveFestBannerEnabled(Boolean(festBannerEnabledInput?.checked));
+            festNameFeedback.textContent = "Fest settings saved.";
+            festNameFeedback.classList.add("success");
+            recordActivity(`Updated fest settings ("${name}")`, "College Fest");
+          });
+
+          const bodyEl = document.querySelector("#festActivityAdminBody");
+          const emptyEl = document.querySelector("#festActivityAdminEmpty");
+          const titleInput = document.querySelector("#festActivityTitleInput");
+          const dateInput = document.querySelector("#festActivityDateInput");
+          const timeInput = document.querySelector("#festActivityTimeInput");
+          const venueInput = document.querySelector("#festActivityVenueInput");
+          const coordinatorInput = document.querySelector("#festActivityCoordinatorInput");
+          const descriptionInput = document.querySelector("#festActivityDescriptionInput");
+          const addButton = document.querySelector("#festActivityAddButton");
+          const addFeedback = document.querySelector("#festActivityAddFeedback");
+
+          const renderAdminTable = () => {
+            const activities = [...getFestActivities()].sort((a, b) => String(a.date || "").localeCompare(String(b.date || "")));
+            emptyEl?.classList.toggle("is-hidden", activities.length > 0);
+            bodyEl.innerHTML = activities
+              .map((activity) => {
+                const coordinatorName = lookupFacultyRecordByEmail(activity.facultyCoordinatorEmail || "")?.name || activity.facultyCoordinatorEmail || "-";
+                const volunteerCount = (activity.volunteers || []).length;
+                return `
+                  <tr>
+                    <td>${formatCampusEventDate(activity.date)}</td>
+                    <td>${escapeHtmlSafe(activity.title)}</td>
+                    <td>${escapeHtmlSafe(activity.venue || "-")}</td>
+                    <td>${escapeHtmlSafe(coordinatorName)}</td>
+                    <td>${volunteerCount}</td>
+                    <td><button type="button" class="icon-btn-delete" data-fest-activity-remove="${escapeHtmlSafe(activity.id)}" aria-label="Remove" title="Remove">${deleteIconSvg}</button></td>
+                  </tr>
+                `;
+              })
+              .join("");
+          };
+          renderAdminTable();
+
+          addButton?.addEventListener("click", () => {
+            const title = titleInput?.value.trim() || "";
+            const date = dateInput?.value || "";
+            const time = timeInput?.value || "";
+            const venue = venueInput?.value.trim() || "";
+            const facultyCoordinatorEmail = coordinatorInput?.value.trim().toLowerCase() || "";
+            const description = descriptionInput?.value.trim() || "";
+            if (!title || !date || !venue || !facultyCoordinatorEmail) {
+              addFeedback.textContent = "Enter title, date, venue, and a faculty coordinator email before publishing.";
+              addFeedback.classList.remove("success");
+              return;
+            }
+            const activities = [...getFestActivities()];
+            activities.push({
+              id: `fest-activity-${Date.now()}`,
+              title,
+              date,
+              time,
+              venue,
+              facultyCoordinatorEmail,
+              description,
+              volunteers: []
+            });
+            saveFestActivities(activities);
+            renderAdminTable();
+            [titleInput, dateInput, timeInput, venueInput, coordinatorInput, descriptionInput].forEach((field) => {
+              if (field) field.value = "";
+            });
+            addFeedback.textContent = `"${title}" published to the fest activity roster.`;
+            addFeedback.classList.add("success");
+            recordActivity(`Published fest activity "${title}"`, "College Fest");
+          });
+
+          bodyEl?.addEventListener("click", (event) => {
+            const removeButton = event.target.closest("[data-fest-activity-remove]");
+            if (!removeButton) return;
+            const activities = getFestActivities().filter((activity) => activity.id !== removeButton.dataset.festActivityRemove);
+            saveFestActivities(activities);
+            renderAdminTable();
+            recordActivity("Removed fest activity", "College Fest");
+          });
+
+          // ---- Fest Coordinators (festCoordinators allowlist - lets faculty publish their own
+          // activities via /api/fest-activities/create, see create_fest_activity in
+          // portal_db_server.py) ----
+          const coordinatorBodyEl = document.querySelector("#festCoordinatorBody");
+          const coordinatorEmptyEl = document.querySelector("#festCoordinatorEmpty");
+          const coordinatorEmailInput = document.querySelector("#festCoordinatorEmailInput");
+          const coordinatorAddButton = document.querySelector("#festCoordinatorAddButton");
+          const coordinatorAddFeedback = document.querySelector("#festCoordinatorAddFeedback");
+
+          const renderCoordinators = () => {
+            const coordinators = getFestCoordinators();
+            coordinatorEmptyEl?.classList.toggle("is-hidden", coordinators.length > 0);
+            coordinatorBodyEl.innerHTML = coordinators
+              .map((email) => {
+                const name = lookupFacultyRecordByEmail(email || "")?.name || "-";
+                return `
+                  <tr>
+                    <td>${escapeHtmlSafe(name)}</td>
+                    <td>${escapeHtmlSafe(email)}</td>
+                    <td><button type="button" class="icon-btn-delete" data-fest-coordinator-remove="${escapeHtmlSafe(email)}" aria-label="Remove" title="Remove">${deleteIconSvg}</button></td>
+                  </tr>
+                `;
+              })
+              .join("");
+          };
+          renderCoordinators();
+
+          coordinatorAddButton?.addEventListener("click", () => {
+            const email = coordinatorEmailInput?.value.trim().toLowerCase() || "";
+            if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+              coordinatorAddFeedback.textContent = "Enter a valid faculty email.";
+              coordinatorAddFeedback.classList.remove("success");
+              return;
+            }
+            const coordinators = getFestCoordinators();
+            if (coordinators.some((item) => (item || "").toLowerCase() === email)) {
+              coordinatorAddFeedback.textContent = `${email} is already an approved coordinator.`;
+              coordinatorAddFeedback.classList.remove("success");
+              return;
+            }
+            saveFestCoordinators([...coordinators, email]);
+            renderCoordinators();
+            coordinatorEmailInput.value = "";
+            coordinatorAddFeedback.textContent = `${email} approved as a fest coordinator.`;
+            coordinatorAddFeedback.classList.add("success");
+            recordActivity(`Approved ${email} as a fest coordinator`, "College Fest");
+          });
+
+          coordinatorBodyEl?.addEventListener("click", (event) => {
+            const removeButton = event.target.closest("[data-fest-coordinator-remove]");
+            if (!removeButton) return;
+            const email = removeButton.dataset.festCoordinatorRemove;
+            saveFestCoordinators(getFestCoordinators().filter((item) => item !== email));
+            renderCoordinators();
+            recordActivity(`Removed ${email} as a fest coordinator`, "College Fest");
+          });
+
+          // ---- Poster & Ad Designer (posterTemplates/buildPosterFromTemplate in script.js) ----
+          // Every variable here is poster-prefixed on purpose, even where it wouldn't strictly
+          // collide - this block sits in the same scope as the Create Fest Activity and Fest
+          // Coordinators forms above, which already claimed shorter names like titleInput/
+          // dateInput; redeclaring those with const is a hard SyntaxError that silently kills the
+          // whole inline script (nothing on the page renders) rather than just this section.
+          const posterTemplateSelect = document.querySelector("#posterTemplateSelect");
+          const posterTitleInput = document.querySelector("#posterTitleInput");
+          const posterSubtitleInput = document.querySelector("#posterSubtitleInput");
+          const posterTaglineInput = document.querySelector("#posterTaglineInput");
+          const posterVenueInput = document.querySelector("#posterVenueInput");
+          const posterDateInput = document.querySelector("#posterDateInput");
+          const posterCtaInput = document.querySelector("#posterCtaInput");
+          const posterLinkInput = document.querySelector("#posterLinkInput");
+          const posterFooterEmailInput = document.querySelector("#posterFooterEmailInput");
+          const posterTypeInput = document.querySelector("#posterTypeInput");
+          const posterPreviewStage = document.querySelector("#posterPreviewStage");
+          const posterPublishButton = document.querySelector("#posterPublishButton");
+          const posterPublishFeedback = document.querySelector("#posterPublishFeedback");
+          const posterDesignedBodyEl = document.querySelector("#posterDesignedBody");
+          const posterDesignedEmptyEl = document.querySelector("#posterDesignedEmpty");
+
+          posterTemplateSelect.innerHTML = posterTemplates
+            .map((template) => `<option value="${template.id}">${escapeHtml(template.name)}</option>`)
+            .join("");
+
+          // Pre-fill from the site-wide Footer Contact settings as a starting point - still fully
+          // editable per poster from here on, not locked to that source.
+          const siteFooterContact = getFooterContactInfo();
+          if (posterFooterEmailInput) posterFooterEmailInput.value = siteFooterContact.email || "";
+
+          const currentPosterFields = () => ({
+            title: posterTitleInput?.value.trim() || "",
+            subtitle: posterSubtitleInput?.value.trim() || "",
+            tagline: posterTaglineInput?.value.trim() || "",
+            venue: posterVenueInput?.value.trim() || "",
+            date: posterDateInput?.value || "",
+            ctaText: posterCtaInput?.value.trim() || "",
+            link: posterLinkInput?.value.trim() || "",
+            footerEmail: posterFooterEmailInput?.value.trim() || "",
+            type: posterTypeInput?.value || "Poster"
+          });
+
+          const updatePosterPreview = () => {
+            const fields = currentPosterFields();
+            const imageUrl = posterTemplateSvgUrl(getPosterTemplate(posterTemplateSelect.value), fields, "stage");
+            // JSON.stringify (not a hand-wrapped url('...')) so a literal apostrophe anywhere in the
+            // generated SVG - e.g. a template's own font-family="'Courier New',monospace" - can't
+            // prematurely close the CSS string and silently corrupt/no-op this assignment.
+            posterPreviewStage.style.backgroundImage = `url(${JSON.stringify(imageUrl)})`;
+          };
+
+          // Auto-fills the Title field with the picked template's own catchy default (e.g. "Curtain
+          // Call" for Drama/Theatre) so there's a real starting point instead of a blank input -
+          // only when the field is still empty or still holds a previous template's default, so it
+          // never clobbers a title the admin actually typed themselves.
+          const knownDefaultTitles = new Set(posterTemplates.map((template) => template.defaultTitle));
+          const applyTemplateDefaultTitle = () => {
+            const current = posterTitleInput?.value.trim() || "";
+            if (current && !knownDefaultTitles.has(current)) return;
+            const template = getPosterTemplate(posterTemplateSelect.value);
+            if (posterTitleInput && template.defaultTitle) posterTitleInput.value = template.defaultTitle;
+          };
+
+          applyTemplateDefaultTitle();
+          updatePosterPreview();
+          posterTemplateSelect.addEventListener("change", () => {
+            applyTemplateDefaultTitle();
+            updatePosterPreview();
+          });
+          [posterTitleInput, posterSubtitleInput, posterTaglineInput, posterVenueInput, posterDateInput, posterCtaInput, posterFooterEmailInput, posterTypeInput].forEach((field) => {
+            field?.addEventListener("input", updatePosterPreview);
+            field?.addEventListener("change", updatePosterPreview);
+          });
+
+          const renderDesignedPosters = () => {
+            const designed = getSpotlightPosters().filter((item) => item.customArtwork);
+            posterDesignedEmptyEl?.classList.toggle("is-hidden", designed.length > 0);
+            posterDesignedBodyEl.innerHTML = designed
+              .map(
+                (poster) => `
+                  <tr>
+                    <td>${escapeHtmlSafe(poster.title)}</td>
+                    <td>${escapeHtmlSafe(getPosterTemplate(poster.templateId).name)}</td>
+                    <td>${escapeHtmlSafe(poster.type || "Poster")}</td>
+                    <td><button type="button" class="icon-btn-delete" data-poster-remove="${escapeHtmlSafe(poster.id)}" aria-label="Remove" title="Remove">${deleteIconSvg}</button></td>
+                  </tr>
+                `
+              )
+              .join("");
+          };
+          renderDesignedPosters();
+
+          posterPublishButton?.addEventListener("click", async () => {
+            const fields = currentPosterFields();
+            if (!fields.title) {
+              posterPublishFeedback.textContent = "Enter a title before publishing.";
+              posterPublishFeedback.classList.remove("success");
+              return;
+            }
+            posterPublishButton.disabled = true;
+            const poster = buildPosterFromTemplate(posterTemplateSelect.value, fields);
+            posterPublishButton.disabled = false;
+            saveSpotlightPosters([...getSpotlightPosters(), poster]);
+            renderDesignedPosters();
+            posterPublishFeedback.textContent = `"${fields.title}" published to every dashboard.`;
+            posterPublishFeedback.classList.add("success");
+            recordActivity(`Published poster "${fields.title}"`, "College Fest");
+          });
+
+          posterDesignedBodyEl?.addEventListener("click", (event) => {
+            const removeButton = event.target.closest("[data-poster-remove]");
+            if (!removeButton) return;
+            saveSpotlightPosters(getSpotlightPosters().filter((item) => item.id !== removeButton.dataset.posterRemove));
+            renderDesignedPosters();
+          });
+
+          // Read-only: outside visitors sign up (and pay) for public campus events entirely through
+          // event-visitor-dashboard.html - this just surfaces that same data (getCampusEventRegistrations,
+          // filtered to isExternal) here too, so admin doesn't have to leave this dashboard to see who
+          // registered.
+          const visitorBodyEl = document.querySelector("#festVisitorRegistrationBody");
+          const visitorEmptyEl = document.querySelector("#festVisitorRegistrationEmpty");
+          const visitorExportButton = document.querySelector("#festVisitorExportButton");
+          const visitorRegistrations = () => getCampusEventRegistrations().filter((registration) => registration.isExternal);
+
+          const renderVisitorRegistrations = () => {
+            const registrations = visitorRegistrations();
+            visitorEmptyEl?.classList.toggle("is-hidden", registrations.length > 0);
+            visitorBodyEl.innerHTML = registrations
+              .map(
+                (registration) => `
+                  <tr>
+                    <td>${escapeHtmlSafe(registration.eventName)}</td>
+                    <td>${escapeHtmlSafe(registration.participantName)}</td>
+                    <td>${escapeHtmlSafe(registration.email)}</td>
+                    <td>${escapeHtmlSafe(registration.college || "-")}</td>
+                    <td>${escapeHtmlSafe(registration.phone || "-")}</td>
+                    <td>${registration.fee ? `Rs. ${Number(registration.fee).toLocaleString("en-IN")}` : "Free"}</td>
+                    <td>${escapeHtmlSafe(registration.paymentStatus || "-")}</td>
+                  </tr>
+                `
+              )
+              .join("");
+          };
+          renderVisitorRegistrations();
+
+          visitorExportButton?.addEventListener("click", () => {
+            const registrations = visitorRegistrations();
+            if (!registrations.length) {
+              showFeedToast("No visitor registrations recorded yet.");
+              return;
+            }
+            downloadCsv("gprec-fest-visitor-registrations.csv", campusEventRegistrationCsvHeaders, campusEventRegistrationCsvRows(registrations));
+          });
+        }
+
+        // ============================ Faculty view =============================
+        if (role === "faculty") {
+          const facultyEmail = (localStorage.getItem("gprecFacultyEmail") || "").toLowerCase();
+          const bodyEl = document.querySelector("#festActivityFacultyBody");
+          const emptyEl = document.querySelector("#festActivityFacultyEmpty");
+          const manageCard = document.querySelector("#festVolunteerManageCard");
+          const manageTitle = document.querySelector("#festVolunteerManageTitle");
+          const rollInput = document.querySelector("#festVolunteerRollInput");
+          const addButton = document.querySelector("#festVolunteerAddButton");
+          const addFeedback = document.querySelector("#festVolunteerAddFeedback");
+          const listBody = document.querySelector("#festVolunteerListBody");
+          const listEmpty = document.querySelector("#festVolunteerListEmpty");
+
+          let editingActivityId = null;
+
+          const myActivities = () =>
+            getFestActivities().filter((activity) => (activity.facultyCoordinatorEmail || "").toLowerCase() === facultyEmail);
+
+          const renderVolunteerList = (activity) => {
+            const volunteers = activity.volunteers || [];
+            listEmpty?.classList.toggle("is-hidden", volunteers.length > 0);
+            listBody.innerHTML = volunteers
+              .map(
+                (roll) => `
+                  <tr>
+                    <td>${escapeHtmlSafe(roll)}</td>
+                    <td>${escapeHtmlSafe(resolveStudentDisplayName(roll, "-"))}</td>
+                    <td><button type="button" class="icon-btn-delete" data-fest-volunteer-remove="${escapeHtmlSafe(roll)}" aria-label="Remove" title="Remove">${deleteIconSvg}</button></td>
+                  </tr>
+                `
+              )
+              .join("");
+          };
+
+          const renderFacultyTable = () => {
+            const activities = myActivities();
+            emptyEl?.classList.toggle("is-hidden", activities.length > 0);
+            bodyEl.innerHTML = activities
+              .map(
+                (activity) => `
+                  <tr>
+                    <td>${formatCampusEventDate(activity.date)}</td>
+                    <td>${escapeHtmlSafe(activity.title)}</td>
+                    <td>${escapeHtmlSafe(activity.venue || "-")}</td>
+                    <td>${(activity.volunteers || []).length}</td>
+                    <td><button type="button" class="payment-open-button" data-fest-activity-manage="${escapeHtmlSafe(activity.id)}">Manage</button></td>
+                  </tr>
+                `
+              )
+              .join("");
+          };
+          renderFacultyTable();
+
+          bodyEl?.addEventListener("click", (event) => {
+            const manageButton = event.target.closest("[data-fest-activity-manage]");
+            if (!manageButton) return;
+            const activity = myActivities().find((item) => item.id === manageButton.dataset.festActivityManage);
+            if (!activity) return;
+            editingActivityId = activity.id;
+            manageCard.classList.remove("is-hidden");
+            manageTitle.textContent = activity.title;
+            addFeedback.textContent = "";
+            renderVolunteerList(activity);
+          });
+
+          addButton?.addEventListener("click", () => {
+            if (!editingActivityId) return;
+            const roll = rollInput?.value.trim().toUpperCase() || "";
+            if (!roll) {
+              addFeedback.textContent = "Enter a student roll number to assign.";
+              addFeedback.classList.remove("success");
+              return;
+            }
+            const activity = myActivities().find((item) => item.id === editingActivityId);
+            const currentVolunteers = activity?.volunteers || [];
+            if (currentVolunteers.includes(roll)) {
+              addFeedback.textContent = `${roll} is already assigned to this activity.`;
+              addFeedback.classList.remove("success");
+              return;
+            }
+            const result = updateFestActivityAsCoordinator(editingActivityId, { volunteers: [...currentVolunteers, roll] });
+            if (result?.ok) {
+              renderFacultyTable();
+              renderVolunteerList(result.activity);
+              rollInput.value = "";
+              addFeedback.textContent = `${roll} assigned as a volunteer.`;
+              addFeedback.classList.add("success");
+            } else {
+              addFeedback.textContent = (result && result.error) || "Could not assign this volunteer.";
+              addFeedback.classList.remove("success");
+            }
+          });
+
+          listBody?.addEventListener("click", (event) => {
+            const removeButton = event.target.closest("[data-fest-volunteer-remove]");
+            if (!removeButton || !editingActivityId) return;
+            const activity = myActivities().find((item) => item.id === editingActivityId);
+            const remainingVolunteers = (activity?.volunteers || []).filter((roll) => roll !== removeButton.dataset.festVolunteerRemove);
+            const result = updateFestActivityAsCoordinator(editingActivityId, { volunteers: remainingVolunteers });
+            if (result?.ok) {
+              renderFacultyTable();
+              renderVolunteerList(result.activity);
+            } else {
+              showFeedToast((result && result.error) || "Could not remove this volunteer.");
+            }
+          });
+
+          // ---- Create Fest Activity (self as coordinator) - only usable once admin has approved
+          // this faculty email in festCoordinators; see create_fest_activity's server-side check,
+          // which is the real gate - this is just matching UI so the form isn't shown as usable
+          // when it would just 403. ----
+          const isApprovedCoordinator = getFestCoordinators().some((email) => (email || "").toLowerCase() === facultyEmail);
+          document.querySelector("#festCreateActivityLocked")?.classList.toggle("is-hidden", isApprovedCoordinator);
+          document.querySelector("#festCreateActivityFields")?.classList.toggle("is-hidden", !isApprovedCoordinator);
+
+          if (isApprovedCoordinator) {
+            const createTitleInput = document.querySelector("#festCreateTitleInput");
+            const createDateInput = document.querySelector("#festCreateDateInput");
+            const createTimeInput = document.querySelector("#festCreateTimeInput");
+            const createVenueInput = document.querySelector("#festCreateVenueInput");
+            const createDescriptionInput = document.querySelector("#festCreateDescriptionInput");
+            const createButton = document.querySelector("#festCreateActivityButton");
+            const createFeedback = document.querySelector("#festCreateActivityFeedback");
+
+            createButton?.addEventListener("click", () => {
+              const title = createTitleInput?.value.trim() || "";
+              const date = createDateInput?.value || "";
+              const time = createTimeInput?.value || "";
+              const venue = createVenueInput?.value.trim() || "";
+              const description = createDescriptionInput?.value.trim() || "";
+              if (!title || !date || !venue) {
+                createFeedback.textContent = "Enter title, date, and venue before publishing.";
+                createFeedback.classList.remove("success");
+                return;
+              }
+              const result = createFestActivityAsCoordinator({ title, date, time, venue, description });
+              if (result?.ok) {
+                renderFacultyTable();
+                [createTitleInput, createDateInput, createTimeInput, createVenueInput, createDescriptionInput].forEach((field) => {
+                  if (field) field.value = "";
+                });
+                createFeedback.textContent = `"${title}" published.`;
+                createFeedback.classList.add("success");
+              } else {
+                createFeedback.textContent = (result && result.error) || "Could not publish this activity.";
+                createFeedback.classList.remove("success");
+              }
+            });
+          }
+        }
+
+        // =========================== Volunteer view =============================
+        if (role === "student") {
+          const roll = getCurrentStudentId();
+          const bodyEl = document.querySelector("#festVolunteerDutyBody");
+          const emptyEl = document.querySelector("#festVolunteerDutyEmpty");
+          const activities = getFestActivities().filter((activity) => (activity.volunteers || []).includes(roll));
+          emptyEl?.classList.toggle("is-hidden", activities.length > 0);
+          bodyEl.innerHTML = activities
+            .map((activity) => {
+              const coordinatorName = lookupFacultyRecordByEmail(activity.facultyCoordinatorEmail || "")?.name || activity.facultyCoordinatorEmail || "-";
+              return `
+                <tr>
+                  <td>${formatCampusEventDate(activity.date)}</td>
+                  <td>${escapeHtmlSafe(activity.title)}</td>
+                  <td>${escapeHtmlSafe(formatCampusEventTime(activity))}</td>
+                  <td>${escapeHtmlSafe(activity.venue || "-")}</td>
+                  <td>${escapeHtmlSafe(coordinatorName)}</td>
+                </tr>
+              `;
+            })
+            .join("");
+        }
+      })();
+    </script>
+  </body>
+</html>

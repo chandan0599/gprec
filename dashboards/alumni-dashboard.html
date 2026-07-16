@@ -1,0 +1,726 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Alumni Dashboard | GPREC</title>
+    <meta name="description" content="GPREC alumni dashboard with profile, notices, and alumni network access.">
+    <link rel="icon" href="https://www.gprec.ac.in/wp-content/uploads/2017/08/fav.png" sizes="32x32">
+    <link rel="stylesheet" href="../styles.css">
+  </head>
+  <body class="student-portal-page portal-page">
+    <svg class="icon-sprite" aria-hidden="true" focusable="false">
+      <symbol id="icon-award" viewBox="0 0 24 24"><path d="M12 15a6 6 0 1 0 0-12 6 6 0 0 0 0 12ZM9 14l-2 7 5-3 5 3-2-7"/></symbol>
+      <symbol id="icon-file" viewBox="0 0 24 24"><path d="M6 3h8l4 4v14H6zM14 3v5h5M9 13h6M9 17h6"/></symbol>
+      <symbol id="icon-student" viewBox="0 0 24 24"><path d="m4 6 8-3 8 3-8 3zM7 8v3M17 8v3M9 12a3 3 0 1 0 6 0M5 21c.7-3.2 3.4-5 7-5s6.3 1.8 7 5"/></symbol>
+    </svg>
+    <header class="student-topbar portal-topbar">
+      <a class="student-brand" href="../index.html">
+        <img src="../gprec-logo-enhanced.png" alt="G Pulla Reddy Engineering College">
+      </a>
+      <div class="student-user">
+        <div class="notification-bell-wrap">
+          <button type="button" class="notification-bell" id="notificationBellButton" aria-label="Notifications">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 8a6 6 0 1 1 12 0c0 4 1.5 5.5 2 6H4c.5-.5 2-2 2-6Z"/><path d="M10 20a2 2 0 0 0 4 0"/></svg>
+            <span class="notification-badge is-hidden" id="notificationBadge">0</span>
+          </button>
+          <div class="notification-dropdown is-hidden" id="notificationDropdown">
+            <div class="notification-dropdown-head">Notifications</div>
+            <div id="notificationList"></div>
+          </div>
+        </div>
+        <div class="student-user-menu">
+          <span class="student-user-avatar" id="alumniInitials">AL</span>
+          <button type="button" class="student-user-toggle" aria-label="Account menu" aria-expanded="false">
+            <span class="student-user-name-block">
+              <strong id="alumniDashboardName">Alumni</strong>
+              <small id="alumniDashboardBatch">Batch -</small>
+            </span>
+          </button>
+          <div class="student-user-dropdown">
+            <a href="../logins/alumni-login.html">Logout</a>
+          </div>
+        </div>
+      </div>
+    </header>
+
+    <main class="student-dashboard-shell">
+      <nav class="student-menu" aria-label="Alumni dashboard menu">
+        <div class="student-menu-title">
+          <strong>Alumni Menu</strong>
+          <button type="button" class="menu-collapse-toggle" id="menuCollapseToggle" aria-label="Collapse menu">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M15 5 9 12l6 7"/></svg>
+          </button>
+        </div>
+        <details class="student-menu-group" open>
+          <summary title="Home"><span class="menu-group-label"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 11 12 4l8 7"/><path d="M6 10v9a1 1 0 0 0 1 1h3v-6h4v6h3a1 1 0 0 0 1-1v-9"/></svg><span class="menu-group-text">Home</span></span></summary>
+          <a class="active" href="#alumni-feed" data-dashboard-link>All Posts</a>
+          <a href="#edit-profile" data-dashboard-link>Edit Profile</a>
+          <a href="#notices" data-dashboard-link>Notices</a>
+          <a href="#spotlight" data-dashboard-link>Profile</a>
+        </details>
+        <details class="student-menu-group">
+          <summary title="Alumni Funding"><span class="menu-group-label"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2v20M17 6H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg><span class="menu-group-text">Alumni Funding</span></span></summary>
+          <a href="#alumni-funding" data-dashboard-link>Contribute</a>
+        </details>
+        <details class="student-menu-group">
+          <summary title="Alumni Network"><span class="menu-group-label"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="9" cy="8" r="3"/><path d="M2 20c0-3 3-5 7-5s7 2 7 5"/><circle cx="17" cy="8" r="3"/><path d="M14 15c3 .3 5 2 5 5"/></svg><span class="menu-group-text">Alumni Network</span></span></summary>
+          <a href="#alumni-network" data-dashboard-link>Association &amp; Requests</a>
+          <a href="#alumni-directory" data-dashboard-link>Batch Directory</a>
+        </details>
+        <details class="student-menu-group">
+          <summary title="Contact"><span class="menu-group-label"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 5h16v11H8l-4 4Z"/></svg><span class="menu-group-text">Contact</span></span></summary>
+          <a href="#contact-us" data-dashboard-link>Contact Us</a>
+        </details>
+        <details class="student-menu-group">
+          <summary title="Events"><span class="menu-group-label"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="4" y="5" width="16" height="15" rx="2"/><path d="M4 10h16M8 3v4M16 3v4"/></svg><span class="menu-group-text">Events</span></span></summary>
+          <a href="#alumni-events" data-dashboard-link>Reunions &amp; Meetups</a>
+        </details>
+        <details class="student-menu-group">
+          <summary title="Gallery"><span class="menu-group-label"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="4" width="18" height="16" rx="2"/><circle cx="8.5" cy="9.5" r="1.5"/><path d="m4 17 5-5 4 4 3-3 4 4"/></svg><span class="menu-group-text">Gallery</span></span></summary>
+          <a href="#alumni-gallery" data-dashboard-link>Photo &amp; Video Albums</a>
+        </details>
+        <details class="student-menu-group">
+          <summary title="Placements"><span class="menu-group-label"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="8" width="18" height="12" rx="2"/><path d="M8 8V6a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/><path d="M3 13h18"/></svg><span class="menu-group-text">Placements</span></span></summary>
+          <a href="#placements-note" data-dashboard-link>Current Campus Placements</a>
+        </details>
+      </nav>
+
+      <section class="portal-section dashboard-panel" id="spotlight">
+        <div class="portal-block-head"><h2>Alumni Profile</h2><span>Everything saved from Edit Profile</span></div>
+
+        <div class="profile-completeness">
+          <div class="profile-completeness-head">
+            <strong>Profile Completeness</strong>
+            <span id="profileCompletenessPercent">0%</span>
+          </div>
+          <div class="profile-completeness-track">
+            <div class="profile-completeness-fill" id="profileCompletenessFill" style="width: 0%"></div>
+          </div>
+        </div>
+
+        <div class="profile-picture-frame">
+          <svg class="profile-picture-default-icon" id="alumniProfileViewDefaultIcon" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="8" r="4"/><path d="M4 21c1.5-4 4.5-6 8-6s6.5 2 8 6"/></svg>
+          <img class="profile-picture-preview is-hidden" id="alumniProfileViewPicture" alt="Profile picture">
+        </div>
+
+        <div class="portal-card-grid compact">
+          <article><strong>Name</strong><span id="alumniProfileName">-</span></article>
+          <article><strong>Registered Email</strong><span id="alumniProfileEmail">-</span></article>
+          <article><strong>Batch Year</strong><span id="alumniProfileBatch">-</span></article>
+          <article><strong>Gender</strong><span id="alumniProfileGender">-</span></article>
+          <article><strong>Date of Birth</strong><span id="alumniProfileDob">-</span></article>
+          <article><strong>Wedding Date</strong><span id="alumniProfileWeddingDate">-</span></article>
+          <article><strong>Phone</strong><span id="alumniProfilePhone">-</span></article>
+        </div>
+        <p class="portal-note" id="alumniProfileBio">No bio added yet.</p>
+
+        <div class="portal-block-head"><h2>Location &amp; Contact</h2></div>
+        <div class="portal-card-grid compact">
+          <article><strong>City</strong><span id="alumniProfileCity">-</span></article>
+          <article><strong>State</strong><span id="alumniProfileState">-</span></article>
+          <article><strong>Country</strong><span id="alumniProfileCountry">-</span></article>
+          <article><strong>Alternate Email</strong><span id="alumniProfileAltEmail">-</span></article>
+          <article><strong>Alternate Phone</strong><span id="alumniProfileAltPhone">-</span></article>
+        </div>
+
+        <div class="portal-block-head"><h2>Education</h2></div>
+        <div class="portal-card-grid compact">
+          <article><strong>Degree</strong><span id="alumniProfileDegree">-</span></article>
+          <article><strong>Branch</strong><span id="alumniProfileBranch">-</span></article>
+          <article><strong>CGPA</strong><span id="alumniProfileCgpa">-</span></article>
+        </div>
+        <p class="portal-note" id="alumniProfileCerts">No certifications added yet.</p>
+
+        <div class="portal-block-head"><h2>Work / Professional</h2></div>
+        <div class="portal-card-grid compact">
+          <article><strong>Company</strong><span id="alumniProfileCompany">-</span></article>
+          <article><strong>Designation</strong><span id="alumniProfileDesignation">-</span></article>
+          <article><strong>Industry</strong><span id="alumniProfileIndustry">-</span></article>
+          <article><strong>Experience</strong><span id="alumniProfileExperience">-</span></article>
+          <article><strong>LinkedIn</strong><span id="alumniProfileLinkedin">-</span></article>
+        </div>
+
+        <div class="portal-block-head"><h2>Achievements</h2></div>
+        <ul class="profile-list" id="alumniProfileAchievementsView">
+          <li><span>No achievements added yet.</span></li>
+        </ul>
+
+        <div class="portal-block-head"><h2>Resume</h2></div>
+        <p class="portal-note" id="alumniProfileResumeView">No resume uploaded yet.</p>
+
+        <div class="portal-block-head"><h2>Preferences &amp; Additional Details</h2></div>
+        <div class="portal-card-grid compact">
+          <article><strong>Email Notifications</strong><span id="alumniProfilePrefEmail">-</span></article>
+          <article><strong>Job Referrals</strong><span id="alumniProfilePrefJobs">-</span></article>
+          <article><strong>Visibility</strong><span id="alumniProfilePrefVisibility">-</span></article>
+          <article><strong>Hobbies</strong><span id="alumniProfileHobbies">-</span></article>
+        </div>
+        <p class="portal-note" id="alumniProfileNotes">No additional notes added yet.</p>
+
+        <div class="portal-info-note"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="11" x2="12" y2="16"></line><circle cx="12" cy="7.5" r="0.6" fill="currentColor" stroke="none"></circle></svg><span>Edit any of these from Edit Profile in the left menu.</span></div>
+      </section>
+
+      <section class="portal-section dashboard-panel" id="edit-profile">
+        <div class="portal-block-head"><h2>Edit Profile</h2><span>Update your alumni profile details</span></div>
+        <div class="profile-accordion">
+          <details class="profile-accordion-item" open>
+            <summary>Basic Profile</summary>
+            <div class="profile-accordion-body">
+              <div class="admin-add-grid">
+                <label>Full Name<input type="text" id="profileBasicName"></label>
+                <label>Gender
+                  <select id="profileBasicGender">
+                    <option value="">Prefer not to say</option>
+                    <option>Male</option>
+                    <option>Female</option>
+                    <option>Other</option>
+                  </select>
+                </label>
+                <label>Date of Birth<input type="date" id="profileBasicDob"></label>
+                <label>Wedding Date<input type="date" id="profileBasicWeddingDate"></label>
+                <label>Phone Number<input type="tel" id="profileBasicPhone" placeholder="e.g. 98765 43210"></label>
+              </div>
+              <label>About / Bio<textarea id="profileBasicBio" placeholder="A short introduction about yourself"></textarea></label>
+              <button type="button" data-profile-save="basic">Save Basic Profile</button>
+            </div>
+          </details>
+
+          <details class="profile-accordion-item">
+            <summary>Profile Picture</summary>
+            <div class="profile-accordion-body">
+              <div class="portal-info-note"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="11" x2="12" y2="16"></line><circle cx="12" cy="7.5" r="0.6" fill="currentColor" stroke="none"></circle></svg><span>You can upload a new profile picture or choose from previously uploaded pictures.</span></div>
+
+              <div class="profile-picture-dropzone" id="profilePictureDropzone">
+                <div class="profile-picture-frame profile-picture-frame-large">
+                  <svg class="profile-picture-default-icon" id="profilePictureDefaultIcon" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="8" r="4"/><path d="M4 21c1.5-4 4.5-6 8-6s6.5 2 8 6"/></svg>
+                  <img class="profile-picture-preview is-hidden" id="profilePicturePreview" alt="Profile picture preview">
+                </div>
+                <p class="profile-picture-dropzone-text">Drag and drop an image here or <button type="button" class="link-button" id="profilePictureChooseButton">Choose image</button></p>
+                <p class="field-hint">Maximum upload file size: 5MB</p>
+                <input type="file" accept="image/*" id="profilePictureInput" class="is-hidden">
+              </div>
+
+              <p class="profile-picture-remove-link"><button type="button" class="link-button" id="profilePictureDeleteButton">Remove Profile Picture</button></p>
+
+              <div class="profile-picture-editor is-hidden" id="profilePictureEditor">
+                <canvas class="profile-picture-editor-canvas" id="profilePictureEditorCanvas" width="220" height="220"></canvas>
+                <p class="field-hint">Drag the photo to reposition it.</p>
+                <label>Zoom<input type="range" id="profilePictureZoomInput" min="100" max="300" value="100"></label>
+                <div class="profile-picture-editor-buttons">
+                  <button type="button" id="profilePictureRotateLeftButton" title="Rotate Left">&#8634; Rotate Left</button>
+                  <button type="button" id="profilePictureRotateRightButton" title="Rotate Right">&#8635; Rotate Right</button>
+                  <button type="button" id="profilePictureFlipButton" title="Flip Horizontal">&#8646; Flip</button>
+                  <button type="button" id="profilePictureResetButton" title="Reset">Reset</button>
+                </div>
+                <div class="profile-picture-editor-buttons">
+                  <button type="button" data-profile-save="picture">Save Profile Picture</button>
+                  <button type="button" id="profilePictureCancelButton">Cancel</button>
+                </div>
+              </div>
+
+              <div class="portal-block-head"><h2>Previous Uploaded Pictures</h2></div>
+              <div class="profile-picture-gallery" id="profilePictureGallery">
+                <p class="portal-note">No previously uploaded pictures yet.</p>
+              </div>
+            </div>
+          </details>
+
+          <details class="profile-accordion-item">
+            <summary>Location &amp; Contact Details</summary>
+            <div class="profile-accordion-body">
+              <div class="admin-add-grid">
+                <label>Current City<input type="text" id="profileLocationCity"></label>
+                <label>State<input type="text" id="profileLocationState"></label>
+                <label>Country<input type="text" id="profileLocationCountry" placeholder="e.g. India"></label>
+                <label>Alternate Email<input type="email" id="profileLocationAltEmail"></label>
+                <label>Alternate Phone<input type="tel" id="profileLocationAltPhone"></label>
+              </div>
+              <button type="button" data-profile-save="location">Save Contact Details</button>
+            </div>
+          </details>
+
+          <details class="profile-accordion-item">
+            <summary>Education Details</summary>
+            <div class="profile-accordion-body">
+              <div class="admin-add-grid">
+                <label>Degree<input type="text" id="profileEduDegree" placeholder="e.g. B.Tech"></label>
+                <label>Branch<input type="text" id="profileEduBranch" placeholder="e.g. CSE"></label>
+                <label>Batch Year<input type="number" id="profileEduBatch" min="1989" max="2026"></label>
+                <label>CGPA<input type="text" id="profileEduCgpa" placeholder="e.g. 8.6"></label>
+              </div>
+              <label>Certifications / Additional Qualifications<textarea id="profileEduCerts" placeholder="e.g. AWS Certified, M.Tech - XYZ University"></textarea></label>
+              <button type="button" data-profile-save="education">Save Education Details</button>
+            </div>
+          </details>
+
+          <details class="profile-accordion-item">
+            <summary>Work / Professional Details</summary>
+            <div class="profile-accordion-body">
+              <div class="admin-add-grid">
+                <label>Current Company<input type="text" id="profileWorkCompany"></label>
+                <label>Designation<input type="text" id="profileWorkDesignation"></label>
+                <label>Industry<input type="text" id="profileWorkIndustry"></label>
+                <label>Years of Experience<input type="number" id="profileWorkExperience" min="0" max="60"></label>
+                <label>LinkedIn Profile<input type="url" id="profileWorkLinkedin" placeholder="https://linkedin.com/in/..."></label>
+              </div>
+              <button type="button" data-profile-save="work">Save Work Details</button>
+            </div>
+          </details>
+
+          <details class="profile-accordion-item">
+            <summary>Achievements</summary>
+            <div class="profile-accordion-body">
+              <div class="admin-add-grid">
+                <label>Achievement<input type="text" id="profileAchievementInput" placeholder="e.g. Published a research paper in IEEE"></label>
+              </div>
+              <button type="button" id="addProfileAchievementButton">Add Achievement</button>
+              <ul class="profile-list" id="profileAchievementsList"></ul>
+            </div>
+          </details>
+
+          <details class="profile-accordion-item">
+            <summary>Resume &amp; Attachments</summary>
+            <div class="profile-accordion-body">
+              <label>Upload Resume (PDF/DOC)<input type="file" id="profileResumeInput"></label>
+              <button type="button" data-profile-save="resume">Save Resume</button>
+              <p class="portal-note" id="profileResumeStatus">No resume uploaded yet.</p>
+            </div>
+          </details>
+
+          <details class="profile-accordion-item">
+            <summary>Account Details &amp; Password</summary>
+            <div class="profile-accordion-body">
+              <div class="admin-add-grid">
+                <label>Registered Email<input type="email" id="profileAccountEmail" disabled></label>
+                <label>Current Password<input type="password" id="profileAccountCurrentPassword" autocomplete="current-password"></label>
+                <label>New Password<input type="password" id="profileAccountNewPassword" autocomplete="new-password"></label>
+                <label>Confirm New Password<input type="password" id="profileAccountConfirmPassword" autocomplete="new-password"></label>
+              </div>
+              <button type="button" id="profileChangePasswordButton">Change Password</button>
+              <p class="admin-add-feedback" id="profileAccountFeedback" aria-live="polite"></p>
+            </div>
+          </details>
+
+          <details class="profile-accordion-item">
+            <summary>Profile Preferences</summary>
+            <div class="profile-accordion-body">
+              <label class="profile-checkbox"><input type="checkbox" id="profilePrefEmailNotify">Email me about GPREC notices and events</label>
+              <label class="profile-checkbox"><input type="checkbox" id="profilePrefJobReferrals">Notify me about job referral opportunities</label>
+              <label>Profile Visibility
+                <select id="profilePrefVisibility">
+                  <option value="alumni">Visible to Alumni Network only</option>
+                  <option value="public">Public</option>
+                  <option value="private">Private (only me)</option>
+                </select>
+              </label>
+
+              <div class="portal-block-head"><h2>Privacy Settings</h2></div>
+              <div class="admin-add-grid">
+                <label>Show Day of Birth to
+                  <select id="profilePrivacyDobDay">
+                    <option value="all">All Members</option>
+                    <option value="batchmates">Batchmates Only</option>
+                    <option value="admin">Admin</option>
+                  </select>
+                </label>
+                <label>Show Year of Birth to
+                  <select id="profilePrivacyDobYear">
+                    <option value="all">All Members</option>
+                    <option value="batchmates">Batchmates Only</option>
+                    <option value="admin">Admin</option>
+                  </select>
+                </label>
+                <label>Show Day of Wedding to
+                  <select id="profilePrivacyWeddingDay">
+                    <option value="all">All Members</option>
+                    <option value="batchmates">Batchmates Only</option>
+                    <option value="admin">Admin</option>
+                  </select>
+                </label>
+                <label>Show Year of Wedding to
+                  <select id="profilePrivacyWeddingYear">
+                    <option value="all">All Members</option>
+                    <option value="batchmates">Batchmates Only</option>
+                    <option value="admin">Admin</option>
+                  </select>
+                </label>
+              </div>
+
+              <button type="button" data-profile-save="preferences">Save Preferences</button>
+            </div>
+          </details>
+
+          <details class="profile-accordion-item">
+            <summary>Additional Details</summary>
+            <div class="profile-accordion-body">
+              <label>Hobbies / Interests<input type="text" id="profileAdditionalHobbies" placeholder="e.g. Photography, Chess, Cricket"></label>
+              <label>Notes<textarea id="profileAdditionalNotes" placeholder="Anything else you'd like to share"></textarea></label>
+              <button type="button" data-profile-save="additional">Save Additional Details</button>
+            </div>
+          </details>
+        </div>
+        <p class="admin-add-feedback" id="profileSaveFeedback" aria-live="polite"></p>
+      </section>
+
+      <section class="portal-section dashboard-panel is-active" id="alumni-feed">
+        <p class="dashboard-greeting" id="dashboardGreeting"></p>
+        <div class="portal-block-head"><h2>All Posts</h2><span>Every photo &amp; video shared across all albums</span></div>
+        <div class="alumni-feed-layout">
+          <div class="alumni-feed-main">
+            <aside class="alumni-feed-composer">
+              <div class="feed-composer-collapsed" id="feedComposerCollapsed">
+                <span class="feed-composer-avatar" id="feedComposerAvatar"></span>
+                <button type="button" class="feed-composer-start" id="feedComposerStartButton">Start a post</button>
+              </div>
+              <div class="feed-composer-quick-actions" id="feedComposerQuickActions">
+                <button type="button" class="feed-composer-quick-action" id="feedComposerPhotoQuick">
+                  <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="4" width="18" height="16" rx="2"/><circle cx="8.5" cy="9.5" r="1.5"/><path d="m4 17 5-5 4 4 3-3 4 4"/></svg>
+                  <span>Photo</span>
+                </button>
+                <button type="button" class="feed-composer-quick-action" id="feedComposerVideoQuick">
+                  <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="6" width="13" height="12" rx="2"/><path d="m16 10 5-3v10l-5-3z"/></svg>
+                  <span>Video</span>
+                </button>
+              </div>
+            </aside>
+            <div class="alumni-memories-grid" id="alumniFeedGrid"></div>
+          </div>
+
+          <aside class="alumni-feed-sidebar">
+            <div class="alumni-feed-widget">
+              <div class="portal-block-head"><h3>Upcoming Events</h3></div>
+              <ul class="alumni-feed-widget-list" id="feedSidebarEvents"></ul>
+            </div>
+            <div class="alumni-feed-widget">
+              <div class="portal-block-head"><h3>Upcoming Birthdays</h3></div>
+              <ul class="alumni-feed-widget-list" id="feedSidebarBirthdays"></ul>
+            </div>
+          </aside>
+        </div>
+
+        <div class="feed-composer-modal-overlay is-hidden" id="feedComposerModalOverlay">
+          <div class="feed-composer-modal">
+            <button type="button" class="feed-composer-modal-close" id="feedComposerCollapseButton" aria-label="Close">&times;</button>
+            <div class="feed-composer-modal-header">
+              <span class="feed-composer-avatar" id="feedComposerModalAvatar"></span>
+              <div class="feed-composer-modal-heading">
+                <span class="feed-composer-modal-name-row">
+                  <strong id="feedComposerModalName">Post</strong>
+                </span>
+                <div class="feed-composer-modal-album">
+                  <span>Post to</span>
+                  <select id="feedPostVisibilitySelect">
+                    <option value="all">Anyone</option>
+                    <option value="batchmates">Batchmates Only</option>
+                    <option value="onlyme">Only Me</option>
+                  </select>
+                </div>
+              </div>
+            </div>
+
+            <textarea id="feedPostCaptionInput" class="feed-composer-modal-textarea" placeholder="What do you want to talk about?"></textarea>
+            <button type="button" class="ai-assist-button" data-ai-improve="feedPostCaptionInput">✨ Improve with AI</button>
+
+            <div class="memory-staging-row is-hidden" id="feedPostPhotoStaging">
+              <button type="button" class="memory-add-tile" id="feedPostAddPhotoTile">+<span>Add Photo</span></button>
+            </div>
+            <input type="file" accept="image/*" id="feedPostPhotoInput" class="is-hidden" multiple>
+
+            <div class="memory-staging-row is-hidden" id="feedPostVideoStaging">
+              <button type="button" class="memory-add-tile" id="feedPostAddVideoTile">+<span>Add Video</span></button>
+            </div>
+            <input type="file" accept="video/*" id="feedPostVideoInput" class="is-hidden" multiple>
+
+            <p class="admin-add-feedback" id="feedPostFeedback" aria-live="polite"></p>
+
+            <div class="feed-composer-modal-emoji-wrap">
+              <button type="button" class="feed-composer-modal-emoji" id="feedComposerEmojiButton" title="Add an emoji">
+                <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M8.5 14.5c1 1.2 2.2 1.8 3.5 1.8s2.5-.6 3.5-1.8"/><path d="M8.5 9.5h.01M15.5 9.5h.01"/></svg>
+              </button>
+              <div class="feed-composer-emoji-picker is-hidden" id="feedComposerEmojiPicker"></div>
+            </div>
+
+            <div class="feed-composer-modal-toolbar">
+              <button type="button" class="feed-composer-modal-tool" id="feedComposerModalPhotoButton" title="Add photo">
+                <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="4" width="18" height="16" rx="2"/><circle cx="8.5" cy="9.5" r="1.5"/><path d="m4 17 5-5 4 4 3-3 4 4"/></svg>
+              </button>
+              <button type="button" class="feed-composer-modal-tool" id="feedComposerModalVideoButton" title="Add video">
+                <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="6" width="13" height="12" rx="2"/><path d="m16 10 5-3v10l-5-3z"/></svg>
+              </button>
+              <button type="button" class="feed-composer-modal-tool" id="feedComposerCalendarButton" title="Celebrate an occasion">
+                <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="4" y="5" width="16" height="15" rx="2"/><path d="M4 10h16M8 3v4M16 3v4"/></svg>
+              </button>
+              <button type="button" class="feed-composer-modal-tool" id="feedComposerCertificateButton" title="Add a document">
+                <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6M9 13h6M9 17h6"/></svg>
+              </button>
+              <button type="button" class="feed-composer-modal-tool" id="feedComposerMoreButton" title="More">
+                <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>
+              </button>
+            </div>
+
+            <p class="feed-composer-scheduled-note is-hidden" id="feedComposerScheduledNote"></p>
+
+            <div class="feed-composer-modal-footer">
+              <button type="button" class="feed-composer-modal-tool" id="feedComposerScheduleButton" title="Schedule for later">
+                <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 3"/></svg>
+              </button>
+              <button type="button" id="feedPostSubmitButton" disabled>Post</button>
+            </div>
+          </div>
+        </div>
+
+        <div class="feed-composer-modal-overlay is-hidden" id="feedScheduleModalOverlay">
+          <div class="feed-composer-modal feed-schedule-modal">
+            <div class="feed-schedule-header">
+              <h2>Schedule post</h2>
+              <button type="button" class="feed-composer-modal-close" id="feedScheduleCloseButton" aria-label="Close">&times;</button>
+            </div>
+
+            <p class="feed-schedule-summary" id="feedScheduleSummary">Pick a date and time to schedule this post.</p>
+
+            <label class="feed-schedule-field">Date<input type="date" id="feedScheduleDateInput"></label>
+            <label class="feed-schedule-field">Time<input type="time" id="feedScheduleTimeInput"></label>
+
+            <a href="#" class="feed-schedule-view-link" id="feedScheduleViewAllLink">View all scheduled posts &rarr;</a>
+
+            <div class="feed-schedule-list is-hidden" id="feedScheduleList"></div>
+
+            <div class="feed-schedule-footer">
+              <button type="button" class="feed-schedule-clear" id="feedScheduleClearButton">Clear time</button>
+              <div class="feed-schedule-footer-actions">
+                <button type="button" class="feed-schedule-back" id="feedScheduleBackButton">Back</button>
+                <button type="button" class="feed-schedule-next" id="feedScheduleNextButton" disabled>Next</button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section class="portal-section dashboard-panel" id="notices">
+        <div class="portal-block-head"><h2>Notices</h2><span>College notices &amp; updates</span></div>
+        <div class="spotlight-grid" id="alumniNoticeGrid"></div>
+        <div class="spotlight-grid" id="alumniPosterGrid" data-spotlight-poster-grid></div>
+      </section>
+
+      <section class="portal-section dashboard-panel" id="alumni-directory">
+        <div class="portal-block-head"><h2>Batchmate Suggestions</h2><span>Other registered alumni from your batch year</span></div>
+        <!-- Rendered by renderAlumniDirectory() in script.js from getAlumniAccounts() (localStorage) -
+             the same account records built up from Edit Profile / Sign Up. Accounts with Profile
+             Visibility set to "Private" are excluded. -->
+        <div class="profile-list" id="alumniBatchmatesList">
+          <p class="portal-note">No batchmates registered yet.</p>
+        </div>
+
+        <div class="portal-block-head"><h2>All Registered Alumni</h2><span>Full alumni directory</span></div>
+        <div class="profile-list" id="alumniDirectoryList">
+          <p class="portal-note">No alumni registered yet.</p>
+        </div>
+      </section>
+
+      <section class="portal-section dashboard-panel" id="alumni-network">
+        <div class="portal-block-head"><h2>Alumni Network</h2><span>Association, registration, and detail updates</span></div>
+        <div class="alumni-requirements">
+          <a href="https://alumni.gprec.ac.in/" target="_blank" rel="noreferrer"><svg><use href="#icon-award"></use></svg>Alumni Association</a>
+          <a href="https://www.gprec.ac.in/alumni/" target="_blank" rel="noreferrer"><svg><use href="#icon-file"></use></svg>Alumni Registration Requirements</a>
+          <a href="https://www.gprec.ac.in/contact-us/" target="_blank" rel="noreferrer"><svg><use href="#icon-file"></use></svg>Update Alumni Details</a>
+        </div>
+      </section>
+
+      <section class="portal-section dashboard-panel" id="alumni-funding">
+        <div class="portal-block-head"><h2>Alumni Funding</h2><span>Support current GPREC students and campus development</span></div>
+        <div class="portal-info-note"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="11" x2="12" y2="16"></line><circle cx="12" cy="7.5" r="0.6" fill="currentColor" stroke="none"></circle></svg><ul>
+          <li>Clicking "Contribute" opens a real PayU checkout in test mode - no actual money is charged.</li>
+          <li>Payment verification should be completed by the college payment backend before updating contribution records.</li>
+        </ul></div>
+        <div class="alumni-funding-campaigns" id="alumniFundingCampaigns"></div>
+
+        <div class="portal-block-head"><h2>Make a Contribution</h2></div>
+        <div class="profile-accordion-body">
+          <div class="admin-add-grid">
+            <label>Campaign
+              <select id="fundingCampaignSelect"></select>
+            </label>
+            <label>Amount (INR)<input type="number" id="fundingAmountInput" min="100" step="100" placeholder="e.g. 5000"></label>
+          </div>
+          <button type="button" id="fundingContributeButton">Contribute</button>
+          <p class="admin-add-feedback" id="fundingFeedback" aria-live="polite"></p>
+        </div>
+
+        <div class="portal-block-head"><h2>Recent Contributors</h2></div>
+        <ul class="profile-list" id="fundingContributorsList">
+          <li><span>No contributions yet. Be the first to contribute.</span></li>
+        </ul>
+      </section>
+
+      <section class="portal-section dashboard-panel" id="alumni-events">
+        <div class="portal-block-head"><h2>Reunions &amp; Meetups</h2><span>Alumni events and RSVPs</span></div>
+
+        <div class="profile-accordion-body">
+          <div class="admin-add-grid">
+            <label>Event Title<input type="text" id="eventTitleInput" placeholder="e.g. Batch of 2016 Reunion"></label>
+            <label>Date<input type="date" id="eventDateInput"></label>
+            <label>Location<input type="text" id="eventLocationInput" placeholder="e.g. GPREC Campus / Online"></label>
+          </div>
+          <label>Description<input type="text" id="eventDescriptionInput" placeholder="Short description"></label>
+          <button type="button" id="createEventButton">Create Event</button>
+          <p class="admin-add-feedback" id="eventFeedback" aria-live="polite"></p>
+        </div>
+
+        <div class="portal-block-head"><h2>Upcoming &amp; Recent Events</h2></div>
+        <div class="alumni-event-list" id="alumniEventList">
+          <p class="portal-note">No events yet. Create one above.</p>
+        </div>
+      </section>
+
+      <section class="portal-section dashboard-panel" id="alumni-gallery">
+        <div class="portal-block-head"><h2 id="albumFormHeading">Photo &amp; Video Albums</h2><span>Share memories from your GPREC days</span></div>
+
+        <div class="profile-accordion-body">
+          <div class="admin-add-grid">
+            <label>Album Name<input type="text" id="albumNameInput" placeholder="e.g. Batch of 2016 Reunion"></label>
+            <label>Description<input type="text" id="albumDescriptionInput" placeholder="Short description"></label>
+          </div>
+
+          <label>Photos (optional)</label>
+          <div class="memory-staging-row" id="albumPhotoStaging">
+            <button type="button" class="memory-add-tile" id="albumAddPhotoTile">+<span>Add Photo</span></button>
+          </div>
+          <input type="file" accept="image/*" id="albumPhotoInput" class="is-hidden" multiple>
+
+          <label>Video Files (optional)</label>
+          <div class="memory-staging-row" id="albumVideoFileStaging">
+            <button type="button" class="memory-add-tile" id="albumAddVideoFileTile">+<span>Add Video</span></button>
+          </div>
+          <input type="file" accept="video/*" id="albumVideoFileInput" class="is-hidden" multiple>
+
+          <div class="alumni-album-actions-static">
+            <button type="button" id="createAlbumButton">Create Album</button>
+            <button type="button" class="alumni-album-cancel is-hidden" id="cancelAlbumEditButton">Cancel</button>
+          </div>
+          <p class="admin-add-feedback" id="albumFeedback" aria-live="polite"></p>
+        </div>
+
+        <div class="portal-block-head"><h2>Albums</h2><span>Click an album to view it, or use Edit to add photos/videos</span></div>
+        <div class="alumni-album-list" id="alumniAlbumList">
+          <p class="portal-note">No albums yet. Create one above to start adding memories.</p>
+        </div>
+
+        <div class="profile-accordion-body is-hidden" id="alumniMemoryFormWrap">
+          <div class="portal-block-head"><h2>Add a Memory to "<span id="activeAlbumName">-</span>"</h2></div>
+          <div class="admin-add-grid">
+            <label>Type
+              <select id="memoryTypeSelect">
+                <option value="photo">Photo</option>
+                <option value="video">YouTube Video (link)</option>
+                <option value="videofile">Video File (upload)</option>
+              </select>
+            </label>
+            <label class="is-hidden" id="memoryVideoField">YouTube URL(s) - one per line to add multiple<textarea id="memoryVideoInput" placeholder="https://www.youtube.com/watch?v=...&#10;https://youtu.be/..."></textarea></label>
+          </div>
+
+          <div class="is-hidden" id="memoryPhotoField">
+            <label>Photos</label>
+            <div class="memory-staging-row" id="memoryPhotoStaging">
+              <button type="button" class="memory-add-tile" id="memoryAddPhotoTile">+<span>Add Photo</span></button>
+            </div>
+            <input type="file" accept="image/*" id="memoryPhotoInput" class="is-hidden" multiple>
+          </div>
+
+          <div class="is-hidden" id="memoryVideoFileField">
+            <label>Video Files</label>
+            <div class="memory-staging-row" id="memoryVideoFileStaging">
+              <button type="button" class="memory-add-tile" id="memoryAddVideoFileTile">+<span>Add Video</span></button>
+            </div>
+            <input type="file" accept="video/*" id="memoryVideoFileInput" class="is-hidden" multiple>
+          </div>
+
+          <label>Caption<input type="text" id="memoryCaptionInput" placeholder="e.g. Farewell party, March 2016"></label>
+          <button type="button" id="addMemoryButton">Add Memory</button>
+          <p class="admin-add-feedback" id="memoryFeedback" aria-live="polite"></p>
+        </div>
+
+        <div class="portal-block-head">
+          <h2 id="memoriesHeading">Memories</h2>
+        </div>
+        <div class="alumni-memories-grid" id="alumniMemoriesGrid">
+          <p class="portal-note">Select an album above to view its memories.</p>
+        </div>
+      </section>
+
+      <section class="portal-section dashboard-panel" id="placements-note">
+        <div class="portal-block-head"><h2>Current Campus Placements</h2><span>Recruiters hiring GPREC students today</span></div>
+        <!-- Rendered by renderAlumniPlacements() in script.js from getPlacementLogos() and
+             getPlacementDrives() (localStorage) - the same live data shown on the homepage
+             and in the placement cell's admin panel. -->
+        <p class="portal-note" id="alumniPlacementsSummary">Loading current placement activity...</p>
+        <div class="logo-grid-track-wrap">
+          <div class="logo-grid" id="alumniPlacementLogoGrid"></div>
+        </div>
+      </section>
+
+      <section class="portal-section dashboard-panel" id="contact-us">
+        <div class="portal-block-head">
+          <h2>Contact Us</h2>
+          <span>Alumni support</span>
+        </div>
+        <div class="portal-card-grid compact">
+          <article><strong>Alumni Cell</strong><span>alumni@gprec.ac.in</span><small>Association membership, batch network</small></article>
+          <article><strong>Principal Office</strong><span>info@gprec.ac.in</span><small>General college correspondence</small></article>
+        </div>
+      </section>
+    </main>
+
+    <div class="gprecian" aria-live="polite">
+      <section class="gprecian-panel" aria-label="GPRECian alumni help chat">
+        <div class="gprecian-head">
+          <div class="gprecian-title">
+            <span class="gprecian-avatar bot-avatar"><svg><use href="#icon-student"></use></svg></span>
+            <div>
+              <strong>GPRECian Bot</strong>
+              <span>AI alumni help</span>
+            </div>
+          </div>
+          <div class="gprecian-actions">
+            <button class="gprecian-expand" type="button" aria-label="Expand chat window"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M15 3h6v6M9 21H3v-6M21 3l-7 7M3 21l7-7"/></svg></button>
+            <button class="gprecian-close" type="button" aria-label="Close GPRECian chat">×</button>
+          </div>
+        </div>
+        <div class="gprecian-welcome" id="gprecianWelcome">
+          <p class="gprecian-welcome-greeting" id="gprecianWelcomeGreeting">Hello</p>
+          <p class="gprecian-welcome-question">How can I help you today?</p>
+          <p class="gprecian-welcome-subtext">Ask me about the alumni association, registration requirements, updating your details, notices, or campus placements.</p>
+          <div class="gprecian-chips" aria-label="Suggested questions">
+            <button type="button" data-question="alumni association">Alumni Association</button>
+            <button type="button" data-question="notices">Notices</button>
+            <button type="button" data-question="update alumni details">Update Details</button>
+            <button type="button" data-question="placement">Placements</button>
+          </div>
+        </div>
+        <div class="gprecian-messages is-hidden"></div>
+        <form class="gprecian-form">
+          <input type="text" aria-label="Ask GPRECian a question" placeholder="Ask a question..." autocomplete="off" id="gprecianInput">
+          <button type="submit" aria-label="Send message"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"/></svg></button>
+          <div class="gprecian-suggestions is-hidden" id="gprecianSuggestions"></div>
+        </form>
+        <p class="gprecian-disclaimer">AI-generated answers may be inaccurate - verify important details with the college.</p>
+      </section>
+      <button class="gprecian-toggle" type="button" aria-label="Open GPRECian chat">
+        <span><svg><use href="#icon-student"></use></svg></span>
+        <strong>GPRECian Bot</strong>
+      </button>
+    </div>
+
+    <!--
+      Payments here open the college's real PayU hosted checkout link (see admin-config.json's
+      "payuPaymentLink" field; merchant dashboard: https://onboarding.payu.in, docs:
+      https://docs.payu.in). Clicking "Pay"/"Contribute" opens that link in a new tab so the
+      payer completes checkout on PayU's own page. Limitation: this is a static site with no
+      backend, so there's no webhook or return-URL to confirm the payment actually completed -
+      the payment is recorded locally as soon as the tab opens, trusting the payer to finish
+      paying. A production deployment should add a backend that listens for PayU's payment
+      confirmation webhook before treating a payment as real.
+    -->
+    <script src="../script.js"></script>
+  </body>
+</html>

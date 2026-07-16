@@ -1,0 +1,166 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Hostel Gate Scan | GPREC</title>
+    <meta name="description" content="Verify a hostel pass and record exit/entry at G. Pulla Reddy Engineering College.">
+    <link rel="icon" href="https://www.gprec.ac.in/wp-content/uploads/2017/08/fav.png" sizes="32x32">
+    <link rel="stylesheet" href="../styles.css">
+  </head>
+  <body class="student-portal-page assignment-page">
+    <header class="login-header">
+      <a class="login-brand" href="../index.html"><img src="../gprec-logo-enhanced.png" alt="G Pulla Reddy Engineering College"></a>
+      <a class="login-home" href="../dashboards/hostel-dashboard.html"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m3 11 9-8 9 8M5 10v11h14V10M9 21v-6h6v6"/></svg>Hostel Dashboard</a>
+    </header>
+    <main class="student-service-page">
+      <section class="service-hero">
+        <p class="eyebrow">Hostel Gate</p>
+        <h1>Exit / Entry Scan</h1>
+        <p>This QR was scanned from a hostel pass. Confirm the details below, then record the exit or entry.</p>
+      </section>
+
+      <div class="certificate-form service-request-card" id="gateScanCard">
+        <div class="service-card-head">
+          <p class="eyebrow" id="gateScanPassType">Pass</p>
+          <h2 id="gateScanTitle">Loading…</h2>
+        </div>
+        <div id="gateScanBody"></div>
+        <p class="portal-feedback is-hidden" id="gateScanFeedback"></p>
+      </div>
+    </main>
+    <script src="../qrcode-generator.js"></script>
+    <script src="../script.js"></script>
+    <script>
+      (() => {
+        const params = new URLSearchParams(window.location.search);
+        const passType = params.get("type");
+        const passId = params.get("id");
+        const token = params.get("t");
+
+        const titleEl = document.querySelector("#gateScanTitle");
+        const typeEl = document.querySelector("#gateScanPassType");
+        const bodyEl = document.querySelector("#gateScanBody");
+        const feedbackEl = document.querySelector("#gateScanFeedback");
+
+        const PASS_TYPE_LABEL = { outing: "Hostel Outing Pass", leave: "Hostel Leave Pass", visit: "Hostel Visit Pass" };
+
+        const showFeedback = (text, isSuccess) => {
+          feedbackEl.textContent = text;
+          feedbackEl.classList.remove("is-hidden");
+          feedbackEl.classList.toggle("success", Boolean(isSuccess));
+        };
+
+        // Each pass type stores different fields on the same shared JSONB shape (see
+        // downloadOutingReceipt/downloadHostelLeavePass/downloadVisitPass in script.js) - this
+        // just picks out the handful relevant to whichever type this particular QR points to.
+        const detailRowsFor = (type, pass) => {
+          if (type === "outing") {
+            return [
+              ["Outing Type", pass.outingType],
+              ["Purpose", pass.reason],
+              ["Place", pass.place],
+              ["Out Time", pass.outTime],
+              ["Expected Return", pass.returnTime]
+            ];
+          }
+          if (type === "leave") {
+            return [
+              ["Leave Type", pass.leaveType],
+              ["From Date", pass.fromDate],
+              ["To Date", pass.toDate],
+              ["Reason", pass.reason]
+            ];
+          }
+          if (type === "visit") {
+            return [
+              ["Visitor Name", pass.visitorName],
+              ["Relationship", pass.relationship],
+              ["Purpose", pass.purpose],
+              ["Visit Date & Time", pass.visitDateTime]
+            ];
+          }
+          return [];
+        };
+
+        const render = (pass) => {
+          typeEl.textContent = PASS_TYPE_LABEL[passType] || "Pass";
+          titleEl.textContent = pass.studentName || pass.studentId || "Student";
+          const roomHostel = [pass.room, pass.hostel].filter(Boolean).join(" | ");
+          const rows = [
+            ["Roll Number", pass.studentId],
+            ["Room / Hostel", roomHostel],
+            ...detailRowsFor(passType, pass)
+          ];
+          const log = pass.gateLog || [];
+          const lastEntry = log[log.length - 1];
+          const suggestedDirection = !lastEntry || lastEntry.direction === "Entry" ? "Exit" : "Entry";
+          // Every pass here is a single round trip - one Exit and one Entry (or, for a Visit Pass,
+          // one Entry then one Exit) - not a repeatable in/out toggle. Once both directions have
+          // been recorded at least once, the trip is complete: stop offering more actions instead
+          // of letting the same QR be scanned indefinitely after the student is already back.
+          const isComplete = log.some((entry) => entry.direction === "Exit") && log.some((entry) => entry.direction === "Entry");
+          const historyList = log.length
+            ? `<ul class="gate-scan-history">${log.map((entry) => `<li><span class="${entry.direction === "Entry" ? "ok" : "warn"}">${entry.direction}</span> at ${formatOutingDateTime(entry.scannedAt)} (by ${entry.scannedBy})</li>`).join("")}</ul>`
+            : "<p>No exit/entry recorded yet for this pass.</p>";
+          bodyEl.innerHTML = `
+            <div class="disclosure-table-wrap">
+              <table class="disclosure-table">
+                <tbody>
+                  ${rows.map(([label, value]) => `<tr><td>${label}</td><td>${value || "-"}</td></tr>`).join("")}
+                </tbody>
+              </table>
+            </div>
+            ${historyList}
+            ${isComplete
+              ? `<p class="portal-feedback success">This pass is complete - both Exit and Entry are already recorded. No further action needed.</p>`
+              : `<div class="action-cell">
+                  <button type="button" class="payment-open-button" data-direction="Exit">${suggestedDirection === "Exit" ? "Mark Exit (suggested)" : "Mark Exit"}</button>
+                  <button type="button" class="payment-open-button" data-direction="Entry">${suggestedDirection === "Entry" ? "Mark Entry (suggested)" : "Mark Entry"}</button>
+                </div>`}
+          `;
+          bodyEl.querySelectorAll("[data-direction]").forEach((button) => {
+            button.addEventListener("click", () => logDirection(button.dataset.direction));
+          });
+        };
+
+        const logDirection = (direction) => {
+          const response = gprecDbRequest("/hostel/gate-log", { method: "POST", body: { passType, passId, token, direction } });
+          if (response && response.ok) {
+            showFeedback(`${direction} recorded.`, true);
+            render(response.pass);
+          } else {
+            showFeedback((response && response.error) || "Could not record this scan. Please try again.", false);
+          }
+        };
+
+        const renderLoginRequired = () => {
+          titleEl.textContent = "Warden login required";
+          const returnUrl = `hostel-gate-scan.html${window.location.search}`;
+          bodyEl.innerHTML = `
+            <p>Sign in with your official warden/admin email and password on this same server, then the scanned pass can be verified.</p>
+            <p>The QR scan login will use your configured role automatically.</p>
+            <div class="action-cell gate-scan-actions">
+              <a class="payment-open-button" href="../logins/admin-login.html?next=${encodeURIComponent(returnUrl)}">Open Central Services Login</a>
+            </div>
+          `;
+        };
+
+        if (!passType || !passId || !token) {
+          titleEl.textContent = "Invalid QR code";
+          bodyEl.innerHTML = "<p>This link is missing the information a real gate-scan QR should carry.</p>";
+        } else if (!localStorage.getItem("gprecSessionToken") || localStorage.getItem("gprecActiveRole") !== "admin") {
+          renderLoginRequired();
+        } else {
+          const response = gprecDbRequest("/hostel/gate-lookup", { method: "POST", body: { passType, passId, token } });
+          if (response && response.ok) {
+            render(response.pass);
+          } else {
+            titleEl.textContent = "Pass not found";
+            bodyEl.innerHTML = `<p>${(response && response.error) || "This pass is not valid, not approved, or the QR code doesn't match."}</p>`;
+          }
+        }
+      })();
+    </script>
+  </body>
+</html>

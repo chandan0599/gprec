@@ -1,0 +1,319 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Placement Cell Dashboard | GPREC</title>
+    <meta name="description" content="GPREC placement cell dashboard for posting drives and eligibility criteria.">
+    <link rel="icon" href="https://www.gprec.ac.in/wp-content/uploads/2017/08/fav.png" sizes="32x32">
+    <link rel="stylesheet" href="../styles.css">
+  </head>
+  <body class="admin-dashboard-page">
+    <header class="student-topbar admin-topbar">
+      <a class="student-brand" href="../index.html">
+        <img src="../gprec-logo-enhanced.png" alt="G Pulla Reddy Engineering College">
+      </a>
+      <div class="student-user">
+        <div class="notification-bell-wrap">
+          <button type="button" class="notification-bell" id="notificationBellButton" aria-label="Notifications">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 8a6 6 0 1 1 12 0c0 4 1.5 5.5 2 6H4c.5-.5 2-2 2-6Z"/><path d="M10 20a2 2 0 0 0 4 0"/></svg>
+            <span class="notification-badge is-hidden" id="notificationBadge">0</span>
+          </button>
+          <div class="notification-dropdown is-hidden" id="notificationDropdown">
+            <div class="notification-dropdown-head">Notifications</div>
+            <div id="notificationList"></div>
+          </div>
+        </div>
+        <div class="student-user-menu">
+          <span class="student-user-avatar">AD</span>
+          <button type="button" class="student-user-toggle" aria-label="Account menu" aria-expanded="false">
+            <span class="student-user-name-block">
+              <strong id="adminRoleName">Placement Cell Officer</strong>
+              <small>GPREC Administration</small>
+            </span>
+          </button>
+          <div class="student-user-dropdown">
+            <a href="../logins/admin-login.html">Logout</a>
+          </div>
+        </div>
+      </div>
+    </header>
+
+    <main class="admin-shell">
+      <aside class="admin-sidebar">
+        <div class="student-menu-title">
+          <strong>Placement Console</strong>
+          <button type="button" class="menu-collapse-toggle" id="menuCollapseToggle" aria-label="Collapse menu">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M15 5 9 12l6 7"/></svg>
+          </button>
+        </div>
+        <div class="admin-nav active" data-admin-target="#placement-overview" title="Overview" role="button" tabindex="0"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="3" width="8" height="8" rx="1"/><rect x="13" y="3" width="8" height="8" rx="1"/><rect x="3" y="13" width="8" height="8" rx="1"/><rect x="13" y="13" width="8" height="8" rx="1"/></svg><span class="admin-nav-text">Overview</span></div>
+        <div class="admin-nav" data-admin-target="#placement-cell" title="Placement Drives" role="button" tabindex="0"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="8" width="18" height="12" rx="2"/><path d="M8 8V6a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/><path d="M3 13h18"/></svg><span class="admin-nav-text">Placement Drives</span></div>
+        <div class="admin-nav" data-admin-target="#internship-cell" title="Internship Drives" role="button" tabindex="0"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 2h6l3 3v15a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2V5Z"/><path d="M9 9h6M9 13h6M9 17h3"/></svg><span class="admin-nav-text">Internship Drives</span></div>
+        <div class="admin-nav" data-admin-target="#mock-interviews" title="Mock Interviews" role="button" tabindex="0"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m4 6 8-3 8 3-8 3zM7 8v3M17 8v3M9 12a3 3 0 1 0 6 0M5 21c.7-3.2 3.4-5 7-5s6.3 1.8 7 5"/></svg><span class="admin-nav-text">Mock Interviews</span></div>
+        <div class="admin-nav" data-admin-target="#aptitude-tests" title="Aptitude Tests" role="button" tabindex="0"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg><span class="admin-nav-text">Aptitude Tests</span></div>
+        <div class="admin-nav" data-admin-target="#interview-schedules" title="Interview Schedules" role="button" tabindex="0"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 10h18M8 3v4M16 3v4"/><path d="m9 15 2 2 4-4"/></svg><span class="admin-nav-text">Interview Schedules</span></div>
+        <div class="admin-nav" data-admin-target="#job-recommendations" title="Job Recommendations" role="button" tabindex="0"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2 2 7l10 5 10-5-10-5Z"/><path d="M2 17l10 5 10-5M2 12l10 5 10-5"/></svg><span class="admin-nav-text">Job Recommendations</span></div>
+        <div class="admin-nav" data-admin-target="#placement-records" title="Student Records" role="button" tabindex="0"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="9" cy="8" r="3"/><path d="M2 20c0-3 3-5 7-5s7 2 7 5"/><path d="M16 11h6M19 8v6"/></svg><span class="admin-nav-text">Student Records</span></div>
+      </aside>
+
+      <section class="admin-workspace">
+        <section class="admin-panel is-active" id="placement-overview">
+          <div class="admin-section-head">
+            <div><p class="eyebrow">Overview</p><h2>Placement and internship activity at a glance.</h2></div>
+          </div>
+          <h3>Placement</h3>
+          <div class="admin-metric-grid">
+            <article><strong id="placementStatTotalDrives">0</strong><span>Drives posted</span></article>
+            <article><strong id="placementStatTotalApplications">0</strong><span>Applications received</span></article>
+            <article><strong id="placementStatTotalPlaced">0</strong><span>Students placed</span></article>
+            <article><strong id="placementStatPlacementRate">0%</strong><span>Placement rate (of applicants)</span></article>
+          </div>
+          <h3>Internship</h3>
+          <div class="admin-metric-grid">
+            <article><strong id="internshipStatTotalDrives">0</strong><span>Drives posted</span></article>
+            <article><strong id="internshipStatTotalApplications">0</strong><span>Applications received</span></article>
+            <article><strong id="internshipStatTotalPlaced">0</strong><span>Students selected</span></article>
+            <article><strong id="internshipStatPlacementRate">0%</strong><span>Selection rate (of applicants)</span></article>
+          </div>
+        </section>
+
+        <section class="admin-panel" id="mock-interviews">
+          <div class="admin-section-head">
+            <div><p class="eyebrow">Mock Interviews</p><h2>Post practice interview sessions - open to every student.</h2></div>
+          </div>
+          <article class="admin-card admin-form-card">
+            <h3>Add Mock Interview Session</h3>
+            <div class="admin-add-grid">
+              <label>Title<input type="text" id="mockInterviewTitleInput" placeholder="HR Round Practice"></label>
+              <label>Description<input type="text" id="mockInterviewDescriptionInput" placeholder="Panel-style mock interview covering HR questions"></label>
+              <label>Session Date<input type="date" id="mockInterviewDateInput"></label>
+              <label>Time<input type="time" id="mockInterviewTimeInput"></label>
+              <label>Venue<input type="text" id="mockInterviewVenueInput" placeholder="Seminar Hall 2"></label>
+              <label>Mode
+                <select id="mockInterviewModeInput">
+                  <option value="Offline">Offline</option>
+                  <option value="Online">Online</option>
+                </select>
+              </label>
+              <label>Seats (optional)<input type="number" id="mockInterviewSeatsInput" placeholder="Leave blank for unlimited"></label>
+            </div>
+            <button type="button" id="addMockInterviewButton">Add Session</button>
+            <p class="admin-add-feedback" id="mockInterviewAddFeedback" aria-live="polite"></p>
+          </article>
+          <div class="admin-table-card">
+            <h3>Upcoming Sessions</h3>
+            <table>
+              <thead><tr><th>Title</th><th>Date</th><th>Time</th><th>Venue</th><th>Mode</th><th>Registered</th><th>Export</th><th></th></tr></thead>
+              <tbody id="mockInterviewDirectoryBody"></tbody>
+            </table>
+          </div>
+        </section>
+
+        <section class="admin-panel" id="aptitude-tests">
+          <div class="admin-section-head">
+            <div><p class="eyebrow">Aptitude Tests</p><h2>Post practice aptitude test sessions - open to every student.</h2></div>
+          </div>
+          <article class="admin-card admin-form-card">
+            <h3>Add Aptitude Test Session</h3>
+            <div class="admin-add-grid">
+              <label>Title<input type="text" id="aptitudeTestTitleInput" placeholder="Quantitative Aptitude Test"></label>
+              <label>Description<input type="text" id="aptitudeTestDescriptionInput" placeholder="Covers numerical ability and logical reasoning"></label>
+              <label>Session Date<input type="date" id="aptitudeTestDateInput"></label>
+              <label>Time<input type="time" id="aptitudeTestTimeInput"></label>
+              <label>Venue<input type="text" id="aptitudeTestVenueInput" placeholder="Computer Lab 3"></label>
+              <label>Mode
+                <select id="aptitudeTestModeInput">
+                  <option value="Offline">Offline</option>
+                  <option value="Online">Online</option>
+                </select>
+              </label>
+              <label>Seats (optional)<input type="number" id="aptitudeTestSeatsInput" placeholder="Leave blank for unlimited"></label>
+            </div>
+            <button type="button" id="addAptitudeTestButton">Add Session</button>
+            <p class="admin-add-feedback" id="aptitudeTestAddFeedback" aria-live="polite"></p>
+          </article>
+          <div class="admin-table-card">
+            <h3>Upcoming Sessions</h3>
+            <table>
+              <thead><tr><th>Title</th><th>Date</th><th>Time</th><th>Venue</th><th>Mode</th><th>Registered</th><th>Export</th><th></th></tr></thead>
+              <tbody id="aptitudeTestDirectoryBody"></tbody>
+            </table>
+          </div>
+        </section>
+
+        <section class="admin-panel" id="interview-schedules">
+          <div class="admin-section-head">
+            <div><p class="eyebrow">Interview Schedules</p><h2>Assign interview round slots to students who applied to a drive.</h2></div>
+          </div>
+          <article class="admin-card admin-form-card">
+            <h3>Schedule Interview Slot</h3>
+            <div class="admin-add-grid">
+              <label>Drive
+                <select id="interviewScheduleDriveSelect"></select>
+              </label>
+              <label>Student
+                <select id="interviewScheduleStudentSelect"></select>
+              </label>
+              <label>Round Name<input type="text" id="interviewScheduleRoundInput" placeholder="Technical Round"></label>
+              <label>Date<input type="date" id="interviewScheduleDateInput"></label>
+              <label>Time<input type="time" id="interviewScheduleTimeInput"></label>
+              <label>Venue<input type="text" id="interviewScheduleVenueInput" placeholder="Conference Room 1"></label>
+              <label>Notes<input type="text" id="interviewScheduleNotesInput" placeholder="Bring resume and ID card"></label>
+            </div>
+            <button type="button" id="addInterviewScheduleButton">Schedule Slot</button>
+            <p class="admin-add-feedback" id="interviewScheduleAddFeedback" aria-live="polite"></p>
+          </article>
+          <div class="admin-table-card">
+            <h3>Scheduled Slots for Selected Drive</h3>
+            <table>
+              <thead><tr><th>Roll Number</th><th>Student Name</th><th>Round</th><th>Date</th><th>Time</th><th>Venue</th><th>Notes</th><th></th></tr></thead>
+              <tbody id="interviewScheduleBody"></tbody>
+            </table>
+          </div>
+        </section>
+
+        <section class="admin-panel" id="job-recommendations">
+          <div class="admin-section-head">
+            <div><p class="eyebrow">Job Recommendations</p><h2>Post off-campus job openings - students apply externally via the link.</h2></div>
+          </div>
+          <article class="admin-card admin-form-card">
+            <h3>Add Job Recommendation</h3>
+            <div class="admin-add-grid">
+              <label>Company<input type="text" id="jobRecCompanyInput" placeholder="Infosys"></label>
+              <label>Role<input type="text" id="jobRecRoleInput" placeholder="Graduate Trainee"></label>
+              <label>Package (optional)<input type="text" id="jobRecPackageInput" placeholder="4.5 LPA"></label>
+              <label>Eligibility<input type="text" id="jobRecEligibilityInput" placeholder="Any branch, 60%+ throughout"></label>
+              <label>Application Deadline<input type="date" id="jobRecDeadlineInput"></label>
+              <label>Apply Link<input type="url" id="jobRecApplyLinkInput" placeholder="https://..."></label>
+            </div>
+            <button type="button" id="addJobRecommendationButton">Post Recommendation</button>
+            <p class="admin-add-feedback" id="jobRecommendationAddFeedback" aria-live="polite"></p>
+          </article>
+          <div class="admin-table-card">
+            <h3>Posted Recommendations</h3>
+            <table>
+              <thead><tr><th>Company</th><th>Role</th><th>Package</th><th>Deadline</th><th>Eligibility</th><th></th></tr></thead>
+              <tbody id="jobRecommendationDirectoryBody"></tbody>
+            </table>
+          </div>
+        </section>
+
+        <section class="admin-panel" id="placement-cell">
+          <div class="admin-section-head">
+            <div><p class="eyebrow">Placement Drives</p><h2>Post upcoming placement drives and eligibility criteria.</h2></div>
+          </div>
+          <article class="admin-card admin-form-card">
+            <h3>Add Placement Drive</h3>
+            <div class="admin-add-grid">
+              <label>Company<input type="text" id="driveCompanyInput" placeholder="TCS"></label>
+              <label>Role<input type="text" id="driveRoleInput" placeholder="Assistant System Engineer"></label>
+              <label>CTC<input type="text" id="driveCtcInput" placeholder="3.6 LPA"></label>
+              <label>Drive Date<input type="date" id="driveDateInput"></label>
+              <label>Minimum CGPA<input type="number" step="0.1" id="driveMinCgpaInput" placeholder="6.5"></label>
+              <label>Max Backlogs Allowed<input type="number" id="driveMaxBacklogsInput" placeholder="0"></label>
+              <label>Eligible Branches (comma separated)<input type="text" id="driveBranchesInput" placeholder="CSE, ECE, EEE"></label>
+            </div>
+            <button type="button" id="addDriveButton">Add Drive</button>
+            <p class="admin-add-feedback" id="driveAddFeedback" aria-live="polite"></p>
+          </article>
+          <div class="admin-table-card">
+            <h3>Upcoming Drives</h3>
+            <table>
+              <thead><tr><th>Company</th><th>Role</th><th>CTC</th><th>Date</th><th>Min CGPA</th><th>Max Backlogs</th><th>Branches</th><th>Export</th><th></th></tr></thead>
+              <tbody id="driveDirectoryBody"></tbody>
+            </table>
+          </div>
+        </section>
+
+        <section class="admin-panel" id="internship-cell">
+          <div class="admin-section-head">
+            <div><p class="eyebrow">Internship Drives</p><h2>Post upcoming internship drives and eligibility criteria.</h2></div>
+          </div>
+          <article class="admin-card admin-form-card">
+            <h3>Add Internship Drive</h3>
+            <div class="admin-add-grid">
+              <label>Company<input type="text" id="internshipCompanyInput" placeholder="TCS"></label>
+              <label>Role<input type="text" id="internshipRoleInput" placeholder="Software Engineering Intern"></label>
+              <label>Stipend<input type="text" id="internshipCtcInput" placeholder="15k/month"></label>
+              <label>Drive Date<input type="date" id="internshipDateInput"></label>
+              <label>Minimum CGPA<input type="number" step="0.1" id="internshipMinCgpaInput" placeholder="6.5"></label>
+              <label>Max Backlogs Allowed<input type="number" id="internshipMaxBacklogsInput" placeholder="0"></label>
+              <label>Eligible Branches (comma separated)<input type="text" id="internshipBranchesInput" placeholder="CSE, ECE, EEE"></label>
+            </div>
+            <button type="button" id="addInternshipDriveButton">Add Drive</button>
+            <p class="admin-add-feedback" id="internshipAddFeedback" aria-live="polite"></p>
+          </article>
+          <div class="admin-table-card">
+            <h3>Upcoming Drives</h3>
+            <table>
+              <thead><tr><th>Company</th><th>Role</th><th>Stipend</th><th>Date</th><th>Min CGPA</th><th>Max Backlogs</th><th>Branches</th><th>Export</th><th></th></tr></thead>
+              <tbody id="internshipDirectoryBody"></tbody>
+            </table>
+          </div>
+        </section>
+
+        <section class="admin-panel" id="placement-records">
+          <div class="admin-section-head">
+            <div><p class="eyebrow">Student Records</p><h2>Every application across all drives, with placement status.</h2></div>
+          </div>
+          <div class="admin-table-card">
+            <div class="admin-table-head">
+              <h3>Applications</h3>
+              <button type="button" class="icon-btn-download" id="placementRecordsExportButton" aria-label="Export placement records CSV" title="Export placement records CSV">
+                <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3v12M7 10l5 5 5-5M5 21h14"/></svg>
+              </button>
+            </div>
+            <table>
+              <thead><tr><th>Roll Number</th><th>Student Name</th><th>Department</th><th>Type</th><th>Company</th><th>Role</th><th>Applied At</th><th>Status</th></tr></thead>
+              <tbody id="placementRecordsBody"></tbody>
+            </table>
+            <p class="portal-note is-hidden" id="placementRecordsEmpty">No applications on file yet.</p>
+          </div>
+        </section>
+      </section>
+    </main>
+
+    <div class="gprecian" aria-live="polite">
+      <section class="gprecian-panel" aria-label="GPRECian admin help chat">
+        <div class="gprecian-head">
+          <div class="gprecian-title">
+            <span class="gprecian-avatar bot-avatar"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m4 6 8-3 8 3-8 3zM7 8v3M17 8v3M9 12a3 3 0 1 0 6 0M5 21c.7-3.2 3.4-5 7-5s6.3 1.8 7 5"/></svg></span>
+            <div>
+              <strong>GPRECian Bot</strong>
+              <span>AI admin help</span>
+            </div>
+          </div>
+          <div class="gprecian-actions">
+            <button class="gprecian-expand" type="button" aria-label="Expand chat window"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M15 3h6v6M9 21H3v-6M21 3l-7 7M3 21l7-7"/></svg></button>
+            <button class="gprecian-close" type="button" aria-label="Close GPRECian chat">×</button>
+          </div>
+        </div>
+        <div class="gprecian-welcome" id="gprecianWelcome">
+          <p class="gprecian-welcome-greeting" id="gprecianWelcomeGreeting">Hello</p>
+          <p class="gprecian-welcome-question">How can I help you today?</p>
+          <p class="gprecian-welcome-subtext">Ask me about drives, student placement records, or exporting reports.</p>
+          <div class="gprecian-chips" aria-label="Suggested questions">
+            <button type="button" data-question="placement drives">Placement Drives</button>
+            <button type="button" data-question="internship drives">Internship Drives</button>
+            <button type="button" data-question="mock interviews">Mock Interviews</button>
+            <button type="button" data-question="job recommendations">Job Recommendations</button>
+          </div>
+        </div>
+        <div class="gprecian-messages is-hidden"></div>
+        <form class="gprecian-form">
+          <input type="text" aria-label="Ask GPRECian a question" placeholder="Ask a question..." autocomplete="off" id="gprecianInput">
+          <button type="submit" aria-label="Send message"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"/></svg></button>
+          <div class="gprecian-suggestions is-hidden" id="gprecianSuggestions"></div>
+        </form>
+        <p class="gprecian-disclaimer">AI-generated answers may be inaccurate - verify important details with the college.</p>
+      </section>
+      <button class="gprecian-toggle" type="button" aria-label="Open GPRECian chat">
+        <span><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m4 6 8-3 8 3-8 3zM7 8v3M17 8v3M9 12a3 3 0 1 0 6 0M5 21c.7-3.2 3.4-5 7-5s6.3 1.8 7 5"/></svg></span>
+        <strong>GPRECian Bot</strong>
+      </button>
+    </div>
+
+    <script src="../script.js"></script>
+  </body>
+</html>

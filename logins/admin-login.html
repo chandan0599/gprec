@@ -1,0 +1,81 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Admin Login | GPREC</title>
+    <meta name="description" content="GPREC administrator login for college and department admin users.">
+    <link rel="icon" href="https://www.gprec.ac.in/wp-content/uploads/2017/08/fav.png" sizes="32x32">
+    <link rel="stylesheet" href="../styles.css">
+  </head>
+  <body class="login-page admin-login-page">
+    <svg class="icon-sprite" aria-hidden="true" focusable="false">
+      <symbol id="icon-building" viewBox="0 0 24 24"><path d="M4 21h16M6 21V4h12v17M9 8h.01M12 8h.01M15 8h.01M9 12h.01M12 12h.01M15 12h.01M10 21v-5h4v5"/></symbol>
+    </svg>
+    <header class="login-header">
+      <a class="login-brand" href="../index.html"><img src="../gprec-logo-enhanced.png" alt="G Pulla Reddy Engineering College"></a>
+      <a class="login-home" href="../index.html"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m3 11 9-8 9 8M5 10v11h14V10M9 21v-6h6v6"/></svg>Home</a>
+    </header>
+    <main class="role-login-main">
+      <section class="role-login-copy">
+        <p class="eyebrow">Administration Portal</p>
+        <h1>College operations access for GPREC teams.</h1>
+        <p>Use role-based admin access for departments, users, academic records, notices, approvals, reports, and portal content management.</p>
+        <div class="role-points">
+          <span>College admin</span>
+          <span>Department admin</span>
+          <span>Approvals</span>
+          <span>Reports</span>
+        </div>
+      </section>
+      <article class="portal-card role-login-card admin-portal">
+        <div class="portal-head">
+          <span><svg><use href="#icon-building"></use></svg></span>
+          <div>
+            <h3>Admin Login</h3>
+            <p>Select the role you belong to. It must match the role configured for your admin email.</p>
+          </div>
+        </div>
+        <form class="portal-form admin-login-form">
+          <label>Select Your Role
+            <select id="adminLoginRole">
+              <option value="">Choose a role</option>
+              <option>College Admin</option>
+              <option>CSE Department Admin</option>
+              <option>ECE Department Admin</option>
+              <option>EEE Department Admin</option>
+              <option>ME Department Admin</option>
+              <option>CE Department Admin</option>
+              <option>Boys Hostel Warden</option>
+              <option>Girls Hostel Warden</option>
+              <option>Placement Cell Officer</option>
+              <option>Exam Cell Officer</option>
+            </select>
+          </label>
+          <label>Official Admin Email<input type="email" id="adminLoginEmail" placeholder="admin@gprec.ac.in" autocomplete="username"></label>
+          <p class="admin-role-preview" id="adminRolePreview" aria-live="polite">Enter your admin email to see your configured role.</p>
+          <label>Password<input type="password" id="adminLoginPassword" placeholder="Enter password" autocomplete="current-password"></label>
+          <label><span>Security Check (<span class="captcha-question">? + ?</span>)</span><input type="text" class="captcha-input" inputmode="numeric" autocomplete="off" placeholder="Enter the sum"></label>
+          <button type="submit">Login as Admin</button>
+          <p class="auth-switch"><a href="forgot-password.html?role=admin">Forgot password?</a></p>
+        </form>
+      </article>
+      <article class="portal-card role-login-card admin-portal is-hidden" id="adminFirstSetupCard">
+        <div class="portal-head">
+          <span><svg><use href="#icon-building"></use></svg></span>
+          <div>
+            <h3>First-Time Setup</h3>
+            <p>No admin password has been set up yet. Set one for your admin email to unlock login - once any admin has a password, this option disappears.</p>
+          </div>
+        </div>
+        <form class="portal-form" id="adminFirstSetupForm">
+          <label>Official Admin Email<input type="email" id="firstSetupEmail" placeholder="admin@gprec.ac.in" autocomplete="username"></label>
+          <label>Recovery Mobile<input type="tel" id="firstSetupMobile" placeholder="Used later for forgot-password"></label>
+          <button type="button" id="adminFirstSetupButton">Generate Initial Password</button>
+          <p class="portal-feedback is-hidden" id="adminFirstSetupFeedback"></p>
+        </form>
+      </article>
+    </main>
+    <script src="../script.js"></script>
+  </body>
+</html>

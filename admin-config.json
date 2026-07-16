@@ -1,0 +1,101 @@
+{
+  "mainCollegeAdmin": "admin@gprec.ac.in",
+  "googleClientId": "YOUR_GOOGLE_CLIENT_ID.apps.googleusercontent.com",
+  "googleCalendarApiKey": "",
+  "payuPaymentLink": "https://api.payu.in/webcheckoutpro/re3-20260629/4cd07f41dbd118a20fcc363f4da22704/recommendedlink",
+  "aiSettings": {
+    "provider": "ollama",
+    "model": "qwen2.5:7b",
+    "apiKey": "",
+    "baseUrl": "http://localhost:11434"
+  },
+  "libraryApiConfig": {
+    "baseUrl": "",
+    "apiKey": ""
+  },
+  "databaseApiConfig": {
+    "type": "postgres",
+    "baseUrl": "",
+    "apiKey": "",
+    "username": "lakkavaramsaichandan",
+    "password": "1230599",
+    "host": "localhost",
+    "port": "5432",
+    "database": "lakkavaramsaichandan"
+  },
+  "smsSettings": {
+    "provider": "msg91",
+    "authKey": "",
+    "senderId": "",
+    "templateId": "",
+    "templateVariable": "OTP",
+    "whatsappIntegratedNumber": "",
+    "whatsappTemplateName": "",
+    "whatsappBodyVariable": "body_1",
+    "notifications": {
+      "gradesTemplateId": "",
+      "gradesTemplateVariable": "MESSAGE",
+      "whatsappGradesTemplateName": "",
+      "attendanceTemplateId": "",
+      "attendanceTemplateVariable": "MESSAGE",
+      "whatsappAttendanceTemplateName": ""
+    }
+  },
+  "kycSettings": {
+    "provider": "API Setu",
+    "authKey": "",
+    "baseUrl": "",
+    "dlVerifyPath": "",
+    "rcVerifyPath": ""
+  },
+  "admins": [
+    {
+      "name": "Principal Office",
+      "email": "admin@gprec.ac.in",
+      "role": "College Admin",
+      "department": "All",
+      "canManageAdmins": true,
+      "status": "Active"
+    },
+    {
+      "name": "CSE HOD Office",
+      "email": "cse.admin@gprec.ac.in",
+      "role": "CSE Department Admin",
+      "department": "CSE",
+      "canManageAdmins": false,
+      "status": "Active"
+    },
+    {
+      "name": "Boys Hostel Office",
+      "email": "boys.warden@gprec.ac.in",
+      "role": "Boys Hostel Warden",
+      "department": "Boys Hostel",
+      "canManageAdmins": false,
+      "status": "Active"
+    },
+    {
+      "name": "Girls Hostel Office",
+      "email": "girls.warden@gprec.ac.in",
+      "role": "Girls Hostel Warden",
+      "department": "Girls Hostel",
+      "canManageAdmins": false,
+      "status": "Active"
+    },
+    {
+      "name": "Placement Cell Office",
+      "email": "placement.cell@gprec.ac.in",
+      "role": "Placement Cell Officer",
+      "department": "Placements",
+      "canManageAdmins": false,
+      "status": "Active"
+    },
+    {
+      "name": "Examination Cell Office",
+      "email": "exam.cell@gprec.ac.in",
+      "role": "Exam Cell Officer",
+      "department": "Examinations",
+      "canManageAdmins": false,
+      "status": "Active"
+    }
+  ]
+}

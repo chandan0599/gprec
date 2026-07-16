@@ -1,0 +1,273 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Hostel Dashboard | GPREC</title>
+    <meta name="description" content="GPREC hostel warden dashboard for allocation, outings, leave, visiting, and complaints.">
+    <link rel="icon" href="https://www.gprec.ac.in/wp-content/uploads/2017/08/fav.png" sizes="32x32">
+    <link rel="stylesheet" href="../styles.css">
+  </head>
+  <body class="admin-dashboard-page">
+    <header class="student-topbar admin-topbar">
+      <a class="student-brand" href="../index.html">
+        <img src="../gprec-logo-enhanced.png" alt="G Pulla Reddy Engineering College">
+      </a>
+      <div class="student-user">
+        <div class="notification-bell-wrap">
+          <button type="button" class="notification-bell" id="notificationBellButton" aria-label="Notifications">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 8a6 6 0 1 1 12 0c0 4 1.5 5.5 2 6H4c.5-.5 2-2 2-6Z"/><path d="M10 20a2 2 0 0 0 4 0"/></svg>
+            <span class="notification-badge is-hidden" id="notificationBadge">0</span>
+          </button>
+          <div class="notification-dropdown is-hidden" id="notificationDropdown">
+            <div class="notification-dropdown-head">Notifications</div>
+            <div id="notificationList"></div>
+          </div>
+        </div>
+        <div class="student-user-menu">
+          <span class="student-user-avatar">AD</span>
+          <button type="button" class="student-user-toggle" aria-label="Account menu" aria-expanded="false">
+            <span class="student-user-name-block">
+              <strong id="adminRoleName">Hostel Warden</strong>
+              <small>GPREC Administration</small>
+            </span>
+          </button>
+          <div class="student-user-dropdown">
+            <a href="../logins/admin-login.html">Logout</a>
+          </div>
+        </div>
+      </div>
+    </header>
+
+    <main class="admin-shell">
+      <aside class="admin-sidebar">
+        <div class="student-menu-title">
+          <strong>Hostel Console</strong>
+          <button type="button" class="menu-collapse-toggle" id="menuCollapseToggle" aria-label="Collapse menu">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M15 5 9 12l6 7"/></svg>
+          </button>
+        </div>
+        <div class="admin-nav active" data-admin-target="#hostel-admin" title="Dashboard" role="button" tabindex="0"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="3" width="8" height="8" rx="1"/><rect x="13" y="3" width="8" height="8" rx="1"/><rect x="3" y="13" width="8" height="8" rx="1"/><rect x="13" y="13" width="8" height="8" rx="1"/></svg><span class="admin-nav-text">Dashboard</span></div>
+        <div class="admin-nav" data-admin-target="#hostel-gate-activity" title="Gate Activity" role="button" tabindex="0"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 21V5a2 2 0 0 1 2-2h8a2 2 0 0 1 2 2v16"/><path d="M3 21h18"/><circle cx="15" cy="12" r="1"/><path d="M1 12h6M4 9l-3 3 3 3"/></svg><span class="admin-nav-text">Gate Activity</span></div>
+        <div class="admin-nav" data-admin-target="#hostel-complaints" title="Complaints" role="button" tabindex="0"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 4 3 20h18Z"/><path d="M12 10v4"/><path d="M12 17h.01"/></svg><span class="admin-nav-text">Complaints</span></div>
+        <div class="admin-nav" data-admin-target="#hostel-allocation" title="Hostel Allocation" role="button" tabindex="0"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="5" y="3" width="14" height="18" rx="1"/><path d="M9 8h1M14 8h1M9 12h1M14 12h1M9 16h1M14 16h1"/><path d="M10 21v-4h4v4"/></svg><span class="admin-nav-text">Hostel Allocation</span></div>
+        <div class="admin-nav" data-admin-target="#hostel-leave-requests" title="Hostel Leave Requests" role="button" tabindex="0"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="4" y="5" width="16" height="15" rx="2"/><path d="M4 10h16M8 3v4M16 3v4"/></svg><span class="admin-nav-text">Hostel Leave Requests</span></div>
+        <div class="admin-nav" data-admin-target="#hostel-notices" title="Hostel Notices" role="button" tabindex="0"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 8a6 6 0 1 1 12 0c0 4 1.5 5.5 2 6H4c.5-.5 2-2 2-6Z"/><path d="M10 20a2 2 0 0 0 4 0"/></svg><span class="admin-nav-text">Hostel Notices</span></div>
+        <div class="admin-nav" data-admin-target="#hostel-outings" title="Outing Requests" role="button" tabindex="0"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 4H6a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h3"/><path d="M14 8l4 4-4 4"/><path d="M18 12H9"/></svg><span class="admin-nav-text">Outing Requests</span></div>
+        <div class="admin-nav" data-admin-target="#hostel-student-lookup" title="Student Lookup" role="button" tabindex="0"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m21 21-4.3-4.3"/></svg><span class="admin-nav-text">Student Lookup</span></div>
+        <div class="admin-nav" data-admin-target="#hostel-visiting-requests" title="Visiting Requests" role="button" tabindex="0"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="8" r="4"/><path d="M4 21c1.5-4 4.5-6 8-6s6.5 2 8 6"/></svg><span class="admin-nav-text">Visiting Requests</span></div>
+      </aside>
+
+      <section class="admin-workspace">
+        <section class="admin-panel is-active" id="hostel-admin">
+          <div class="admin-section-head">
+            <div><p class="eyebrow">Hostel Administration</p><h2 id="hostelAdminTitle">Hostel related information and requests.</h2></div>
+            <span class="hostel-role-chip" id="hostelRoleChip">Warden Access</span>
+          </div>
+          <div class="admin-metric-grid">
+            <article><strong id="hostelAdminStudentCount">0</strong><span>Hostel students</span></article>
+            <article><strong id="hostelAdminOutingCount">0</strong><span>Outing requests</span></article>
+            <article><strong id="hostelAdminLeaveCount">0</strong><span>Pending leave requests</span></article>
+            <article><strong id="hostelAdminComplaintCount">0</strong><span>Open complaints</span></article>
+          </div>
+          <div class="admin-table-card">
+            <h3>Outing Queue</h3>
+            <table>
+              <thead><tr><th>Student</th><th>Room</th><th>Request</th><th>Return</th><th>Status</th></tr></thead>
+              <tbody id="hostelAdminOutingQueueBody"></tbody>
+            </table>
+            <p class="portal-note is-hidden" id="hostelAdminOutingQueueEmpty">No outing requests on file yet.</p>
+          </div>
+        </section>
+
+        <section class="admin-panel" id="hostel-gate-activity">
+          <div class="admin-section-head">
+            <div><p class="eyebrow">Gate Activity</p><h2>Exit / entry scan history for this hostel.</h2></div>
+          </div>
+          <div class="admin-metric-grid">
+            <article><strong id="hostelGateCurrentlyOutCount">0</strong><span>Currently out</span></article>
+          </div>
+          <div class="admin-table-card">
+            <h3>Currently Out</h3>
+            <table>
+              <thead><tr><th>Student</th><th>Room</th><th>Pass Type</th><th>Exit Time</th></tr></thead>
+              <tbody id="hostelGateCurrentlyOutBody"></tbody>
+            </table>
+            <p class="portal-note is-hidden" id="hostelGateCurrentlyOutEmpty">No one is currently out.</p>
+          </div>
+          <div class="admin-table-card">
+            <h3>Recent Activity</h3>
+            <div class="date-range-toolbar">
+              <label>Roll No<input type="search" id="hostelGateRollSearch" placeholder="Ex: 20X51A0501" autocomplete="off"></label>
+              <label>From Date<input type="date" id="hostelGateDateFrom"></label>
+              <label>To Date<input type="date" id="hostelGateDateTo"></label>
+              <button type="button" id="hostelGateDownloadButton">Download CSV</button>
+              <button type="button" id="hostelGateFilterClearButton">Clear</button>
+            </div>
+            <div class="portal-info-note"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="11" x2="12" y2="16"></line><circle cx="12" cy="7.5" r="0.6" fill="currentColor" stroke="none"></circle></svg><span>Leave To Date empty (or same as From Date) for a single day. Leave both empty to export everything.</span></div>
+            <div class="gate-activity-scroll">
+              <table>
+                <thead><tr><th>Student</th><th>Room</th><th>Pass Type</th><th>Direction</th><th>Time</th><th>Scanned By</th></tr></thead>
+                <tbody id="hostelGateActivityBody"></tbody>
+              </table>
+            </div>
+            <p class="portal-note is-hidden" id="hostelGateActivityEmpty">No gate activity recorded yet.</p>
+          </div>
+        </section>
+
+        <section class="admin-panel" id="hostel-student-lookup">
+          <div class="admin-section-head">
+            <div><p class="eyebrow">Student Lookup</p><h2>Search hostler details by student ID.</h2></div>
+          </div>
+          <article class="admin-card hostel-lookup-card">
+            <h3>Student Hostel Lookup</h3>
+            <p>Enter student roll number to view hostel allocation, roommates, outing, mess, contact, and complaint details.</p>
+            <div class="hostel-lookup-form">
+              <input id="hostelStudentLookup" type="text" placeholder="Example: 20X51A0501" aria-label="Student ID for hostel lookup">
+              <button id="hostelStudentLookupButton" type="button">Search Student</button>
+            </div>
+            <div class="hostel-student-result" id="hostelStudentResult" aria-live="polite">
+              <p>Student details will appear here after search.</p>
+            </div>
+          </article>
+        </section>
+
+        <section class="admin-panel" id="hostel-allocation">
+          <div class="admin-section-head">
+            <div><p class="eyebrow">Hostel Allocation</p><h2>Block, room, bed, and student allocation details.</h2></div>
+          </div>
+          <article class="admin-card admin-form-card">
+            <h3>Assign / Update Allocation</h3>
+            <div class="admin-add-grid">
+              <label>Student Roll No<input type="text" id="hostelAllocRollInput" placeholder="e.g. 21A91A0501"></label>
+              <label>Hostel
+                <select id="hostelAllocHostelInput">
+                  <option value="Boys Hostel">Boys Hostel</option>
+                  <option value="Girls Hostel">Girls Hostel</option>
+                </select>
+              </label>
+              <label>Block<input type="text" id="hostelAllocBlockInput" placeholder="e.g. Block A"></label>
+              <label>Room<input type="text" id="hostelAllocRoomInput" placeholder="e.g. 204"></label>
+              <label>Bed<input type="text" id="hostelAllocBedInput" placeholder="e.g. B2"></label>
+              <label>Mess Plan<input type="text" id="hostelAllocMessInput" placeholder="e.g. Veg"></label>
+              <label>Status
+                <select id="hostelAllocStatusInput">
+                  <option value="Active">Active</option>
+                  <option value="Vacated">Vacated</option>
+                </select>
+              </label>
+            </div>
+            <button type="button" id="hostelAllocAssignButton">Assign / Update</button>
+            <p class="admin-add-feedback" id="hostelAllocFeedback" aria-live="polite"></p>
+          </article>
+          <div class="admin-table-card">
+            <h3>Current Allocation</h3>
+            <table>
+              <thead><tr><th>Room</th><th>Bed</th><th>Student</th><th>Branch</th><th>Status</th><th></th></tr></thead>
+              <tbody id="hostelAllocationBody"></tbody>
+            </table>
+            <p class="portal-note is-hidden" id="hostelAllocationEmpty">No hostel allocations on file yet.</p>
+          </div>
+        </section>
+
+        <section class="admin-panel" id="hostel-outings">
+          <div class="admin-section-head">
+            <div><p class="eyebrow">Outing Requests</p><h2>Approve or reject student outing requests.</h2></div>
+          </div>
+          <div class="admin-table-card">
+            <h3>All Requests</h3>
+            <div class="request-card-list" id="adminOutingBody"></div>
+          </div>
+        </section>
+
+        <section class="admin-panel" id="hostel-leave-requests">
+          <div class="admin-section-head">
+            <div><p class="eyebrow">Hostel Leave Requests</p><h2>Approve or reject multi-day hostel leave requests.</h2></div>
+          </div>
+          <div class="admin-table-card">
+            <h3>All Requests</h3>
+            <div class="request-card-list" id="adminHostelLeaveBody"></div>
+          </div>
+        </section>
+
+        <section class="admin-panel" id="hostel-visiting-requests">
+          <div class="admin-section-head">
+            <div><p class="eyebrow">Visiting Requests</p><h2>Approve or reject parent hostel visit requests.</h2></div>
+          </div>
+          <div class="admin-table-card">
+            <h3>All Requests</h3>
+            <div class="request-card-list" id="adminVisitingBody"></div>
+          </div>
+        </section>
+
+        <section class="admin-panel" id="hostel-complaints">
+          <div class="admin-section-head">
+            <div><p class="eyebrow">Complaints</p><h2>Maintenance and discipline request tracking.</h2></div>
+          </div>
+          <div class="admin-table-card">
+            <h3>Open Complaints</h3>
+            <table>
+              <thead><tr><th>Student</th><th>Room</th><th>Subject</th><th>Description</th><th>Status</th><th>Action</th></tr></thead>
+              <tbody id="wardenComplaintsBody"></tbody>
+            </table>
+            <p class="lookup-empty" id="wardenComplaintsEmpty">No hostel complaints found.</p>
+          </div>
+        </section>
+
+        <section class="admin-panel" id="hostel-notices">
+          <div class="admin-section-head">
+            <div><p class="eyebrow">Hostel Notices</p><h2>Publish notices only to assigned hostel students.</h2></div>
+          </div>
+          <article class="admin-card admin-form-card">
+            <h3>Create Hostel Notice</h3>
+            <label>Title<input type="text" placeholder="Notice title"></label>
+            <label>Message<textarea placeholder="Type hostel notice"></textarea></label>
+            <button type="button">Publish Hostel Notice</button>
+          </article>
+        </section>
+      </section>
+    </main>
+
+    <div class="gprecian" aria-live="polite">
+      <section class="gprecian-panel" aria-label="GPRECian admin help chat">
+        <div class="gprecian-head">
+          <div class="gprecian-title">
+            <span class="gprecian-avatar bot-avatar"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m4 6 8-3 8 3-8 3zM7 8v3M17 8v3M9 12a3 3 0 1 0 6 0M5 21c.7-3.2 3.4-5 7-5s6.3 1.8 7 5"/></svg></span>
+            <div>
+              <strong>GPRECian Bot</strong>
+              <span>AI admin help</span>
+            </div>
+          </div>
+          <div class="gprecian-actions">
+            <button class="gprecian-expand" type="button" aria-label="Expand chat window"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M15 3h6v6M9 21H3v-6M21 3l-7 7M3 21l7-7"/></svg></button>
+            <button class="gprecian-close" type="button" aria-label="Close GPRECian chat">×</button>
+          </div>
+        </div>
+        <div class="gprecian-welcome" id="gprecianWelcome">
+          <p class="gprecian-welcome-greeting" id="gprecianWelcomeGreeting">Hello</p>
+          <p class="gprecian-welcome-question">How can I help you today?</p>
+          <p class="gprecian-welcome-subtext">Ask me about outing requests, leave requests, hostel allocation, or complaints.</p>
+          <div class="gprecian-chips" aria-label="Suggested questions">
+            <button type="button" data-question="outing requests">Outing Requests</button>
+            <button type="button" data-question="leave requests">Leave Requests</button>
+            <button type="button" data-question="hostel allocation">Hostel Allocation</button>
+            <button type="button" data-question="complaints">Complaints</button>
+          </div>
+        </div>
+        <div class="gprecian-messages is-hidden"></div>
+        <form class="gprecian-form">
+          <input type="text" aria-label="Ask GPRECian a question" placeholder="Ask a question..." autocomplete="off" id="gprecianInput">
+          <button type="submit" aria-label="Send message"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"/></svg></button>
+          <div class="gprecian-suggestions is-hidden" id="gprecianSuggestions"></div>
+        </form>
+        <p class="gprecian-disclaimer">AI-generated answers may be inaccurate - verify important details with the college.</p>
+      </section>
+      <button class="gprecian-toggle" type="button" aria-label="Open GPRECian chat">
+        <span><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m4 6 8-3 8 3-8 3zM7 8v3M17 8v3M9 12a3 3 0 1 0 6 0M5 21c.7-3.2 3.4-5 7-5s6.3 1.8 7 5"/></svg></span>
+        <strong>GPRECian Bot</strong>
+      </button>
+    </div>
+
+    <script src="../script.js"></script>
+  </body>
+</html>

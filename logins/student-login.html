@@ -1,0 +1,48 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Student Login | GPREC</title>
+    <meta name="description" content="GPREC student login using student ID and date of birth.">
+    <link rel="icon" href="https://www.gprec.ac.in/wp-content/uploads/2017/08/fav.png" sizes="32x32">
+    <link rel="stylesheet" href="../styles.css">
+  </head>
+  <body class="login-page student-login-page">
+    <svg class="icon-sprite" aria-hidden="true" focusable="false">
+      <symbol id="icon-user-check" viewBox="0 0 24 24"><path d="M15 19c0-2.2-1.8-4-4-4s-4 1.8-4 4M11 12a4 4 0 1 0 0-8 4 4 0 0 0 0 8ZM16 11l2 2 4-5"/></symbol>
+    </svg>
+    <header class="login-header">
+      <a class="login-brand" href="../index.html"><img src="../gprec-logo-enhanced.png" alt="G Pulla Reddy Engineering College"></a>
+      <a class="login-home" href="../index.html"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m3 11 9-8 9 8M5 10v11h14V10M9 21v-6h6v6"/></svg>Home</a>
+    </header>
+    <main class="role-login-main">
+      <section class="role-login-copy">
+        <p class="eyebrow">Student Portal</p>
+        <h1>Academic access for GPREC students.</h1>
+        <p>Login with your student ID and date of birth to continue to exam services, academic records, hall tickets, and student updates.</p>
+        <div class="role-points">
+          <span>Exam records</span>
+          <span>Hall tickets</span>
+          <span>Academic updates</span>
+        </div>
+      </section>
+      <article class="portal-card role-login-card student-portal">
+        <div class="portal-head">
+          <span><svg><use href="#icon-user-check"></use></svg></span>
+          <div>
+            <h3>Student Login</h3>
+            <p>Use student ID and date of birth.</p>
+          </div>
+        </div>
+        <form class="portal-form student-login-form">
+          <label>Student ID<input type="text" placeholder="Example: 20X51A0501" autocomplete="username"></label>
+          <label>Date of Birth<input type="password" placeholder="DDMMYYYY" inputmode="numeric" maxlength="8" pattern="[0-9]{8}" autocomplete="current-password"></label>
+          <label><span>Security Check (<span class="captcha-question">? + ?</span>)</span><input type="text" class="captcha-input" inputmode="numeric" autocomplete="off" placeholder="Enter the sum"></label>
+          <button type="submit">Login as Student</button>
+        </form>
+      </article>
+    </main>
+    <script src="../script.js"></script>
+  </body>
+</html>

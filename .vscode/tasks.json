@@ -1,0 +1,63 @@
+{
+  "version": "2.0.0",
+  "tasks": [
+    {
+      "label": "Start GPREC servers",
+      "type": "shell",
+      "command": "${workspaceFolder}/tools/start_servers.sh",
+      "isBackground": true,
+      "problemMatcher": {
+        "pattern": {
+          "regexp": "^never-matches$"
+        },
+        "background": {
+          "activeOnStart": true,
+          "beginsPattern": "^portal_db_server\\.py started",
+          "endsPattern": "^(API server is responding\\.|WARNING: API server did not respond)"
+        }
+      },
+      "presentation": {
+        "reveal": "always",
+        "panel": "dedicated",
+        "clear": true
+      },
+      "group": {
+        "kind": "build",
+        "isDefault": true
+      }
+    },
+    {
+      "label": "Restart GPREC servers",
+      "type": "shell",
+      "command": "${workspaceFolder}/tools/start_servers.sh",
+      "isBackground": true,
+      "problemMatcher": {
+        "pattern": {
+          "regexp": "^never-matches$"
+        },
+        "background": {
+          "activeOnStart": true,
+          "beginsPattern": "^portal_db_server\\.py started",
+          "endsPattern": "^(API server is responding\\.|WARNING: API server did not respond)"
+        }
+      },
+      "presentation": {
+        "reveal": "always",
+        "panel": "dedicated",
+        "clear": true
+      },
+      "group": "build"
+    },
+    {
+      "label": "Stop GPREC servers",
+      "type": "shell",
+      "command": "${workspaceFolder}/tools/stop_servers.sh",
+      "presentation": {
+        "reveal": "always",
+        "panel": "dedicated",
+        "clear": true
+      },
+      "group": "build"
+    }
+  ]
+}

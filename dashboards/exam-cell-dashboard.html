@@ -1,0 +1,239 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Exam Cell Dashboard | GPREC</title>
+    <meta name="description" content="GPREC exam cell dashboard for exam schedule and roll-number-wise seating allocation.">
+    <link rel="icon" href="https://www.gprec.ac.in/wp-content/uploads/2017/08/fav.png" sizes="32x32">
+    <link rel="stylesheet" href="../styles.css">
+  </head>
+  <body class="admin-dashboard-page">
+    <header class="student-topbar admin-topbar">
+      <a class="student-brand" href="../index.html">
+        <img src="../gprec-logo-enhanced.png" alt="G Pulla Reddy Engineering College">
+      </a>
+      <div class="student-user">
+        <div class="notification-bell-wrap">
+          <button type="button" class="notification-bell" id="notificationBellButton" aria-label="Notifications">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 8a6 6 0 1 1 12 0c0 4 1.5 5.5 2 6H4c.5-.5 2-2 2-6Z"/><path d="M10 20a2 2 0 0 0 4 0"/></svg>
+            <span class="notification-badge is-hidden" id="notificationBadge">0</span>
+          </button>
+          <div class="notification-dropdown is-hidden" id="notificationDropdown">
+            <div class="notification-dropdown-head">Notifications</div>
+            <div id="notificationList"></div>
+          </div>
+        </div>
+        <div class="student-user-menu">
+          <span class="student-user-avatar">AD</span>
+          <button type="button" class="student-user-toggle" aria-label="Account menu" aria-expanded="false">
+            <span class="student-user-name-block">
+              <strong id="adminRoleName">Exam Cell Officer</strong>
+              <small>GPREC Administration</small>
+            </span>
+          </button>
+          <div class="student-user-dropdown">
+            <a href="../logins/admin-login.html">Logout</a>
+          </div>
+        </div>
+      </div>
+    </header>
+
+    <main class="admin-shell">
+      <aside class="admin-sidebar">
+        <div class="student-menu-title">
+          <strong>Exam Cell Console</strong>
+          <button type="button" class="menu-collapse-toggle" id="menuCollapseToggle" aria-label="Collapse menu">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M15 5 9 12l6 7"/></svg>
+          </button>
+        </div>
+        <div class="admin-nav active" data-admin-target="#exam-cell" title="Overview" role="button" tabindex="0"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="3" width="8" height="8" rx="1"/><rect x="13" y="3" width="8" height="8" rx="1"/><rect x="3" y="13" width="8" height="8" rx="1"/><rect x="13" y="13" width="8" height="8" rx="1"/></svg><span class="admin-nav-text">Overview</span></div>
+        <div class="admin-nav" data-admin-target="#exam-grades" title="Grades" role="button" tabindex="0"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 2h9l5 5v15H6Z"/><path d="M15 2v5h5M9 13h6M9 17h4"/></svg><span class="admin-nav-text">Grades</span></div>
+        <div class="admin-nav" data-admin-target="#hall-ticket-release" title="Hall Ticket Release" role="button" tabindex="0"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="5" y="4" width="14" height="16" rx="2"/><path d="M9 9h6M9 13h6M9 17h3"/></svg><span class="admin-nav-text">Hall Ticket</span></div>
+        <div class="admin-nav" data-admin-target="#invigilation" title="Invigilation" role="button" tabindex="0"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="8" r="4"/><path d="M4 21c1.5-4 4.5-6 8-6s6.5 2 8 6"/></svg><span class="admin-nav-text">Invigilation</span></div>
+        <div class="admin-nav" data-admin-target="#exam-room-blocks" title="Room Blocks" role="button" tabindex="0"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="4" y="5" width="16" height="15" rx="2"/><path d="M4 10h16M8 3v4M16 3v4"/></svg><span class="admin-nav-text">Room Blocks</span></div>
+      </aside>
+
+      <section class="admin-workspace">
+        <section class="admin-panel is-active" id="exam-cell">
+          <div class="admin-section-head">
+            <div><p class="eyebrow">Exam Cell</p><h2>Monitor exam-cell activity and schedule readiness.</h2></div>
+          </div>
+          <div class="admin-metric-grid">
+            <article><strong id="examCellSubjectCount">0</strong><span>Subjects scheduled</span></article>
+            <article><strong id="examCellRoomBlockCount">0</strong><span>Room blocks</span></article>
+            <article><strong id="examCellBranchCount">0</strong><span>Branches configured</span></article>
+            <article><strong id="examCellLastUpdated">-</strong><span>Last updated</span></article>
+          </div>
+          <div class="admin-table-card">
+            <h3>Exam Cell Activity</h3>
+            <table>
+              <thead><tr><th>Time</th><th>Branch</th><th>Action</th></tr></thead>
+              <tbody id="examCellActivityBody"></tbody>
+            </table>
+            <p class="lookup-empty" id="examCellActivityEmpty">No exam cell activity yet.</p>
+          </div>
+        </section>
+
+        <section class="admin-panel" id="hall-ticket-release">
+          <div class="admin-section-head">
+            <div><p class="eyebrow">Hall Ticket</p><h2>Control when students can view their hall ticket PDF.</h2></div>
+          </div>
+          <article class="admin-card admin-form-card">
+            <h3>Hall Ticket Release</h3>
+            <div class="admin-add-grid">
+              <label class="toggle-switch toggle-switch-right">
+                <input type="checkbox" id="hallTicketReleaseToggle">
+                <span class="toggle-slider"></span>
+                Show hall ticket to students
+              </label>
+              <label>Release From
+                <input type="datetime-local" id="hallTicketReleaseAtInput">
+                <small class="field-hint">Leave empty to show immediately after turning on.</small>
+              </label>
+            </div>
+            <button type="button" id="saveHallTicketReleaseButton">Save Hall Ticket Release</button>
+            <p class="admin-add-feedback" id="hallTicketReleaseFeedback" aria-live="polite"></p>
+          </article>
+        </section>
+
+        <section class="admin-panel" id="exam-room-blocks">
+          <div class="admin-section-head">
+            <div><p class="eyebrow">Room Blocks</p><h2>Set exam date, time, and roll-number-wise seating for each branch and semester.</h2></div>
+            <select class="admin-select" id="examCellBranchSelect" aria-label="Select branch">
+              <option value="CSE">CSE</option>
+              <option value="ECE">ECE</option>
+              <option value="EEE">EEE</option>
+              <option value="ME">ME</option>
+              <option value="CE">CE</option>
+            </select>
+          </div>
+          <article class="admin-card admin-form-card">
+            <h3>Add Room Block</h3>
+            <div class="admin-add-grid">
+              <label>Subject Code<input type="text" id="examCellCodeInput" placeholder="DBMS"></label>
+              <label>Subject Name<input type="text" id="examCellSubjectInput" placeholder="Database Management Systems"></label>
+              <label>Exam Date<input type="date" id="examCellDateInput"></label>
+              <label>Exam Time<input type="text" id="examCellTimeInput" placeholder="10:00 AM - 1:00 PM"></label>
+              <label>Roll No. From<input type="text" id="examCellRollFromInput" placeholder="20X51A0501"></label>
+              <label>Roll No. To<input type="text" id="examCellRollToInput" placeholder="20X51A0520"></label>
+              <label>Room<input type="text" id="examCellRoomInput" placeholder="C3"></label>
+              <label>Start Seat No.<input type="number" id="examCellStartSeatInput" placeholder="142"></label>
+              <label>Location<input type="text" id="examCellLocationInput" placeholder="C Block, Examination Hall 3"></label>
+            </div>
+            <button type="button" id="addExamCellSubjectButton">Add Room Block</button>
+            <p class="admin-add-feedback" id="examCellFeedback" aria-live="polite"></p>
+          </article>
+          <div class="admin-table-card">
+            <table>
+              <thead><tr><th>Subject</th><th>Date</th><th>Time</th><th>Roll From</th><th>Roll To</th><th>Room</th><th>Start Seat</th><th>Location</th><th></th></tr></thead>
+              <tbody id="examCellBody"></tbody>
+            </table>
+            <button type="button" id="saveExamCellButton">Save Exam Center Details</button>
+          </div>
+        </section>
+
+        <section class="admin-panel" id="invigilation">
+          <div class="admin-section-head">
+            <div><p class="eyebrow">Invigilation</p><h2>Assign faculty to invigilate a specific exam room.</h2></div>
+          </div>
+          <article class="admin-card admin-form-card">
+            <h3>Assign Invigilation Duty</h3>
+            <div class="admin-add-grid">
+              <label>Faculty Email<input type="email" id="invigilationFacultyEmailInput" placeholder="k.ramesh@gprec.ac.in"></label>
+              <label>Subject Code<input type="text" id="invigilationCodeInput" placeholder="DBMS"></label>
+              <label>Subject Name<input type="text" id="invigilationSubjectInput" placeholder="Database Management Systems"></label>
+              <label>Exam Date<input type="date" id="invigilationDateInput"></label>
+              <label>Exam Time<input type="text" id="invigilationTimeInput" placeholder="10:00 AM - 1:00 PM"></label>
+              <label>Room<input type="text" id="invigilationRoomInput" placeholder="C3"></label>
+              <label>Location<input type="text" id="invigilationLocationInput" placeholder="C Block, Examination Hall 3"></label>
+            </div>
+            <button type="button" id="addInvigilationDutyButton">Assign Duty</button>
+            <p class="admin-add-feedback" id="invigilationFeedback" aria-live="polite"></p>
+          </article>
+          <div class="admin-table-card">
+            <h3>Assigned Duties</h3>
+            <table>
+              <thead><tr><th>Faculty</th><th>Subject</th><th>Date</th><th>Time</th><th>Room</th><th>Location</th><th></th></tr></thead>
+              <tbody id="invigilationDutyBody"></tbody>
+            </table>
+          </div>
+        </section>
+
+        <section class="admin-panel" id="exam-grades">
+          <div class="admin-section-head">
+            <div><p class="eyebrow">Grades</p><h2>Publish semester results and look up a student's record.</h2></div>
+          </div>
+          <article class="admin-card admin-form-card">
+            <h3>Student Grades (CSV Upload)</h3>
+            <p>Upload semester results in bulk. Columns, in order: <strong>Roll Number, Term, GPA, Backlogs</strong> (Term e.g. "I - I", Backlogs e.g. "NIL" or a count). Replaces the record for a given Roll Number + Term when re-uploaded; other terms already on file are left untouched.</p>
+            <div class="admin-add-grid">
+              <label>CSV File<input type="file" id="gradesCsvInput" accept=".csv"></label>
+            </div>
+            <button type="button" id="gradesCsvUploadButton">Upload and Apply</button>
+            <button type="button" id="gradesCsvSampleButton">Download Sample CSV</button>
+            <p class="admin-add-feedback" id="gradesCsvFeedback" aria-live="polite"></p>
+          </article>
+          <div class="admin-table-card" id="gradesPreviewCard">
+            <h3>Grades Preview</h3>
+            <div class="admin-add-grid">
+              <label>Roll Number
+                <input type="text" id="gradesPreviewRollInput" placeholder="Search by roll number" autocomplete="off">
+              </label>
+            </div>
+            <div class="teammate-search-results is-hidden" id="gradesPreviewRollResults"></div>
+            <table>
+              <thead><tr><th>Term</th><th>GPA</th><th>Backlogs</th></tr></thead>
+              <tbody id="gradesPreviewBody"></tbody>
+            </table>
+            <p class="lookup-empty" id="gradesPreviewEmpty">Enter a roll number to preview its grades.</p>
+            <button type="button" id="gradesNotifyButton" class="is-hidden">Notify Parent via SMS</button>
+            <p class="admin-add-feedback" id="gradesNotifyFeedback" aria-live="polite"></p>
+          </div>
+        </section>
+      </section>
+    </main>
+
+    <div class="gprecian" aria-live="polite">
+      <section class="gprecian-panel" aria-label="GPRECian admin help chat">
+        <div class="gprecian-head">
+          <div class="gprecian-title">
+            <span class="gprecian-avatar bot-avatar"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m4 6 8-3 8 3-8 3zM7 8v3M17 8v3M9 12a3 3 0 1 0 6 0M5 21c.7-3.2 3.4-5 7-5s6.3 1.8 7 5"/></svg></span>
+            <div>
+              <strong>GPRECian Bot</strong>
+              <span>AI admin help</span>
+            </div>
+          </div>
+          <div class="gprecian-actions">
+            <button class="gprecian-expand" type="button" aria-label="Expand chat window"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M15 3h6v6M9 21H3v-6M21 3l-7 7M3 21l7-7"/></svg></button>
+            <button class="gprecian-close" type="button" aria-label="Close GPRECian chat">×</button>
+          </div>
+        </div>
+        <div class="gprecian-welcome" id="gprecianWelcome">
+          <p class="gprecian-welcome-greeting" id="gprecianWelcomeGreeting">Hello</p>
+          <p class="gprecian-welcome-question">How can I help you today?</p>
+          <p class="gprecian-welcome-subtext">Ask me about grades, hall ticket release, invigilation, or room blocks.</p>
+          <div class="gprecian-chips" aria-label="Suggested questions">
+            <button type="button" data-question="grades">Grades</button>
+            <button type="button" data-question="hall ticket release">Hall Ticket Release</button>
+            <button type="button" data-question="invigilation">Invigilation</button>
+            <button type="button" data-question="room blocks">Room Blocks</button>
+          </div>
+        </div>
+        <div class="gprecian-messages is-hidden"></div>
+        <form class="gprecian-form">
+          <input type="text" aria-label="Ask GPRECian a question" placeholder="Ask a question..." autocomplete="off" id="gprecianInput">
+          <button type="submit" aria-label="Send message"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"/></svg></button>
+          <div class="gprecian-suggestions is-hidden" id="gprecianSuggestions"></div>
+        </form>
+        <p class="gprecian-disclaimer">AI-generated answers may be inaccurate - verify important details with the college.</p>
+      </section>
+      <button class="gprecian-toggle" type="button" aria-label="Open GPRECian chat">
+        <span><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m4 6 8-3 8 3-8 3zM7 8v3M17 8v3M9 12a3 3 0 1 0 6 0M5 21c.7-3.2 3.4-5 7-5s6.3 1.8 7 5"/></svg></span>
+        <strong>GPRECian Bot</strong>
+      </button>
+    </div>
+
+    <script src="../script.js"></script>
+  </body>
+</html>
