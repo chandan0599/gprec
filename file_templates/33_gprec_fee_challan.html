@@ -1,0 +1,297 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>GPREC Fee Challan</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --navy:#0f1f3d;
+    --navy-deep:#0a1730;
+    --amber:#e8821a;
+    --ink:#16233f;
+    --line:#c9c2ae;
+    --paper:#fdfcf9;
+    --muted:#5f6472;
+  }
+
+  *{box-sizing:border-box;}
+
+  body{
+    margin:0;
+    min-height:100vh;
+    display:flex;
+    align-items:flex-start;
+    justify-content:center;
+    background:#22262f;
+    font-family:'Inter', sans-serif;
+    padding:40px 16px;
+  }
+
+  .sheet{
+    position:relative;
+    width:720px;
+    max-width:100%;
+    background:var(--paper);
+    box-shadow:0 25px 55px -18px rgba(0,0,0,0.5);
+  }
+
+  .head-band{
+    background:var(--navy);
+    padding:20px 32px;
+    display:flex;
+    align-items:center;
+    gap:14px;
+  }
+  .logo-badge{
+    width:44px; height:44px;
+    flex-shrink:0;
+    border:1.5px dashed rgba(232,130,26,0.55);
+    border-radius:8px;
+    display:flex; flex-direction:column;
+    align-items:center; justify-content:center;
+    color:#f0a34d;
+  }
+  .logo-badge .plus{ font-size:14px; line-height:1; }
+  .logo-badge .word{ font-family:'Space Mono', monospace; font-size:6.5px; letter-spacing:1.2px; }
+
+  .head-band .college{
+    color:#fff;
+    font-weight:700;
+    font-size:16px;
+    letter-spacing:0.3px;
+  }
+  .head-band .loc{
+    color:rgba(255,255,255,0.6);
+    font-size:11px;
+    margin-top:2px;
+  }
+
+  .title-row{
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    padding:22px 32px 14px;
+    border-bottom:1.5px solid var(--ink);
+  }
+  .title-row .title{
+    font-size:22px;
+    font-weight:700;
+    color:var(--ink);
+  }
+  .title-row .barcode-block{
+    text-align:center;
+  }
+  .barcode-strip{
+    background:repeating-linear-gradient(
+      90deg,
+      var(--ink) 0px, var(--ink) 2px,
+      transparent 2px, transparent 4px
+    );
+    width:170px;
+    height:28px;
+  }
+  .barcode-block .num{
+    font-family:'Space Mono', monospace;
+    font-size:9.5px;
+    letter-spacing:1px;
+    color:var(--muted);
+    margin-top:4px;
+  }
+
+  .meta-row{
+    display:flex;
+    justify-content:space-between;
+    padding:12px 32px 0;
+    font-size:12.5px;
+    font-weight:700;
+    color:var(--ink);
+  }
+  .meta-row .copy-tag{
+    color:var(--amber);
+    letter-spacing:1px;
+  }
+
+  .bank-block{
+    text-align:center;
+    padding:20px 32px 4px;
+  }
+  .bank-block .bank{
+    font-size:14px;
+    font-weight:700;
+    color:var(--ink);
+  }
+  .bank-block .college2{
+    font-size:13px;
+    font-weight:600;
+    color:var(--ink);
+    margin-top:3px;
+  }
+
+  .challan-body{
+    padding:20px 32px 8px;
+  }
+  .line-row{
+    display:flex;
+    align-items:baseline;
+    gap:6px;
+    padding:10px 0;
+    font-size:13.5px;
+    color:var(--ink);
+  }
+  .line-row .lbl{
+    font-weight:600;
+    white-space:nowrap;
+  }
+  .line-row .blank{
+    flex:1;
+    border-bottom:1.3px solid var(--ink);
+    padding-bottom:2px;
+    font-weight:700;
+    min-height:18px;
+  }
+  .line-row .blank.short{ flex:0 0 140px; }
+
+  .amount-row{
+    display:flex;
+    align-items:baseline;
+    gap:10px;
+    padding:12px 0;
+    font-size:14px;
+    color:var(--ink);
+  }
+  .amount-row .rs{
+    font-weight:700;
+    font-size:16px;
+    color:var(--amber);
+  }
+  .amount-row .amt-blank{
+    border-bottom:1.3px solid var(--ink);
+    padding:0 8px 2px;
+    font-weight:700;
+    min-width:80px;
+    text-align:center;
+  }
+  .amount-row .words-blank{
+    flex:1;
+    border-bottom:1.3px solid var(--ink);
+    padding-bottom:2px;
+    font-weight:700;
+  }
+
+  .two-col-row{
+    display:flex;
+    justify-content:space-between;
+    gap:24px;
+    padding:10px 0;
+  }
+  .two-col-row .line-row{ flex:1; padding:0; }
+
+  .sign-footer{
+    display:flex;
+    justify-content:space-between;
+    padding:26px 32px 30px;
+  }
+  .sign-footer .col div{
+    font-size:12.5px;
+    font-weight:600;
+    color:var(--ink);
+    padding:6px 0;
+  }
+
+</style>
+</head>
+<body>
+
+  <div class="sheet">
+
+    <div class="head-band">
+      <div class="logo-badge">
+        <div class="plus">+</div>
+        <div class="word">LOGO</div>
+      </div>
+      <div>
+        <div class="college">G. Pulla Reddy Engineering College</div>
+        <div class="loc">Kurnool · G.P.R.E.C.</div>
+      </div>
+    </div>
+
+    <div class="title-row">
+      <div class="title">GPREC Fee Challan</div>
+      <div class="barcode-block">
+        <div class="barcode-strip"></div>
+        <div class="num">260711124258</div>
+      </div>
+    </div>
+
+    <div class="meta-row">
+      <span>SNO: 260711124258</span>
+      <span class="copy-tag">COLLEGE COPY</span>
+    </div>
+
+    <div class="bank-block">
+      <div class="bank">ANDHRA BANK</div>
+      <div class="college2">G. PULLA REDDY ENGINEERING COLLEGE KURNOOL - 518007</div>
+    </div>
+
+    <div class="challan-body">
+
+      <div class="line-row">
+        <span class="lbl">Paid in to the Credit of</span>
+        <span class="blank">S.B. A/c No. 152110011031255; of G.P.R.E.C., KURNOOL</span>
+      </div>
+
+      <div class="amount-row">
+        <span class="rs">Rs.</span>
+        <span class="amt-blank">750</span>
+        <span>/- (Rupees</span>
+        <span class="words-blank">Seven Hundred Fifty</span>
+        <span>Only)</span>
+      </div>
+
+      <div class="line-row">
+        <span class="lbl">towards</span>
+        <span class="blank">Exam/Condonation/PCCMM Fee</span>
+      </div>
+
+      <div class="two-col-row">
+        <div class="line-row">
+          <span class="lbl">Name:</span>
+          <span class="blank">LAKKAVARAM SAI CHANDAN</span>
+        </div>
+        <div class="line-row">
+          <span class="lbl">Roll No.:</span>
+          <span class="blank short">20X51A0501</span>
+        </div>
+      </div>
+
+      <div class="two-col-row">
+        <div class="line-row">
+          <span class="lbl">Paid By</span>
+          <span class="blank">&nbsp;</span>
+        </div>
+        <div class="line-row">
+          <span class="lbl">Date:</span>
+          <span class="blank short">11 Jul 2026</span>
+        </div>
+      </div>
+
+    </div>
+
+    <div class="sign-footer">
+      <div class="col">
+        <div>Teller</div>
+        <div>Head Cashier</div>
+        <div>Scroll No. Cash</div>
+      </div>
+      <div class="col" style="text-align:right;">
+        <div>Entered by</div>
+      </div>
+    </div>
+
+  </div>
+
+</body>
+</html>

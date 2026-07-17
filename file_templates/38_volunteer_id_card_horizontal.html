@@ -1,0 +1,284 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Volunteer ID Card - Horizontal</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600;9..144,700&family=Space+Mono:wght@400;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --navy-deep:#0a1730;
+    --navy:#0f1f3d;
+    --amber:#e8821a;
+    --amber-soft:#f0a34d;
+    --cream:#faf6ee;
+    --ink:#0f1f3d;
+    --muted:#6b7180;
+    --line:#e3ddd0;
+  }
+
+  *{box-sizing:border-box;}
+
+  body{
+    margin:0;
+    min-height:100vh;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    background:var(--navy-deep);
+    font-family:'Inter', sans-serif;
+    padding:40px 16px;
+  }
+
+  /* ===== STANDARD CR80 ID CARD: 85.6mm x 54mm ===== */
+  .card{
+    position:relative;
+    width:432px;
+    height:272px;
+    background:var(--cream);
+    border-radius:16px;
+    overflow:hidden;
+    box-shadow:
+      0 25px 50px -18px rgba(0,0,0,0.55),
+      0 8px 20px -8px rgba(0,0,0,0.4);
+    display:flex;
+  }
+
+  /* ===== LEFT PANEL (navy) ===== */
+  .left-panel{
+    position:relative;
+    width:150px;
+    flex-shrink:0;
+    background:linear-gradient(160deg, var(--navy) 0%, var(--navy-deep) 100%);
+    color:var(--cream);
+    padding:16px 14px;
+    display:flex;
+    flex-direction:column;
+    align-items:center;
+    overflow:hidden;
+  }
+  .crest-mark{
+    position:absolute;
+    left:-50px;
+    bottom:-50px;
+    width:180px;
+    height:180px;
+    opacity:0.12;
+    pointer-events:none;
+  }
+
+  .logo-slot{
+    width:38px; height:38px;
+    border:1.3px dashed rgba(232,130,26,0.55);
+    border-radius:8px;
+    display:flex; flex-direction:column;
+    align-items:center; justify-content:center;
+    color:var(--amber-soft);
+    position:relative;
+    z-index:2;
+  }
+  .logo-slot .plus{ font-size:12px; line-height:1; }
+  .logo-slot .word{ font-family:'Space Mono', monospace; font-size:6px; letter-spacing:1px; }
+
+  .photo-wrap{
+    position:relative;
+    z-index:2;
+    margin-top:12px;
+    width:96px;
+    height:112px;
+    background:var(--cream);
+    border-radius:10px;
+    padding:4px;
+    box-shadow:0 8px 18px -6px rgba(0,0,0,0.5);
+  }
+  .photo-inner{
+    width:100%;
+    height:100%;
+    border-radius:7px;
+    border:1.3px dashed #c9b98a;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    color:#a39c86;
+    font-family:'Space Mono', monospace;
+    font-size:8px;
+    letter-spacing:1.5px;
+  }
+
+  .id-tag{
+    position:relative;
+    z-index:2;
+    margin-top:auto;
+    padding-top:10px;
+    display:flex;
+    align-items:center;
+    gap:5px;
+    font-family:'Space Mono', monospace;
+    font-size:8.5px;
+    letter-spacing:1.8px;
+    color:rgba(250,246,238,0.75);
+  }
+  .id-tag svg{ width:11px; height:11px; fill:var(--amber-soft); flex-shrink:0; }
+
+  /* ===== RIGHT PANEL ===== */
+  .right-panel{
+    flex:1;
+    padding:16px 22px 14px;
+    display:flex;
+    flex-direction:column;
+  }
+
+  .eyebrow{
+    font-family:'Space Mono', monospace;
+    font-size:9px;
+    letter-spacing:2.2px;
+    color:var(--amber);
+    font-weight:700;
+  }
+
+  .name{
+    font-family:'Fraunces', serif;
+    font-weight:700;
+    font-size:20px;
+    color:var(--ink);
+    margin-top:6px;
+    line-height:1.12;
+  }
+  .role{
+    font-size:9.5px;
+    font-weight:700;
+    letter-spacing:1.3px;
+    text-transform:uppercase;
+    color:var(--amber);
+    margin-top:4px;
+  }
+
+  .info-list{
+    flex:1;
+    margin-top:10px;
+  }
+  .info-row{
+    display:flex;
+    justify-content:space-between;
+    align-items:baseline;
+    padding:5px 0;
+    border-bottom:1px dashed var(--line);
+  }
+  .info-row:last-child{ border-bottom:none; }
+  .info-row .k{
+    font-family:'Space Mono', monospace;
+    font-size:8.5px;
+    letter-spacing:1.5px;
+    color:var(--muted);
+    text-transform:uppercase;
+  }
+  .info-row .v{
+    font-weight:700;
+    font-size:12px;
+    color:var(--ink);
+    text-align:right;
+  }
+  .info-row .v.mono{
+    font-family:'Space Mono', monospace;
+    font-size:11.5px;
+  }
+
+  .validity{
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+    background:var(--navy);
+    border-radius:8px;
+    padding:8px 14px;
+    margin-top:8px;
+  }
+  .validity .slot .k{
+    font-family:'Space Mono', monospace;
+    font-size:7px;
+    letter-spacing:1.5px;
+    color:rgba(250,246,238,0.55);
+  }
+  .validity .slot .v{
+    font-family:'Space Mono', monospace;
+    font-size:10.5px;
+    font-weight:700;
+    letter-spacing:0.5px;
+    color:var(--amber-soft);
+    margin-top:2px;
+  }
+  .validity .slot.right{ text-align:right; }
+
+</style>
+</head>
+<body>
+
+  <div class="card">
+
+    <div class="left-panel">
+      <svg class="crest-mark" viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg">
+        <circle cx="100" cy="100" r="95" fill="none" stroke="#e8821a" stroke-width="1"/>
+        <circle cx="100" cy="100" r="70" fill="none" stroke="#e8821a" stroke-width="1"/>
+        <g stroke="#e8821a" stroke-width="1">
+          <line x1="100" y1="5" x2="100" y2="195"/>
+          <line x1="5" y1="100" x2="195" y2="100"/>
+        </g>
+        <polygon points="100,20 112,100 100,180 88,100" fill="#e8821a"/>
+        <circle cx="100" cy="100" r="10" fill="#e8821a"/>
+      </svg>
+
+      <div class="logo-slot">
+        <div class="plus">+</div>
+        <div class="word">LOGO</div>
+      </div>
+
+      <div class="photo-wrap">
+        <div class="photo-inner">PHOTO</div>
+      </div>
+
+      <div class="id-tag">
+        <svg viewBox="0 0 24 24"><path d="M22 10V6a2 2 0 0 0-2-2H4a2 2 0 0 0-2 2v4a2 2 0 0 1 0 4v4a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-4a2 2 0 0 1 0-4zM9 6v2h2V6H9zm0 4v2h2v-2H9zm0 4v2h2v-2H9zm0 4v2h2v-2H9z"/></svg>
+        VOLUNTEER
+      </div>
+    </div>
+
+    <div class="right-panel">
+      <div class="eyebrow">UDAAN 2K26 · VOLUNTEER ID</div>
+      <div class="name">Lakkavaram Sai Chandan</div>
+      <div class="role">Volunteer · Crowd Management</div>
+
+      <div class="info-list">
+        <div class="info-row">
+          <span class="k">Volunteer ID</span>
+          <span class="v mono">VL-8QNYSH</span>
+        </div>
+        <div class="info-row">
+          <span class="k">Roll Number</span>
+          <span class="v mono">21CE0847</span>
+        </div>
+        <div class="info-row">
+          <span class="k">Event Name</span>
+          <span class="v">Final Test Fest</span>
+        </div>
+        <div class="info-row">
+          <span class="k">Shift</span>
+          <span class="v">10 AM – 6 PM</span>
+        </div>
+      </div>
+
+      <div class="validity">
+        <div class="slot">
+          <div class="k">VALID FROM</div>
+          <div class="v">08 DEC 2026</div>
+        </div>
+        <div class="slot right">
+          <div class="k">VALID TILL</div>
+          <div class="v">10 DEC 2026</div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+</body>
+</html>

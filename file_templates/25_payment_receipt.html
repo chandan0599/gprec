@@ -1,0 +1,330 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Payment Receipt</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600;9..144,700&family=Space+Mono:wght@400;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --navy-deep:#0a1730;
+    --navy:#0f1f3d;
+    --amber:#e8821a;
+    --amber-soft:#f0a34d;
+    --cream:#faf6ee;
+    --ink:#0f1f3d;
+    --muted:#6b7180;
+    --line:#e3ddd0;
+    --green:#1f7a4d;
+  }
+
+  *{box-sizing:border-box;}
+
+  body{
+    margin:0;
+    min-height:100vh;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    background:radial-gradient(ellipse at top, #1a2a4d 0%, #060d1c 65%);
+    font-family:'Inter', sans-serif;
+    padding:48px 20px;
+  }
+
+  .receipt{
+    position:relative;
+    width:440px;
+    max-width:100%;
+    background:var(--cream);
+    border-radius:16px;
+    overflow:hidden;
+    box-shadow:
+      0 30px 60px -20px rgba(0,0,0,0.55),
+      0 10px 25px -10px rgba(0,0,0,0.4);
+  }
+
+  /* ===== HEADER ===== */
+  .head{
+    background:linear-gradient(160deg, var(--navy) 0%, var(--navy-deep) 100%);
+    color:var(--cream);
+    padding:24px 28px;
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+  }
+  .head .org{
+    font-family:'Inter', sans-serif;
+    font-weight:700;
+    font-size:13px;
+    letter-spacing:1.5px;
+    text-transform:uppercase;
+    color:var(--amber-soft);
+  }
+  .head .doc-title{
+    font-family:'Fraunces', serif;
+    font-weight:600;
+    font-size:22px;
+    margin-top:4px;
+  }
+  .head .receipt-no{
+    text-align:right;
+    font-family:'Space Mono', monospace;
+    font-size:10.5px;
+    color:var(--amber-soft);
+    letter-spacing:1px;
+    line-height:1.6;
+  }
+  .head .receipt-no b{
+    display:block;
+    color:var(--cream);
+    font-size:13px;
+  }
+
+  /* ===== BODY ===== */
+  .body{
+    padding:26px 28px 8px;
+  }
+
+  .row-pair{
+    display:flex;
+    justify-content:space-between;
+    padding-bottom:16px;
+    margin-bottom:18px;
+    border-bottom:1px solid var(--line);
+  }
+  .row-pair .k{
+    font-size:10px;
+    letter-spacing:1.5px;
+    color:var(--amber);
+    text-transform:uppercase;
+    font-weight:700;
+    margin-bottom:4px;
+  }
+  .row-pair .v{
+    font-size:14px;
+    font-weight:700;
+    color:var(--ink);
+  }
+
+  .field-block{
+    margin-bottom:16px;
+  }
+  .field-block .k{
+    font-size:10px;
+    letter-spacing:1.5px;
+    color:var(--amber);
+    text-transform:uppercase;
+    font-weight:700;
+    margin-bottom:4px;
+  }
+  .field-block .v{
+    font-size:15px;
+    font-weight:700;
+    color:var(--ink);
+  }
+
+  /* ===== ITEM TABLE ===== */
+  .items{
+    margin-top:6px;
+    border:1px solid var(--line);
+    border-radius:8px;
+    overflow:hidden;
+  }
+  .items .item-row{
+    display:flex;
+    justify-content:space-between;
+    padding:12px 16px;
+    font-size:14px;
+  }
+  .items .item-row + .item-row{
+    border-top:1px solid var(--line);
+  }
+  .items .item-row .desc{
+    color:var(--ink);
+    font-weight:600;
+  }
+  .items .item-row .amt{
+    font-family:'Space Mono', monospace;
+    font-weight:700;
+    color:var(--ink);
+  }
+  .items .total-row{
+    background:var(--navy);
+    color:var(--cream);
+    padding:14px 16px;
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+  }
+  .items .total-row .label{
+    font-size:12px;
+    letter-spacing:1.5px;
+    text-transform:uppercase;
+    font-weight:700;
+    color:var(--amber-soft);
+  }
+  .items .total-row .amt{
+    font-family:'Fraunces', serif;
+    font-size:22px;
+    font-weight:700;
+  }
+
+  .in-words{
+    margin-top:14px;
+    font-size:12.5px;
+    color:var(--muted);
+    font-style:italic;
+  }
+  .in-words b{
+    color:var(--ink);
+    font-style:normal;
+    font-weight:600;
+  }
+
+  .status-line{
+    margin-top:18px;
+    display:flex;
+    align-items:center;
+    gap:8px;
+  }
+  .status-dot{
+    width:8px; height:8px;
+    border-radius:50%;
+    background:var(--green);
+    box-shadow:0 0 0 3px rgba(31,122,77,0.18);
+  }
+  .status-line .label{
+    font-weight:700;
+    font-size:14px;
+    color:var(--green);
+    letter-spacing:0.3px;
+  }
+
+  /* ===== SIGNATURE ===== */
+  .sign-area{
+    margin-top:30px;
+    display:flex;
+    justify-content:flex-end;
+  }
+  .sign-block{
+    text-align:center;
+    width:150px;
+  }
+  .sign-line{
+    border-top:1px solid var(--ink);
+    height:32px;
+  }
+  .sign-block .label{
+    font-size:9.5px;
+    letter-spacing:1.5px;
+    color:var(--muted);
+    text-transform:uppercase;
+    margin-top:5px;
+  }
+
+  /* ===== FOOTER ===== */
+  .footer{
+    margin-top:22px;
+    padding:14px 28px;
+    background:var(--navy);
+    text-align:center;
+  }
+  .footer .note{
+    font-family:'Space Mono', monospace;
+    font-size:9.5px;
+    letter-spacing:1px;
+    color:rgba(250,246,238,0.6);
+  }
+
+  .bottom-space{ height:22px; }
+
+</style>
+</head>
+<body>
+
+  <div class="receipt">
+
+    <div class="head">
+      <div>
+        <div class="org">St. Xavier College of Engineering</div>
+        <div class="doc-title">Payment Receipt</div>
+      </div>
+      <div class="receipt-no">
+        RECEIPT NO.
+        <b>RC-2026-0847</b>
+      </div>
+    </div>
+
+    <div class="body">
+
+      <div class="row-pair">
+        <div>
+          <div class="k">Date</div>
+          <div class="v">01 Dec 2026</div>
+        </div>
+        <div style="text-align:right;">
+          <div class="k">Time</div>
+          <div class="v">11:42 AM</div>
+        </div>
+      </div>
+
+      <div class="field-block">
+        <div class="k">Received From</div>
+        <div class="v">Lakkavaram Sai Chandan</div>
+      </div>
+
+      <div class="row-pair" style="border-bottom:none; margin-bottom:6px; padding-bottom:0;">
+        <div>
+          <div class="k">Roll No.</div>
+          <div class="v">21CE0847</div>
+        </div>
+        <div style="text-align:right;">
+          <div class="k">Payment Mode</div>
+          <div class="v">UPI</div>
+        </div>
+      </div>
+
+      <div class="field-block" style="margin-top:20px;">
+        <div class="k">Payment Details</div>
+      </div>
+      <div class="items">
+        <div class="item-row">
+          <span class="desc">Udaan 2K26 · Fest Registration Fee</span>
+          <span class="amt">₹800.00</span>
+        </div>
+        <div class="item-row">
+          <span class="desc">Event Pass — Final Test Fest</span>
+          <span class="amt">₹200.00</span>
+        </div>
+        <div class="total-row">
+          <span class="label">Total Paid</span>
+          <span class="amt">₹1,000.00</span>
+        </div>
+      </div>
+
+      <div class="in-words">Amount in words: <b>One Thousand Rupees Only</b></div>
+
+      <div class="status-line">
+        <span class="status-dot"></span>
+        <span class="label">Payment Successful</span>
+      </div>
+
+      <div class="sign-area">
+        <div class="sign-block">
+          <div class="sign-line"></div>
+          <div class="label">Authorized Signature</div>
+        </div>
+      </div>
+
+    </div>
+
+    <div class="footer">
+      <div class="note">THIS IS A COMPUTER-GENERATED RECEIPT · KEEP FOR YOUR RECORDS</div>
+    </div>
+
+    <div class="bottom-space"></div>
+  </div>
+
+</body>
+</html>

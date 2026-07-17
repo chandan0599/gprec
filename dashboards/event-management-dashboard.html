@@ -205,9 +205,16 @@
               <h3>Assign Volunteers &mdash; <span id="festVolunteerManageTitle"></span></h3>
               <div class="admin-add-grid">
                 <label>Student Roll Number<input type="text" id="festVolunteerRollInput" placeholder="e.g. 20X51A0501"></label>
+                <label>Volunteer ID Card Style
+                  <select id="festVolunteerCardStyleInput">
+                    <option value="vertical">Vertical</option>
+                    <option value="horizontal">Horizontal</option>
+                  </select>
+                </label>
               </div>
               <button type="button" id="festVolunteerAddButton">Assign Volunteer</button>
               <p class="admin-add-feedback" id="festVolunteerAddFeedback" aria-live="polite"></p>
+              <p class="admin-add-feedback" id="festVolunteerStyleFeedback" aria-live="polite"></p>
               <div class="admin-table-card">
                 <table>
                   <thead><tr><th>Roll Number</th><th>Name</th><th></th></tr></thead>
@@ -225,7 +232,7 @@
           </div>
           <div class="admin-table-card" id="festVolunteerDutiesSection">
             <table>
-              <thead><tr><th>Date</th><th>Activity</th><th>Time</th><th>Venue</th><th>Coordinator</th></tr></thead>
+              <thead><tr><th>Date</th><th>Activity</th><th>Time</th><th>Venue</th><th>Coordinator</th><th></th></tr></thead>
               <tbody id="festVolunteerDutyBody"></tbody>
             </table>
             <p class="lookup-empty is-hidden" id="festVolunteerDutyEmpty">No fest duties assigned to you yet.</p>
@@ -665,6 +672,8 @@
           const manageCard = document.querySelector("#festVolunteerManageCard");
           const manageTitle = document.querySelector("#festVolunteerManageTitle");
           const rollInput = document.querySelector("#festVolunteerRollInput");
+          const cardStyleInput = document.querySelector("#festVolunteerCardStyleInput");
+          const styleFeedback = document.querySelector("#festVolunteerStyleFeedback");
           const addButton = document.querySelector("#festVolunteerAddButton");
           const addFeedback = document.querySelector("#festVolunteerAddFeedback");
           const listBody = document.querySelector("#festVolunteerListBody");
@@ -719,7 +728,24 @@
             manageCard.classList.remove("is-hidden");
             manageTitle.textContent = activity.title;
             addFeedback.textContent = "";
+            styleFeedback.textContent = "";
+            if (cardStyleInput) cardStyleInput.value = activity.idCardStyle === "horizontal" ? "horizontal" : "vertical";
             renderVolunteerList(activity);
+          });
+
+          // Style applies per activity (all its volunteers get the same card layout) rather than
+          // per volunteer - saved immediately on change, same as every other coordinator-editable
+          // field here, instead of needing a separate "Save" button.
+          cardStyleInput?.addEventListener("change", () => {
+            if (!editingActivityId) return;
+            const result = updateFestActivityAsCoordinator(editingActivityId, { idCardStyle: cardStyleInput.value });
+            if (result?.ok) {
+              styleFeedback.textContent = `ID card style set to ${cardStyleInput.value}.`;
+              styleFeedback.classList.add("success");
+            } else {
+              styleFeedback.textContent = (result && result.error) || "Could not save the card style.";
+              styleFeedback.classList.remove("success");
+            }
           });
 
           addButton?.addEventListener("click", () => {
@@ -825,10 +851,36 @@
                   <td>${escapeHtmlSafe(formatCampusEventTime(activity))}</td>
                   <td>${escapeHtmlSafe(activity.venue || "-")}</td>
                   <td>${escapeHtmlSafe(coordinatorName)}</td>
+                  <td><button type="button" class="icon-btn-download" data-fest-volunteer-id-card="${escapeHtmlSafe(activity.id)}" aria-label="Download volunteer ID card" title="Download volunteer ID card">${downloadIconSvg}</button></td>
                 </tr>
               `;
             })
             .join("");
+
+          bodyEl.querySelectorAll("[data-fest-volunteer-id-card]").forEach((button) => {
+            button.addEventListener("click", async () => {
+              const activity = activities.find((item) => item.id === button.dataset.festVolunteerIdCard);
+              if (!activity) return;
+              // Faculty picks the layout per activity (idCardStyle); every volunteer assigned to
+              // that activity downloads their own card in whatever style the coordinator chose.
+              const data = {
+                name: resolveStudentDisplayName(roll, roll),
+                rollNumber: roll,
+                eventTitle: activity.title,
+                shift: formatCampusEventTime(activity),
+                venue: activity.venue,
+                validFrom: formatCampusEventDate(activity.date),
+                validTill: formatCampusEventDate(activity.date),
+                volunteerId: makeShortPassId("VL", [activity.id, roll]),
+                photoUrl: getExplicitProfilePhotoSrc(defaultStudentProfiles[roll])
+              };
+              const blob = await buildFestVolunteerIdCardImage(data, activity.idCardStyle);
+              const link = document.createElement("a");
+              link.href = URL.createObjectURL(blob);
+              link.download = `gprec-volunteer-id-${roll}-${activity.id}.png`;
+              link.click();
+            });
+          });
         }
       })();
     </script>
