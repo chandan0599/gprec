@@ -4020,143 +4020,467 @@ if (adminNavButtons.length > 0 && adminPanels.length > 0) {
   }
 }
 
-// A short, stable-per-email 5-digit display code for the volunteer ID card below - purely
-// cosmetic (matches the "ID NO. 00000" reference design), not used for lookups/security, so a
-// simple deterministic hash is enough without needing a real sequential ID column.
-const shortIdFor = (value) => {
-  let hash = 0;
-  for (const ch of String(value)) hash = (hash * 31 + ch.charCodeAt(0)) >>> 0;
-  return String(hash % 100000).padStart(5, "0");
-};
-
-// Volunteer ID card - a portrait badge (navy diagonal wedge with vertical "VOLUNTEER" text, an
-// orange accent seam, name/date/ID on white), drawn on canvas and downloaded as PNG the same way
-// as the event ticket. GPREC's own navy/orange brand colors, not the reference design's literal
-// light-blue accent - kept consistent with every other document this app generates.
+// Portrait CR80-style card matching "30_volunteer_id_card_vertical.html": navy gradient top
+// panel (logo badge, ID TAG label, fest eyebrow) with a square photo overlapping the seam, cream
+// bottom panel with name + a sparse 2-row info list, footer tag. `admin.studentRoll` (optional -
+// only set when a student account holds the Event Volunteer role) resolves a real roll number;
+// "Event Name" has no per-volunteer assignment in this app's data model, so it shows the current
+// fest name (the same real value the Event Pass/homepage banner already use for "which event"),
+// not a fabricated per-volunteer assignment.
 const buildVolunteerIdCardImage = async (admin) => {
-  const W = 400;
-  const H = 600;
-  const canvas = document.createElement("canvas");
-  canvas.width = W;
-  canvas.height = H;
-  const ctx = canvas.getContext("2d");
-  const NAVY = "#04284a";
-  const ORANGE = "#ff8702";
-  const WHITE = "#ffffff";
+  await ensureBrandFontsLoaded();
+  const CARD_W = 272;
+  const SCALE = 3;
+  const NAVY_DEEP = "#0a1730", NAVY = "#0f1f3d", AMBER = "#e8821a", AMBER_SOFT = "#f0a34d";
+  const CREAM = "#faf6ee", INK = "#0f1f3d";
 
-  ctx.fillStyle = WHITE;
-  ctx.fillRect(0, 0, W, H);
-
-  ctx.fillStyle = NAVY;
-  ctx.beginPath();
-  ctx.moveTo(0, 0);
-  ctx.lineTo(W * 0.72, 0);
-  ctx.lineTo(0, H * 0.62);
-  ctx.closePath();
-  ctx.fill();
-
-  ctx.strokeStyle = ORANGE;
-  ctx.lineWidth = 10;
-  ctx.beginPath();
-  ctx.moveTo(W * 0.72 + 14, -14);
-  ctx.lineTo(-14, H * 0.62 + 14);
-  ctx.stroke();
-
-  // The navy wedge is a right triangle whose height shrinks the further right (larger x) the text
-  // sits - center this near the left edge (x=44, where the wedge is near its full H*0.62 height)
-  // and keep the rotated text short enough to stay within that height, or the far end silently
-  // lands on the white background and disappears (white-on-white).
-  ctx.save();
-  ctx.translate(44, H * 0.22);
-  ctx.rotate(-Math.PI / 2);
-  ctx.fillStyle = WHITE;
-  ctx.font = "800 34px Arial, sans-serif";
-  ctx.textAlign = "center";
-  ctx.textBaseline = "middle";
-  ctx.fillText("VOLUNTEER", 0, 0);
-  ctx.restore();
-
-  // GPREC mark in the open white area (top-right, clear of the navy wedge which only reaches
-  // x = W*0.72 at y = 0).
   const logoImg = new Image();
   await new Promise((resolve) => {
     logoImg.onload = resolve;
     logoImg.onerror = resolve;
     logoImg.src = gprecLogoUrl;
   });
-  if (logoImg.naturalWidth) {
-    const logoW = 96;
-    const logoH = (logoW * logoImg.naturalHeight) / logoImg.naturalWidth;
-    ctx.drawImage(logoImg, W - logoW - 24, 20, logoW, logoH);
-  }
-
-  // Photo circle - the uploaded admin photo if one was set when the volunteer account was
-  // created, otherwise a placeholder person silhouette so the layout still reads as an ID card.
-  const photoCx = W - 95;
-  const photoCy = H - 320;
-  const photoR = 52;
-  ctx.save();
-  ctx.beginPath();
-  ctx.arc(photoCx, photoCy, photoR, 0, Math.PI * 2);
-  ctx.closePath();
-  ctx.clip();
+  let photoImg = null;
   if (admin.photoUrl) {
-    const photoImg = new Image();
+    photoImg = new Image();
     await new Promise((resolve) => {
       photoImg.onload = resolve;
       photoImg.onerror = resolve;
       photoImg.src = admin.photoUrl;
     });
-    if (photoImg.naturalWidth) {
-      const coverScale = Math.max((photoR * 2) / photoImg.naturalWidth, (photoR * 2) / photoImg.naturalHeight);
-      const drawW = photoImg.naturalWidth * coverScale;
-      const drawH = photoImg.naturalHeight * coverScale;
-      ctx.drawImage(photoImg, photoCx - drawW / 2, photoCy - drawH / 2, drawW, drawH);
-    } else {
-      ctx.fillStyle = "#e5e7eb";
-      ctx.fillRect(photoCx - photoR, photoCy - photoR, photoR * 2, photoR * 2);
-    }
+    if (!photoImg.naturalWidth) photoImg = null;
+  }
+
+  const roundedRectPath = (ctx, x, y, w, h, r) => {
+    const rr = Math.min(r, w / 2, h / 2);
+    ctx.beginPath();
+    ctx.moveTo(x + rr, y);
+    ctx.arcTo(x + w, y, x + w, y + h, rr);
+    ctx.arcTo(x + w, y + h, x, y + h, rr);
+    ctx.arcTo(x, y + h, x, y, rr);
+    ctx.arcTo(x, y, x + w, y, rr);
+    ctx.closePath();
+  };
+
+  const topPanelH = 210;
+  const photoSize = 96;
+  const photoY = topPanelH - photoSize / 2;
+  const nameY = photoY + photoSize + 44;
+  const ruleY = nameY + 20;
+  const rowH = 60;
+  const rowsY = ruleY + 30;
+  const footerY = rowsY + rowH * 2 + 10;
+  const footerH = 40;
+  const totalH = footerY + footerH;
+  const padSides = 24;
+
+  const canvas = document.createElement("canvas");
+  canvas.width = CARD_W * SCALE;
+  canvas.height = totalH * SCALE;
+  const ctx = canvas.getContext("2d");
+  ctx.scale(SCALE, SCALE);
+
+  roundedRectPath(ctx, 0, 0, CARD_W, totalH, 16);
+  ctx.save();
+  ctx.clip();
+  ctx.fillStyle = CREAM;
+  ctx.fillRect(0, 0, CARD_W, totalH);
+
+  const topGrad = ctx.createLinearGradient(0, 0, CARD_W, topPanelH);
+  topGrad.addColorStop(0, NAVY);
+  topGrad.addColorStop(1, NAVY_DEEP);
+  ctx.fillStyle = topGrad;
+  ctx.fillRect(0, 0, CARD_W, topPanelH);
+
+  // Logo, left - real GPREC logo instead of the mockup's "+ LOGO" placeholder, no border box.
+  const badgeW = 60;
+  const badgeH = 30;
+  if (logoImg.naturalWidth) {
+    const logoH = badgeH - 12;
+    const logoW = (logoH * logoImg.naturalWidth) / logoImg.naturalHeight;
+    ctx.drawImage(logoImg, padSides + (badgeW - logoW) / 2, 16 + 6, logoW, logoH);
+  }
+
+  // "VOLUNTEER / ID CARD" tag, two lines, right-aligned.
+  ctx.textAlign = "right";
+  ctx.fillStyle = AMBER_SOFT;
+  ctx.font = "700 8.5px 'Space Mono'";
+  ctx.fillText("VOLUNTEER", CARD_W - padSides, 26);
+  ctx.fillText("ID CARD", CARD_W - padSides, 38);
+  ctx.textAlign = "center";
+  const festName = (getFestName() || "GPREC FEST").toUpperCase();
+  ctx.fillStyle = AMBER_SOFT;
+  ctx.font = "700 9.5px 'Space Mono'";
+  ctx.fillText(`${festName} · VOLUNTEER ID`, CARD_W / 2, 62);
+  ctx.textAlign = "left";
+
+  // Square photo (rounded corners, dashed border), overlapping the panel seam.
+  const photoX = (CARD_W - photoSize) / 2;
+  ctx.save();
+  roundedRectPath(ctx, photoX, photoY, photoSize, photoSize, 8);
+  ctx.clip();
+  ctx.fillStyle = "#dcd3c2";
+  ctx.fillRect(photoX, photoY, photoSize, photoSize);
+  if (photoImg) {
+    const coverScale = Math.max(photoSize / photoImg.naturalWidth, photoSize / photoImg.naturalHeight);
+    const drawW = photoImg.naturalWidth * coverScale;
+    const drawH = photoImg.naturalHeight * coverScale;
+    ctx.drawImage(photoImg, photoX + photoSize / 2 - drawW / 2, photoY + photoSize / 2 - drawH / 2, drawW, drawH);
   } else {
-    ctx.fillStyle = "#e5e7eb";
-    ctx.fillRect(photoCx - photoR, photoCy - photoR, photoR * 2, photoR * 2);
-    ctx.fillStyle = "#9aa5b1";
-    ctx.beginPath();
-    ctx.arc(photoCx, photoCy - 14, 20, 0, Math.PI * 2);
-    ctx.fill();
-    ctx.beginPath();
-    ctx.arc(photoCx, photoCy + 46, 34, Math.PI, 0, true);
-    ctx.fill();
+    ctx.fillStyle = NAVY;
+    ctx.font = "700 30px Inter";
+    ctx.textAlign = "center";
+    ctx.textBaseline = "middle";
+    const initials = (admin.name || "V").split(/\s+/).filter(Boolean).slice(0, 2).map((w) => w[0]).join("").toUpperCase();
+    ctx.fillText(initials, photoX + photoSize / 2, photoY + photoSize / 2);
+    ctx.textBaseline = "alphabetic";
   }
   ctx.restore();
-  ctx.strokeStyle = NAVY;
-  ctx.lineWidth = 3;
-  ctx.beginPath();
-  ctx.arc(photoCx, photoCy, photoR, 0, Math.PI * 2);
+  ctx.save();
+  ctx.strokeStyle = "rgba(232,130,26,0.55)";
+  ctx.lineWidth = 2;
+  ctx.setLineDash([4, 3]);
+  roundedRectPath(ctx, photoX, photoY, photoSize, photoSize, 8);
   ctx.stroke();
+  ctx.setLineDash([]);
+  ctx.restore();
 
-  // A student volunteer's roll number/branch (from their existing student profile, the same
-  // source their photo above came from) is shown as an extra line - a plain "no student details"
-  // ID card otherwise gives a volunteer coordinator nothing to cross-check the person against.
-  const studentProfile = admin.studentRoll ? defaultStudentProfiles[admin.studentRoll] : null;
+  ctx.fillStyle = INK;
+  ctx.font = "600 20px Fraunces";
+  ctx.textAlign = "center";
+  ctx.fillText(admin.name || "Volunteer", CARD_W / 2, nameY);
+  ctx.textAlign = "left";
+
+  // Short solid amber rule (not a full-width dashed line).
+  ctx.fillStyle = AMBER;
+  ctx.fillRect(CARD_W / 2 - 19, ruleY, 38, 2.5);
+
+  // Info rows: label left, value right, same baseline, dashed divider under each row.
+  const rows = [
+    ["ROLL NUMBER", admin.studentRoll || "-", true],
+    ["EVENT NAME", festName.replace(/·/g, "").trim() || "-", false]
+  ];
+  rows.forEach(([label, value, mono], i) => {
+    const y = rowsY + i * rowH;
+    ctx.fillStyle = "#6b7180";
+    ctx.font = "400 9px 'Space Mono'";
+    ctx.textAlign = "left";
+    ctx.fillText(label, padSides, y);
+    ctx.fillStyle = INK;
+    ctx.font = mono ? "700 12.5px 'Space Mono'" : "700 13px Inter";
+    ctx.textAlign = "right";
+    ctx.fillText(value, CARD_W - padSides, y);
+    ctx.textAlign = "left";
+    ctx.strokeStyle = "#e3ddd0";
+    ctx.lineWidth = 1;
+    ctx.setLineDash([3, 2]);
+    ctx.beginPath();
+    ctx.moveTo(padSides, y + 10);
+    ctx.lineTo(CARD_W - padSides, y + 10);
+    ctx.stroke();
+    ctx.setLineDash([]);
+  });
 
   ctx.fillStyle = NAVY;
+  ctx.fillRect(0, footerY, CARD_W, footerH);
+  ctx.fillStyle = AMBER_SOFT;
+  ctx.textAlign = "center";
+  ctx.font = "400 8px 'Space Mono'";
+  ctx.fillText("OFFICIAL VOLUNTEER IDENTIFICATION", CARD_W / 2, footerY + footerH / 2 + 3);
   ctx.textAlign = "left";
-  ctx.font = "600 16px Arial, sans-serif";
-  const issueDate = new Date().toLocaleDateString("en-IN", { day: "2-digit", month: "2-digit", year: "numeric" });
-  ctx.fillText(issueDate, W - 190, H - 210);
-  ctx.fillText(`ID NO. ${shortIdFor(admin.email)}`, W - 190, H - 182);
-  if (studentProfile) {
-    ctx.fillText(`Roll No: ${admin.studentRoll}`, W - 190, H - 154);
-    ctx.fillText(`Branch: ${studentProfile.branch || "-"}`, W - 190, H - 126);
-  }
 
-  // 22px (not 26px) so a typical two-word name ("SAI CHANDAN") fits on one line instead of
-  // wrapping into a cramped two-line stack - wrapCanvasText still wraps longer names gracefully.
-  ctx.font = "800 22px Arial, sans-serif";
-  wrapCanvasText(ctx, (admin.name || "Volunteer").toUpperCase(), W - 190, H - 50, 178, 27, 2);
-
+  ctx.restore();
   return new Promise((resolve) => canvas.toBlob(resolve, "image/png"));
 };
+
+// Fest-activity volunteer ID cards - a distinct feature from the Admin Directory's "Event
+// Volunteer" admin-role badge above (buildVolunteerIdCardImage/admin object): these are generated
+// per fest-activity assignment (event-management-dashboard.html's "Assign Volunteers" flow), one
+// real record per {activity, student roll}, with the faculty coordinator choosing vertical or
+// horizontal per activity (activity.idCardStyle) and the assigned student downloading their own.
+// `data`: { name, rollNumber, eventTitle, shift, validFrom, validTill, photoUrl, volunteerId }.
+const buildFestVolunteerIdCardVertical = (data) =>
+  renderPortraitIdCard({
+    chipText: "VOLUNTEER",
+    orgText: "G PULLA REDDY ENGINEERING COLLEGE",
+    cardTitle: `${getFestName() || "GPREC Fest"} · Volunteer ID`,
+    cardName: data.name,
+    roleText: "Volunteer",
+    photoUrl: data.photoUrl,
+    infoFields: [
+      ["VOLUNTEER ID", data.volunteerId || "-", true],
+      ["ROLL NUMBER", data.rollNumber || "-", true],
+      ["EVENT", data.eventTitle || "-", false],
+      ["SHIFT", data.shift || "-", false]
+    ],
+    noticeHeading: "Volunteer Card",
+    noticeText: `Wear this ID at all times during duty hours. Report to ${data.venue || "the venue"} at the start of your shift.`,
+    footerLeftLabel: "Valid From",
+    footerLeftValue: data.validFrom,
+    footerRightLabel: "Valid Till",
+    footerRightValue: data.validTill
+  });
+
+// Simpler compass watermark, transcribed verbatim from "38_volunteer_id_card_horizontal.html"'s
+// `.crest-mark` svg - two rings, a cross (no diagonals), one polygon (no second faint one), one
+// center circle. 180x180 at `left:-50px;bottom:-50px;opacity:0.12` inside the left panel.
+const drawFestVolunteerHorizontalWatermark = (ctx, panelH) => {
+  const bufScale = 4;
+  const buf = document.createElement("canvas");
+  buf.width = 200 * bufScale;
+  buf.height = 200 * bufScale;
+  const bctx = buf.getContext("2d");
+  bctx.scale(bufScale, bufScale);
+  bctx.strokeStyle = "#e8821a";
+  bctx.lineWidth = 1;
+  bctx.beginPath(); bctx.arc(100, 100, 95, 0, Math.PI * 2); bctx.stroke();
+  bctx.beginPath(); bctx.arc(100, 100, 70, 0, Math.PI * 2); bctx.stroke();
+  bctx.beginPath(); bctx.moveTo(100, 5); bctx.lineTo(100, 195); bctx.stroke();
+  bctx.beginPath(); bctx.moveTo(5, 100); bctx.lineTo(195, 100); bctx.stroke();
+  bctx.fillStyle = "#e8821a";
+  bctx.beginPath();
+  bctx.moveTo(100, 20); bctx.lineTo(112, 100); bctx.lineTo(100, 180); bctx.lineTo(88, 100);
+  bctx.closePath();
+  bctx.fill();
+  bctx.beginPath(); bctx.arc(100, 100, 10, 0, Math.PI * 2); bctx.fill();
+
+  ctx.save();
+  ctx.globalAlpha = 0.12;
+  // left:-50px means the box's left edge sits 50px before the panel's own left edge (x=-50);
+  // bottom:-50px means its bottom edge sits 50px past the panel's bottom (panelH+50).
+  ctx.translate(-50, panelH + 50 - 180);
+  ctx.scale(180 / 200, 180 / 200);
+  ctx.drawImage(buf, 0, 0, 200, 200);
+  ctx.restore();
+};
+
+// Fixed CR80 card size (432x272, real ID-card proportions - unlike the other documents in this
+// file, this one doesn't grow with content since it's meant to match a physical card format), two
+// panels: navy left (logo, photo, "VOLUNTEER" tag) + cream right (name, role, info rows, validity
+// bar). Layout constants measured directly off "38_volunteer_id_card_horizontal.html"'s DOM.
+const buildFestVolunteerIdCardHorizontal = async (data) => {
+  await ensureBrandFontsLoaded();
+  const CARD_W = 432, CARD_H = 272;
+  const SCALE = 3;
+  const NAVY_DEEP = "#0a1730", NAVY = "#0f1f3d", AMBER = "#e8821a", AMBER_SOFT = "#f0a34d";
+  const CREAM = "#faf6ee", INK = "#0f1f3d", MUTED = "#6b7180";
+
+  const logoImg = new Image();
+  await new Promise((resolve) => {
+    logoImg.onload = resolve;
+    logoImg.onerror = resolve;
+    logoImg.src = gprecLogoUrl;
+  });
+  let photoImg = null;
+  if (data.photoUrl) {
+    photoImg = new Image();
+    await new Promise((resolve) => {
+      photoImg.onload = resolve;
+      photoImg.onerror = resolve;
+      photoImg.src = data.photoUrl;
+    });
+    if (!photoImg.naturalWidth) photoImg = null;
+  }
+
+  const roundedRectPath = (ctx, x, y, w, h, r) => {
+    const rr = Math.min(r, w / 2, h / 2);
+    ctx.beginPath();
+    ctx.moveTo(x + rr, y);
+    ctx.arcTo(x + w, y, x + w, y + h, rr);
+    ctx.arcTo(x + w, y + h, x, y + h, rr);
+    ctx.arcTo(x, y + h, x, y, rr);
+    ctx.arcTo(x, y, x + w, y, rr);
+    ctx.closePath();
+  };
+
+  const canvas = document.createElement("canvas");
+  canvas.width = CARD_W * SCALE;
+  canvas.height = CARD_H * SCALE;
+  const ctx = canvas.getContext("2d");
+  ctx.scale(SCALE, SCALE);
+
+  roundedRectPath(ctx, 0, 0, CARD_W, CARD_H, 16);
+  ctx.save();
+  ctx.clip();
+  ctx.fillStyle = CREAM;
+  ctx.fillRect(0, 0, CARD_W, CARD_H);
+
+  // Left panel.
+  const leftPanelW = 150;
+  const leftGrad = ctx.createLinearGradient(0, 0, leftPanelW, CARD_H);
+  leftGrad.addColorStop(0, NAVY);
+  leftGrad.addColorStop(1, NAVY_DEEP);
+  ctx.fillStyle = leftGrad;
+  ctx.fillRect(0, 0, leftPanelW, CARD_H);
+
+  ctx.save();
+  ctx.beginPath();
+  ctx.rect(0, 0, leftPanelW, CARD_H);
+  ctx.clip();
+  drawFestVolunteerHorizontalWatermark(ctx, CARD_H);
+  ctx.restore();
+
+  // Real GPREC logo, centered in the left panel, no dashed placeholder box.
+  if (logoImg.naturalWidth) {
+    const logoH = 24;
+    const logoW = (logoH * logoImg.naturalWidth) / logoImg.naturalHeight;
+    ctx.drawImage(logoImg, leftPanelW / 2 - logoW / 2, 16 + (38 - logoH) / 2, logoW, logoH);
+  }
+
+  // Photo, centered, with drop shadow (`box-shadow:0 8px 18px -6px rgba(0,0,0,0.5)`).
+  const photoW = 96, photoH = 112, photoX = leftPanelW / 2 - photoW / 2, photoY = 66;
+  ctx.save();
+  ctx.shadowColor = "rgba(0,0,0,0.5)";
+  ctx.shadowBlur = 18;
+  ctx.shadowOffsetY = 8;
+  roundedRectPath(ctx, photoX, photoY, photoW, photoH, 10);
+  ctx.fillStyle = CREAM;
+  ctx.fill();
+  ctx.restore();
+
+  roundedRectPath(ctx, photoX, photoY, photoW, photoH, 10);
+  ctx.save();
+  ctx.clip();
+  ctx.fillStyle = CREAM;
+  ctx.fillRect(photoX, photoY, photoW, photoH);
+  const photoInset = 4;
+  roundedRectPath(ctx, photoX + photoInset, photoY + photoInset, photoW - photoInset * 2, photoH - photoInset * 2, 7);
+  ctx.save();
+  ctx.clip();
+  ctx.fillStyle = "#dcd3c2";
+  ctx.fillRect(photoX, photoY, photoW, photoH);
+  if (photoImg) {
+    const innerW = photoW - photoInset * 2, innerH = photoH - photoInset * 2;
+    const coverScale = Math.max(innerW / photoImg.naturalWidth, innerH / photoImg.naturalHeight);
+    const drawW = photoImg.naturalWidth * coverScale;
+    const drawH = photoImg.naturalHeight * coverScale;
+    const cx = photoX + photoInset + innerW / 2, cy = photoY + photoInset + innerH / 2;
+    ctx.drawImage(photoImg, cx - drawW / 2, cy - drawH / 2, drawW, drawH);
+  } else {
+    ctx.fillStyle = NAVY;
+    ctx.font = "700 24px Inter";
+    ctx.textAlign = "center";
+    ctx.textBaseline = "middle";
+    const initials = (data.name || "V").split(/\s+/).filter(Boolean).slice(0, 2).map((w) => w[0]).join("").toUpperCase();
+    ctx.fillText(initials, photoX + photoW / 2, photoY + photoH / 2);
+    ctx.textBaseline = "alphabetic";
+    ctx.textAlign = "left";
+  }
+  ctx.restore();
+  ctx.restore();
+
+  // "VOLUNTEER" id-tag, bottom of the left panel.
+  const idTagY = 233.5 + 11;
+  ctx.fillStyle = "rgba(250,246,238,0.75)";
+  ctx.font = "400 8.5px 'Space Mono'";
+  if ("letterSpacing" in ctx) ctx.letterSpacing = "1.8px";
+  const idTagText = "VOLUNTEER";
+  const idTagTextW = ctx.measureText(idTagText).width;
+  const idTagIconSize = 11;
+  const idTagTotalW = idTagIconSize + 5 + idTagTextW;
+  const idTagX = leftPanelW / 2 - idTagTotalW / 2;
+  ctx.save();
+  ctx.translate(idTagX, idTagY - 8.5);
+  ctx.scale(idTagIconSize / 24, idTagIconSize / 24);
+  ctx.fillStyle = AMBER_SOFT;
+  ctx.fill(new Path2D(TICKET_ICON_PATHS.ticket));
+  ctx.restore();
+  ctx.fillStyle = "rgba(250,246,238,0.75)";
+  ctx.fillText(idTagText, idTagX + idTagIconSize + 5, idTagY);
+  if ("letterSpacing" in ctx) ctx.letterSpacing = "0px";
+
+  // Right panel.
+  const padSides = leftPanelW + 22;
+  const rightRight = CARD_W - 22;
+
+  ctx.fillStyle = AMBER;
+  ctx.font = "700 9px 'Space Mono'";
+  if ("letterSpacing" in ctx) ctx.letterSpacing = "2.2px";
+  ctx.fillText(`${(getFestName() || "GPREC FEST").toUpperCase()} · VOLUNTEER ID`, padSides, 16 + 9);
+  if ("letterSpacing" in ctx) ctx.letterSpacing = "0px";
+
+  ctx.fillStyle = INK;
+  ctx.font = "700 20px Fraunces";
+  const measureCtx = document.createElement("canvas").getContext("2d");
+  measureCtx.font = "700 20px Fraunces";
+  const nameTop = 35;
+  const nameLineH = 22.4;
+  const nameLines = canvasTextLines(measureCtx, data.name || "Volunteer", rightRight - padSides).slice(0, 2);
+  nameLines.forEach((line, i) => ctx.fillText(line, padSides, nameTop + 16 + i * nameLineH));
+  // Block height = lines x line-height, from the block's own top - matches how the mockup's own
+  // 2-line name (same "Lakkavaram Sai Chandan" test string) measured out (height:44.8 for 2 lines),
+  // not a baseline-plus-descender guess, which undercounted the second line and let the "VOLUNTEER"
+  // role label overlap it.
+  const nameBottom = nameTop + nameLines.length * nameLineH;
+
+  ctx.fillStyle = AMBER;
+  ctx.font = "700 9.5px Inter";
+  if ("letterSpacing" in ctx) ctx.letterSpacing = "1.3px";
+  ctx.fillText("VOLUNTEER", padSides, nameBottom + 4 + 9.5);
+  if ("letterSpacing" in ctx) ctx.letterSpacing = "0px";
+
+  const infoFields = [
+    ["VOLUNTEER ID", data.volunteerId || "-", true],
+    ["ROLL NUMBER", data.rollNumber || "-", true],
+    ["EVENT NAME", data.eventTitle || "-", false],
+    ["SHIFT", data.shift || "-", false]
+  ];
+  const infoTop = nameBottom + 4 + 9.5 + 10;
+  const infoRowH = 26.5;
+  infoFields.forEach(([label, value, mono], i) => {
+    const y = infoTop + i * infoRowH + infoRowH / 2 + 3;
+    ctx.fillStyle = MUTED;
+    ctx.font = "400 8.5px 'Space Mono'";
+    if ("letterSpacing" in ctx) ctx.letterSpacing = "1.5px";
+    ctx.fillText(label, padSides, y);
+    if ("letterSpacing" in ctx) ctx.letterSpacing = "0px";
+    ctx.fillStyle = INK;
+    ctx.font = mono ? "700 11.5px 'Space Mono'" : "700 12px Inter";
+    ctx.textAlign = "right";
+    ctx.fillText(value, rightRight, y);
+    ctx.textAlign = "left";
+    if (i < infoFields.length - 1) {
+      ctx.strokeStyle = "#e3ddd0";
+      ctx.lineWidth = 1;
+      ctx.setLineDash([3, 2]);
+      ctx.beginPath();
+      ctx.moveTo(padSides, infoTop + (i + 1) * infoRowH);
+      ctx.lineTo(rightRight, infoTop + (i + 1) * infoRowH);
+      ctx.stroke();
+      ctx.setLineDash([]);
+    }
+  });
+
+  const validityY = infoTop + infoFields.length * infoRowH + 8;
+  const validityH = 44.5;
+  roundedRectPath(ctx, padSides, validityY, rightRight - padSides, validityH, 8);
+  ctx.fillStyle = NAVY;
+  ctx.fill();
+  ctx.fillStyle = "rgba(250,246,238,0.55)";
+  ctx.font = "400 7px 'Space Mono'";
+  if ("letterSpacing" in ctx) ctx.letterSpacing = "1.5px";
+  ctx.fillText("VALID FROM", padSides + 14, validityY + 8 + 7);
+  ctx.textAlign = "right";
+  ctx.fillText("VALID TILL", rightRight - 14, validityY + 8 + 7);
+  ctx.textAlign = "left";
+  if ("letterSpacing" in ctx) ctx.letterSpacing = "0px";
+  ctx.fillStyle = AMBER_SOFT;
+  ctx.font = "700 10.5px 'Space Mono'";
+  if ("letterSpacing" in ctx) ctx.letterSpacing = "0.5px";
+  ctx.fillText((data.validFrom || "-").toUpperCase(), padSides + 14, validityY + 8 + 7 + 2 + 10.5);
+  ctx.textAlign = "right";
+  ctx.fillText((data.validTill || "-").toUpperCase(), rightRight - 14, validityY + 8 + 7 + 2 + 10.5);
+  ctx.textAlign = "left";
+  if ("letterSpacing" in ctx) ctx.letterSpacing = "0px";
+
+  ctx.restore();
+  return new Promise((resolve) => canvas.toBlob(resolve, "image/png"));
+};
+
+// Dispatcher: `style` is the faculty coordinator's per-activity choice (activity.idCardStyle),
+// defaulting to vertical when unset (e.g. an activity created before this option existed).
+const buildFestVolunteerIdCardImage = (data, style) =>
+  style === "horizontal" ? buildFestVolunteerIdCardHorizontal(data) : buildFestVolunteerIdCardVertical(data);
 
 if (adminDirectoryBody || addAdminButton) {
   const currentAdminEmail = (localStorage.getItem("gprecAdminEmail") || defaultAdminConfig.mainCollegeAdmin).toLowerCase();
@@ -6174,10 +6498,10 @@ const buildHallTicketPdf = async () => {
   const profile = defaultStudentProfiles[studentId];
   const statusEl = hallTicketStatus;
   const branch = profile?.branch || "CSE";
-  const schedule = getExamCellData(branch).filter(
+  const examSchedule = getExamCellData(branch).filter(
     (exam) => exam.rollFrom && exam.rollTo && studentId >= exam.rollFrom && studentId <= exam.rollTo
   );
-  if (!schedule.length) {
+  if (!examSchedule.length) {
     if (statusEl) statusEl.textContent = "Hall ticket not available yet - the exam cell hasn't published a schedule covering your roll number.";
     return null;
   }
@@ -6189,59 +6513,26 @@ const buildHallTicketPdf = async () => {
     return exam.startSeat + (Number.isFinite(offset) && offset >= 0 ? offset : 0);
   };
   const examCentreFor = (exam) => exam.location || exam.examCentre || exam.examCenter || "-";
-  const compactPdfCell = (value, maxLength = 34) => {
-    const text = String(value || "-");
-    return text.length > maxLength ? `${text.slice(0, maxLength - 3)}...` : text;
-  };
-  // Exam centre isn't shown here since it can differ per subject - it's shown per-row in the
-  // exam schedule table below instead, where a mixed-centre student sees the right one for each.
-  const identityTable = {
-    columns: [
-      { label: "Field", width: 150 },
-      { label: "Details", width: 300 }
-    ],
-    rows: [
-      ["Student Name", name],
-      ["Roll Number", studentId],
-      ["Branch", branch],
-      ["Class", profile?.className || "-"]
-    ]
-  };
-  const examTable = {
-    fontSize: 8,
-    columns: [
-      { label: "Subject", width: 116, maxLength: 23 },
-      { label: "Date", width: 62 },
-      { label: "Time", width: 92, maxLength: 18 },
-      { label: "Room", width: 44, maxLength: 8 },
-      { label: "Seat No.", width: 45 },
-      { label: "Exam Centre", width: 124, maxLength: 29 }
-    ],
-    rows: schedule.map((exam) => [
-      compactPdfCell(`${exam.code} - ${exam.subject}`, 23),
-      formatExamDate(exam.date),
-      compactPdfCell(exam.time, 18),
-      compactPdfCell(exam.room, 8),
-      String(seatFor(exam)),
-      compactPdfCell(examCentreFor(exam), 29)
-    ])
-  };
-  const table = [identityTable, examTable];
-  const footerLines = [
-    "- Candidates must carry this hall ticket along with a valid college ID to the examination hall.",
-    "- Report to the exam hall at least 30 minutes before the scheduled start time.",
-    "- Mobile phones, smart watches, and other electronic devices are strictly prohibited inside the exam hall.",
-    "- Occupy only the seat number allotted to you as shown above.",
-    "- No candidate will be permitted to enter after 15 minutes from the commencement of the exam.",
-    "- Carry only permitted stationery (blue/black pen); no textual material is allowed unless open-book.",
-    "- Any form of malpractice will lead to strict disciplinary action as per college examination rules.",
-    "- Submit the answer script to the invigilator before leaving the hall."
-  ];
+  const schedule = examSchedule.map((exam) => ({
+    subject: `${exam.code} - ${exam.subject}`,
+    date: formatExamDate(exam.date),
+    time: exam.time,
+    room: exam.room,
+    seat: String(seatFor(exam)),
+    centre: examCentreFor(exam)
+  }));
   const photoUrl = getExplicitProfilePhotoSrc(profile);
-  const pdf = await makePdfWithPhoto(
-    "GPREC Hall Ticket", [], photoUrl, name, table, footerLines, "Exam Instructions - Rules to Follow",
-    estimatePdfHeight({ table, footerLines, hasPhoto: true })
-  );
+  const card = await buildHallTicketImage({
+    ticketNo: makeShortPassId("HT", [studentId, branch]),
+    name,
+    rollNumber: studentId,
+    branch,
+    className: profile?.className,
+    dob: profile?.dob,
+    schedule,
+    photoUrl
+  });
+  const pdf = await canvasCardToPdf(card);
   return { pdf, statusEl };
 };
 
@@ -8526,36 +8817,6 @@ if (hostelAllocationBody) {
   });
 }
 
-const outingCurfewNote = (outingType) =>
-  outingType === "Weekend Outing"
-    ? "Weekend Outing: Must return to hostel before 9:00 PM."
-    : "Weekday Outing: Must return to hostel before 8:00 PM.";
-
-const makeOutpassTable = (request) => {
-  const { room, hostel } = resolveStudentRoomHostel(request.studentId, request.room, request.hostel);
-  return {
-    columns: [
-      { label: "Field", width: 150 },
-      { label: "Details", width: 320 }
-    ],
-    rows: [
-      ["Student Name", resolveStudentDisplayName(request.studentId, request.studentName)],
-      ["Roll Number", request.studentId],
-      ["Room / Hostel", `${room} | ${hostel}`],
-      ["Student Mobile", resolveStudentMobile(request.studentId, request.studentMobile)],
-      ["Parent Mobile", resolveParentMobile(request.studentId, request.parentMobile)],
-      ["Outing Type", request.outingType || "-"],
-      ["Purpose of Visit", request.reason],
-      ["Place of Visit", request.place || "-"],
-      ["Out Time", request.outTime],
-      ["In Time (Expected Return)", request.returnTime],
-      ["Approved By", request.approvedBy || "-"],
-      ["Approved On", request.approvedOn || "-"],
-      ["Status", "Approved"]
-    ]
-  };
-};
-
 // Assigns (once, then reuses) a random opaque gate-scan token on a hostel pass record, persisted
 // via the same read-all/mutate-one/save-all round trip these hostel_*_requests tables already use
 // everywhere else - no dedicated token table needed. Re-downloading the same approved pass keeps
@@ -8583,26 +8844,98 @@ const ensureHostelGateToken = (getAll, saveAll, requestId) => {
 const hostelGateScanUrl = (passType, passId, token) =>
   `${window.location.origin}/pages/hostel-gate-scan.html?type=${passType}&id=${encodeURIComponent(passId)}&t=${token}`;
 
-const downloadOutingReceipt = (request) => {
-  const outpassTitle = request.outingType === "Weekend Outing"
-    ? "GPREC Hostel Outpass - Weekend Outing"
-    : "GPREC Hostel Outpass - Weekday Outing";
-  const photoUrl = getExplicitProfilePhotoSrc(defaultStudentProfiles[request.studentId]);
+// Shield watermark, transcribed verbatim from "23_hostal outingpass.html"'s `.crest-mark` svg -
+// outer + inner shield outline, a center cross, and a center circle at a further 60% opacity per
+// the SVG's own `opacity="0.6"`. Same offscreen-buffer-then-composite-once technique as the Event
+// Pass compass (see that function's comment on why - avoids overlap-opacity stacking where the
+// cross lines and circle cross the shield outline).
+const drawHostelShieldWatermark = (ctx, cardW, stubH) => {
+  const bufScale = 4;
+  const buf = document.createElement("canvas");
+  buf.width = 200 * bufScale;
+  buf.height = 200 * bufScale;
+  const bctx = buf.getContext("2d");
+  bctx.scale(bufScale, bufScale);
+  bctx.strokeStyle = "#e8821a";
+  bctx.lineWidth = 1.2;
+  bctx.beginPath();
+  bctx.moveTo(100, 10);
+  bctx.lineTo(170, 35);
+  bctx.lineTo(170, 95);
+  bctx.bezierCurveTo(170, 145, 140, 175, 100, 195);
+  bctx.bezierCurveTo(60, 175, 30, 145, 30, 95);
+  bctx.lineTo(30, 35);
+  bctx.closePath();
+  bctx.stroke();
+  bctx.lineWidth = 1;
+  bctx.beginPath();
+  bctx.moveTo(100, 30);
+  bctx.lineTo(152, 50);
+  bctx.lineTo(152, 95);
+  bctx.bezierCurveTo(152, 133, 130, 156, 100, 172);
+  bctx.bezierCurveTo(70, 156, 48, 133, 48, 95);
+  bctx.lineTo(48, 50);
+  bctx.closePath();
+  bctx.stroke();
+  bctx.lineWidth = 0.8;
+  bctx.beginPath(); bctx.moveTo(100, 30); bctx.lineTo(100, 172); bctx.stroke();
+  bctx.beginPath(); bctx.moveTo(48, 90); bctx.lineTo(152, 90); bctx.stroke();
+  bctx.globalAlpha = 0.6;
+  bctx.fillStyle = "#e8821a";
+  bctx.beginPath(); bctx.arc(100, 90, 18, 0, Math.PI * 2); bctx.fill();
+
+  ctx.save();
+  ctx.globalAlpha = 0.14;
+  ctx.translate(cardW - 160, stubH - 160);
+  ctx.scale(220 / 200, 220 / 200);
+  ctx.drawImage(buf, 0, 0, 200, 200);
+  ctx.restore();
+};
+
+// PNG, not a PDF - matches "23_hostal outingpass.html" exactly, same treatment as
+// buildBusPassImage/buildVehiclePassImage (no PDF-only anti-fraud seal/stamp overlay).
+const buildOutingPassImage = async (request) => {
   const displayName = resolveStudentDisplayName(request.studentId, request.studentName);
-  const outpassTable = makeOutpassTable(request);
-  const outpassFooterLines = [outingCurfewNote(request.outingType)];
+  const { room, hostel } = resolveStudentRoomHostel(request.studentId, request.room, request.hostel);
   const gateToken = ensureHostelGateToken(getOutingRequests, saveOutingRequests, request.id);
+  // Real gate-scan payload (unlike Bus/Vehicle Pass's plain-text QR) - hostel passes already had
+  // this verification flow (pages/hostel-gate-scan.html) before this redesign, kept unchanged.
   const qrText = gateToken ? hostelGateScanUrl("outing", request.id, gateToken) : null;
-  makePdfWithPhoto(
-    outpassTitle, [], photoUrl, displayName, outpassTable, outpassFooterLines, "Curfew Rules",
-    estimatePdfHeight({ table: outpassTable, footerLines: outpassFooterLines, hasPhoto: true, hasQr: Boolean(qrText) }),
-    qrText
-  ).then((pdf) => {
-    const link = document.createElement("a");
-    link.href = URL.createObjectURL(pdf);
-    link.download = `gprec-outpass-${request.studentId}.pdf`;
-    link.click();
+  const passId = makeShortPassId("HO", [request.id, request.studentId]);
+  // No separate "outing date" field exists on this record (it's a same-day request) - approvedOn
+  // is the closest real date available, rather than inventing one.
+  const { canvas } = await renderTicketStubCard({
+    eyebrow: "HOSTEL · OUTING PASS",
+    scanCaption: "SCAN AT HOSTEL GATE",
+    tag: "GATE PASS",
+    tagIconPath: TICKET_ICON_PATHS.ticket,
+    qrText: qrText || passId,
+    title: "Outing Pass",
+    subtitle: `GPREC · ${hostel}`,
+    fields: [
+      { label: "PASS ID", value: passId, mono: true },
+      { label: "NAME", value: displayName },
+      { label: "ROOM / HOSTEL", value: `${room}, ${hostel}` },
+      { label: "DATE", value: request.approvedOn || "-" },
+      { label: "OUT TIME", value: request.outTime || "-", mono: true },
+      { label: "RETURN BY", value: request.returnTime || "-", mono: true },
+      { label: "DESTINATION", value: request.place || "-" },
+      { label: "STATUS", value: "Approved", status: true }
+    ],
+    footerLeft: "WARDEN APPROVED",
+    footerRight: "VALID TODAY ONLY",
+    drawBackgroundArt: drawHostelShieldWatermark,
+    showWatermark: false
   });
+  return new Promise((resolve) => canvas.toBlob(resolve, "image/png"));
+};
+
+const downloadOutingReceipt = async (request) => {
+  const image = await buildOutingPassImage(request);
+  const link = document.createElement("a");
+  link.href = URL.createObjectURL(image);
+  link.download = `gprec-outpass-${request.studentId}.png`;
+  link.click();
 };
 
 const studentOutingBody = document.querySelector("#studentOutingBody");
@@ -8775,42 +9108,50 @@ if (hostelStudentData[currentOutingStudentId]) {
   }
 }
 
-const downloadHostelLeavePass = (request) => {
+// PNG, not a PDF - same treatment as buildOutingPassImage above (no separate mockup was provided
+// for the Leave variant, so it reuses the Outing Pass's shield watermark and field-mapping
+// conventions - see the redesign plan's note on this).
+const buildHostelLeavePassImage = async (request) => {
   const displayName = resolveStudentDisplayName(request.studentId, request.studentName);
   const { room, hostel } = resolveStudentRoomHostel(request.studentId, request.room, request.hostel);
-  const table = {
-    columns: [
-      { label: "Field", width: 150 },
-      { label: "Details", width: 320 }
-    ],
-    rows: [
-      ["Student Name", displayName],
-      ["Roll Number", request.studentId],
-      ["Room / Hostel", `${room} | ${hostel}`],
-      ["Leave Type", request.leaveType],
-      ["From Date", formatExamDate(request.fromDate)],
-      ["To Date", formatExamDate(request.toDate)],
-      ["Reason", request.reason],
-      ["Parent Mobile", resolveParentMobile(request.studentId, request.parentMobile)],
-      ["Approved By", request.approvedBy || "-"],
-      ["Approved On", request.approvedOn || "-"],
-      ["Status", "Approved"]
-    ]
-  };
-  const photoUrl = getExplicitProfilePhotoSrc(defaultStudentProfiles[request.studentId]);
-  const leavePassFooterLines = ["Carry this pass along with a valid college ID during your leave period."];
   const gateToken = ensureHostelGateToken(getHostelLeaveRequests, saveHostelLeaveRequests, request.id);
   const qrText = gateToken ? hostelGateScanUrl("leave", request.id, gateToken) : null;
-  makePdfWithPhoto(
-    "GPREC Hostel Leave Pass", [], photoUrl, displayName, table, leavePassFooterLines, "Notes",
-    estimatePdfHeight({ table, footerLines: leavePassFooterLines, hasPhoto: true, hasQr: Boolean(qrText) }),
-    qrText
-  ).then((pdf) => {
-    const link = document.createElement("a");
-    link.href = URL.createObjectURL(pdf);
-    link.download = `gprec-hostel-leave-pass-${request.studentId}.pdf`;
-    link.click();
+  const passId = makeShortPassId("HL", [request.id, request.studentId]);
+  const { canvas } = await renderTicketStubCard({
+    eyebrow: "HOSTEL · LEAVE PASS",
+    scanCaption: "SCAN AT HOSTEL GATE",
+    tag: "GATE PASS",
+    tagIconPath: TICKET_ICON_PATHS.ticket,
+    qrText: qrText || passId,
+    title: "Leave Pass",
+    subtitle: `GPREC · ${hostel}`,
+    fields: [
+      { label: "PASS ID", value: passId, mono: true },
+      { label: "NAME", value: displayName },
+      { label: "ROOM / HOSTEL", value: `${room}, ${hostel}` },
+      { label: "LEAVE TYPE", value: request.leaveType || "-" },
+      { label: "FROM DATE", value: formatExamDate(request.fromDate) },
+      { label: "TO DATE", value: formatExamDate(request.toDate) },
+      // Paired with STATUS instead of its own fullWidth row - keeps this at the same 4-row/8-field
+      // shape as the Outing Pass (no separate mockup exists for the Leave variant to require
+      // otherwise), so both hostel passes come out the same overall height.
+      { label: "REASON", value: request.reason || "-" },
+      { label: "STATUS", value: "Approved", status: true }
+    ],
+    footerLeft: "WARDEN APPROVED",
+    footerRight: "CARRY VALID ID",
+    drawBackgroundArt: drawHostelShieldWatermark,
+    showWatermark: false
   });
+  return new Promise((resolve) => canvas.toBlob(resolve, "image/png"));
+};
+
+const downloadHostelLeavePass = async (request) => {
+  const image = await buildHostelLeavePassImage(request);
+  const link = document.createElement("a");
+  link.href = URL.createObjectURL(image);
+  link.download = `gprec-hostel-leave-pass-${request.studentId}.png`;
+  link.click();
 };
 
 const renderHostelLeaveTable = (bodyEl, emptyEl, studentId, onChange) => {
@@ -12423,21 +12764,6 @@ const numberToWordsInr = (amount) => {
   return `${parts.join(" ")} Rupees Only`;
 };
 
-// Turns a flat array of "Label: Value" strings (the shape most receipt/certificate PDFs already
-// built their content in) into a two-column {columns, rows} table for makePdfWithPhoto/
-// makeSimplePdf - so dynamically-built lines (e.g. a certificate application's variable set of
-// form fields) still render as a real bordered table instead of a flat text list.
-const linesToTable = (lines, columnLabels = ["Field", "Value"]) => ({
-  columns: [
-    { label: columnLabels[0], width: 220 },
-    { label: columnLabels[1], width: 260 }
-  ],
-  rows: lines.map((line) => {
-    const idx = line.indexOf(": ");
-    return idx === -1 ? [line, ""] : [line.slice(0, idx), line.slice(idx + 2)];
-  })
-});
-
 // Renders the "Udaan 2K26" reference payment-receipt design onto a canvas (cream card, navy
 // header band, itemized payment table, total bar, amount-in-words, signature line, footer note),
 // same template-pixel-unit approach as buildEventTicketImage. Every "GPREC Payment Receipt"
@@ -12447,6 +12773,17 @@ const linesToTable = (lines, columnLabels = ["Field", "Value"]) => ({
 // one payable item, amount) out of that same array, so no caller needs to change.
 const buildPaymentReceiptImage = async (title, receiptLines) => {
   await ensureBrandFontsLoaded();
+
+  // Same faint college-seal watermark + diagonal "OFFICIAL DOCUMENT" stamp every other official
+  // PDF in this app gets via makePdfWithPhoto (Hostel Leave Pass, Vehicle Pass, Hall Ticket, ...)
+  // - carried over here so switching the receipt to a canvas-rendered image didn't silently drop
+  // that authenticity cue.
+  const sealImg = new Image();
+  await new Promise((resolve) => {
+    sealImg.onload = resolve;
+    sealImg.onerror = resolve;
+    sealImg.src = gprecSealUrl;
+  });
 
   const fields = {};
   receiptLines.filter((line) => !line.startsWith("Note:")).forEach((line) => {
@@ -12461,7 +12798,7 @@ const buildPaymentReceiptImage = async (title, receiptLines) => {
   const paymentTime = fields["Payment Time"] || "-";
   const description = fields["Application"] || fields["Event"] || fields["Fee Type"] || title;
   const amountRaw = fields["Amount Paid"] || fields["Registration Fee"] || "Rs. 0";
-  const amountNum = Number(String(amountRaw).replace(/[^\d.]/g, "")) || 0;
+  const amountNum = Number(String(amountRaw).replace(/rs\.?/gi, "").replace(/[^\d.]/g, "")) || 0;
   const status = fields["Payment Status"] || "Paid";
 
   const receiptNo = (() => {
@@ -12540,6 +12877,28 @@ const buildPaymentReceiptImage = async (title, receiptLines) => {
   ctx.fillStyle = CREAM;
   ctx.fillRect(0, 0, CARD_W, totalH);
 
+  // Faint centered seal watermark, sized proportionally to the card like the PDF version was.
+  if (sealImg.naturalWidth) {
+    const sealH = totalH * 0.62;
+    const sealW = sealH * (sealImg.naturalWidth / sealImg.naturalHeight);
+    ctx.save();
+    ctx.globalAlpha = 0.06;
+    ctx.drawImage(sealImg, (CARD_W - sealW) / 2, (totalH - sealH) / 2, sealW, sealH);
+    ctx.restore();
+  }
+  // Diagonal "OFFICIAL DOCUMENT" stamp - real text is fine here (unlike the PDF version, which
+  // rasterized it specifically so it couldn't be selected/copied separately from the page; this
+  // whole receipt is already a flattened image, so that concern doesn't apply).
+  ctx.save();
+  ctx.globalAlpha = 0.07;
+  ctx.translate(CARD_W / 2, totalH / 2);
+  ctx.rotate(-Math.PI / 6);
+  ctx.fillStyle = NAVY;
+  ctx.font = "700 30px Arial, sans-serif";
+  ctx.textAlign = "center";
+  ctx.fillText("GPREC - OFFICIAL DOCUMENT", 0, 0);
+  ctx.restore();
+
   // ----- Header band -----
   const headGrad = ctx.createLinearGradient(0, 0, CARD_W * 0.6, headH);
   headGrad.addColorStop(0, NAVY);
@@ -12557,7 +12916,7 @@ const buildPaymentReceiptImage = async (title, receiptLines) => {
   ctx.textAlign = "right";
   ctx.fillStyle = AMBER_SOFT;
   ctx.font = "700 10.5px 'Space Mono'";
-  ctx.fillText(letterSpaced("RECEIPT NO.", 1);, CARD_W - padSides, 34);
+  ctx.fillText(letterSpaced("RECEIPT NO.", 1), CARD_W - padSides, 34);
   ctx.fillStyle = CREAM;
   ctx.font = "700 13px 'Space Mono'";
   ctx.fillText(receiptNo, CARD_W - padSides, 52);
@@ -12672,7 +13031,9 @@ const buildPaymentReceiptImage = async (title, receiptLines) => {
   ctx.textAlign = "left";
 
   ctx.restore();
-  return canvas;
+  // pageWidth/pageHeight (points) travel with the canvas so the PDF wrapper never has to guess a
+  // pixels-per-point density from canvas.width/height alone - it just gets told directly.
+  return { canvas, pageWidth: CARD_W, pageHeight: totalH };
 };
 
 // Minimal single-page, single-image PDF - much smaller than buildSinglePagePdf (which also
@@ -12680,7 +13041,7 @@ const buildPaymentReceiptImage = async (title, receiptLines) => {
 // rendered canvas image, not real PDF text. One full-bleed JPEG XObject, page-sized to match the
 // image's own aspect ratio (in points, 1:1 with the canvas's template-pixel units - same "compact
 // page, not A4" approach buildSinglePagePdf already uses for challan-sized documents).
-const buildImageOnlyPdf = (jpegBytes, pageWidth, pageHeight) => {
+const buildImageOnlyPdf = (jpegBytes, pixelWidth, pixelHeight, pageWidth, pageHeight) => {
   const chunks = [];
   let position = 0;
   const offsets = [0];
@@ -12708,7 +13069,7 @@ const buildImageOnlyPdf = (jpegBytes, pageWidth, pageHeight) => {
     `<< /Type /Page /Parent 2 0 R /MediaBox [0 0 ${pageWidth} ${pageHeight}] /Resources << /XObject << /Im1 4 0 R >> >> /Contents 5 0 R >>\nendobj\n`
   );
   beginObj(4);
-  pushText(`<< /Type /XObject /Subtype /Image /Width ${pageWidth * 4} /Height ${pageHeight * 4} /ColorSpace /DeviceRGB /BitsPerComponent 8 /Filter /DCTDecode /Length ${jpegBytes.length} >>\nstream\n`);
+  pushText(`<< /Type /XObject /Subtype /Image /Width ${pixelWidth} /Height ${pixelHeight} /ColorSpace /DeviceRGB /BitsPerComponent 8 /Filter /DCTDecode /Length ${jpegBytes.length} >>\nstream\n`);
   pushBytes(jpegBytes);
   pushText("\nendstream\nendobj\n");
   beginObj(5);
@@ -12733,7 +13094,7 @@ const buildImageOnlyPdf = (jpegBytes, pageWidth, pageHeight) => {
 // single-image PDF (buildImageOnlyPdf) so it's still a downloadable "receipt.pdf" - trades the
 // old table-based PDF's selectable/searchable text for an exact match to that reference design.
 const makeReceiptPdf = async (title, receiptLines) => {
-  const canvas = await buildPaymentReceiptImage(title, receiptLines);
+  const { canvas, pageWidth, pageHeight } = await buildPaymentReceiptImage(title, receiptLines);
   const jpegBytes = await new Promise((resolve, reject) => {
     canvas.toBlob(
       (blob) => {
@@ -12747,26 +13108,367 @@ const makeReceiptPdf = async (title, receiptLines) => {
       0.95
     );
   });
-  // canvas.width/height are already SCALE-multiplied template-pixel units (see
-  // buildPaymentReceiptImage) - dividing by 4 (the max SCALE used there) isn't right in general,
-  // so derive the PDF's point size from the canvas's own pixel size and a fixed 4px-per-point
-  // density instead of hardcoding the caller's internal SCALE constant here.
-  const pageWidth = canvas.width / 4;
-  const pageHeight = canvas.height / 4;
-  return buildImageOnlyPdf(jpegBytes, pageWidth, pageHeight);
+  return buildImageOnlyPdf(jpegBytes, canvas.width, canvas.height, pageWidth, pageHeight);
 };
+
+const SEMESTER_YEAR_LABELS = {
+  "I Semester": "1st Yr", "II Semester": "1st Yr",
+  "III Semester": "2nd Yr", "IV Semester": "2nd Yr",
+  "V Semester": "3rd Yr", "VI Semester": "3rd Yr",
+  "VII Semester": "4th Yr", "VIII Semester": "4th Yr"
+};
+
+// Portrait ID-card canvas matching "28_temp_id_card.html": navy gradient header with a circular
+// photo overlapping the header/body seam, cream body with a role pill + 2x2 info grid, a red
+// reissue-notice box, navy footer. `fields`: { rollNumber, branch, semester, bloodGroup, issued,
+// validUntil }.
+// Compass watermark, transcribed verbatim from "28_temp_id_card.html"'s `.crest-mark` svg - same
+// shape as the Event Pass's compass (see that function's comment on the offscreen-buffer
+// technique this reuses to avoid overlap-opacity stacking), but its own size/position/opacity:
+// 190x190 at `right:-56px;top:-40px;opacity:0.12` inside the `.head` box.
+const drawTempIdCompassWatermark = (ctx, headW) => {
+  const bufScale = 4;
+  const buf = document.createElement("canvas");
+  buf.width = 200 * bufScale;
+  buf.height = 200 * bufScale;
+  const bctx = buf.getContext("2d");
+  bctx.scale(bufScale, bufScale);
+  bctx.strokeStyle = "#e8821a";
+  bctx.lineWidth = 1;
+  bctx.beginPath(); bctx.arc(100, 100, 95, 0, Math.PI * 2); bctx.stroke();
+  bctx.beginPath(); bctx.arc(100, 100, 70, 0, Math.PI * 2); bctx.stroke();
+  bctx.beginPath(); bctx.moveTo(100, 5); bctx.lineTo(100, 195); bctx.stroke();
+  bctx.beginPath(); bctx.moveTo(5, 100); bctx.lineTo(195, 100); bctx.stroke();
+  bctx.beginPath(); bctx.moveTo(30, 30); bctx.lineTo(170, 170); bctx.stroke();
+  bctx.beginPath(); bctx.moveTo(170, 30); bctx.lineTo(30, 170); bctx.stroke();
+  bctx.fillStyle = "#e8821a";
+  bctx.beginPath();
+  bctx.moveTo(100, 20); bctx.lineTo(112, 100); bctx.lineTo(100, 180); bctx.lineTo(88, 100);
+  bctx.closePath();
+  bctx.fill();
+  bctx.globalAlpha = 0.6;
+  bctx.beginPath();
+  bctx.moveTo(20, 100); bctx.lineTo(100, 88); bctx.lineTo(180, 100); bctx.lineTo(100, 112);
+  bctx.closePath();
+  bctx.fill();
+  bctx.globalAlpha = 1;
+  bctx.beginPath(); bctx.arc(100, 100, 10, 0, Math.PI * 2); bctx.fill();
+
+  ctx.save();
+  ctx.globalAlpha = 0.12;
+  // right:-56px means the box's right edge sits 56px past the head's own right edge, so its
+  // left edge = headW + 56 - 190 (box width); top:-40px means its top edge sits 40px above y=0.
+  ctx.translate(headW + 56 - 190, -40);
+  ctx.scale(190 / 200, 190 / 200);
+  ctx.drawImage(buf, 0, 0, 200, 200);
+  ctx.restore();
+};
+
+// PNG, not a PDF - matches "28_temp_id_card.html" exactly, same treatment as the ticket-stub
+// family's PNG conversions (no PDF-only anti-fraud seal/stamp overlay - the mockup's own compass
+// watermark replaces it). Layout constants below were measured directly off the live-rendered
+// mockup DOM (getBoundingClientRect), same verification approach as the ticket-stub family after
+// the earlier hand-derived numbers proved unreliable.
+// Shared portrait ID-card scaffold (navy header with compass watermark + logo/chip, rectangular
+// photo overlapping the seam, name+role, dashed-underline info rows, amber notice box, two-column
+// navy footer) - the shape behind both "28_temp_id_card.html" and "29_volunteer_id_card.html",
+// which turned out to be pixel-identical in structure once redesigned, differing only in copy.
+// All layout constants were measured directly off the live mockup DOM (getBoundingClientRect).
+const renderPortraitIdCard = async ({
+  chipText, orgText, cardTitle, cardName, roleText, photoUrl, infoFields,
+  noticeHeading, noticeText, footerLeftLabel, footerLeftValue, footerRightLabel, footerRightValue
+}) => {
+  await ensureBrandFontsLoaded();
+  const CARD_W = 360;
+  const SCALE = 2.4;
+  const NAVY_DEEP = "#0a1730", NAVY = "#0f1f3d", AMBER = "#e8821a", AMBER_SOFT = "#f0a34d";
+  const CREAM = "#faf6ee", INK = "#0f1f3d", MUTED = "#6b7180";
+
+  const logoImg = new Image();
+  await new Promise((resolve) => {
+    logoImg.onload = resolve;
+    logoImg.onerror = resolve;
+    logoImg.src = gprecLogoUrl;
+  });
+  let photoImg = null;
+  if (photoUrl) {
+    photoImg = new Image();
+    await new Promise((resolve) => {
+      photoImg.onload = resolve;
+      photoImg.onerror = resolve;
+      photoImg.src = photoUrl;
+    });
+    if (!photoImg.naturalWidth) photoImg = null;
+  }
+
+  const roundedRectPath = (ctx, x, y, w, h, r) => {
+    const rr = Math.min(r, w / 2, h / 2);
+    ctx.beginPath();
+    ctx.moveTo(x + rr, y);
+    ctx.arcTo(x + w, y, x + w, y + h, rr);
+    ctx.arcTo(x + w, y + h, x, y + h, rr);
+    ctx.arcTo(x, y + h, x, y, rr);
+    ctx.arcTo(x, y, x + w, y, rr);
+    ctx.closePath();
+  };
+
+  // ----- Layout (template-pixel units, measured off the mockup DOM) -----
+  const padSides = 24;
+  const headH = 187;
+  const identityTop = headH - 42;
+  const photoW = 92, photoH = 110;
+  const whoTop = identityTop + photoH + 14;
+  const nameH = 26.5;
+  const roleTop = whoTop + nameH + 5;
+  const detailsTop = whoTop + nameH + 13 + 13;
+  const rowH = 38;
+  const measureCtx = document.createElement("canvas").getContext("2d");
+  const gridBottom = detailsTop + rowH * infoFields.length;
+  const noticeY = gridBottom + 16;
+  measureCtx.font = "400 11.5px Inter";
+  const noticeLines = canvasTextLines(measureCtx, noticeText || "-", CARD_W - padSides * 2 - 24 - 14);
+  const noticeH = 12 + 13 + 4 + noticeLines.length * 16 + 12;
+  const footerY = noticeY + noticeH + 20;
+  const footerH = 61.5;
+  const totalH = footerY + footerH;
+
+  const canvas = document.createElement("canvas");
+  canvas.width = CARD_W * SCALE;
+  canvas.height = totalH * SCALE;
+  const ctx = canvas.getContext("2d");
+  ctx.scale(SCALE, SCALE);
+
+  roundedRectPath(ctx, 0, 0, CARD_W, totalH, 24);
+  ctx.save();
+  ctx.clip();
+  ctx.fillStyle = CREAM;
+  ctx.fillRect(0, 0, CARD_W, totalH);
+
+  // Header.
+  const headGrad = ctx.createLinearGradient(0, 0, CARD_W * 0.75, headH);
+  headGrad.addColorStop(0, NAVY);
+  headGrad.addColorStop(1, NAVY_DEEP);
+  ctx.fillStyle = headGrad;
+  ctx.fillRect(0, 0, CARD_W, headH);
+
+  ctx.save();
+  ctx.beginPath();
+  ctx.rect(0, 0, CARD_W, headH);
+  ctx.clip();
+  drawTempIdCompassWatermark(ctx, CARD_W);
+  ctx.restore();
+
+  // Logo and chip share one vertical center (the original 42px-tall logo-slot box's own center)
+  // so they read as "the same level" - same fix as the ticket-stub family's header row.
+  const headRowCenterY = 22 + 42 / 2;
+
+  // Real GPREC logo, left - matches the mockup's `.logo-slot` position, no dashed placeholder box.
+  if (logoImg.naturalWidth) {
+    const logoH = 28;
+    const logoW = (logoH * logoImg.naturalWidth) / logoImg.naturalHeight;
+    ctx.drawImage(logoImg, padSides, headRowCenterY - logoH / 2, logoW, logoH);
+  }
+
+  // Chip, top right (text varies: "TEMPORARY" / "VOLUNTEER").
+  ctx.fillStyle = CREAM;
+  ctx.font = "400 10px 'Space Mono'";
+  if ("letterSpacing" in ctx) ctx.letterSpacing = "2px";
+  const chipTextW = ctx.measureText(chipText).width;
+  const chipIconSize = 13;
+  const chipRightEdge = CARD_W - padSides;
+  const chipBaselineY = headRowCenterY + 3.5;
+  ctx.save();
+  ctx.translate(chipRightEdge - chipTextW - 5 - chipIconSize, headRowCenterY - chipIconSize / 2);
+  ctx.scale(chipIconSize / 24, chipIconSize / 24);
+  ctx.fillStyle = AMBER_SOFT;
+  ctx.fill(new Path2D(TICKET_ICON_PATHS.ticket));
+  ctx.restore();
+  ctx.fillStyle = CREAM;
+  ctx.textAlign = "right";
+  ctx.fillText(chipText, chipRightEdge, chipBaselineY);
+  if ("letterSpacing" in ctx) ctx.letterSpacing = "0px";
+  ctx.textAlign = "left";
+
+  // Org name + card title, left-aligned (not centered, unlike the ticket-stub family's headers).
+  ctx.fillStyle = AMBER_SOFT;
+  ctx.font = "700 11px Inter";
+  if ("letterSpacing" in ctx) ctx.letterSpacing = "1.8px";
+  ctx.fillText(orgText, padSides, 82 + 10);
+  if ("letterSpacing" in ctx) ctx.letterSpacing = "0px";
+  ctx.fillStyle = CREAM;
+  ctx.font = "600 23px Fraunces";
+  ctx.fillText(cardTitle, padSides, 100 + 20);
+
+  // Rectangular photo (not circular), overlapping the header/body seam, left-aligned. Drop shadow
+  // (`box-shadow:0 12px 24px -8px rgba(0,0,0,0.4)`) drawn as its own pass first - shadow needs to
+  // sit behind the box's cream fill, and canvas shadows apply to every subsequent fill/stroke
+  // until cleared, which would incorrectly shadow the photo image itself too if left on.
+  ctx.save();
+  ctx.shadowColor = "rgba(0,0,0,0.4)";
+  ctx.shadowBlur = 24;
+  ctx.shadowOffsetY = 12;
+  roundedRectPath(ctx, padSides, identityTop, photoW, photoH, 14);
+  ctx.fillStyle = CREAM;
+  ctx.fill();
+  ctx.restore();
+
+  roundedRectPath(ctx, padSides, identityTop, photoW, photoH, 14);
+  ctx.save();
+  ctx.clip();
+  ctx.fillStyle = CREAM;
+  ctx.fillRect(padSides, identityTop, photoW, photoH);
+  const photoInset = 5;
+  roundedRectPath(ctx, padSides + photoInset, identityTop + photoInset, photoW - photoInset * 2, photoH - photoInset * 2, 10);
+  ctx.save();
+  ctx.clip();
+  ctx.fillStyle = "#dcd3c2";
+  ctx.fillRect(padSides, identityTop, photoW, photoH);
+  if (photoImg) {
+    const innerW = photoW - photoInset * 2, innerH = photoH - photoInset * 2;
+    const coverScale = Math.max(innerW / photoImg.naturalWidth, innerH / photoImg.naturalHeight);
+    const drawW = photoImg.naturalWidth * coverScale;
+    const drawH = photoImg.naturalHeight * coverScale;
+    const cx = padSides + photoInset + innerW / 2, cy = identityTop + photoInset + innerH / 2;
+    ctx.drawImage(photoImg, cx - drawW / 2, cy - drawH / 2, drawW, drawH);
+  } else {
+    ctx.fillStyle = NAVY;
+    ctx.font = "700 26px Inter";
+    ctx.textAlign = "center";
+    ctx.textBaseline = "middle";
+    const initials = (cardName || "S").split(/\s+/).filter(Boolean).slice(0, 2).map((w) => w[0]).join("").toUpperCase();
+    ctx.fillText(initials, padSides + photoW / 2, identityTop + photoH / 2);
+    ctx.textBaseline = "alphabetic";
+    ctx.textAlign = "left";
+  }
+  ctx.restore();
+  ctx.restore();
+
+  // Name + role, below the photo (not beside it), left-aligned. `text-transform:uppercase` in the
+  // mockup's `.role` class applies regardless of the source string's own case.
+  ctx.fillStyle = INK;
+  ctx.font = "700 23px Fraunces";
+  ctx.fillText(cardName || "Student", padSides, whoTop + 21);
+  ctx.fillStyle = AMBER;
+  ctx.font = "700 11px Inter";
+  if ("letterSpacing" in ctx) ctx.letterSpacing = "1.5px";
+  ctx.fillText((roleText || "Student").toUpperCase(), padSides, roleTop + 9);
+  if ("letterSpacing" in ctx) ctx.letterSpacing = "0px";
+
+  // Info rows: label left, value right, same baseline, dashed divider under each row (except last).
+  infoFields.forEach(([label, value, mono], i) => {
+    const y = detailsTop + i * rowH + rowH / 2 + 4;
+    ctx.fillStyle = MUTED;
+    ctx.font = "400 9px 'Space Mono'";
+    if ("letterSpacing" in ctx) ctx.letterSpacing = "1.8px";
+    ctx.fillText(label, padSides, y);
+    if ("letterSpacing" in ctx) ctx.letterSpacing = "0px";
+    ctx.fillStyle = INK;
+    ctx.font = mono ? "700 13px 'Space Mono'" : "700 14px Inter";
+    ctx.textAlign = "right";
+    ctx.fillText(value, CARD_W - padSides, y);
+    ctx.textAlign = "left";
+    if (i < infoFields.length - 1) {
+      ctx.strokeStyle = "#e3ddd0";
+      ctx.lineWidth = 1;
+      ctx.setLineDash([3, 2]);
+      ctx.beginPath();
+      ctx.moveTo(padSides, detailsTop + (i + 1) * rowH);
+      ctx.lineTo(CARD_W - padSides, detailsTop + (i + 1) * rowH);
+      ctx.stroke();
+      ctx.setLineDash([]);
+    }
+  });
+
+  // Notice box: amber-tinted, left accent border. CSS `border-left:4px` on an element that also
+  // has `border-radius:10px` curves smoothly into the rounded corner - a plain fillRect strip has
+  // square corners that clash with that curve, so clip the strip to the box's own rounded path.
+  roundedRectPath(ctx, padSides, noticeY, CARD_W - padSides * 2, noticeH, 10);
+  ctx.fillStyle = "rgba(232,130,26,0.08)";
+  ctx.fill();
+  ctx.strokeStyle = "rgba(232,130,26,0.35)";
+  ctx.lineWidth = 1;
+  ctx.stroke();
+  ctx.save();
+  roundedRectPath(ctx, padSides, noticeY, CARD_W - padSides * 2, noticeH, 10);
+  ctx.clip();
+  ctx.fillStyle = AMBER;
+  ctx.fillRect(padSides, noticeY, 4, noticeH);
+  ctx.restore();
+  ctx.fillStyle = AMBER;
+  ctx.font = "700 9px 'Space Mono'";
+  if ("letterSpacing" in ctx) ctx.letterSpacing = "1.8px";
+  ctx.fillText(noticeHeading.toUpperCase(), padSides + 14, noticeY + 12 + 9);
+  if ("letterSpacing" in ctx) ctx.letterSpacing = "0px";
+  ctx.fillStyle = INK;
+  ctx.font = "400 11.5px Inter";
+  noticeLines.forEach((line, i) => ctx.fillText(line, padSides + 14, noticeY + 12 + 13 + 4 + 12 + i * 16));
+
+  // Footer: two columns.
+  ctx.fillStyle = NAVY;
+  ctx.fillRect(0, footerY, CARD_W, footerH);
+  ctx.fillStyle = "rgba(250,246,238,0.55)";
+  ctx.font = "400 8.5px 'Space Mono'";
+  if ("letterSpacing" in ctx) ctx.letterSpacing = "1.8px";
+  ctx.fillText(footerLeftLabel.toUpperCase(), padSides, footerY + 14 + 9);
+  ctx.textAlign = "right";
+  ctx.fillText(footerRightLabel.toUpperCase(), CARD_W - padSides, footerY + 14 + 9);
+  ctx.textAlign = "left";
+  if ("letterSpacing" in ctx) ctx.letterSpacing = "0px";
+  ctx.fillStyle = AMBER_SOFT;
+  ctx.font = "700 12px 'Space Mono'";
+  if ("letterSpacing" in ctx) ctx.letterSpacing = "1px";
+  ctx.fillText((footerLeftValue || "-").toUpperCase(), padSides, footerY + 14 + 9 + 3 + 12);
+  ctx.textAlign = "right";
+  ctx.fillText((footerRightValue || "-").toUpperCase(), CARD_W - padSides, footerY + 14 + 9 + 3 + 12);
+  ctx.textAlign = "left";
+  if ("letterSpacing" in ctx) ctx.letterSpacing = "0px";
+
+  ctx.restore();
+  return new Promise((resolve) => canvas.toBlob(resolve, "image/png"));
+};
+
+const buildTempIdCardImage = (fields, photoUrl, cardName) =>
+  renderPortraitIdCard({
+    chipText: "TEMPORARY",
+    orgText: "G PULLA REDDY ENGINEERING COLLEGE",
+    cardTitle: "Student ID Card",
+    cardName,
+    roleText: "Student",
+    photoUrl,
+    infoFields: [
+      ["ID NO.", `ST-${fields.rollNumber || "-"}`, true],
+      ["DEPARTMENT", fields.branch || "-", false],
+      ["COURSE", fields.course || "B.Tech", false],
+      ["YEAR OF STUDY", fields.periodOfStudy || "-", false],
+      ["BLOOD GROUP", fields.bloodGroup || "-", false]
+    ],
+    noticeHeading: "Replacement Card",
+    noticeText: fields.noticeText || "-",
+    footerLeftLabel: "Issued",
+    footerLeftValue: fields.issued,
+    footerRightLabel: "Valid Till",
+    footerRightValue: fields.validUntil
+  });
 
 // Temp ID Card lines are built as field rows, then a blank-string separator, then a plain-English
 // disclaimer - same convention used elsewhere in this file for "table rows then footer text".
-const makeTempIdCardPdf = (lines, photoUrl, cardName) => {
-  const blankIndex = lines.indexOf("");
-  const tableLines = blankIndex === -1 ? lines : lines.slice(0, blankIndex);
-  const footerLines = blankIndex === -1 ? [] : lines.slice(blankIndex + 1);
-  const table = linesToTable(tableLines);
-  return makePdfWithPhoto(
-    "GPREC Temporary ID Card", [], photoUrl, cardName, table, footerLines, "Notes",
-    estimatePdfHeight({ table, footerLines, hasPhoto: true })
-  );
+// Signature/call sites unchanged - only the drawing (now buildTempIdCardImage, PNG-based to
+// match the reference design exactly, same as the ticket-stub family) changed underneath.
+const buildTempIdCardPng = async (lines, photoUrl, cardName) => {
+  const fields = {};
+  lines.forEach((line) => {
+    const idx = line.indexOf(": ");
+    if (idx !== -1) fields[line.slice(0, idx)] = line.slice(idx + 2);
+  });
+  return buildTempIdCardImage({
+    rollNumber: fields["Roll Number"],
+    branch: fields["Branch"],
+    periodOfStudy: fields["Period of Study"],
+    bloodGroup: fields["Blood Group"],
+    issued: fields["Issued"],
+    validUntil: fields["Valid Until"],
+    noticeText: `Original ID reported lost. Issued ${fields["Issued"] || "-"}, valid until the permanent card is reissued by the college office. Carry along with a valid photo proof.`
+  }, photoUrl, cardName);
 };
 
 // Vehicle Pass: gated behind admin approval (see #vehicle-pass in student/faculty dashboards),
@@ -12957,232 +13659,178 @@ const buildSinglePagePdf = (contentBytes, images = {}, pageWidth = 595, pageHeig
 // garbage (or nothing), which is worse than not having one. Instead each copy shows a generated
 // reference number as plain text (same YYMMDDHHMMSS shape as the real SNO) - it is NOT looked up
 // in the college's own system, since it was never submitted there.
+// Generates the same 3 staggered copies (College/Student/Bank) as before - only the drawing
+// (now buildFeeChallanImage, matching "33_gprec_fee_challan.html") changed. refNumber/today are
+// still our own generated reference number (not looked up in any real bank system), same as
+// the original comment on this function already noted.
 const makeChallanPdfs = async (name, rollNo, purposeLabel, amountNumber, amountWords) => {
-  const escapePdf = (value) => String(value).replace(/[\\()]/g, "\\$&");
-  // A real bank challan slip is a short, wide receipt, not a full A4 sheet - sized to just fit
-  // this document's actual content (header band + 10 lines) with a sensible margin, instead of
-  // the full-page 595x842 every other PDF in this app uses.
-  const pageWidth = 595;
-  // Trimmed so the page's bottom edge sits right at the closing double-rule (drawn after "Scroll
-  // No. Cash" below) with only a small margin - not the extra blank space a taller page would
-  // leave hanging below the content.
-  const pageHeight = 390;
-  const left = 60;
-  const right = 535;
-  const center = (left + right) / 2;
-  const textWidth = (value, size) => value.length * size * 0.5;
-
   const pad2 = (n) => String(n).padStart(2, "0");
   const now = new Date();
   const refNumber = `${pad2(now.getFullYear() % 100)}${pad2(now.getMonth() + 1)}${pad2(now.getDate())}${pad2(now.getHours())}${pad2(now.getMinutes())}${pad2(now.getSeconds())}`;
   const today = now.toLocaleDateString("en-IN", { day: "2-digit", month: "short", year: "numeric" });
 
-  // Loaded once and reused across all three copies. These are the original GPREC artwork assets,
-  // embedded at a higher PDF pixel density/quality so the logos stay closer to the source art.
-  let logoBytes = null;
-  let logoPixelWidth = 0;
-  let logoPixelHeight = 0;
-  try {
-    const logo = await loadImageAsJpegBytes(gprecLogoUrl, 154, 42, "#04284a", 4, 0.98);
-    logoBytes = logo.bytes;
-    logoPixelWidth = logo.pixelWidth;
-    logoPixelHeight = logo.pixelHeight;
-  } catch {
-    logoBytes = null;
-  }
-  let sealBytes = null;
-  let sealPixelWidth = 0;
-  let sealPixelHeight = 0;
-  try {
-    const seal = await loadImageAsJpegBytes(gprecSealUrl, 140, 150, "#ffffff", 4, 0.98);
-    sealBytes = seal.bytes;
-    sealPixelWidth = seal.pixelWidth;
-    sealPixelHeight = seal.pixelHeight;
-  } catch {
-    sealBytes = null;
-  }
-  let stampBytes = null;
-  let stampSize = 0;
-  try {
-    const stamp = await renderTextStampJpegBytes("GPREC - OFFICIAL DOCUMENT");
-    stampBytes = stamp.bytes;
-    stampSize = stamp.size;
-  } catch {
-    stampBytes = null;
-  }
-  const images = { logoBytes, logoPixelWidth, logoPixelHeight, sealBytes, sealPixelWidth, sealPixelHeight, stampBytes, stampSize };
-
-  const renderCopyPage = (label) => {
-    const contentLines = [];
-    // Faint centered original seal watermark, first in the stream so the header band/text
-    // naturally paint over it, then the diagonal "OFFICIAL DOCUMENT" stamp.
-    const watermarkWidth = 140;
-    const watermarkHeight = 150;
-    if (sealBytes) {
-      contentLines.push("q", "/GS1 gs", `${watermarkWidth} 0 0 ${watermarkHeight} ${(pageWidth - watermarkWidth) / 2} ${(pageHeight - watermarkHeight) / 2} cm`, "/ImSeal Do", "Q");
-    }
-    const stampRenderSize = Math.min(stampSize, 230);
-    if (stampBytes) {
-      contentLines.push("q", "/GS2 gs", `${stampRenderSize} 0 0 ${stampRenderSize} ${(pageWidth - stampRenderSize) / 2} ${(pageHeight - stampRenderSize) / 2} cm`, "/ImStamp Do", "Q");
-    }
-
-    // Branded header band - same navy bar + logo treatment as every other official PDF in this
-    // app, with the title where makePdfWithPhoto would put it.
-    const headerHeight = 70;
-    const headerBottom = pageHeight - headerHeight;
-    contentLines.push("q", `${pdfNavyColor} rg`, `0 ${headerBottom} ${pageWidth} ${headerHeight} re`, "f", "Q");
-    contentLines.push(...pdfHeaderAccentLineOps(pageWidth, headerBottom));
-    if (logoBytes) {
-      contentLines.push("q", `154 0 0 42 20 ${headerBottom + (headerHeight - 42) / 2} cm`, "/ImLogo Do", "Q");
-    } else {
-      contentLines.push("BT", "1 1 1 rg", "/F2 20 Tf", `20 ${headerBottom + headerHeight / 2 - 7} Td`, "(GPREC) Tj", "ET");
-    }
-    contentLines.push("BT", `${pdfNavyColor} rg`, "/F2 17 Tf", `202 ${headerBottom - 40} Td`, "(GPREC Fee Challan) Tj", "ET", "0 0 0 rg");
-
-    const text = (value, x, y, size = 10, bold = true) => {
-      contentLines.push("BT", `/${bold ? "F2" : "F1"} ${size} Tf`, `${x} ${y} Td`, `(${escapePdf(value)}) Tj`, "ET");
-    };
-    const centered = (value, y, size = 11) => text(value, center - textWidth(value, size) / 2, y, size);
-    const rightAligned = (value, y, size = 10) => text(value, right - textWidth(value, size), y, size);
-    // Draws a left-to-right run of segments on one line. A segment with `underlineWidth` gets a
-    // FIXED-length blank line of that width (matching the real slip's fixed-length blank rules,
-    // e.g. "Rs. ____________ /- (Rupees ____...____ Only)") with its text written at the start of
-    // that blank, rather than an underline sized to hug the text - the cursor still advances by
-    // the fixed width so later segments land in the same place regardless of value length.
-    const row = (segments, y, size = 10) => {
-      let x = left;
-      segments.forEach((segment) => {
-        // Large amounts (lakhs/crores) spell out to long strings - shrink just that segment's
-        // font so it still fits its fixed blank width instead of overflowing into the next
-        // segment; short/typical amounts render at the normal size. The 0.82 factor is a safety
-        // margin: textWidth()'s 0.5-per-char estimate runs a bit narrow versus how Helvetica-Bold
-        // actually renders, so solving for an "exact fit" size still overflows in practice -
-        // shrinking further than the math strictly requires leaves real headroom.
-        const segmentSize = segment.underlineWidth && textWidth(segment.text, size) > segment.underlineWidth
-          ? Math.max(6.5, ((segment.underlineWidth / segment.text.length) / 0.5) * 0.82)
-          : size;
-        text(segment.text, x, y, segmentSize, true);
-        const naturalWidth = textWidth(segment.text, segmentSize);
-        const advance = segment.underlineWidth ? Math.max(segment.underlineWidth, naturalWidth) : naturalWidth;
-        if (segment.underlineWidth) {
-          contentLines.push("q", "0 0 0 RG", "0.5 w", `${x} ${y - 2} m`, `${x + advance} ${y - 2} l`, "S", "Q");
-        }
-        x += advance;
-      });
-    };
-
-    // Real Code 128 (Set C, numeric-pairs) barcode encoding the reference number - the bar-width
-    // table and checksum algorithm here are copied verbatim from the widely-used python-barcode
-    // library (barcode.charsets.code128) and cross-checked byte-for-byte against its own output
-    // for this exact reference number before being transcribed, specifically because a
-    // hand-guessed symbol table that LOOKS right but decodes wrong would be worse than no barcode
-    // at all. It's still our own generated reference number, not looked up in the college's system.
-    const barcodeWidth = 140;
-    const barcodeHeight = 30;
-    const barcodeX = right - barcodeWidth;
-    const barcodeTop = headerBottom - 20;
-    const pattern = encodeCode128C(refNumber);
-    const moduleWidth = barcodeWidth / pattern.length;
-    let moduleX = barcodeX;
-    let runStart = null;
-    for (let i = 0; i <= pattern.length; i++) {
-      const bit = pattern[i];
-      if (bit === "1") {
-        if (runStart === null) runStart = moduleX;
-      } else if (runStart !== null) {
-        contentLines.push("q", "0 0 0 rg", `${runStart} ${barcodeTop - barcodeHeight} ${moduleX - runStart} ${barcodeHeight} re`, "f", "Q");
-        runStart = null;
-      }
-      moduleX += moduleWidth;
-    }
-    text(refNumber, barcodeX + barcodeWidth / 2 - textWidth(refNumber, 8) / 2, barcodeTop - barcodeHeight - 10, 8, false);
-
-    let y = headerBottom - 76;
-    text(`SNO: ${refNumber}`, left, y, 9);
-    centered(label, y);
-    y -= 26;
-    centered("ANDHRA BANK", y); y -= 16;
-    centered("G. PULLA REDDY ENGINEERING COLLEGE KURNOOL - 518007", y); y -= 30;
-    text("Paid in to the Credit of S.B. A/c No. 152110011031255; of G.P.R.E.C.,  KURNOOL", left, y); y -= 26;
-    // Both blanks END at the same x (~520pt) rather than sharing the same raw width - the Rs. row
-    // has a longer prefix ("Rs. .../- (Rupees ") before its blank than "towards " does, so its
-    // blank is narrower (285) but still reaches the same right-hand stopping point as the towards
-    // blank (420), leaving room for " Only)" after it.
-    row([
-      { text: "Rs. " },
-      { text: String(amountNumber), underlineWidth: 95 },
-      { text: " /- (Rupees " },
-      { text: amountWords, underlineWidth: 285 },
-      { text: " Only)" }
-    ], y); y -= 26;
-    row([{ text: "towards " }, { text: purposeLabel, underlineWidth: 420 }], y); y -= 26;
-    text(`Name: ${name.toUpperCase()};`, left, y); rightAligned(`Roll No.: ${rollNo}`, y); y -= 26;
-    row([{ text: "Paid By " }, { text: "", underlineWidth: 150 }], y); rightAligned(`Date: ${today}`, y); y -= 26;
-    text("Teller", left, y); rightAligned("Entered by", y); y -= 16;
-    text("Head Cashier", left, y); y -= 16;
-    text("Scroll No. Cash", left, y); y -= 16;
-    // Double horizontal rule - the real slip's own closing mark between copies. The page ends
-    // shortly after it instead of trailing off with extra blank space below.
-    contentLines.push("q", "0 0 0 RG", "0.75 w", `${left - 6} ${y} m`, `${right + 6} ${y} l`, "S", `${left - 6} ${y - 3} m`, `${right + 6} ${y - 3} l`, "S", "Q");
-
-    return buildSinglePagePdf(new TextEncoder().encode(contentLines.join("\n")), images, pageWidth, pageHeight);
+  const renderCopy = async (copyLabel) => {
+    const card = await buildFeeChallanImage({
+      copyLabel, refNumber, name, rollNo, purposeLabel, amountNumber, amountWords, today
+    });
+    return canvasCardToPdf(card);
   };
 
   return [
-    { label: "College Copy", fileSuffix: "college-copy", blob: renderCopyPage("COLLEGE COPY") },
-    { label: "Student Copy", fileSuffix: "student-copy", blob: renderCopyPage("STUDENT COPY") },
-    { label: "Bank Copy", fileSuffix: "bank-copy", blob: renderCopyPage("BANK COPY") }
+    { label: "College Copy", fileSuffix: "college-copy", blob: await renderCopy("COLLEGE COPY") },
+    { label: "Student Copy", fileSuffix: "student-copy", blob: await renderCopy("STUDENT COPY") },
+    { label: "Bank Copy", fileSuffix: "bank-copy", blob: await renderCopy("BANK COPY") }
   ];
 };
 
-const makeVehiclePassPdf = (name, photoUrl, pass) => {
-  const table = linesToTable([
-    `Name: ${name}`,
-    `Vehicle Type: ${pass.vehicleType}`,
-    `Vehicle Number: ${pass.vehicleNumber}`,
-    `Driving License Number: ${pass.licenseNumber}`,
-    `Valid Until: ${pass.validUntil || "-"}`
-  ]);
-  const footerLines = [
-    "This pass permits the holder to bring the above vehicle onto campus for parking.",
-    "Present this pass along with the original driving license and vehicle RC on request.",
-    "- Always wear a helmet (two-wheeler) or fasten your seatbelt (car).",
-    "- Do not exceed the campus speed limit of 10 km/h.",
-    "- Park only in the designated parking areas.",
-    "- No triple riding, rash driving, or mobile phone use while driving.",
-    "- Report any accident or breakdown to campus security immediately."
+// Target/crosshair watermark, transcribed verbatim from "24_vehicle_pass.html"'s `.crest-mark`
+// svg - two concentric rings + center dot + 4 cardinal + 4 diagonal tick marks, 220x220 display
+// size at the stub's bottom-right corner, 14% opacity. Same offscreen-buffer-then-composite-once
+// technique as the Event Pass compass.
+const drawVehicleTargetWatermark = (ctx, cardW, stubH) => {
+  const bufScale = 4;
+  const buf = document.createElement("canvas");
+  buf.width = 200 * bufScale;
+  buf.height = 200 * bufScale;
+  const bctx = buf.getContext("2d");
+  bctx.scale(bufScale, bufScale);
+  bctx.strokeStyle = "#e8821a";
+  bctx.lineWidth = 1;
+  bctx.beginPath(); bctx.arc(100, 100, 95, 0, Math.PI * 2); bctx.stroke();
+  bctx.lineWidth = 1.5;
+  bctx.beginPath(); bctx.arc(100, 100, 60, 0, Math.PI * 2); bctx.stroke();
+  bctx.fillStyle = "#e8821a";
+  bctx.beginPath(); bctx.arc(100, 100, 10, 0, Math.PI * 2); bctx.fill();
+  bctx.lineWidth = 4;
+  bctx.lineCap = "round";
+  const ticks = [
+    [100, 45, 100, 65], [100, 135, 100, 155], [45, 100, 65, 100], [135, 100, 155, 100],
+    [61, 61, 75, 75], [125, 125, 139, 139], [139, 61, 125, 75], [75, 125, 61, 139]
   ];
-  return makePdfWithPhoto(
-    "GPREC Vehicle Pass", [], photoUrl, name, table, footerLines, "Notes & Safety Rules",
-    estimatePdfHeight({ table, footerLines, hasPhoto: true })
-  );
+  ticks.forEach(([x1, y1, x2, y2]) => {
+    bctx.beginPath();
+    bctx.moveTo(x1, y1);
+    bctx.lineTo(x2, y2);
+    bctx.stroke();
+  });
+
+  ctx.save();
+  ctx.globalAlpha = 0.14;
+  ctx.translate(cardW - 160, stubH - 160);
+  ctx.scale(220 / 200, 220 / 200);
+  ctx.drawImage(buf, 0, 0, 200, 200);
+  ctx.restore();
+};
+
+// PNG, not a PDF - matches "24_vehicle_pass.html" exactly, same treatment as buildBusPassImage
+// (no PDF-only anti-fraud seal/stamp overlay - see that function's comment). photoUrl is accepted
+// (callers already resolve it) but unused - the ticket-stub design has no photo slot, matching
+// the mockup, which shows no photo either.
+const buildVehiclePassImage = async (name, photoUrl, pass, requester) => {
+  const passId = makeShortPassId("VP", [requester?.id, pass.vehicleNumber, pass.licenseNumber]);
+  const idLabel = requester?.type === "faculty" ? "FACULTY EMAIL" : "ROLL NO.";
+  const { canvas } = await renderTicketStubCard({
+    eyebrow: "COLLEGE · VEHICLE PASS",
+    scanCaption: "SCAN AT PARKING GATE",
+    tag: "VEHICLE PASS",
+    tagIconPath: TICKET_ICON_PATHS.car,
+    // Plain identifying text, not a verification-page URL - there's no gate-scan backend for
+    // vehicle passes (unlike hostel passes), so scanning this just shows the pass details.
+    qrText: `GPREC Vehicle Pass ${passId} | ${pass.vehicleNumber} | Valid till ${pass.validUntil || "-"}`,
+    title: "Vehicle Pass",
+    subtitle: "GPREC · Campus Security",
+    fields: [
+      { label: "PASS ID", value: passId, mono: true },
+      { label: "NAME", value: name },
+      { label: idLabel, value: requester?.id || "-", mono: true },
+      { label: "VEHICLE TYPE", value: pass.vehicleType },
+      { label: "VEHICLE NO.", value: pass.vehicleNumber, mono: true },
+      { label: "PARKING ZONE", value: pass.parkingZone || "Not Assigned" },
+      { label: "VALID TILL", value: pass.validUntil || "-" },
+      { label: "STATUS", value: "Active", status: true }
+    ],
+    footerLeft: "CAMPUS SECURITY",
+    footerRight: "DISPLAY ON DASH",
+    drawBackgroundArt: drawVehicleTargetWatermark,
+    showWatermark: false
+  });
+  return new Promise((resolve) => canvas.toBlob(resolve, "image/png"));
 };
 
 // Bus Pass: gated behind admin approval of the bus request (see #bus-service), same pattern as
-// makeVehiclePassPdf just for the Bus Service opt-in instead of a self-driven vehicle.
-const makeBusPassPdf = (name, photoUrl, request, requester) => {
-  const table = linesToTable([
-    `Name: ${name}`,
-    ...(requester?.type === "student" ? [`Roll Number: ${requester.id}`] : requester?.type === "faculty" ? [`Faculty Email: ${requester.id}`] : []),
-    `Bus Number: ${request.busNumber}`,
-    `Route: ${request.routeName}`,
-    `Driver: ${request.driverName}${request.driverMobile ? ` (${request.driverMobile})` : ""}`,
-    `Pickup Point: ${request.pickupPoint || "-"} (Approx. ${request.pickupTime || "-"})`,
-    `Drop Point: ${request.dropPoint || "-"} (Approx. ${request.dropTime || "-"})`,
-    `Issued: ${request.requestedAt || "-"}`,
-    `Valid Until: ${request.validUntil || "-"}`
-  ]);
-  const footerLines = [
-    "This pass permits the holder to board the above bus on its published route.",
-    "Present this pass to the driver/conductor along with your college ID on request.",
-    "- Be at the designated stop at least 5 minutes before the scheduled time.",
-    "- Maintain discipline on board - no rash behavior, littering, or misuse of emergency exits.",
-    "- Report any issue with the bus or driver to the Transportation Office immediately."
-  ];
-  return makePdfWithPhoto(
-    "GPREC Bus Pass", [], photoUrl, name, table, footerLines, "Notes & Safety Rules",
-    estimatePdfHeight({ table, footerLines, hasPhoto: true })
-  );
+// buildVehiclePassImage just for the Bus Service opt-in instead of a self-driven vehicle.
+// Route-line watermark, transcribed verbatim from "23_bus_pass.html"'s `.crest-mark` svg - a
+// 200x200 viewBox drawn at 220x220 display size, positioned with its box's right/bottom edges
+// 60px past the stub's own right/bottom edges (`right:-60px;bottom:-60px`), at 14% opacity.
+// Same offscreen-buffer-then-composite-once technique as the Event Pass compass (see that
+// function's comment) so nothing here could ever suffer the same overlap-opacity-stacking bug,
+// even though none of these shapes currently overlap.
+const drawBusRouteWatermark = (ctx, cardW, stubH) => {
+  const bufScale = 4;
+  const buf = document.createElement("canvas");
+  buf.width = 200 * bufScale;
+  buf.height = 200 * bufScale;
+  const bctx = buf.getContext("2d");
+  bctx.scale(bufScale, bufScale);
+  bctx.strokeStyle = "#e8821a";
+  bctx.lineWidth = 1;
+  bctx.beginPath(); bctx.arc(100, 100, 95, 0, Math.PI * 2); bctx.stroke();
+  bctx.lineWidth = 2;
+  bctx.lineCap = "round";
+  bctx.setLineDash([6, 7]);
+  bctx.beginPath();
+  bctx.moveTo(20, 130);
+  bctx.bezierCurveTo(60, 100, 80, 160, 120, 130);
+  bctx.bezierCurveTo(150, 108, 165, 130, 185, 118);
+  bctx.stroke();
+  bctx.setLineDash([]);
+  bctx.fillStyle = "#e8821a";
+  bctx.beginPath(); bctx.arc(20, 130, 6, 0, Math.PI * 2); bctx.fill();
+  bctx.beginPath(); bctx.arc(185, 118, 6, 0, Math.PI * 2); bctx.fill();
+  bctx.beginPath(); bctx.arc(100, 55, 3, 0, Math.PI * 2); bctx.fill();
+  bctx.beginPath(); bctx.arc(130, 55, 3, 0, Math.PI * 2); bctx.fill();
+  bctx.beginPath(); bctx.arc(160, 55, 3, 0, Math.PI * 2); bctx.fill();
+
+  ctx.save();
+  ctx.globalAlpha = 0.14;
+  ctx.translate(cardW - 160, stubH - 160);
+  ctx.scale(220 / 200, 220 / 200);
+  ctx.drawImage(buf, 0, 0, 200, 200);
+  ctx.restore();
+};
+
+// PNG, not a PDF - matches "23_bus_pass.html" exactly with no PDF-only anti-fraud seal/stamp
+// overlay, same treatment as buildEventTicketImage (see that function's comment on why PNG
+// outputs skip the seal).
+const buildBusPassImage = async (name, photoUrl, request, requester) => {
+  const passId = makeShortPassId("BP", [requester?.id, request.busNumber, request.requestedAt]);
+  const idLabel = requester?.type === "faculty" ? "FACULTY EMAIL" : "ROLL NO.";
+  const { canvas } = await renderTicketStubCard({
+    eyebrow: "COLLEGE · BUS PASS",
+    scanCaption: "SCAN WHILE BOARDING",
+    tag: "BUS PASS",
+    tagIconPath: TICKET_ICON_PATHS.bus,
+    // Plain identifying text (see buildVehiclePassImage's qrText comment) - no gate-scan backend
+    // for bus passes yet.
+    qrText: `GPREC Bus Pass ${passId} | Route ${request.routeName || "-"} | Valid till ${request.validUntil || "-"}`,
+    title: "Bus Pass",
+    subtitle: "GPREC · Transport Department",
+    fields: [
+      { label: "PASS ID", value: passId, mono: true },
+      { label: "NAME", value: name },
+      { label: idLabel, value: requester?.id || "-", mono: true },
+      { label: "ROUTE NO.", value: request.routeName || "-" },
+      { label: "BOARDING POINT", value: request.pickupPoint || "-" },
+      { label: "BUS NO.", value: request.busNumber, mono: true },
+      { label: "VALID TILL", value: request.validUntil || "-" },
+      { label: "STATUS", value: "Active", status: true }
+    ],
+    footerLeft: "TRANSPORT DEPT.",
+    footerRight: "NON-TRANSFERABLE",
+    drawBackgroundArt: drawBusRouteWatermark,
+    showWatermark: false
+  });
+  return new Promise((resolve) => canvas.toBlob(resolve, "image/png"));
 };
 
 // Non-Teaching Staff Dashboard: profile, leave application, and payroll. Leave requests share the
@@ -13297,51 +13945,26 @@ if (nonTeachingDashboardName) {
     const basic = 28000;
     const da = 2800;
     const hra = 5600;
-    const gross = basic + da + hra;
     const pf = 3360;
     const professionalTax = 200;
-    const deductions = pf + professionalTax;
-    const netPay = gross - deductions;
-
-    const identityTable = {
-      columns: [
-        { label: "Field", width: 150 },
-        { label: "Details", width: 300 }
-      ],
-      rows: [
-        ["Employee Name", staffRecord.name],
-        ["Designation", staffRecord.designation],
-        ["Section", staffRecord.section],
-        ["Email", staffRecord.email],
-        ["Pay Period", month]
-      ]
-    };
-    const payTable = {
-      columns: [
-        { label: "Component", width: 220 },
-        { label: "Type", width: 110 },
-        { label: "Amount (Rs.)", width: 110 }
-      ],
-      rows: [
-        ["Basic Pay", "Earning", basic.toLocaleString("en-IN")],
-        ["Dearness Allowance (DA)", "Earning", da.toLocaleString("en-IN")],
-        ["House Rent Allowance (HRA)", "Earning", hra.toLocaleString("en-IN")],
-        ["Provident Fund (PF)", "Deduction", pf.toLocaleString("en-IN")],
-        ["Professional Tax", "Deduction", professionalTax.toLocaleString("en-IN")]
-      ]
-    };
-    const summaryTable = {
-      columns: [
-        { label: "Pay Summary", width: 220 },
-        { label: "Amount (Rs.)", width: 220 }
-      ],
-      rows: [
-        ["Gross Pay", gross.toLocaleString("en-IN")],
-        ["Total Deductions", deductions.toLocaleString("en-IN")],
-        ["Net Pay", netPay.toLocaleString("en-IN")]
-      ]
-    };
-    const pdf = await makeSimplePdf(`GPREC Payslip - ${month}`, [], [identityTable, payTable, summaryTable]);
+    const employeeId = makeShortPassId("EMP", [staffRecord.email]);
+    const bankKey = `non-teaching-${staffRecord.email}`;
+    const bankDetails = getBankDetailsFor(bankKey, null);
+    const bankLine = bankDetails?.accountNumber
+      ? `Paid to Bank A/c: ${maskAccountNumber(bankDetails.accountNumber)} · Bank: ${bankDetails.bankName || "-"} · Payment Date: ${new Date().toLocaleDateString("en-IN", { day: "2-digit", month: "short", year: "numeric" })}`
+      : "Bank details not on file";
+    const card = await buildPaySlipImage({
+      slipNo: makeShortPassId("PS", [staffRecord.email, month]),
+      employeeName: staffRecord.name,
+      employeeId,
+      designation: staffRecord.designation,
+      department: staffRecord.section,
+      month,
+      earnings: [["Basic Pay", basic], ["Dearness Allowance", da], ["House Rent Allowance", hra]],
+      deductions: [["Provident Fund", pf], ["Professional Tax", professionalTax]],
+      bankLine
+    });
+    const pdf = await canvasCardToPdf(card);
     const link = document.createElement("a");
     link.href = URL.createObjectURL(pdf);
     link.download = `payslip-${month.replace(/\s+/g, "-")}.pdf`;
@@ -13403,37 +14026,19 @@ if (nonTeachingDashboardName) {
     const annualNet = annualGross - annualDeductions;
     const estimatedTax = Math.round(annualGross * 0.05);
 
-    const identityTable = {
-      columns: [
-        { label: "Field", width: 150 },
-        { label: "Details", width: 300 }
-      ],
-      rows: [
-        ["Employee Name", staffRecord.name],
-        ["Designation", staffRecord.designation],
-        ["Section", staffRecord.section],
-        ["Financial Year", financialYear]
-      ]
-    };
-    const taxTable = {
-      columns: [
-        { label: "Particulars", width: 260 },
-        { label: "Amount (Rs.)", width: 140 }
-      ],
-      rows: [
-        ["Gross Annual Pay", annualGross.toLocaleString("en-IN")],
-        ["Total Deductions", annualDeductions.toLocaleString("en-IN")],
-        ["Net Annual Pay", annualNet.toLocaleString("en-IN")],
-        ["Estimated Tax Deducted (TDS)", estimatedTax.toLocaleString("en-IN")]
-      ]
-    };
-    const pdf = await makeSimplePdf(
-      `GPREC Form 16 - ${financialYear}`,
-      [],
-      [identityTable, taxTable],
-      ["This is a system-generated tax summary. The official Form 16 (Part A & B) is issued separately as per Income Tax rules."],
-      "Note"
-    );
+    const card = await buildForm16Image({
+      certNo: makeShortPassId("FRM16", [staffRecord.email, financialYear]),
+      employeeName: staffRecord.name,
+      employeeId: makeShortPassId("EMP", [staffRecord.email]),
+      designation: staffRecord.designation,
+      department: staffRecord.section,
+      financialYear,
+      annualGross,
+      annualDeductions,
+      annualNet,
+      estimatedTax
+    });
+    const pdf = await canvasCardToPdf(card);
     const link = document.createElement("a");
     link.href = URL.createObjectURL(pdf);
     link.download = `form16-${financialYear}.pdf`;
@@ -14859,6 +15464,7 @@ const recordCertificatePayment = async (paymentType, paymentReference) => {
     const rollNumber = alumniRollNumberField?.value.trim() || getCurrentStudentId();
     const alumniName = document.querySelector("#alumniFullName")?.value.trim();
     const paymentDate = new Date().toLocaleDateString("en-IN", { day: "2-digit", month: "short", year: "numeric" });
+    const paymentTime = new Date().toLocaleTimeString("en-IN", { hour: "2-digit", minute: "2-digit", hour12: true });
 
     const readLabelFields = (container) =>
       [...(container?.querySelectorAll("label") || [])].map((label) => {
@@ -14889,6 +15495,7 @@ const recordCertificatePayment = async (paymentType, paymentReference) => {
       `Payment Type: ${paymentType}`,
       `Payment Reference: ${paymentReference}`,
       `Payment Date: ${paymentDate}`,
+      `Payment Time: ${paymentTime}`,
       "Payment Status: Paid",
       `Note: Show this receipt to the ${submitOffice} to complete your request.`
     ];
@@ -14939,8 +15546,8 @@ const recordCertificatePayment = async (paymentType, paymentReference) => {
         // it fails to load).
         tempIdPhotoUrl = getExplicitProfilePhotoSrc(defaultStudentProfiles[rollNumber]);
         tempIdCardName = cardName;
-        const tempIdPdf = await makeTempIdCardPdf(tempIdLines, tempIdPhotoUrl, cardName);
-        tempIdCardDownload.href = URL.createObjectURL(tempIdPdf);
+        const tempIdImage = await buildTempIdCardPng(tempIdLines, tempIdPhotoUrl, cardName);
+        tempIdCardDownload.href = URL.createObjectURL(tempIdImage);
         tempIdCardDownload.classList.add("ready");
       } else {
         tempIdCardDownload.classList.remove("ready");
@@ -15005,10 +15612,10 @@ const renderPaymentHistoryTable = () => {
     button.addEventListener("click", async () => {
       const record = paymentHistory[Number(button.dataset.tempidIndex)];
       if (!record?.tempIdLines) return;
-      const pdf = await makeTempIdCardPdf(record.tempIdLines, record.tempIdPhotoUrl, record.tempIdCardName);
+      const image = await buildTempIdCardPng(record.tempIdLines, record.tempIdPhotoUrl, record.tempIdCardName);
       const link = document.createElement("a");
-      link.href = URL.createObjectURL(pdf);
-      link.download = "gprec-temporary-id-card.pdf";
+      link.href = URL.createObjectURL(image);
+      link.download = "gprec-temporary-id-card.png";
       link.click();
     });
   });
@@ -15466,10 +16073,10 @@ if (busServiceListBody) {
       requester.type === "student"
         ? getExplicitProfilePhotoSrc(defaultStudentProfiles[requester.id])
         : normalizeProfilePhotoUrl(lookupFacultyRecordByEmail(requester.id)?.photoUrl);
-    const pdf = await makeBusPassPdf(requester.name, photoUrl, currentBusRequest, requester);
+    const image = await buildBusPassImage(requester.name, photoUrl, currentBusRequest, requester);
     const link = document.createElement("a");
-    link.href = URL.createObjectURL(pdf);
-    link.download = `gprec-bus-pass-${requester.id}.pdf`;
+    link.href = URL.createObjectURL(image);
+    link.download = `gprec-bus-pass-${requester.id}.png`;
     link.click();
     URL.revokeObjectURL(link.href);
   });
@@ -16004,10 +16611,10 @@ if (vehiclePassForm) {
       requester.type === "student"
         ? getExplicitProfilePhotoSrc(defaultStudentProfiles[requester.id])
         : normalizeProfilePhotoUrl(lookupFacultyRecordByEmail(requester.id)?.photoUrl);
-    const pdf = await makeVehiclePassPdf(requester.name, photoUrl, currentPass);
+    const image = await buildVehiclePassImage(requester.name, photoUrl, currentPass, requester);
     const link = document.createElement("a");
-    link.href = URL.createObjectURL(pdf);
-    link.download = `gprec-vehicle-pass-${requester.id}.pdf`;
+    link.href = URL.createObjectURL(image);
+    link.download = `gprec-vehicle-pass-${requester.id}.png`;
     link.click();
     URL.revokeObjectURL(link.href);
   });
@@ -18537,30 +19144,1338 @@ const drawFittedCanvasText = (ctx, text, x, y, maxWidth, { maxLines = 2, maxFont
   return { lines: visibleLines.length, lineHeight, height: visibleLines.length * lineHeight };
 };
 
-// Draws a portrait ticket-stub pass - a downloadable PNG, not a PDF, so it can be saved straight
-// to a phone's photo gallery ahead of real Apple/Google Wallet integration (which needs signing
-// credentials this app doesn't have yet). Layout/colors match the "Udaan 2K26" reference design:
-// a navy stub (compass watermark, GPREC logo, QR) on top, a dashed perforation with side notches,
-// then a cream body with the event title and a field grid. All drawing happens in template-pixel
-// units (the same numbers as the original 420-wide HTML mockup) - SCALE below is the only place
-// that turns those into real output pixels, so the layout math elsewhere stays a 1:1 mirror of
-// the mockup's CSS instead of pre-multiplied numbers that are hard to cross-check against it.
-const buildEventTicketImage = async (registration, event) => {
-  await ensureBrandFontsLoaded();
+// Shared "festival ticket" card module: a navy stub (watermark art, GPREC logo, QR) on top, a
+// dashed perforation, then a cream body with a title and a field grid - the shape behind the
+// Event Pass, Bus Pass, Vehicle Pass, and Hostel Outing/Leave Pass. All drawing happens in
+// template-pixel units (the same numbers as each 420-wide HTML mockup) - SCALE inside
+// renderTicketStubCard is the only place that turns those into real output pixels, so the layout
+// math elsewhere stays a 1:1 mirror of the mockups' CSS instead of pre-multiplied numbers that
+// are hard to cross-check against them.
+const TICKET_STUB_COLORS = {
+  NAVY_DEEP: "#0a1730",
+  NAVY: "#0f1f3d",
+  AMBER: "#e8821a",
+  AMBER_SOFT: "#f0a34d",
+  CREAM: "#faf6ee",
+  INK: "#0f1f3d",
+  GREEN: "#2fa866",
+  GREEN_TEXT: "#1f7a4d"
+};
 
+const ticketStubRoundedRectPath = (ctx, x, y, width, height, radius) => {
+  const r = Math.min(radius, width / 2, height / 2);
+  ctx.beginPath();
+  ctx.moveTo(x + r, y);
+  ctx.arcTo(x + width, y, x + width, y + height, r);
+  ctx.arcTo(x + width, y + height, x, y + height, r);
+  ctx.arcTo(x, y + height, x, y, r);
+  ctx.arcTo(x, y, x + width, y, r);
+  ctx.closePath();
+};
+const ticketStubFillRoundedRect = (ctx, x, y, width, height, radius, fillStyle) => {
+  ticketStubRoundedRectPath(ctx, x, y, width, height, radius);
+  ctx.fillStyle = fillStyle;
+  ctx.fill();
+};
+
+// Each ticket-stub mockup's own eticket-tag icon (24x24 viewBox path data, transcribed verbatim
+// from the mockup HTML) - ticket for Event Pass, bus for Bus Pass, car for Vehicle Pass, gate
+// for both Hostel passes (their mockup reuses the same gate glyph as the Event Pass' ticket icon).
+const TICKET_ICON_PATHS = {
+  ticket: "M22 10V6a2 2 0 0 0-2-2H4a2 2 0 0 0-2 2v4a2 2 0 0 1 0 4v4a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-4a2 2 0 0 1 0-4zM9 6v2h2V6H9zm0 4v2h2v-2H9zm0 4v2h2v-2H9zm0 4v2h2v-2H9z",
+  bus: "M4 16c0 .88.39 1.67 1 2.22V20a1 1 0 0 0 1 1h1a1 1 0 0 0 1-1v-1h8v1a1 1 0 0 0 1 1h1a1 1 0 0 0 1-1v-1.78c.61-.55 1-1.34 1-2.22V6c0-3.5-3.58-4-8-4s-8 .5-8 4v10zm3.5 1a1.5 1.5 0 1 1 0-3 1.5 1.5 0 0 1 0 3zm9 0a1.5 1.5 0 1 1 0-3 1.5 1.5 0 0 1 0 3zM18 11H6V6h12v5z",
+  car: "M5 11l1.5-4.5A2 2 0 0 1 8.4 5h7.2a2 2 0 0 1 1.9 1.5L19 11h1a1 1 0 0 1 1 1v6a1 1 0 0 1-1 1h-1v1a1 1 0 0 1-1 1h-1a1 1 0 0 1-1-1v-1H7v1a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1v-1H3a1 1 0 0 1-1-1v-6a1 1 0 0 1 1-1h2zm2.4-4L6.3 11h11.4l-1.1-4H7.4zM6 15a1.5 1.5 0 1 0 0-3 1.5 1.5 0 0 0 0 3zm12 0a1.5 1.5 0 1 0 0-3 1.5 1.5 0 0 0 0 3z"
+};
+
+// Shared "festival ticket" card shape (navy stub with QR + dashed perforation + cream body with a
+// field grid + navy footer bar) used by the Event Pass, Bus Pass, Vehicle Pass, and Hostel
+// Outing/Leave Pass - they're all the same template family, differing only in watermark art,
+// eyebrow/tag/title copy, which fields show, and whether the perforation has cut notches (Event
+// Pass's mockup markup includes those two semicircle divs; the pass mockups share the same CSS
+// class but never actually include them, so `showNotches` defaults off).
+// `fields`: [{ label, value, mono, status, fullWidth }] - non-fullWidth fields pair up two per
+// row in reading order; a fullWidth field always starts its own row. `status: true` draws a
+// green dot + green text instead of the normal ink value (for a "STATUS: Active/Approved" field).
+const renderTicketStubCard = async ({
+  eyebrow, scanCaption, tag, tagIconPath, qrText, logoUrl = gprecLogoUrl,
+  title, subtitle, fields, footerLeft, footerRight, showNotches = false, showWatermark = true,
+  drawBackgroundArt = null
+}) => {
+  await ensureBrandFontsLoaded();
+  const { NAVY_DEEP, NAVY, AMBER, AMBER_SOFT, CREAM, INK, GREEN, GREEN_TEXT } = TICKET_STUB_COLORS;
   const CARD_W = 420;
   const SCALE = 2.4;
 
-  const NAVY_DEEP = "#0a1730";
-  const NAVY = "#0f1f3d";
-  const AMBER = "#e8821a";
-  const AMBER_SOFT = "#f0a34d";
-  const CREAM = "#faf6ee";
-  const RUST = "#7a4430";
-  const INK = "#0f1f3d";
-  const GREEN = "#2fa866";
-  const GREEN_TEXT = "#1f7a4d";
+  const logoImg = new Image();
+  await new Promise((resolve) => {
+    logoImg.onload = resolve;
+    logoImg.onerror = resolve;
+    logoImg.src = logoUrl;
+  });
+  // Real GPREC seal watermark (not an abstract line-art shape) in the stub, per direction -
+  // same faint-image technique as the seal watermark on every other document in this app.
+  const sealImg = new Image();
+  await new Promise((resolve) => {
+    sealImg.onload = resolve;
+    sealImg.onerror = resolve;
+    sealImg.src = gprecSealUrl;
+  });
 
+  // Measured on a scratch context first (font-only, no drawing) so the title's actual wrapped
+  // line count can push everything below it down correctly - the mockup's body height isn't
+  // fixed, it just grows with content, same as the real HTML/CSS would.
+  const measureCtx = document.createElement("canvas").getContext("2d");
+  measureCtx.font = "600 34px Fraunces";
+  const titleLines = canvasTextLines(measureCtx, title || "GPREC", 364);
+  const titleLineCount = Math.min(titleLines.length, 2);
+
+  // Pair fields into rows: a fullWidth field gets its own row, everything else pairs up two at a
+  // time in the order given.
+  const rows = [];
+  let pending = null;
+  (fields || []).forEach((f) => {
+    if (f.fullWidth) {
+      if (pending) { rows.push([pending]); pending = null; }
+      rows.push([f]);
+    } else if (pending) {
+      rows.push([pending, f]);
+      pending = null;
+    } else {
+      pending = f;
+    }
+  });
+  if (pending) rows.push([pending]);
+
+  // ----- Layout (template-pixel units, top to bottom) -----
+  // Every constant below was measured directly off the live-rendered mockup DOM
+  // (getBoundingClientRect on "23_bus_pass.html", CSS identical to "22_event_pass.html" for these
+  // shared elements) rather than hand-derived from the CSS box model, since font line-height
+  // metrics don't compute cleanly by hand - see the verification pass that found the real values.
+  const stubPadTop = 26;
+  const stubPadSides = 28;
+  const stubTopRowH = 53;
+  const eyebrowY = stubPadTop + stubTopRowH + 22;
+  const qrWrapY = eyebrowY + 14 + 22;
+  const qrWrapSize = 210;
+  const scanCaptionY = qrWrapY + qrWrapSize + 16;
+  const stubH = scanCaptionY + 14 + 38;
+
+  const bodyPadTop = 32;
+  const bodyPadSides = 28;
+  const titleY = stubH + bodyPadTop;
+  const titleLineH = 36;
+  // titleBottomY is the baseline of the title's last line (titleY + 30 is where the first
+  // baseline is drawn, below) - subtitle/rule are positioned relative to that, not to titleY
+  // itself, or they land on top of a single-line title's own glyphs instead of below them.
+  const titleBottomY = titleY + 30 + (titleLineCount - 1) * titleLineH;
+  const subtitleY = titleBottomY + (subtitle ? 24 : 0);
+  const ruleY = (subtitle ? subtitleY : titleBottomY) + 18;
+  const gridY = ruleY + 3 + 26;
+  const fieldRowH = 47;
+  const fieldRowGap = 22;
+  const fieldValueLineH = 20;
+  const colW = (CARD_W - bodyPadSides * 2 - 16) / 2;
+  // Row height grows with whatever content actually needs to wrap (a long name, a long place
+  // name, etc.) instead of a fixed height that truncates - same as the mockup's CSS grid, whose
+  // rows auto-size to their tallest child rather than clipping text.
+  const rowLineCounts = rows.map((row) =>
+    Math.max(
+      ...row.map((f) => {
+        if (f.status) return 1;
+        const w = row.length === 1 ? CARD_W - bodyPadSides * 2 : colW;
+        measureCtx.font = f.mono ? "700 16px 'Space Mono'" : "700 17px Inter";
+        return canvasTextLines(measureCtx, f.value || "-", w).length;
+      })
+    )
+  );
+  const rowHeights = rowLineCounts.map((lineCount) => fieldRowH + Math.max(0, lineCount - 1) * fieldValueLineH);
+  const rowStartYs = [];
+  {
+    let acc = gridY;
+    rowHeights.forEach((h) => {
+      rowStartYs.push(acc);
+      acc += h + fieldRowGap;
+    });
+  }
+  const gridBottom = rowHeights.reduce((sum, h) => sum + h, gridY) + (rows.length - 1) * fieldRowGap;
+  const footerY = gridBottom + 28;
+  const footerH = 44;
+  const totalH = footerY + footerH + 28;
+
+  const canvas = document.createElement("canvas");
+  canvas.width = CARD_W * SCALE;
+  canvas.height = totalH * SCALE;
+  const ctx = canvas.getContext("2d");
+  ctx.scale(SCALE, SCALE);
+
+  const cardRadius = 22;
+  ticketStubRoundedRectPath(ctx, 0, 0, CARD_W, totalH, cardRadius);
+  ctx.save();
+  ctx.clip();
+  ctx.fillStyle = CREAM;
+  ctx.fillRect(0, 0, CARD_W, totalH);
+
+  // ----- Stub (navy gradient header) -----
+  const stubGrad = ctx.createLinearGradient(0, 0, CARD_W * 0.6, stubH);
+  stubGrad.addColorStop(0, NAVY);
+  stubGrad.addColorStop(1, NAVY_DEEP);
+  ctx.fillStyle = stubGrad;
+  ctx.fillRect(0, 0, CARD_W, stubH);
+
+  // Warm highlight the mockup layers on top of the navy gradient - a soft amber glow at 88%/8%
+  // of the stub's own box (`radial-gradient(circle at 88% 8%, rgba(232,130,26,0.10) 0%, transparent 45%)`).
+  // CSS radial-gradient % stops are relative to the distance from the center to the box's
+  // *farthest corner* (the default "circle" sizing, since no explicit size keyword is given) - not
+  // simply a fraction of the box's width/height. Using too small a radius concentrates the 10%-alpha
+  // color into a visibly smaller, more obvious patch instead of the mockup's near-imperceptible wash.
+  const highlightCx = CARD_W * 0.88;
+  const highlightCy = stubH * 0.08;
+  const highlightCorners = [
+    [0, 0], [CARD_W, 0], [0, stubH], [CARD_W, stubH]
+  ];
+  const highlightFarthest = Math.max(...highlightCorners.map(([x, y]) =>
+    Math.hypot(x - highlightCx, y - highlightCy)
+  ));
+  const highlightR = highlightFarthest * 0.45;
+  const highlightGrad = ctx.createRadialGradient(highlightCx, highlightCy, 0, highlightCx, highlightCy, highlightR);
+  highlightGrad.addColorStop(0, "rgba(232,130,26,0.10)");
+  highlightGrad.addColorStop(1, "rgba(232,130,26,0)");
+  ctx.fillStyle = highlightGrad;
+  ctx.fillRect(0, 0, CARD_W, stubH);
+
+  // Each mockup's own decorative background shape (compass/shield/route-line/etc.), clipped to the
+  // stub's own box exactly like the mockup's `.stub{overflow:hidden}` - the mockup positions this
+  // past the stub's own edges (e.g. `right:-70px;bottom:-70px`), so without the clip it would bleed
+  // into the cream body below.
+  if (drawBackgroundArt) {
+    ctx.save();
+    ctx.beginPath();
+    ctx.rect(0, 0, CARD_W, stubH);
+    ctx.clip();
+    drawBackgroundArt(ctx, CARD_W, stubH);
+    ctx.restore();
+  }
+
+  // Watermark only belongs on documents that end up as a PDF (the anti-fraud "official document"
+  // cue) - PNG outputs like the Event Pass are shown/saved as a plain ticket image, not printed
+  // as an official record, so they skip it.
+  if (showWatermark && sealImg.naturalWidth) {
+    const sealH = stubH * 0.85;
+    const sealW = sealH * (sealImg.naturalWidth / sealImg.naturalHeight);
+    ctx.save();
+    ctx.globalAlpha = 0.14;
+    ctx.drawImage(sealImg, CARD_W - sealW + 40, stubH - sealH + 30, sealW, sealH);
+    ctx.restore();
+  }
+
+  // Logo badge - real GPREC logo instead of the mockup's "+ LOGO" placeholder, no border box.
+  const badgeW = 96;
+  const badgeH = stubTopRowH;
+  const headerRowLift = 10;
+  if (logoImg.naturalWidth) {
+    const logoH = badgeH - 16;
+    const logoW = (logoH * logoImg.naturalWidth) / logoImg.naturalHeight;
+    ctx.drawImage(logoImg, stubPadSides + (badgeW - logoW) / 2, stubPadTop + 8 - headerRowLift, logoW, logoH);
+  }
+
+  // Eticket tag, top right - a small icon (each pass type's own SVG glyph, matching its mockup
+  // exactly) followed by the label, the pair right-aligned as a group like the mockup's flex row.
+  ctx.fillStyle = CREAM;
+  ctx.font = "400 11px 'Space Mono'";
+  if ("letterSpacing" in ctx) ctx.letterSpacing = "2.5px";
+  const tagText = tag;
+  const tagTextW = ctx.measureText(tagText).width;
+  const tagIconSize = 14;
+  const tagGap = 6;
+  const tagRightEdge = CARD_W - stubPadSides;
+  // Same vertical center as the logo (stubPadTop + stubTopRowH/2), not pinned to the row's top -
+  // the logo is a squat wordmark and the tag is a single text line, so lining up their centers
+  // reads as "same level" even though the removed logo-badge box no longer gives them a shared
+  // literal top edge to flex-align against.
+  const rowCenterY = stubPadTop + stubTopRowH / 2 - headerRowLift;
+  const tagBaselineY = rowCenterY + 4;
+  if (tagIconPath) {
+    ctx.save();
+    ctx.translate(tagRightEdge - tagTextW - tagGap - tagIconSize, rowCenterY - tagIconSize / 2);
+    ctx.scale(tagIconSize / 24, tagIconSize / 24);
+    ctx.fillStyle = AMBER_SOFT;
+    ctx.fill(new Path2D(tagIconPath));
+    ctx.restore();
+    ctx.fillStyle = CREAM;
+  }
+  ctx.textAlign = "right";
+  ctx.fillText(tagText, tagRightEdge, tagBaselineY);
+  ctx.textAlign = "left";
+  if ("letterSpacing" in ctx) ctx.letterSpacing = "0px";
+
+  // Eyebrow, centered.
+  ctx.fillStyle = AMBER_SOFT;
+  ctx.font = "400 11px 'Space Mono'";
+  ctx.textAlign = "center";
+  if ("letterSpacing" in ctx) ctx.letterSpacing = "4px";
+  ctx.fillText(eyebrow, CARD_W / 2, eyebrowY);
+  if ("letterSpacing" in ctx) ctx.letterSpacing = "0px";
+  ctx.textAlign = "left";
+
+  // QR box (cream, rounded, drop shadow) with the real payload inside.
+  const qrWrapX = (CARD_W - qrWrapSize) / 2;
+  ctx.save();
+  ctx.shadowColor = "rgba(0,0,0,0.5)";
+  ctx.shadowBlur = 20;
+  ctx.shadowOffsetY = 10;
+  ticketStubFillRoundedRect(ctx, qrWrapX, qrWrapY, qrWrapSize, qrWrapSize, 14, CREAM);
+  ctx.restore();
+  const qr = qrcode(0, "H");
+  qr.addData(qrText);
+  qr.make();
+  const moduleCount = qr.getModuleCount();
+  const qrInnerSize = qrWrapSize - 28;
+  const qrInnerX = qrWrapX + 14;
+  const qrInnerY = qrWrapY + 14;
+  const moduleSize = qrInnerSize / moduleCount;
+  ctx.fillStyle = NAVY;
+  for (let row = 0; row < moduleCount; row++) {
+    for (let col = 0; col < moduleCount; col++) {
+      if (qr.isDark(row, col)) {
+        ctx.fillRect(qrInnerX + col * moduleSize, qrInnerY + row * moduleSize, moduleSize + 0.5, moduleSize + 0.5);
+      }
+    }
+  }
+
+  // Scan caption.
+  ctx.fillStyle = "rgba(250,246,238,0.65)";
+  ctx.font = "400 10px 'Space Mono'";
+  ctx.textAlign = "center";
+  if ("letterSpacing" in ctx) ctx.letterSpacing = "3px";
+  ctx.fillText(scanCaption, CARD_W / 2, scanCaptionY);
+  if ("letterSpacing" in ctx) ctx.letterSpacing = "0px";
+  ctx.textAlign = "left";
+
+  // ----- Perforation seam -----
+  // Notches are NOT cream - the mockup fills them with the page's own dark background gradient
+  // (`radial-gradient(ellipse at top, #1a2a4d 0%, #060d1c 65%)`), so they read as a hole punched
+  // through the ticket revealing the dark page behind it, not a cream bite out of the card.
+  if (showNotches) {
+    const notchFill = (cx, cy, r) => {
+      const grad = ctx.createRadialGradient(cx, cy - r, 0, cx, cy, r);
+      grad.addColorStop(0, "#1a2a4d");
+      grad.addColorStop(1, "#060d1c");
+      return grad;
+    };
+    ctx.fillStyle = notchFill(0, stubH, 16);
+    ctx.beginPath();
+    ctx.arc(0, stubH, 16, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.fillStyle = notchFill(CARD_W, stubH, 16);
+    ctx.beginPath();
+    ctx.arc(CARD_W, stubH, 16, 0, Math.PI * 2);
+    ctx.fill();
+  }
+  ctx.strokeStyle = "rgba(122,68,48,0.35)";
+  ctx.lineWidth = 2;
+  ctx.setLineDash([6, 5]);
+  ctx.beginPath();
+  ctx.moveTo(0, stubH);
+  ctx.lineTo(CARD_W, stubH);
+  ctx.stroke();
+  ctx.setLineDash([]);
+
+  // ----- Body -----
+  ctx.fillStyle = INK;
+  ctx.font = "600 34px Fraunces";
+  if ("letterSpacing" in ctx) ctx.letterSpacing = "-0.5px";
+  titleLines.slice(0, 2).forEach((line, i) => {
+    ctx.fillText(line, bodyPadSides, titleY + 30 + i * titleLineH);
+  });
+  if ("letterSpacing" in ctx) ctx.letterSpacing = "0px";
+  if (subtitle) {
+    ctx.fillStyle = "#7a4430";
+    ctx.font = "600 13px Inter";
+    ctx.fillText(subtitle, bodyPadSides, subtitleY);
+  }
+
+  ctx.fillStyle = AMBER;
+  ctx.fillRect(bodyPadSides, ruleY, 52, 3);
+
+  const col1X = bodyPadSides;
+  const col2X = bodyPadSides + colW + 16;
+
+  const drawField = (x, y, w, field) => {
+    ctx.fillStyle = AMBER;
+    ctx.font = "400 10px 'Space Mono'";
+    if ("letterSpacing" in ctx) ctx.letterSpacing = "2px";
+    ctx.fillText(field.label, x, y);
+    if ("letterSpacing" in ctx) ctx.letterSpacing = "0px";
+    if (field.status) {
+      // Soft halo ring around the dot (`box-shadow:0 0 0 3px rgba(47,168,102,0.2)`), drawn before
+      // the solid dot so the dot's own fill sits on top of it, same stacking order as the CSS.
+      ctx.fillStyle = "rgba(47,168,102,0.2)";
+      ctx.beginPath();
+      ctx.arc(x + 4, y + 21, 6.5, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.fillStyle = GREEN;
+      ctx.beginPath();
+      ctx.arc(x + 4, y + 21, 3.5, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.fillStyle = GREEN_TEXT;
+      ctx.font = "700 15px Inter";
+      ctx.fillText(field.value || "-", x + 14, y + 26);
+      return;
+    }
+    ctx.fillStyle = INK;
+    ctx.font = field.mono ? "700 16px 'Space Mono'" : "700 17px Inter";
+    // No line cap - the row height was already computed from this same wrapping, so every line
+    // has room and nothing needs to be truncated.
+    canvasTextLines(ctx, field.value || "-", w).forEach((lineText, lineIndex) => {
+      ctx.fillText(lineText, x, y + 22 + lineIndex * fieldValueLineH);
+    });
+  };
+
+  rows.forEach((row, rowIndex) => {
+    const y = rowStartYs[rowIndex] + 12;
+    if (row.length === 1) {
+      drawField(col1X, y, CARD_W - bodyPadSides * 2, row[0]);
+    } else {
+      drawField(col1X, y, colW, row[0]);
+      drawField(col2X, y, colW, row[1]);
+    }
+  });
+
+  // Footer bar.
+  ticketStubFillRoundedRect(ctx, bodyPadSides, footerY, CARD_W - bodyPadSides * 2, footerH, 10, NAVY);
+  ctx.fillStyle = AMBER_SOFT;
+  ctx.font = "400 11px 'Space Mono'";
+  if ("letterSpacing" in ctx) ctx.letterSpacing = "2.5px";
+  ctx.textAlign = "left";
+  ctx.fillText(footerLeft, bodyPadSides + 18, footerY + footerH / 2 + 4);
+  ctx.fillStyle = CREAM;
+  ctx.textAlign = "right";
+  ctx.fillText(footerRight, CARD_W - bodyPadSides - 18, footerY + footerH / 2 + 4);
+  if ("letterSpacing" in ctx) ctx.letterSpacing = "0px";
+  ctx.textAlign = "left";
+
+  ctx.restore();
+  // pageWidth/pageHeight (template-pixel units) travel with the canvas for callers that wrap it
+  // into a PDF via buildImageOnlyPdf (Bus/Vehicle/Hostel passes) - same convention as
+  // buildPaymentReceiptImage's return value. buildEventTicketImage (the one caller that wants a
+  // plain PNG, not a PDF) just reads .canvas and encodes it itself.
+  return { canvas, pageWidth: CARD_W, pageHeight: totalH };
+};
+
+// Shared canvas -> JPEG Uint8Array conversion, same toBlob/arrayBuffer pattern used throughout
+// this file's other PDF-embedded-image code (loadImageAsJpegBytes, buildPaymentReceiptImage) -
+// factored out here so every ticket-stub-family document wrapping its canvas into a PDF doesn't
+// repeat it.
+const canvasToJpegBytes = (canvas, quality = 0.95) =>
+  new Promise((resolve, reject) => {
+    canvas.toBlob(
+      (blob) => {
+        if (!blob) {
+          reject(new Error("toBlob failed"));
+          return;
+        }
+        blob.arrayBuffer().then((buffer) => resolve(new Uint8Array(buffer))).catch(reject);
+      },
+      "image/jpeg",
+      quality
+    );
+  });
+
+// Short readable pass code for the ticket-stub docs that don't already have their own ID concept
+// (Bus/Vehicle Pass) - same deterministic short-hash approach as buildEventTicketImage's
+// makeTicketCode, so re-downloading the same approved pass always shows the same code.
+const makeShortPassId = (prefix, parts) => {
+  const source = parts.filter(Boolean).join("|");
+  let hash = 0;
+  for (let i = 0; i < source.length; i += 1) hash = (hash * 31 + source.charCodeAt(i)) >>> 0;
+  return `${prefix}-${hash.toString(36).toUpperCase().padStart(6, "0").slice(-6)}`;
+};
+
+const A4_DOC_COLORS = {
+  NAVY_DEEP: "#0a1730",
+  NAVY: "#0f1f3d",
+  AMBER: "#e8821a",
+  AMBER_SOFT: "#f0a34d",
+  CREAM: "#faf6ee",
+  INK: "#0f1f3d",
+  MUTED: "#6b7180",
+  LINE: "#e3ddd0"
+};
+const a4DocRoundedRectPath = (ctx, x, y, w, h, r) => {
+  const rr = Math.min(r, w / 2, h / 2);
+  ctx.beginPath();
+  ctx.moveTo(x + rr, y);
+  ctx.arcTo(x + w, y, x + w, y + h, rr);
+  ctx.arcTo(x + w, y + h, x, y + h, rr);
+  ctx.arcTo(x, y + h, x, y, rr);
+  ctx.arcTo(x, y, x + w, y, rr);
+  ctx.closePath();
+};
+
+// Shared header band (logo + org name + doc number, top right) for the A4-sheet document family
+// (Pay Slip, Form 16) - matches "34_pay_slip.html"/"35_form_16.html"'s identical header chrome.
+const drawA4DocHeader = async (ctx, cardW, docNoLabel, docNo) => {
+  const { NAVY, NAVY_DEEP, AMBER_SOFT, CREAM } = A4_DOC_COLORS;
+  const headH = 78;
+  const headGrad = ctx.createLinearGradient(0, 0, cardW * 0.5, headH);
+  headGrad.addColorStop(0, NAVY);
+  headGrad.addColorStop(1, NAVY_DEEP);
+  ctx.fillStyle = headGrad;
+  ctx.fillRect(0, 0, cardW, headH);
+
+  const logoImg = new Image();
+  await new Promise((resolve) => {
+    logoImg.onload = resolve;
+    logoImg.onerror = resolve;
+    logoImg.src = gprecLogoUrl;
+  });
+  // Logo beside a two-line org name + department (matching the mockup's `.org-name`/`.org-sub`
+  // hierarchy - a single plain line loses the bold-college-name/muted-subtitle distinction).
+  let textX = 32;
+  if (logoImg.naturalWidth) {
+    const logoH = 26;
+    const logoW = (logoH * logoImg.naturalWidth) / logoImg.naturalHeight;
+    ctx.drawImage(logoImg, 32, (headH - logoH) / 2, logoW, logoH);
+    textX = 32 + logoW + 14;
+  }
+  ctx.fillStyle = CREAM;
+  ctx.font = "700 15px Fraunces";
+  ctx.fillText("G Pulla Reddy Engineering College", textX, 38);
+  ctx.fillStyle = "rgba(250,246,238,0.65)";
+  ctx.font = "400 9.5px Inter";
+  ctx.fillText("Human Resources Department", textX, 56);
+
+  ctx.textAlign = "right";
+  ctx.fillStyle = AMBER_SOFT;
+  ctx.font = "700 10px 'Space Mono'";
+  ctx.fillText(docNoLabel, cardW - 32, 32);
+  ctx.font = "700 14px 'Space Mono'";
+  ctx.fillStyle = CREAM;
+  ctx.fillText(docNo, cardW - 32, 52);
+  ctx.textAlign = "left";
+  return headH;
+};
+
+// Shared footer bar for the A4-sheet document family.
+const drawA4DocFooter = (ctx, cardW, y, text) => {
+  const { NAVY, AMBER_SOFT } = A4_DOC_COLORS;
+  const h = 32;
+  ctx.fillStyle = NAVY;
+  ctx.fillRect(0, y, cardW, h);
+  ctx.fillStyle = AMBER_SOFT;
+  ctx.textAlign = "center";
+  ctx.font = "700 10px 'Space Mono'";
+  ctx.fillText(text, cardW / 2, y + h / 2 + 3);
+  ctx.textAlign = "left";
+  return h;
+};
+
+// Pay Slip canvas matching "34_pay_slip.html": navy header, dashed title band, 2-col employee
+// grid, side-by-side Earnings/Deductions tables (real components only - no invented allowances
+// beyond what this app's payroll constants already include), navy Net Pay bar, amount-in-words,
+// bank line (real account details via getBankDetailsFor when on file), navy footer.
+const buildPaySlipImage = async ({ slipNo, employeeName, employeeId, designation, department, month, earnings, deductions, bankLine }) => {
+  await ensureBrandFontsLoaded();
+  const { NAVY, NAVY_DEEP, AMBER, AMBER_SOFT, CREAM, INK, MUTED, LINE } = A4_DOC_COLORS;
+  const CARD_W = 620;
+  const SCALE = 2;
+  const padSides = 32;
+
+  const gross = earnings.reduce((sum, [, amount]) => sum + amount, 0);
+  const totalDeductions = deductions.reduce((sum, [, amount]) => sum + amount, 0);
+  const netPay = gross - totalDeductions;
+
+  const measureCanvas = document.createElement("canvas");
+  const measureCtx = measureCanvas.getContext("2d");
+
+  const titleBandY = 78 + 40;
+  const gridY = titleBandY + 60;
+  const gridRowH = 40;
+  // PAN and Date of Joining have no data source anywhere in this app (no HR/payroll record
+  // tracks them) - shown as "-" rather than invented, same honest-gap approach used elsewhere
+  // in this redesign (e.g. Vehicle Pass's Parking Zone).
+  const gridPairs = [
+    ["EMPLOYEE NAME", employeeName, false], ["EMPLOYEE ID", employeeId, true],
+    ["DESIGNATION", designation, false], ["DEPARTMENT", department, false],
+    ["PAN", "-", true], ["DATE OF JOINING", "-", false]
+  ];
+  const gridRows = Math.ceil(gridPairs.length / 2);
+  const tablesY = gridY + gridRows * gridRowH + 20;
+  const tableRowH = 26;
+  const tableRows = Math.max(earnings.length, deductions.length);
+  const tablesH = tableRowH * tableRows + 40;
+  const netBarY = tablesY + tablesH + 20;
+  const netBarH = 44;
+  const wordsText = `Amount in words: ${numberToWordsInr(netPay)}`;
+  measureCtx.font = "400 11px Inter";
+  const wordsLines = canvasTextLines(measureCtx, wordsText, CARD_W - padSides * 2);
+  const wordsY = netBarY + netBarH + 26;
+  const bankY = wordsY + wordsLines.length * 16 + 18;
+  const footerY = bankY + 24;
+  const totalH = footerY + 32;
+
+  const canvas = document.createElement("canvas");
+  canvas.width = CARD_W * SCALE;
+  canvas.height = totalH * SCALE;
+  const ctx = canvas.getContext("2d");
+  ctx.scale(SCALE, SCALE);
+  ctx.fillStyle = CREAM;
+  ctx.fillRect(0, 0, CARD_W, totalH);
+
+  await drawA4DocHeader(ctx, CARD_W, "SLIP NO.", slipNo);
+
+  ctx.fillStyle = AMBER;
+  ctx.textAlign = "center";
+  ctx.font = "700 10.5px 'Space Mono'";
+  ctx.fillText("SALARY STATEMENT", CARD_W / 2, titleBandY - 30);
+  ctx.fillStyle = INK;
+  ctx.font = "600 24px Fraunces";
+  ctx.fillText("Pay Slip", CARD_W / 2, titleBandY);
+  ctx.fillStyle = MUTED;
+  ctx.font = "600 12px Inter";
+  ctx.fillText(`For the Month of ${month}`, CARD_W / 2, titleBandY + 20);
+  ctx.textAlign = "left";
+  ctx.strokeStyle = LINE;
+  ctx.lineWidth = 1.5;
+  ctx.setLineDash([5, 4]);
+  ctx.beginPath();
+  ctx.moveTo(padSides, titleBandY + 36);
+  ctx.lineTo(CARD_W - padSides, titleBandY + 36);
+  ctx.stroke();
+  ctx.setLineDash([]);
+
+  const colW = (CARD_W - padSides * 2 - 40) / 2;
+  gridPairs.forEach(([label, value, mono], i) => {
+    const x = padSides + (i % 2) * (colW + 40);
+    const y = gridY + Math.floor(i / 2) * gridRowH;
+    ctx.fillStyle = AMBER;
+    ctx.font = "700 9px 'Space Mono'";
+    ctx.fillText(label, x, y);
+    ctx.fillStyle = INK;
+    ctx.font = mono ? "700 13px 'Space Mono'" : "700 14px Inter";
+    wrapCanvasText(ctx, value || "-", x, y + 18, colW, 16, 1);
+  });
+
+  const drawMoneyTable = (x, title, rows, totalLabel, totalValue) => {
+    const w = colW;
+    ctx.fillStyle = NAVY;
+    ctx.font = "700 13px Inter";
+    ctx.fillText(title, x, tablesY);
+    let y = tablesY + 22;
+    rows.forEach(([label, amount]) => {
+      ctx.fillStyle = INK;
+      ctx.font = "400 12px Inter";
+      ctx.fillText(label, x, y);
+      ctx.textAlign = "right";
+      ctx.font = "700 12px 'Space Mono'";
+      ctx.fillText(amount.toLocaleString("en-IN"), x + w, y);
+      ctx.textAlign = "left";
+      y += tableRowH;
+    });
+    // Total bar sits at the shared `tableRows` (max of both columns), not this column's own row
+    // count - keeps Gross Earnings and Total Deductions at the same height even when one side has
+    // fewer line items, same as the mockup's own blank-row padding on the shorter column.
+    y = tablesY + 22 + tableRows * tableRowH;
+    a4DocRoundedRectPath(ctx, x, y + 4, w, 30, 6);
+    ctx.fillStyle = NAVY;
+    ctx.fill();
+    ctx.fillStyle = AMBER_SOFT;
+    ctx.font = "700 10px Inter";
+    ctx.fillText(totalLabel, x + 10, y + 23);
+    ctx.textAlign = "right";
+    ctx.fillStyle = CREAM;
+    ctx.font = "700 12px Inter";
+    ctx.fillText(totalValue.toLocaleString("en-IN"), x + w - 10, y + 23);
+    ctx.textAlign = "left";
+  };
+  drawMoneyTable(padSides, "Earnings", earnings, "GROSS EARNINGS", gross);
+  drawMoneyTable(padSides + colW + 40, "Deductions", deductions, "TOTAL DEDUCTIONS", totalDeductions);
+
+  a4DocRoundedRectPath(ctx, padSides, netBarY, CARD_W - padSides * 2, netBarH, 8);
+  ctx.fillStyle = NAVY;
+  ctx.fill();
+  ctx.fillStyle = AMBER_SOFT;
+  ctx.font = "700 12px Inter";
+  ctx.fillText("NET PAY", padSides + 16, netBarY + netBarH / 2 + 4);
+  ctx.textAlign = "right";
+  ctx.fillStyle = CREAM;
+  ctx.font = "700 20px Fraunces";
+  ctx.fillText(`Rs. ${netPay.toLocaleString("en-IN")}`, CARD_W - padSides - 16, netBarY + netBarH / 2 + 6);
+  ctx.textAlign = "left";
+
+  ctx.fillStyle = MUTED;
+  ctx.font = "italic 400 11px Inter";
+  wordsLines.forEach((line, i) => ctx.fillText(line, padSides, wordsY + i * 16));
+
+  ctx.fillStyle = MUTED;
+  ctx.font = "700 11px 'Space Mono'";
+  ctx.fillText(bankLine, padSides, bankY);
+
+  drawA4DocFooter(ctx, CARD_W, footerY, "THIS IS A COMPUTER-GENERATED PAYSLIP AND DOES NOT REQUIRE A SIGNATURE");
+
+  return { canvas, pageWidth: CARD_W, pageHeight: totalH };
+};
+
+// Form 16 canvas matching "35_form_16.html": navy header, Deductor/Deductee boxes, meta grid,
+// Part A (quarterly TDS - split evenly from the real annual total, since this app has no
+// quarter-by-quarter payroll history) and Part B (salary/tax computation) tables, navy Tax
+// Summary bar, verification line, signature line, footer. PAN/TAN have no data source anywhere
+// in this app - shown as "-" rather than invented.
+const buildForm16Image = async ({ certNo, employeeName, employeeId, designation, department, financialYear, annualGross, annualDeductions, annualNet, estimatedTax }) => {
+  await ensureBrandFontsLoaded();
+  const { NAVY, AMBER, AMBER_SOFT, CREAM, INK, MUTED, LINE } = A4_DOC_COLORS;
+  const CARD_W = 620;
+  const SCALE = 2;
+  const padSides = 32;
+
+  const fyStart = Number(String(financialYear).slice(0, 4)) || new Date().getFullYear();
+  const period = `01 Apr ${fyStart} - 31 Mar ${fyStart + 1}`;
+  const quarterAmount = annualGross / 4;
+  const quarterTax = estimatedTax / 4;
+
+  const titleY = 78 + 26;
+  const boxesY = titleY + 40;
+  const boxesH = 92;
+  const metaY = boxesY + boxesH + 24;
+  const partAY = metaY + 30;
+  const partARowH = 24;
+  const partABottom = partAY + 26 + partARowH * 5;
+  const partBY = partABottom + 36;
+  const partBRows = [
+    ["Gross Annual Pay", annualGross],
+    ["Total Deductions (PF + Professional Tax)", -annualDeductions],
+    ["Net Annual Pay", annualNet],
+    ["Estimated Tax Deducted (TDS)", estimatedTax]
+  ];
+  const partBBottom = partBY + 26 + partBRows.length * 24;
+  const taxBarY = partBBottom + 20;
+  const taxBarH = 44;
+  const verifyY = taxBarY + taxBarH + 30;
+  const signY = verifyY + 50;
+  const footerY = signY + 44;
+  const totalH = footerY + 32;
+
+  const canvas = document.createElement("canvas");
+  canvas.width = CARD_W * SCALE;
+  canvas.height = totalH * SCALE;
+  const ctx = canvas.getContext("2d");
+  ctx.scale(SCALE, SCALE);
+  ctx.fillStyle = CREAM;
+  ctx.fillRect(0, 0, CARD_W, totalH);
+
+  await drawA4DocHeader(ctx, CARD_W, "CERT NO.", certNo);
+
+  ctx.fillStyle = INK;
+  ctx.textAlign = "center";
+  ctx.font = "600 22px Fraunces";
+  ctx.fillText("Form 16", CARD_W / 2, titleY);
+  ctx.fillStyle = MUTED;
+  ctx.font = "400 11px Inter";
+  ctx.fillText("Certificate of Tax Deducted at Source (Salary) - Section 203", CARD_W / 2, titleY + 20);
+  ctx.textAlign = "left";
+
+  const boxW = (CARD_W - padSides * 2 - 24) / 2;
+  const drawBox = (x, title, lines) => {
+    ctx.strokeStyle = LINE;
+    ctx.lineWidth = 1;
+    ctx.strokeRect(x, boxesY, boxW, boxesH);
+    ctx.fillStyle = AMBER;
+    ctx.font = "700 10px 'Space Mono'";
+    ctx.fillText(title, x + 12, boxesY + 20);
+    ctx.fillStyle = INK;
+    ctx.font = "400 12px Inter";
+    lines.forEach((line, i) => ctx.fillText(line, x + 12, boxesY + 42 + i * 17));
+  };
+  drawBox(padSides, "DEDUCTOR (EMPLOYER)", [
+    "G Pulla Reddy Engineering College", "TAN: -", "PAN: -", "Kurnool, Andhra Pradesh"
+  ]);
+  drawBox(padSides + boxW + 24, "DEDUCTEE (EMPLOYEE)", [
+    employeeName, `PAN: -`, `Employee ID: ${employeeId}`, `Designation: ${designation}${department ? `, ${department}` : ""}`
+  ]);
+
+  const metaFields = [["ASSESSMENT YEAR", `${fyStart + 1}-${String(fyStart + 2).slice(-2)}`], ["PERIOD", period], ["EMPLOYER CATEGORY", "Autonomous Institution"]];
+  const metaColW = (CARD_W - padSides * 2) / 3;
+  metaFields.forEach(([label, value], i) => {
+    const x = padSides + i * metaColW;
+    ctx.fillStyle = AMBER;
+    ctx.font = "700 9px 'Space Mono'";
+    ctx.fillText(label, x, metaY);
+    ctx.fillStyle = INK;
+    ctx.font = "700 12px Inter";
+    wrapCanvasText(ctx, value, x, metaY + 17, metaColW - 8, 14, 1);
+  });
+
+  ctx.fillStyle = NAVY;
+  ctx.font = "700 13px Inter";
+  ctx.fillText("Part A - Quarterly TDS Summary", padSides, partAY);
+  const partACols = ["Quarter", "Receipt No.", "Amount Paid", "Tax Deducted", "Tax Deposited"];
+  const partAColX = [padSides, padSides + 100, padSides + 210, padSides + 340, padSides + 460];
+  let py = partAY + 22;
+  ctx.fillStyle = NAVY;
+  ctx.fillRect(padSides, py - 14, CARD_W - padSides * 2, 20);
+  ctx.fillStyle = CREAM;
+  ctx.font = "700 10px Inter";
+  partACols.forEach((c, i) => ctx.fillText(c, partAColX[i], py));
+  py += partARowH;
+  ["Q1 (Apr-Jun)", "Q2 (Jul-Sep)", "Q3 (Oct-Dec)", "Q4 (Jan-Mar)"].forEach((q, qi) => {
+    ctx.strokeStyle = LINE;
+    ctx.strokeRect(padSides, py - 16, CARD_W - padSides * 2, partARowH);
+    ctx.fillStyle = INK;
+    ctx.font = "400 10.5px 'Space Mono'";
+    // Own generated receipt number (not looked up in any real payroll system), same pattern as
+    // every other reference number this app hand-generates (e.g. the Fee Challan's refNumber).
+    const receiptNo = makeShortPassId("QTR", [certNo, qi]);
+    [q, receiptNo, quarterAmount.toLocaleString("en-IN", { maximumFractionDigits: 0 }), quarterTax.toLocaleString("en-IN", { maximumFractionDigits: 0 }), quarterTax.toLocaleString("en-IN", { maximumFractionDigits: 0 })]
+      .forEach((v, i) => ctx.fillText(v, partAColX[i], py));
+    py += partARowH;
+  });
+
+  ctx.fillStyle = NAVY;
+  ctx.font = "700 13px Inter";
+  ctx.fillText("Part B - Salary and Tax Computation", padSides, partBY);
+  let by = partBY + 22;
+  partBRows.forEach(([label, amount]) => {
+    ctx.fillStyle = INK;
+    ctx.font = "400 12px Inter";
+    ctx.fillText(label, padSides, by);
+    ctx.textAlign = "right";
+    ctx.font = "700 12px 'Space Mono'";
+    ctx.fillText((amount < 0 ? "-" : "") + Math.abs(amount).toLocaleString("en-IN"), CARD_W - padSides, by);
+    ctx.textAlign = "left";
+    by += 24;
+  });
+
+  a4DocRoundedRectPath(ctx, padSides, taxBarY, CARD_W - padSides * 2, taxBarH, 8);
+  ctx.fillStyle = NAVY;
+  ctx.fill();
+  ctx.fillStyle = AMBER_SOFT;
+  ctx.font = "700 12px Inter";
+  ctx.fillText("TOTAL TDS", padSides + 16, taxBarY + taxBarH / 2 + 4);
+  ctx.textAlign = "right";
+  ctx.fillStyle = CREAM;
+  ctx.font = "700 18px Fraunces";
+  ctx.fillText(`Rs. ${estimatedTax.toLocaleString("en-IN")}`, CARD_W - padSides - 16, taxBarY + taxBarH / 2 + 6);
+  ctx.textAlign = "left";
+
+  ctx.fillStyle = MUTED;
+  ctx.font = "italic 400 11px Inter";
+  ctx.fillText("I, Head of Human Resources, hereby certify the above is true to the best of my knowledge.", padSides, verifyY);
+
+  ctx.strokeStyle = INK;
+  ctx.lineWidth = 1;
+  ctx.beginPath();
+  ctx.moveTo(padSides, signY);
+  ctx.lineTo(padSides + 220, signY);
+  ctx.stroke();
+  ctx.fillStyle = MUTED;
+  ctx.font = "400 10px Inter";
+  ctx.fillText("Signature of Person Responsible for Deduction of Tax", padSides, signY + 16);
+
+  drawA4DocFooter(ctx, CARD_W, footerY, `${certNo} · ASSESSMENT YEAR ${fyStart + 1}-${String(fyStart + 2).slice(-2)}`);
+
+  return { canvas, pageWidth: CARD_W, pageHeight: totalH };
+};
+
+// Renders a { canvas, pageWidth, pageHeight } result (from renderTicketStubCard or any other
+// canvas-based document renderer in this file) into a downloadable PDF via buildImageOnlyPdf -
+// shared by every one of these documents that must stay a "X.pdf" download (Bus/Vehicle/Hostel
+// passes, Temp ID Card, ...), unlike the Event Pass which stays a plain PNG.
+const canvasCardToPdf = async (cardResult) => {
+  const { canvas, pageWidth, pageHeight } = cardResult;
+  const jpegBytes = await canvasToJpegBytes(canvas);
+  return buildImageOnlyPdf(jpegBytes, canvas.width, canvas.height, pageWidth, pageHeight);
+};
+
+// Hall Ticket canvas matching "32_hall_ticket_certificate_style.html": a gold/maroon "certificate"
+// palette (distinct from every other document in this app, which uses the cream/navy/amber set),
+// double gold frame, navy header with the real GPREC logo, photo + identity row, the real dynamic
+// exam-schedule table (unchanged data/derivation from buildHallTicketPdf - only the drawing
+// changed), instructions list, two signature lines. Per explicit direction, this skips the
+// mockup's curved rotating-text stamp and uses the GPREC logo there instead, and reuses the
+// already-loaded Fraunces (not the mockup's Playfair Display) to avoid a second serif font fetch.
+const buildHallTicketImage = async ({ ticketNo, name, rollNumber, branch, className, dob, schedule, photoUrl }) => {
+  await ensureBrandFontsLoaded();
+  const GOLD = "#a9812f", GOLD_SOFT = "#c9a75e", PAPER = "#faf8f3", HT_NAVY = "#16233f",
+    HT_NAVY_DEEP = "#0d1729", MAROON = "#7a2e2e", LINE = "#d8d2c2", MUTED = "#6b7180";
+  const CARD_W = 595;
+  const SCALE = 2;
+  const padOuter = 20;
+  const padSides = 56;
+
+  const logoImg = new Image();
+  await new Promise((resolve) => {
+    logoImg.onload = resolve;
+    logoImg.onerror = resolve;
+    logoImg.src = gprecLogoUrl;
+  });
+  let photoImg = null;
+  if (photoUrl) {
+    photoImg = new Image();
+    await new Promise((resolve) => {
+      photoImg.onload = resolve;
+      photoImg.onerror = resolve;
+      photoImg.src = photoUrl;
+    });
+    if (!photoImg.naturalWidth) photoImg = null;
+  }
+
+  const roundedRectPath = (ctx, x, y, w, h, r) => {
+    const rr = Math.min(r, w / 2, h / 2);
+    ctx.beginPath();
+    ctx.moveTo(x + rr, y);
+    ctx.arcTo(x + w, y, x + w, y + h, rr);
+    ctx.arcTo(x + w, y + h, x, y + h, rr);
+    ctx.arcTo(x, y + h, x, y, rr);
+    ctx.arcTo(x, y, x + w, y, rr);
+    ctx.closePath();
+  };
+
+  const headerY = padOuter + 20;
+  const headerH = 130;
+  const idRowY = headerY + headerH + 30;
+  const idRowH = 96;
+  const scheduleY = idRowY + idRowH + 30;
+  const scheduleHeadH = 24;
+  const scheduleRowH = 24;
+  const scheduleTableH = scheduleHeadH + schedule.length * scheduleRowH;
+  const instructionsY = scheduleY + scheduleTableH + 40;
+  const instructionsLines = [
+    "Carry this hall ticket and your college ID card to every exam.",
+    "Report to the exam center 30 minutes before the session begins.",
+    "Mobile phones and smart devices are not permitted in the hall.",
+    "Occupy only the seat number allotted to you.",
+    "No candidate is permitted entry after 15 minutes from the start of the exam."
+  ];
+  const instructionsH = 24 + instructionsLines.length * 18;
+  const signY = instructionsY + instructionsH + 50;
+  const footerY = signY + 40;
+  const footerH = 32;
+  const totalH = footerY + footerH + padOuter;
+
+  const canvas = document.createElement("canvas");
+  canvas.width = CARD_W * SCALE;
+  canvas.height = totalH * SCALE;
+  const ctx = canvas.getContext("2d");
+  ctx.scale(SCALE, SCALE);
+  ctx.fillStyle = "#e9e6df";
+  ctx.fillRect(0, 0, CARD_W, totalH);
+
+  // Double gold frame.
+  ctx.strokeStyle = GOLD;
+  ctx.lineWidth = 3;
+  ctx.strokeRect(padOuter, padOuter, CARD_W - padOuter * 2, totalH - padOuter * 2);
+  ctx.lineWidth = 1;
+  ctx.strokeRect(padOuter + 6, padOuter + 6, CARD_W - (padOuter + 6) * 2, totalH - (padOuter + 6) * 2);
+  ctx.fillStyle = PAPER;
+  ctx.fillRect(padOuter + 8, padOuter + 8, CARD_W - (padOuter + 8) * 2, totalH - (padOuter + 8) * 2);
+
+  // Header band.
+  const headGrad = ctx.createLinearGradient(padOuter + 8, headerY, CARD_W - padOuter - 8, headerY);
+  headGrad.addColorStop(0, HT_NAVY);
+  headGrad.addColorStop(1, HT_NAVY_DEEP);
+  ctx.fillStyle = headGrad;
+  ctx.fillRect(padOuter + 8, headerY, CARD_W - (padOuter + 8) * 2, headerH);
+  // Real GPREC logo, centered above the college name (matching the mockup's centered crest icon
+  // position, not a left-corner badge like the ticket-stub family).
+  if (logoImg.naturalWidth) {
+    const logoH = 32;
+    const logoW = (logoH * logoImg.naturalWidth) / logoImg.naturalHeight;
+    ctx.drawImage(logoImg, CARD_W / 2 - logoW / 2, headerY + 6, logoW, logoH);
+  }
+  ctx.fillStyle = PAPER;
+  ctx.textAlign = "center";
+  ctx.font = "700 15px Inter";
+  ctx.fillText("G Pulla Reddy Engineering College", CARD_W / 2, headerY + 54);
+  ctx.fillStyle = GOLD_SOFT;
+  ctx.font = "400 10.5px Inter";
+  ctx.fillText("Autonomous Institution - Kurnool", CARD_W / 2, headerY + 68);
+  ctx.font = "600 22px Fraunces";
+  ctx.fillStyle = PAPER;
+  ctx.fillText("Hall Ticket", CARD_W / 2, headerY + 92);
+  ctx.font = "400 11px Inter";
+  ctx.fillStyle = GOLD_SOFT;
+  ctx.fillText("End Semester Examinations", CARD_W / 2, headerY + 108);
+  ctx.textAlign = "left";
+
+  // Ticket number, absolutely positioned top-right of the header (matching the mockup).
+  ctx.textAlign = "right";
+  ctx.fillStyle = GOLD_SOFT;
+  ctx.font = "700 9px 'Space Mono'";
+  ctx.fillText("HALL TICKET NO.", CARD_W - padOuter - 26, headerY + 18);
+  ctx.fillStyle = PAPER;
+  ctx.font = "700 12px 'Space Mono'";
+  ctx.fillText(ticketNo, CARD_W - padOuter - 26, headerY + 32);
+  ctx.textAlign = "left";
+
+  // Identity fields + photo.
+  const photoSize = 78;
+  const photoX = CARD_W - padSides - photoSize;
+  if (photoImg || true) {
+    roundedRectPath(ctx, photoX, idRowY, photoSize, photoSize, 4);
+    ctx.save();
+    ctx.clip();
+    ctx.fillStyle = "#dcd3c2";
+    ctx.fillRect(photoX, idRowY, photoSize, photoSize);
+    if (photoImg) {
+      const coverScale = Math.max(photoSize / photoImg.naturalWidth, photoSize / photoImg.naturalHeight);
+      const drawW = photoImg.naturalWidth * coverScale;
+      const drawH = photoImg.naturalHeight * coverScale;
+      ctx.drawImage(photoImg, photoX + photoSize / 2 - drawW / 2, idRowY + photoSize / 2 - drawH / 2, drawW, drawH);
+    } else {
+      ctx.fillStyle = HT_NAVY;
+      ctx.font = "700 26px Inter";
+      ctx.textAlign = "center";
+      ctx.textBaseline = "middle";
+      const initials = (name || "S").split(/\s+/).filter(Boolean).slice(0, 2).map((w) => w[0]).join("").toUpperCase();
+      ctx.fillText(initials, photoX + photoSize / 2, idRowY + photoSize / 2);
+      ctx.textBaseline = "alphabetic";
+      ctx.textAlign = "left";
+    }
+    ctx.restore();
+    ctx.strokeStyle = GOLD;
+    ctx.lineWidth = 1.5;
+    roundedRectPath(ctx, photoX, idRowY, photoSize, photoSize, 4);
+    ctx.stroke();
+  }
+  // Exam centre isn't shown here since it can differ per subject - it's shown per-row in the
+  // exam schedule table below instead, same reasoning the original PDF version already had.
+  const idFields = [
+    ["STUDENT NAME", name], ["ROLL NUMBER", rollNumber],
+    ["COURSE / BRANCH", `B.Tech - ${branch}`], ["CLASS", className || "-"],
+    ["DATE OF BIRTH", dob || "-"]
+  ];
+  const idColW = photoX - padSides - 20;
+  idFields.forEach(([label, value], i) => {
+    const x = padSides + (i % 2) * (idColW / 2 + 10);
+    const y = idRowY + Math.floor(i / 2) * 46 + 14;
+    ctx.fillStyle = GOLD;
+    ctx.font = "700 9px 'Space Mono'";
+    ctx.fillText(label, x, y);
+    ctx.fillStyle = HT_NAVY;
+    ctx.font = "700 13px Inter";
+    wrapCanvasText(ctx, value, x, y + 18, idColW / 2 - 10, 15, 1);
+  });
+
+  // Exam schedule table.
+  ctx.fillStyle = GOLD;
+  ctx.font = "700 13px Inter";
+  ctx.fillText("Examination Schedule", padSides, scheduleY - 8);
+  const cols = [
+    ["Subject", 128], ["Date", 60], ["Time", 78], ["Room", 42], ["Seat", 36],
+    ["Exam Centre", CARD_W - padSides * 2 - 128 - 60 - 78 - 42 - 36]
+  ];
+  let cx = padSides;
+  const colX = cols.map(([, w]) => { const x = cx; cx += w; return x; });
+  ctx.fillStyle = HT_NAVY;
+  ctx.fillRect(padSides, scheduleY, CARD_W - padSides * 2, scheduleHeadH);
+  ctx.fillStyle = PAPER;
+  ctx.font = "700 10px Inter";
+  cols.forEach(([label], i) => ctx.fillText(label, colX[i] + 6, scheduleY + 16));
+  schedule.forEach((row, i) => {
+    const y = scheduleY + scheduleHeadH + i * scheduleRowH;
+    ctx.strokeStyle = LINE;
+    ctx.strokeRect(padSides, y, CARD_W - padSides * 2, scheduleRowH);
+    ctx.fillStyle = HT_NAVY;
+    ctx.font = "400 10px Inter";
+    [row.subject, row.date, row.time, row.room, row.seat, row.centre].forEach((val, ci) => {
+      wrapCanvasText(ctx, String(val ?? "-"), colX[ci] + 6, y + 16, cols[ci][1] - 8, 12, 1);
+    });
+  });
+
+  // Instructions.
+  ctx.fillStyle = MAROON;
+  ctx.font = "700 12px Inter";
+  ctx.fillText("Instructions", padSides, instructionsY);
+  ctx.font = "400 10.5px Inter";
+  ctx.fillStyle = HT_NAVY;
+  instructionsLines.forEach((line, i) => ctx.fillText(`- ${line}`, padSides + 8, instructionsY + 20 + i * 18));
+
+  // Signature lines (no stamp, per direction - logo already carries the "official" cue above).
+  ctx.strokeStyle = HT_NAVY;
+  ctx.lineWidth = 1;
+  ctx.beginPath();
+  ctx.moveTo(padSides, signY);
+  ctx.lineTo(padSides + 160, signY);
+  ctx.stroke();
+  ctx.fillStyle = MUTED;
+  ctx.font = "400 10px Inter";
+  ctx.fillText("Student Signature", padSides, signY + 16);
+  ctx.beginPath();
+  ctx.moveTo(CARD_W - padSides - 220, signY);
+  ctx.lineTo(CARD_W - padSides, signY);
+  ctx.stroke();
+  ctx.fillText("Controller of Examinations", CARD_W - padSides - 220, signY + 16);
+
+  // Footer.
+  ctx.fillStyle = HT_NAVY;
+  ctx.fillRect(padOuter + 8, footerY, CARD_W - (padOuter + 8) * 2, footerH);
+  ctx.fillStyle = GOLD_SOFT;
+  ctx.textAlign = "center";
+  ctx.font = "700 9px 'Space Mono'";
+  ctx.fillText(`${ticketNo} - Valid only with a college photo ID`, CARD_W / 2, footerY + footerH / 2 + 3);
+  ctx.textAlign = "left";
+
+  return { canvas, pageWidth: CARD_W, pageHeight: totalH };
+};
+
+// Fee Challan canvas matching "33_gprec_fee_challan.html": a bank-form palette distinct from every
+// other document (dark gray page background, off-white paper, Inter + Space Mono only - no
+// Fraunces, matching the mockup dropping the serif font entirely), real Code 128 barcode (drawn
+// directly from encodeCode128C's bar/space bit string, same real-not-decorative approach as every
+// QR in this app) instead of the mockup's fake CSS gradient strip, underline-style fill-in fields.
+// `copyLabel` is "COLLEGE COPY"/"STUDENT COPY"/"BANK COPY" - the only difference between the 3
+// copies makeChallanPdfs produces.
+const buildFeeChallanImage = async ({ copyLabel, refNumber, name, rollNo, purposeLabel, amountNumber, amountWords, today }) => {
+  await ensureBrandFontsLoaded();
+  const NAVY = "#0f1f3d", AMBER = "#e8821a";
+  const PAPER = "#fdfcf9", INK = "#16233f", LINE = "#c9c2ae", MUTED = "#5f6472";
+  const CARD_W = 720;
+  const SCALE = 2;
+  const margin = 24;
+  const padSides = margin + 32;
+  const sheetRight = CARD_W - margin - 32;
+
+  const logoImg = new Image();
+  await new Promise((resolve) => {
+    logoImg.onload = resolve;
+    logoImg.onerror = resolve;
+    logoImg.src = gprecLogoUrl;
+  });
+  // Same faint seal watermark + diagonal "OFFICIAL DOCUMENT" stamp every other official document
+  // in this app carries (see the note on this in the redesign plan) - the mockup itself doesn't
+  // show one, but dropping it here would be the same regression already caught once on the
+  // Payment Receipt.
+  const sealImg = new Image();
+  await new Promise((resolve) => {
+    sealImg.onload = resolve;
+    sealImg.onerror = resolve;
+    sealImg.src = gprecSealUrl;
+  });
+
+  // ----- Layout, matching "33_gprec_fee_challan.html" row-for-row -----
+  const headY = margin;
+  const headH = 84;
+  const titleRowY = headY + headH;
+  const titleRowH = 56;
+  const metaRowY = titleRowY + titleRowH + 14;
+  const bankY = metaRowY + 40;
+  const bodyY = bankY + 40;
+  const lineRowH = 40;
+  const amountRowH = 44;
+  const twoColRowH = 40;
+  const row1Y = bodyY;
+  const amountRowY = row1Y + lineRowH;
+  const row3Y = amountRowY + amountRowH;
+  const row4Y = row3Y + lineRowH;
+  const row5Y = row4Y + twoColRowH;
+  const signY = row5Y + twoColRowH + 30;
+  const totalH = signY + 60 + margin;
+
+  const canvas = document.createElement("canvas");
+  canvas.width = CARD_W * SCALE;
+  canvas.height = totalH * SCALE;
+  const ctx = canvas.getContext("2d");
+  ctx.scale(SCALE, SCALE);
+  ctx.fillStyle = "#22262f";
+  ctx.fillRect(0, 0, CARD_W, totalH);
+  ctx.fillStyle = PAPER;
+  ctx.fillRect(margin, margin, CARD_W - margin * 2, totalH - margin * 2);
+
+  if (sealImg.naturalWidth) {
+    const sealH = (totalH - margin * 2) * 0.5;
+    const sealW = sealH * (sealImg.naturalWidth / sealImg.naturalHeight);
+    ctx.save();
+    ctx.globalAlpha = 0.06;
+    ctx.drawImage(sealImg, (CARD_W - sealW) / 2, margin + (totalH - margin * 2 - sealH) / 2, sealW, sealH);
+    ctx.restore();
+  }
+  ctx.save();
+  ctx.globalAlpha = 0.06;
+  ctx.translate(CARD_W / 2, totalH / 2);
+  ctx.rotate(-Math.PI / 6);
+  ctx.fillStyle = NAVY;
+  ctx.font = "700 26px Inter";
+  ctx.textAlign = "center";
+  ctx.fillText("GPREC - OFFICIAL DOCUMENT", 0, 0);
+  ctx.textAlign = "left";
+  ctx.restore();
+
+  // head-band: flat navy (not gradient - the mockup's --navy is solid), logo + college name/loc.
+  ctx.fillStyle = NAVY;
+  ctx.fillRect(margin, headY, CARD_W - margin * 2, headH);
+  if (logoImg.naturalWidth) {
+    // gprecLogoUrl is a wide icon+wordmark lockup (~3.6:1), not the mockup's 44x44 square
+    // placeholder - sizing it off the full head-band height (as a naive port of the mockup's
+    // logo-badge would) makes it ~150px wide and shoves the college name badly out of place.
+    // Keep it modest, matching the inset other document headers give this same asset.
+    const logoH = 30;
+    const logoW = (logoH * logoImg.naturalWidth) / logoImg.naturalHeight;
+    ctx.drawImage(logoImg, padSides, headY + (headH - logoH) / 2, logoW, logoH);
+    ctx.fillStyle = "#ffffff";
+    ctx.font = "700 16px Inter";
+    ctx.fillText("G. Pulla Reddy Engineering College", padSides + logoW + 14, headY + headH / 2 - 2);
+    ctx.fillStyle = "rgba(255,255,255,0.6)";
+    ctx.font = "400 11px Inter";
+    ctx.fillText("Kurnool · G.P.R.E.C.", padSides + logoW + 14, headY + headH / 2 + 14);
+  }
+
+  // title-row: title left, barcode block right, border-bottom separator.
+  ctx.strokeStyle = INK;
+  ctx.lineWidth = 1.5;
+  ctx.beginPath();
+  ctx.moveTo(margin, titleRowY + titleRowH);
+  ctx.lineTo(CARD_W - margin, titleRowY + titleRowH);
+  ctx.stroke();
+  ctx.fillStyle = INK;
+  ctx.font = "700 22px Inter";
+  ctx.fillText("GPREC Fee Challan", padSides, titleRowY + titleRowH / 2 + 6);
+
+  // Real Code 128 (Set C) barcode, drawn from the same bit-string encoder every other barcode in
+  // this app already uses - not the mockup's fake repeating-gradient strip.
+  const barcodeW = 170;
+  const barcodeH = 28;
+  const barcodeX = sheetRight - barcodeW;
+  const barcodeY = titleRowY + 10;
+  const pattern = encodeCode128C(refNumber);
+  const moduleW = barcodeW / pattern.length;
+  ctx.fillStyle = INK;
+  let mx = barcodeX;
+  let runStart = null;
+  for (let i = 0; i <= pattern.length; i++) {
+    const bit = pattern[i];
+    if (bit === "1") {
+      if (runStart === null) runStart = mx;
+    } else if (runStart !== null) {
+      ctx.fillRect(runStart, barcodeY, mx - runStart, barcodeH);
+      runStart = null;
+    }
+    mx += moduleW;
+  }
+  ctx.fillStyle = MUTED;
+  ctx.font = "700 9.5px 'Space Mono'";
+  ctx.textAlign = "center";
+  ctx.fillText(refNumber, barcodeX + barcodeW / 2, barcodeY + barcodeH + 14);
+  ctx.textAlign = "left";
+
+  // meta-row: SNO left, amber copy-tag right.
+  ctx.fillStyle = INK;
+  ctx.font = "700 12.5px Inter";
+  ctx.fillText(`SNO: ${refNumber}`, padSides, metaRowY);
+  ctx.textAlign = "right";
+  ctx.fillStyle = AMBER;
+  ctx.fillText(copyLabel, sheetRight, metaRowY);
+  ctx.textAlign = "left";
+
+  // bank-block, centered.
+  ctx.textAlign = "center";
+  ctx.fillStyle = INK;
+  ctx.font = "700 14px Inter";
+  ctx.fillText("ANDHRA BANK", CARD_W / 2, bankY);
+  ctx.font = "600 13px Inter";
+  ctx.fillText("G. PULLA REDDY ENGINEERING COLLEGE KURNOOL - 518007", CARD_W / 2, bankY + 18);
+  ctx.textAlign = "left";
+
+  // challan-body: label + underline-blank line-rows, matching the mockup's field grouping exactly.
+  const lineRow = (y, label, value, valueX = padSides + 190) => {
+    ctx.fillStyle = INK;
+    ctx.font = "600 13.5px Inter";
+    ctx.fillText(label, padSides, y);
+    ctx.fillStyle = INK;
+    ctx.font = "700 13.5px Inter";
+    ctx.fillText(value, valueX, y);
+    ctx.strokeStyle = INK;
+    ctx.lineWidth = 1;
+    ctx.beginPath();
+    ctx.moveTo(valueX, y + 4);
+    ctx.lineTo(sheetRight, y + 4);
+    ctx.stroke();
+  };
+  lineRow(row1Y, "Paid in to the Credit of", `S.B. A/c No. 152110011031255; of G.P.R.E.C., KURNOOL`);
+
+  // amount-row: amber "Rs.", boxed amount blank, "(Rupees ...", boxed words blank, "Only)".
+  let ax = padSides;
+  ctx.fillStyle = AMBER;
+  ctx.font = "700 16px Inter";
+  ctx.fillText("Rs.", ax, amountRowY);
+  ax += ctx.measureText("Rs.").width + 10;
+  ctx.fillStyle = INK;
+  ctx.font = "700 13.5px Inter";
+  const amtText = String(amountNumber);
+  ctx.fillText(amtText, ax + 10, amountRowY);
+  ctx.strokeStyle = INK;
+  ctx.beginPath();
+  ctx.moveTo(ax, amountRowY + 4);
+  ctx.lineTo(ax + 70, amountRowY + 4);
+  ctx.stroke();
+  ax += 80;
+  ctx.font = "400 13.5px Inter";
+  ctx.fillText("/- (Rupees", ax, amountRowY);
+  ax += ctx.measureText("/- (Rupees").width + 8;
+  ctx.font = "700 13.5px Inter";
+  ctx.fillText(amountWords, ax + 6, amountRowY);
+  ctx.strokeStyle = INK;
+  ctx.beginPath();
+  ctx.moveTo(ax, amountRowY + 4);
+  ctx.lineTo(sheetRight - 50, amountRowY + 4);
+  ctx.stroke();
+  ctx.font = "400 13.5px Inter";
+  ctx.fillText("Only)", sheetRight - 44, amountRowY);
+
+  lineRow(row3Y, "towards", purposeLabel);
+
+  // two-col-row: a left field (wide blank, ends at the row's midpoint) + a right field (short
+  // 140pt blank per the mockup's `.blank.short`), matching `.two-col-row` exactly instead of
+  // reusing the full-width lineRow for both halves.
+  const twoColRow = (y, leftLabel, leftValue, leftLabelW, rightLabel, rightValue, rightLabelW) => {
+    const midGap = 12;
+    const leftValueX = padSides + leftLabelW;
+    const leftBlankEnd = CARD_W / 2 - midGap;
+    const rightX = CARD_W / 2 + midGap;
+    const rightValueX = rightX + rightLabelW;
+    const rightBlankEnd = rightValueX + 140;
+
+    ctx.fillStyle = INK;
+    ctx.font = "600 13.5px Inter";
+    ctx.fillText(leftLabel, padSides, y);
+    ctx.font = "700 13.5px Inter";
+    ctx.fillText(leftValue, leftValueX, y);
+    ctx.strokeStyle = INK;
+    ctx.lineWidth = 1;
+    ctx.beginPath();
+    ctx.moveTo(leftValueX, y + 4);
+    ctx.lineTo(leftBlankEnd, y + 4);
+    ctx.stroke();
+
+    ctx.font = "600 13.5px Inter";
+    ctx.fillText(rightLabel, rightX, y);
+    ctx.font = "700 13.5px Inter";
+    ctx.fillText(rightValue, rightValueX, y);
+    ctx.beginPath();
+    ctx.moveTo(rightValueX, y + 4);
+    ctx.lineTo(rightBlankEnd, y + 4);
+    ctx.stroke();
+  };
+  twoColRow(row4Y, "Name:", name.toUpperCase(), 45, "Roll No.:", rollNo, 60);
+  twoColRow(row5Y, "Paid By", "", 65, "Date:", today, 40);
+
+  // sign-footer.
+  ctx.fillStyle = INK;
+  ctx.font = "600 12.5px Inter";
+  ctx.fillText("Teller", padSides, signY);
+  ctx.fillText("Head Cashier", padSides, signY + 22);
+  ctx.fillText("Scroll No. Cash", padSides, signY + 44);
+  ctx.textAlign = "right";
+  ctx.fillText("Entered by", sheetRight, signY);
+  ctx.textAlign = "left";
+
+  return { canvas, pageWidth: CARD_W, pageHeight: totalH };
+};
+
+// Draws a ticket-format pass - a downloadable PNG, not a PDF, so it can be saved straight
+// to a phone's photo gallery ahead of real Apple/Google Wallet integration (which needs signing
+// credentials this app doesn't have yet). Layout/colors match the "Udaan 2K26" reference design -
+// see renderTicketStubCard for the shared card shape this and the other ticket-family passes use.
+const buildEventTicketImage = async (registration, event) => {
   // A public/external registration's response already carries a server-generated gateToken (see
   // register_for_public_event in portal_db_server.py) - the caller has no session to look it back
   // up via getCampusEventRegistrations() the way ensureEventGateToken normally does.
@@ -18582,255 +20497,77 @@ const buildEventTicketImage = async (registration, event) => {
   const ticketCode = makeTicketCode();
   const festName = (getFestName() || "GPREC FEST").toUpperCase();
 
-  const logoImg = new Image();
-  await new Promise((resolve) => {
-    logoImg.onload = resolve;
-    logoImg.onerror = resolve;
-    logoImg.src = gprecLogoUrl;
-  });
+  // Compass-rose watermark, transcribed verbatim from "22_event_pass.html"'s `.compass` svg -
+  // a 200x200 viewBox drawn at 230x230 display size, positioned with its box's right/bottom edges
+  // 70px past the stub's own right/bottom edges (`right:-70px;bottom:-70px`).
+  //
+  // The mockup sets `opacity:0.16` once on the parent <svg> - the browser renders all its child
+  // shapes as one flattened group first (so the star/circle/rings composite at full strength
+  // against each other, same as any other overlapping opaque shapes) and only blends that single
+  // flattened result against the page at 16%. Applying ctx.globalAlpha per-shape instead - the
+  // naive canvas translation - re-blends at 16% (and the inner polygon's own 0.6 again on top of
+  // that) every time two shapes overlap, so the shared center where the star, inner polygon, and
+  // circle all cross stacks into a bright orange blob no such element exists in the mockup. Drawing
+  // the whole group at full opacity onto an offscreen canvas first, then compositing that one buffer
+  // at 16%, reproduces the SVG's group-opacity semantics instead.
+  const drawCompassWatermark = (ctx, cardW, stubH) => {
+    // Supersample the buffer (4x) so the thin 1px rings/spokes stay crisp once the whole group
+    // gets scaled up to its final 230x230 display size.
+    const bufScale = 4;
+    const buf = document.createElement("canvas");
+    buf.width = 200 * bufScale;
+    buf.height = 200 * bufScale;
+    const bctx = buf.getContext("2d");
+    bctx.scale(bufScale, bufScale);
+    bctx.strokeStyle = "#e8821a";
+    bctx.lineWidth = 1;
+    bctx.beginPath(); bctx.arc(100, 100, 95, 0, Math.PI * 2); bctx.stroke();
+    bctx.beginPath(); bctx.arc(100, 100, 70, 0, Math.PI * 2); bctx.stroke();
+    bctx.beginPath(); bctx.moveTo(100, 5); bctx.lineTo(100, 195); bctx.stroke();
+    bctx.beginPath(); bctx.moveTo(5, 100); bctx.lineTo(195, 100); bctx.stroke();
+    bctx.beginPath(); bctx.moveTo(30, 30); bctx.lineTo(170, 170); bctx.stroke();
+    bctx.beginPath(); bctx.moveTo(170, 30); bctx.lineTo(30, 170); bctx.stroke();
+    bctx.fillStyle = "#e8821a";
+    bctx.beginPath();
+    bctx.moveTo(100, 20); bctx.lineTo(112, 100); bctx.lineTo(100, 180); bctx.lineTo(88, 100);
+    bctx.closePath();
+    bctx.fill();
+    bctx.globalAlpha = 0.6;
+    bctx.beginPath();
+    bctx.moveTo(20, 100); bctx.lineTo(100, 88); bctx.lineTo(180, 100); bctx.lineTo(100, 112);
+    bctx.closePath();
+    bctx.fill();
+    bctx.globalAlpha = 1;
+    bctx.beginPath(); bctx.arc(100, 100, 10, 0, Math.PI * 2); bctx.fill();
 
-  // Measured on a scratch context first (font-only, no drawing) so the event title's actual
-  // wrapped line count can push everything below it down correctly - the mockup's body height
-  // isn't fixed, it just grows with content, same as the real HTML/CSS would.
-  const measureCtx = document.createElement("canvas").getContext("2d");
-  measureCtx.font = "600 34px Fraunces";
-  const titleLines = canvasTextLines(measureCtx, event.name || "GPREC Event", 364);
-  const titleLineCount = Math.min(titleLines.length, 2);
-
-  const roundedRectPath = (ctx, x, y, width, height, radius) => {
-    const r = Math.min(radius, width / 2, height / 2);
-    ctx.beginPath();
-    ctx.moveTo(x + r, y);
-    ctx.arcTo(x + width, y, x + width, y + height, r);
-    ctx.arcTo(x + width, y + height, x, y + height, r);
-    ctx.arcTo(x, y + height, x, y, r);
-    ctx.arcTo(x, y, x + width, y, r);
-    ctx.closePath();
+    ctx.save();
+    ctx.globalAlpha = 0.16;
+    ctx.translate(cardW - 160, stubH - 160);
+    ctx.scale(230 / 200, 230 / 200);
+    ctx.drawImage(buf, 0, 0, 200, 200);
+    ctx.restore();
   };
-  const fillRoundedRect = (ctx, x, y, width, height, radius, fillStyle) => {
-    roundedRectPath(ctx, x, y, width, height, radius);
-    ctx.fillStyle = fillStyle;
-    ctx.fill();
-  };
-  const letterSpaced = (text, spacing) => text.split("").join(" ".repeat(Math.round(spacing)));
 
-  // ----- Layout (template-pixel units, top to bottom) -----
-  const stubPadTop = 26;
-  const stubPadSides = 28;
-  const stubTopRowH = 40;
-  const eyebrowY = stubPadTop + stubTopRowH + 22;
-  const qrWrapY = eyebrowY + 14 + 22;
-  const qrWrapSize = 210;
-  const scanCaptionY = qrWrapY + qrWrapSize + 16;
-  const stubH = scanCaptionY + 14 + 38;
-
-  const bodyPadTop = 32;
-  const bodyPadSides = 28;
-  const titleY = stubH + bodyPadTop;
-  const titleLineH = 36;
-  const ruleY = titleY + titleLineCount * titleLineH - titleLineH + 14 + 8;
-  const gridY = ruleY + 3 + 26;
-  const fieldRowH = 52;
-  const fieldRowGap = 22;
-  const gridRows = 3; // Ticket ID/Name, Date/Status, Location
-  const gridBottom = gridY + gridRows * fieldRowH + (gridRows - 1) * fieldRowGap;
-  const footerY = gridBottom + 28;
-  const footerH = 44;
-  const totalH = footerY + footerH + 22;
-
-  const canvas = document.createElement("canvas");
-  canvas.width = CARD_W * SCALE;
-  canvas.height = totalH * SCALE;
-  const ctx = canvas.getContext("2d");
-  ctx.scale(SCALE, SCALE);
-
-  const cardRadius = 22;
-  roundedRectPath(ctx, 0, 0, CARD_W, totalH, cardRadius);
-  ctx.save();
-  ctx.clip();
-  ctx.fillStyle = CREAM;
-  ctx.fillRect(0, 0, CARD_W, totalH);
-
-  // ----- Stub (navy gradient header) -----
-  const stubGrad = ctx.createLinearGradient(0, 0, CARD_W * 0.6, stubH);
-  stubGrad.addColorStop(0, NAVY);
-  stubGrad.addColorStop(1, NAVY_DEEP);
-  ctx.fillStyle = stubGrad;
-  ctx.fillRect(0, 0, CARD_W, stubH);
-
-  // Compass-rose watermark, bottom-right of the stub, matching the mockup's faint ring/diamond art.
-  ctx.save();
-  ctx.globalAlpha = 0.16;
-  ctx.translate(CARD_W - 70 + 115, stubH - 70 + 115);
-  ctx.strokeStyle = AMBER;
-  ctx.lineWidth = 1;
-  [95, 70].forEach((r) => {
-    ctx.beginPath();
-    ctx.arc(0, 0, r, 0, Math.PI * 2);
-    ctx.stroke();
+  const { canvas } = await renderTicketStubCard({
+    eyebrow: `${festName} · EVENT PASS`,
+    scanCaption: "SCAN AT ENTRY GATE",
+    tag: "E-TICKET",
+    tagIconPath: TICKET_ICON_PATHS.ticket,
+    qrText: scanUrl,
+    title: event.name || "GPREC Event",
+    fields: [
+      { label: "TICKET ID", value: ticketCode, mono: true },
+      { label: "NAME", value: registration.participantName },
+      { label: "DATE", value: formatCampusEventDate(event.date) },
+      { label: "STATUS", value: registration.paymentStatus || "Registered", status: true },
+      { label: "LOCATION", value: event.venue || "Venue TBA", fullWidth: true }
+    ],
+    footerLeft: festName,
+    footerRight: "ADMIT ONE",
+    showNotches: true,
+    showWatermark: false,
+    drawBackgroundArt: drawCompassWatermark
   });
-  ctx.beginPath();
-  ctx.moveTo(0, -95); ctx.lineTo(0, 95);
-  ctx.moveTo(-95, 0); ctx.lineTo(95, 0);
-  ctx.moveTo(-70, -70); ctx.lineTo(70, 70);
-  ctx.moveTo(70, -70); ctx.lineTo(-70, 70);
-  ctx.stroke();
-  ctx.fillStyle = AMBER;
-  ctx.beginPath();
-  ctx.moveTo(0, -80); ctx.lineTo(12, 0); ctx.lineTo(0, 80); ctx.lineTo(-12, 0);
-  ctx.closePath();
-  ctx.fill();
-  ctx.globalAlpha = 0.16 * 0.6;
-  ctx.beginPath();
-  ctx.moveTo(-80, 0); ctx.lineTo(0, -12); ctx.lineTo(80, 0); ctx.lineTo(0, 12);
-  ctx.closePath();
-  ctx.fill();
-  ctx.globalAlpha = 0.16;
-  ctx.beginPath();
-  ctx.arc(0, 0, 10, 0, Math.PI * 2);
-  ctx.fill();
-  ctx.restore();
-
-  // Logo badge (dashed box, real GPREC logo instead of the mockup's "+ LOGO" placeholder).
-  const badgeW = 96;
-  const badgeH = stubTopRowH;
-  ctx.save();
-  ctx.strokeStyle = "rgba(232,130,26,0.55)";
-  ctx.lineWidth = 1.5;
-  ctx.setLineDash([4, 3]);
-  roundedRectPath(ctx, stubPadSides, stubPadTop, badgeW, badgeH, 10);
-  ctx.stroke();
-  ctx.setLineDash([]);
-  ctx.restore();
-  if (logoImg.naturalWidth) {
-    const logoH = badgeH - 16;
-    const logoW = (logoH * logoImg.naturalWidth) / logoImg.naturalHeight;
-    ctx.drawImage(logoImg, stubPadSides + (badgeW - logoW) / 2, stubPadTop + 8, logoW, logoH);
-  }
-
-  // E-TICKET tag, top right.
-  ctx.fillStyle = CREAM;
-  ctx.font = "700 11px 'Space Mono'";
-  ctx.textAlign = "right";
-  ctx.fillText(letterSpaced("E-TICKET", 1.5), CARD_W - stubPadSides, stubPadTop + 12);
-  ctx.textAlign = "left";
-
-  // Eyebrow: "<FEST NAME> · EVENT PASS", centered.
-  ctx.fillStyle = AMBER_SOFT;
-  ctx.font = "700 11px 'Space Mono'";
-  ctx.textAlign = "center";
-  ctx.fillText(letterSpaced(`${festName} · EVENT PASS`, 2), CARD_W / 2, eyebrowY);
-  ctx.textAlign = "left";
-
-  // QR box (cream, rounded, drop shadow) with the real gate-scan QR inside.
-  const qrWrapX = (CARD_W - qrWrapSize) / 2;
-  ctx.save();
-  ctx.shadowColor = "rgba(0,0,0,0.5)";
-  ctx.shadowBlur = 20;
-  ctx.shadowOffsetY = 10;
-  fillRoundedRect(ctx, qrWrapX, qrWrapY, qrWrapSize, qrWrapSize, 14, CREAM);
-  ctx.restore();
-  const qr = qrcode(0, "H");
-  qr.addData(scanUrl);
-  qr.make();
-  const moduleCount = qr.getModuleCount();
-  const qrInnerSize = qrWrapSize - 28;
-  const qrInnerX = qrWrapX + 14;
-  const qrInnerY = qrWrapY + 14;
-  const moduleSize = qrInnerSize / moduleCount;
-  ctx.fillStyle = NAVY;
-  for (let row = 0; row < moduleCount; row++) {
-    for (let col = 0; col < moduleCount; col++) {
-      if (qr.isDark(row, col)) {
-        ctx.fillRect(qrInnerX + col * moduleSize, qrInnerY + row * moduleSize, moduleSize + 0.5, moduleSize + 0.5);
-      }
-    }
-  }
-
-  // Scan caption.
-  ctx.fillStyle = "rgba(250,246,238,0.65)";
-  ctx.font = "700 10px 'Space Mono'";
-  ctx.textAlign = "center";
-  ctx.fillText(letterSpaced("SCAN AT ENTRY GATE", 2.5), CARD_W / 2, scanCaptionY);
-  ctx.textAlign = "left";
-
-  // ----- Perforation seam (dashed line + two cream notches cut into the stub/body boundary) -----
-  ctx.fillStyle = CREAM;
-  ctx.beginPath();
-  ctx.arc(0, stubH, 16, 0, Math.PI * 2);
-  ctx.fill();
-  ctx.beginPath();
-  ctx.arc(CARD_W, stubH, 16, 0, Math.PI * 2);
-  ctx.fill();
-  ctx.strokeStyle = "rgba(122,68,48,0.35)";
-  ctx.lineWidth = 2;
-  ctx.setLineDash([6, 5]);
-  ctx.beginPath();
-  ctx.moveTo(0, stubH);
-  ctx.lineTo(CARD_W, stubH);
-  ctx.stroke();
-  ctx.setLineDash([]);
-
-  // ----- Body -----
-  ctx.fillStyle = INK;
-  ctx.font = "600 34px Fraunces";
-  titleLines.slice(0, 2).forEach((line, i) => {
-    ctx.fillText(line, bodyPadSides, titleY + 30 + i * titleLineH);
-  });
-
-  ctx.fillStyle = AMBER;
-  ctx.fillRect(bodyPadSides, ruleY, 52, 3);
-
-  const drawField = (x, y, w, label, value, valueColor = INK) => {
-    ctx.fillStyle = AMBER;
-    ctx.font = "700 10px 'Space Mono'";
-    ctx.fillText(letterSpaced(label, 1.2), x, y);
-    ctx.fillStyle = valueColor;
-    ctx.font = "700 17px Inter";
-    wrapCanvasText(ctx, value || "-", x, y + 22, w, 20, 1);
-  };
-  const colW = (CARD_W - bodyPadSides * 2 - 16) / 2;
-  const col1X = bodyPadSides;
-  const col2X = bodyPadSides + colW + 16;
-
-  drawField(col1X, gridY + 12, colW, "TICKET ID", ticketCode, INK);
-  ctx.font = "700 17px 'Space Mono'";
-  drawField(col2X, gridY + 12, colW, "NAME", registration.participantName);
-
-  const row2Y = gridY + fieldRowH + fieldRowGap + 12;
-  ctx.fillStyle = AMBER;
-  ctx.font = "700 10px 'Space Mono'";
-  ctx.fillText(letterSpaced("DATE", 1.2), col1X, row2Y);
-  ctx.fillStyle = INK;
-  ctx.font = "700 17px Inter";
-  wrapCanvasText(ctx, formatCampusEventDate(event.date) || "-", col1X, row2Y + 22, colW, 20, 1);
-
-  ctx.fillStyle = AMBER;
-  ctx.font = "700 10px 'Space Mono'";
-  ctx.fillText(letterSpaced("STATUS", 1.2), col2X, row2Y);
-  ctx.fillStyle = GREEN;
-  ctx.beginPath();
-  ctx.arc(col2X + 4, row2Y + 26, 3.5, 0, Math.PI * 2);
-  ctx.fill();
-  ctx.fillStyle = GREEN_TEXT;
-  ctx.font = "700 15px Inter";
-  ctx.fillText(registration.paymentStatus || "Registered", col2X + 14, row2Y + 31);
-
-  const row3Y = row2Y + fieldRowH + fieldRowGap;
-  drawField(col1X, row3Y, CARD_W - bodyPadSides * 2, "LOCATION", event.venue || "Venue TBA", INK);
-
-  // Footer bar: fest name left, "ADMIT ONE" right, on a navy rounded pill.
-  fillRoundedRect(ctx, bodyPadSides, footerY, CARD_W - bodyPadSides * 2, footerH, 10, NAVY);
-  ctx.fillStyle = AMBER_SOFT;
-  ctx.font = "700 11px 'Space Mono'";
-  ctx.textAlign = "left";
-  ctx.fillText(letterSpaced(festName, 2.5), bodyPadSides + 18, footerY + footerH / 2 + 4);
-  ctx.fillStyle = CREAM;
-  ctx.textAlign = "right";
-  ctx.fillText(letterSpaced("ADMIT ONE", 2.5), CARD_W - bodyPadSides - 18, footerY + footerH / 2 + 4);
-  ctx.textAlign = "left";
-
-  ctx.restore();
   return new Promise((resolve) => canvas.toBlob(resolve, "image/png"));
 };
 
@@ -18856,6 +20593,7 @@ const recordEventPayment = async (paymentType, paymentReference) => {
   const participantName = eventParticipantName?.value.trim() || "Student";
   const rollNumber = getCurrentStudentId();
   const paymentDate = new Date().toLocaleDateString("en-IN", { day: "2-digit", month: "short", year: "numeric" });
+  const paymentTime = new Date().toLocaleTimeString("en-IN", { hour: "2-digit", minute: "2-digit", hour12: true });
 
   const receiptLines = [
     `Participant Name: ${participantName}`,
@@ -18865,6 +20603,7 @@ const recordEventPayment = async (paymentType, paymentReference) => {
     `Payment Type: ${paymentType}`,
     `Payment Reference: ${paymentReference}`,
     `Payment Date: ${paymentDate}`,
+    `Payment Time: ${paymentTime}`,
     "Payment Status: Paid"
   ];
   const pdf = await makeReceiptPdf("GPREC Event Registration Receipt", receiptLines);
@@ -21954,51 +23693,25 @@ if (facultyDashboardName) {
       const basic = 45000;
       const da = 4500;
       const hra = 9000;
-      const gross = basic + da + hra;
       const pf = 5400;
       const professionalTax = 200;
-      const deductions = pf + professionalTax;
-      const netPay = gross - deductions;
-
-      const identityTable = {
-        columns: [
-          { label: "Field", width: 150 },
-          { label: "Details", width: 300 }
-        ],
-        rows: [
-          ["Employee Name", facultyRecord.name],
-          ["Designation", facultyRecord.designation],
-          ["Department", facultyRecord.department],
-          ["Email", facultyRecord.email],
-          ["Pay Period", month]
-        ]
-      };
-      const payTable = {
-        columns: [
-          { label: "Component", width: 220 },
-          { label: "Type", width: 110 },
-          { label: "Amount (Rs.)", width: 110 }
-        ],
-        rows: [
-          ["Basic Pay", "Earning", basic.toLocaleString("en-IN")],
-          ["Dearness Allowance (DA)", "Earning", da.toLocaleString("en-IN")],
-          ["House Rent Allowance (HRA)", "Earning", hra.toLocaleString("en-IN")],
-          ["Provident Fund (PF)", "Deduction", pf.toLocaleString("en-IN")],
-          ["Professional Tax", "Deduction", professionalTax.toLocaleString("en-IN")]
-        ]
-      };
-      const summaryTable = {
-        columns: [
-          { label: "Pay Summary", width: 220 },
-          { label: "Amount (Rs.)", width: 220 }
-        ],
-        rows: [
-          ["Gross Pay", gross.toLocaleString("en-IN")],
-          ["Total Deductions", deductions.toLocaleString("en-IN")],
-          ["Net Pay", netPay.toLocaleString("en-IN")]
-        ]
-      };
-      const pdf = await makeSimplePdf(`GPREC Payslip - ${month}`, [], [identityTable, payTable, summaryTable]);
+      const bankKey = `faculty-${facultyRecord.email}`;
+      const bankDetails = getBankDetailsFor(bankKey, null);
+      const bankLine = bankDetails?.accountNumber
+        ? `Paid to Bank A/c: ${maskAccountNumber(bankDetails.accountNumber)} · Bank: ${bankDetails.bankName || "-"} · Payment Date: ${new Date().toLocaleDateString("en-IN", { day: "2-digit", month: "short", year: "numeric" })}`
+        : "Bank details not on file";
+      const card = await buildPaySlipImage({
+        slipNo: makeShortPassId("PS", [facultyRecord.email, month]),
+        employeeName: facultyRecord.name,
+        employeeId: makeShortPassId("EMP", [facultyRecord.email]),
+        designation: facultyRecord.designation,
+        department: facultyRecord.department,
+        month,
+        earnings: [["Basic Pay", basic], ["Dearness Allowance", da], ["House Rent Allowance", hra]],
+        deductions: [["Provident Fund", pf], ["Professional Tax", professionalTax]],
+        bankLine
+      });
+      const pdf = await canvasCardToPdf(card);
       const link = document.createElement("a");
       link.href = URL.createObjectURL(pdf);
       link.download = `payslip-${month.replace(/\s+/g, "-")}.pdf`;
@@ -22060,38 +23773,19 @@ if (facultyDashboardName) {
       const annualNet = annualGross - annualDeductions;
       const estimatedTax = Math.round(annualGross * 0.05);
 
-      const identityTable = {
-        columns: [
-          { label: "Field", width: 150 },
-          { label: "Details", width: 300 }
-        ],
-        rows: [
-          ["Employee Name", facultyRecord.name],
-          ["Designation", facultyRecord.designation],
-          ["Department", facultyRecord.department],
-          ["Email", facultyRecord.email],
-          ["Financial Year", financialYear]
-        ]
-      };
-      const taxTable = {
-        columns: [
-          { label: "Particulars", width: 260 },
-          { label: "Amount (Rs.)", width: 140 }
-        ],
-        rows: [
-          ["Gross Annual Salary", annualGross.toLocaleString("en-IN")],
-          ["Total Deductions (PF + Professional Tax)", annualDeductions.toLocaleString("en-IN")],
-          ["Estimated Income Tax Deducted (TDS)", estimatedTax.toLocaleString("en-IN")],
-          ["Net Annual Salary", annualNet.toLocaleString("en-IN")]
-        ]
-      };
-      const pdf = await makeSimplePdf(
-        `GPREC Form 16 - ${financialYear}`,
-        [],
-        [identityTable, taxTable],
-        ["This Form 16 summary is generated from portal payroll records."],
-        "Note"
-      );
+      const card = await buildForm16Image({
+        certNo: makeShortPassId("FRM16", [facultyRecord.email, financialYear]),
+        employeeName: facultyRecord.name,
+        employeeId: makeShortPassId("EMP", [facultyRecord.email]),
+        designation: facultyRecord.designation,
+        department: facultyRecord.department,
+        financialYear,
+        annualGross,
+        annualDeductions,
+        annualNet,
+        estimatedTax
+      });
+      const pdf = await canvasCardToPdf(card);
       const link = document.createElement("a");
       link.href = URL.createObjectURL(pdf);
       link.download = `form16-${financialYear}.pdf`;

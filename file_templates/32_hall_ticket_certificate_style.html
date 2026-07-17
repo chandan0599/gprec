@@ -1,0 +1,395 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Hall Ticket</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@600;700&family=Space+Mono:wght@400;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --navy:#16233f;
+    --navy-deep:#0d1729;
+    --gold:#a9812f;
+    --gold-soft:#c9a75e;
+    --paper:#faf8f3;
+    --ink:#1e2430;
+    --muted:#6b7180;
+    --maroon:#7a2e2e;
+    --line:#d8d2c2;
+  }
+
+  *{box-sizing:border-box;}
+
+  body{
+    margin:0;
+    min-height:100vh;
+    display:flex;
+    align-items:flex-start;
+    justify-content:center;
+    background:#e9e6de;
+    font-family:'Inter', sans-serif;
+    padding:40px 16px;
+  }
+
+  /* ===== STANDARD A4: 210mm x 297mm ===== */
+  .sheet{
+    position:relative;
+    width:793px;
+    min-height:1122px;
+    background:var(--paper);
+    box-shadow:
+      0 25px 55px -18px rgba(20,20,20,0.35),
+      0 8px 20px -8px rgba(20,20,20,0.2);
+  }
+
+  .frame{
+    margin:20px;
+    border:1.5px solid var(--gold);
+    padding:4px;
+  }
+  .frame-inner{
+    border:1px solid var(--gold-soft);
+    padding:0 0 30px;
+  }
+
+  /* ===== HEADER ===== */
+  .header{
+    background:linear-gradient(180deg, var(--navy) 0%, var(--navy-deep) 100%);
+    color:var(--paper);
+    padding:26px 40px 22px;
+    text-align:center;
+    position:relative;
+  }
+  .crest{
+    width:52px; height:52px;
+    margin:0 auto 10px;
+  }
+  .college-name{
+    font-family:'Inter', sans-serif;
+    font-weight:700;
+    font-size:15px;
+    letter-spacing:2.5px;
+    text-transform:uppercase;
+    color:var(--gold-soft);
+  }
+  .college-sub{
+    font-size:10.5px;
+    letter-spacing:0.5px;
+    color:rgba(250,248,243,0.6);
+    margin-top:3px;
+  }
+  .pass-title{
+    font-family:'Playfair Display', serif;
+    font-weight:700;
+    font-size:28px;
+    margin-top:12px;
+  }
+  .pass-sub{
+    font-size:12px;
+    color:var(--gold-soft);
+    margin-top:4px;
+    letter-spacing:0.5px;
+  }
+  .ticket-no{
+    position:absolute;
+    top:22px;
+    right:26px;
+    font-family:'Space Mono', monospace;
+    font-size:10px;
+    letter-spacing:1px;
+    color:var(--gold-soft);
+    text-align:right;
+    line-height:1.6;
+  }
+  .ticket-no b{ display:block; color:var(--paper); font-size:12.5px; }
+
+  /* ===== BODY ===== */
+  .content{
+    padding:30px 40px 4px;
+  }
+
+  .top-row{
+    display:flex;
+    gap:22px;
+    align-items:flex-start;
+    padding-bottom:22px;
+    border-bottom:1px solid var(--line);
+  }
+
+  .photo-box{
+    width:100px;
+    height:120px;
+    flex-shrink:0;
+    border:1.5px dashed #b7ae95;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    text-align:center;
+    color:#a39c86;
+    font-family:'Space Mono', monospace;
+    font-size:9px;
+    letter-spacing:1.5px;
+  }
+
+  .id-fields{ flex:1; }
+  .id-grid{
+    display:grid;
+    grid-template-columns:1fr 1fr;
+    row-gap:12px;
+    column-gap:20px;
+  }
+  .id-grid .k{
+    font-size:10px;
+    letter-spacing:1.5px;
+    color:var(--muted);
+    text-transform:uppercase;
+    font-weight:600;
+    margin-bottom:3px;
+  }
+  .id-grid .v{
+    font-size:14.5px;
+    font-weight:700;
+    color:var(--ink);
+  }
+
+  .section-label{
+    font-size:11px;
+    letter-spacing:2.5px;
+    color:var(--gold);
+    font-weight:700;
+    text-transform:uppercase;
+    margin:26px 0 12px;
+    text-align:center;
+  }
+
+  table.schedule{
+    width:100%;
+    border-collapse:collapse;
+  }
+  table.schedule th{
+    border-bottom:1.5px solid var(--navy);
+    font-family:'Inter', sans-serif;
+    font-size:10px;
+    letter-spacing:1px;
+    text-transform:uppercase;
+    color:var(--navy);
+    padding:8px 10px;
+    text-align:left;
+  }
+  table.schedule td{
+    padding:10px 10px;
+    font-size:13px;
+    color:var(--ink);
+    border-bottom:1px solid var(--line);
+  }
+
+  .instructions{ margin-top:26px; }
+  .instructions ul{
+    margin:10px 0 0;
+    padding-left:18px;
+  }
+  .instructions li{
+    font-size:12px;
+    color:var(--muted);
+    line-height:1.8;
+  }
+  .instructions li b{ color:var(--ink); }
+
+  /* ===== SIGNATURE / STAMP ===== */
+  .sign-area{
+    position:relative;
+    display:flex;
+    justify-content:space-between;
+    align-items:flex-end;
+    margin-top:40px;
+    padding:0 6px 4px;
+  }
+  .sign-block{ text-align:center; width:44%; }
+  .sign-line{
+    border-top:1px solid var(--ink);
+    margin-bottom:6px;
+    height:30px;
+  }
+  .sign-block .label{
+    font-size:9.5px;
+    letter-spacing:2px;
+    color:var(--muted);
+    text-transform:uppercase;
+  }
+
+  .stamp{
+    position:absolute;
+    right:36px;
+    bottom:34px;
+    width:86px;
+    height:86px;
+    transform:rotate(-14deg);
+    opacity:0.85;
+    pointer-events:none;
+  }
+
+  .footer-strip{
+    margin-top:26px;
+    background:var(--navy);
+    padding:11px 40px;
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+  }
+  .footer-strip .note{
+    font-size:9.5px;
+    letter-spacing:1px;
+    color:rgba(250,248,243,0.65);
+  }
+  .footer-strip .id{
+    font-family:'Space Mono', monospace;
+    font-size:10px;
+    letter-spacing:1.5px;
+    color:var(--gold-soft);
+  }
+
+</style>
+</head>
+<body>
+
+  <div class="sheet">
+    <div class="frame">
+      <div class="frame-inner">
+
+        <div class="header">
+          <div class="ticket-no">HALL TICKET NO.<b>HT-2026-08471</b></div>
+          <svg class="crest" viewBox="0 0 44 44" xmlns="http://www.w3.org/2000/svg">
+            <path d="M22 2 L38 8 V21 C38 32 31 39 22 42 C13 39 6 32 6 21 V8 Z" fill="none" stroke="#c9a75e" stroke-width="1.4"/>
+            <path d="M22 10 L31 13.5 V21 C31 28 27 32.5 22 35 C17 32.5 13 28 13 21 V13.5 Z" fill="none" stroke="#c9a75e" stroke-width="1"/>
+            <line x1="22" y1="10" x2="22" y2="35" stroke="#c9a75e" stroke-width="0.7"/>
+            <line x1="13" y1="20" x2="31" y2="20" stroke="#c9a75e" stroke-width="0.7"/>
+          </svg>
+          <div class="college-name">St. Xavier College of Engineering</div>
+          <div class="college-sub">Autonomous Institution · Affiliated to State University</div>
+          <div class="pass-title">Hall Ticket</div>
+          <div class="pass-sub">End Semester Examinations · December 2026</div>
+        </div>
+
+        <div class="content">
+
+          <div class="top-row">
+            <div class="photo-box">STUDENT<br>PHOTO</div>
+            <div class="id-fields">
+              <div class="id-grid">
+                <div>
+                  <div class="k">Student Name</div>
+                  <div class="v">Lakkavaram Sai Chandan</div>
+                </div>
+                <div>
+                  <div class="k">Roll Number</div>
+                  <div class="v">21CE0847</div>
+                </div>
+                <div>
+                  <div class="k">Course / Branch</div>
+                  <div class="v">B.Tech · Computer Science</div>
+                </div>
+                <div>
+                  <div class="k">Semester</div>
+                  <div class="v">5th Semester</div>
+                </div>
+                <div>
+                  <div class="k">Date of Birth</div>
+                  <div class="v">14 Aug 2005</div>
+                </div>
+                <div>
+                  <div class="k">Exam Center</div>
+                  <div class="v">Main Campus, Block A</div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="section-label">Examination Schedule</div>
+          <table class="schedule">
+            <tr>
+              <th>Date</th>
+              <th>Session</th>
+              <th>Subject Code</th>
+              <th>Subject Name</th>
+              <th>Venue</th>
+              <th>Seat No.</th>
+            </tr>
+            <tr>
+              <td>08 Dec 2026</td>
+              <td>10:00 AM</td>
+              <td>CS501</td>
+              <td>Operating Systems</td>
+              <td>Room 214</td>
+              <td>A-14</td>
+            </tr>
+            <tr>
+              <td>10 Dec 2026</td>
+              <td>10:00 AM</td>
+              <td>CS502</td>
+              <td>Computer Networks</td>
+              <td>Room 214</td>
+              <td>A-14</td>
+            </tr>
+            <tr>
+              <td>12 Dec 2026</td>
+              <td>02:00 PM</td>
+              <td>CS503</td>
+              <td>Database Management Systems</td>
+              <td>Room 214</td>
+              <td>A-14</td>
+            </tr>
+            <tr>
+              <td>15 Dec 2026</td>
+              <td>10:00 AM</td>
+              <td>CS504</td>
+              <td>Software Engineering</td>
+              <td>Room 214</td>
+              <td>A-14</td>
+            </tr>
+          </table>
+
+          <div class="instructions">
+            <div class="section-label" style="text-align:left;">Instructions to Candidates</div>
+            <ul>
+              <li>Candidates must carry this <b>Hall Ticket</b> along with a valid college ID card to every examination session.</li>
+              <li>Reporting time is <b>30 minutes before</b> the scheduled session start time.</li>
+              <li>Electronic devices, including mobile phones and smart watches, are <b>strictly prohibited</b> inside the exam hall.</li>
+              <li>Candidates without a hall ticket will <b>not be permitted</b> to appear for the examination.</li>
+              <li>Any damage or alteration to this hall ticket renders it <b>invalid</b>.</li>
+            </ul>
+          </div>
+
+          <div class="sign-area">
+            <div class="sign-block">
+              <div class="sign-line"></div>
+              <div class="label">Student Signature</div>
+            </div>
+            <div class="sign-block">
+              <div class="sign-line"></div>
+              <div class="label">Controller of Examinations</div>
+            </div>
+            <svg class="stamp" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
+              <circle cx="50" cy="50" r="46" fill="none" stroke="#7a2e2e" stroke-width="2"/>
+              <circle cx="50" cy="50" r="38" fill="none" stroke="#7a2e2e" stroke-width="1"/>
+              <path id="stamptext" d="M50,12 A38,38 0 1,1 49.9,12" fill="none"/>
+              <text font-family="Space Mono, monospace" font-size="7.8" letter-spacing="2.2" fill="#7a2e2e">
+                <textPath href="#stamptext" startOffset="2">CONTROLLER OF EXAMINATIONS ·</textPath>
+              </text>
+              <text x="50" y="55" text-anchor="middle" font-family="Playfair Display, serif" font-weight="700" font-size="13.5" fill="#7a2e2e">VERIFIED</text>
+            </svg>
+          </div>
+
+        </div>
+
+        <div class="footer-strip">
+          <div class="note">This hall ticket must be presented at the examination hall along with a valid photo ID.</div>
+          <div class="id">HT-2026-08471</div>
+        </div>
+
+      </div>
+    </div>
+  </div>
+
+</body>
+</html>

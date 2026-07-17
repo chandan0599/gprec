@@ -1,0 +1,109 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Convocation</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0;}
+body{font-family:Arial,sans-serif;background:#f0f2f5;display:flex;justify-content:center;padding:2rem;min-height:100vh;}
+.wrap{display:flex;flex-direction:column;align-items:center;gap:.8rem;width:100%;}
+.ptitle{font-size:11px;letter-spacing:3px;text-transform:uppercase;color:#888;font-family:'Courier New',monospace;text-align:center;}
+.phint{font-size:10px;color:#bbb;font-family:'Courier New',monospace;text-align:center;}
+[contenteditable]:hover{background:rgba(232,93,4,.06);border-radius:2px;}
+[contenteditable]:focus{background:rgba(232,93,4,.1);border-radius:2px;outline:1px solid #E85D04;}
+
+.poster{width:100%;max-width:660px;border-radius:10px;overflow:hidden;display:flex;flex-direction:row;height:220px;box-shadow:0 6px 24px rgba(0,0,0,.15);}
+.art{width:260px;min-width:260px;height:220px;display:block;flex-shrink:0;}
+@media print{body{background:#fff;padding:0;}.no-print{display:none!important;}}
+</style></head>
+<body><div class="wrap" style="max-width:680px;margin:0 auto;">
+<div class="ptitle no-print">Convocation</div>
+<div class="phint no-print">Click text to edit · Upload logo · Print to save PDF</div>
+<div class="poster">
+<svg class="art" width="260" height="220" viewBox="0 0 260 220" xmlns="http://www.w3.org/2000/svg"><rect width="260" height="220" fill="#0A1433"/><ellipse cx="62" cy="58" rx="90" ry="90" fill="#0F2060" opacity=".82"/><ellipse cx="218" cy="164" rx="76" ry="62" fill="#E85D04" opacity=".1"/><rect x="0" y="0" width="260" height="3" fill="#E85D04"/><rect x="0" y="217" width="260" height="3" fill="#E85D04"/>
+<g opacity=".8"><circle cx="34" cy="32" r="4" fill="#FF9A3C"/><circle cx="224" cy="35" r="4" fill="#E85D04"/><rect x="58" y="18" width="7" height="12" rx="2" fill="#E85D04" transform="rotate(-18 61 24)"/><rect x="194" y="19" width="7" height="12" rx="2" fill="#FF9A3C" transform="rotate(24 197 25)"/></g>
+<ellipse cx="131" cy="160" rx="70" ry="16" fill="#07102A" opacity=".42"/>
+<path d="M29 88l101-40 101 40-101 40z" fill="#0A1433" stroke="#0F1E50" stroke-width="8" stroke-linejoin="round"/>
+<path d="M54 88l76-30 76 30-76 30z" fill="#E85D04" opacity=".95"/>
+<path d="M82 108l48 20 50-20v39l-16 4c-15 4-28 11-34 19-6-8-19-15-35-19l-13-3z" fill="#E85D04"/>
+<path d="M82 108l48 20 50-20v18l-50 23-48-23z" fill="#F8FBFF" opacity=".9"/>
+<path d="M103 125l27 11 50-28v39l-16 4c-15 4-28 11-34 19-6-8-19-15-35-19l-13-3v-40z" fill="#FF9A3C" opacity=".72"/>
+<path d="M82 108v40l13 3c16 4 29 11 35 19 6-8 19-15 34-19l16-4v-39" fill="none" stroke="#0F1E50" stroke-width="6" stroke-linejoin="round"/>
+<path d="M231 88v46" fill="none" stroke="#0F1E50" stroke-width="8" stroke-linecap="round"/>
+<circle cx="231" cy="148" r="17" fill="none" stroke="#0F1E50" stroke-width="8"/>
+<path d="M231 165v25" fill="none" stroke="#0F1E50" stroke-width="8" stroke-linecap="round"/>
+<path d="M231 190l-13 22h26z" fill="none" stroke="#0F1E50" stroke-width="8" stroke-linejoin="round"/>
+<path d="M231 88v46" fill="none" stroke="#FF9A3C" stroke-width="3" stroke-linecap="round"/>
+<circle cx="231" cy="148" r="10" fill="#FF9A3C"/>
+<rect x="34" y="184" width="192" height="10" rx="3" fill="#B44500"/>
+<rect x="59" y="170" width="142" height="16" rx="4" fill="#E85D04"/>
+<text x="130" y="181" font-size="9" fill="#fff" font-family="'Courier New',monospace" font-weight="700" text-anchor="middle" letter-spacing="1.4">HONORING GRADUATES</text></svg>
+<div style="flex:1;display:flex;flex-direction:column;background:#fff;">
+  <div style="display:flex;align-items:center;gap:8px;padding:8px 14px 6px;border-bottom:1px solid rgba(15,30,80,.08);">
+    <div id="lg_16" style="width:34px;height:34px;border-radius:5px;border:1.5px dashed #E85D04;background:#E85D0412;display:flex;align-items:center;justify-content:center;flex-direction:column;cursor:pointer;position:relative;overflow:hidden;flex-shrink:0;" onclick="this.querySelector('input').click()">
+<input type="file" accept="image/*" onchange="uploadImg(this,this.parentElement)">
+<span style="font-size:15px;font-weight:700;color:#E85D04;line-height:1;">+</span>
+<span style="font-size:6px;letter-spacing:.5px;text-transform:uppercase;font-family:'Courier New',monospace;color:#E85D04;">Logo</span>
+</div>
+    <div>
+      <div style="font-size:9.5px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:#0F1E50;" contenteditable="true">Your College Name</div>
+      <div style="font-size:7.5px;letter-spacing:1px;font-family:'Courier New',monospace;color:#E85D04;margin-top:1px;" contenteditable="true">Academic Year 2025-26</div>
+    </div>
+  </div>
+  <div style="display:flex;flex:1;padding:8px 14px;gap:10px;align-items:center;">
+    <div style="flex:0 0 auto;">
+      <div style="font-size:28px;font-weight:900;line-height:.82;font-family:Impact,'Arial Black',sans-serif;letter-spacing:-1px;text-transform:uppercase;color:#0F1E50;" contenteditable="true">CONVO<br>CATION</div>
+      <div style="font-size:8px;letter-spacing:2px;text-transform:uppercase;font-family:'Courier New',monospace;color:#E85D04;margin-top:5px;" contenteditable="true">Degree Award Ceremony</div>
+      <div style="width:24px;height:2px;background:#E85D04;margin:5px 0;"></div>
+    </div>
+    <div style="flex:1;display:flex;flex-direction:column;gap:5px;">
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:5px;"><div style="border-radius:4px;padding:5px 8px;background:#E85D0412;">
+<div style="font-size:7.5px;letter-spacing:1.5px;text-transform:uppercase;font-family:'Courier New',monospace;font-weight:700;margin-bottom:1px;color:#E85D04;">Date</div>
+<div style="font-size:11px;font-weight:700;color:#0F1E50;" contenteditable="true">22 April 2026</div>
+</div><div style="border-radius:4px;padding:5px 8px;background:#0F1E5012;">
+<div style="font-size:7.5px;letter-spacing:1.5px;text-transform:uppercase;font-family:'Courier New',monospace;font-weight:700;margin-bottom:1px;color:#0F1E50;">Venue</div>
+<div style="font-size:11px;font-weight:700;color:#0F1E50;" contenteditable="true">Main Auditorium</div>
+</div></div>
+<div style="display:grid;grid-template-columns:1fr 1fr;gap:5px;"><div style="border-radius:4px;padding:5px 8px;background:#FF9A3C18;">
+<div style="font-size:7.5px;letter-spacing:1.5px;text-transform:uppercase;font-family:'Courier New',monospace;font-weight:700;margin-bottom:1px;color:#b44500;">Time</div>
+<div style="font-size:11px;font-weight:700;color:#0F1E50;" contenteditable="true">10 AM – 1 PM</div>
+</div><div style="border-radius:4px;padding:5px 8px;background:#E85D0412;">
+<div style="font-size:7.5px;letter-spacing:1.5px;text-transform:uppercase;font-family:'Courier New',monospace;font-weight:700;margin-bottom:1px;color:#E85D04;">Batch</div>
+<div style="font-size:11px;font-weight:700;color:#0F1E50;" contenteditable="true">2022 – 2026</div>
+</div></div>
+      <div style="border-radius:4px;padding:5px 8px;background:#E85D040a;width:100%;">
+        <div style="font-size:7.5px;letter-spacing:1.5px;text-transform:uppercase;font-family:'Courier New',monospace;font-weight:700;color:#E85D04;margin-bottom:1px;">Info</div>
+        <div style="font-size:10px;font-weight:700;color:#0F1E50;" contenteditable="true">Graduates are requested to report 1 hour early</div>
+      </div>
+    </div>
+  </div>
+  <div style="display:flex;align-items:center;justify-content:space-between;padding:6px 14px;background:#0A1433;font-size:9px;font-weight:700;font-family:'Courier New',monospace;letter-spacing:.5px;">
+    <span style="color:#FF9A3C;" contenteditable="true">college.edu</span>
+    <span style="color:#fff;" contenteditable="true">Convocation 2026</span>
+    <span style="color:#FF9A3C;" contenteditable="true">contact@college.edu</span>
+  </div>
+</div>
+</div>
+<button onclick="window.print()" style="margin-top:1rem;padding:8px 28px;background:#E85D04;color:#fff;border:none;border-radius:6px;font-family:'Courier New',monospace;font-size:11px;letter-spacing:2px;text-transform:uppercase;cursor:pointer;font-weight:700;">🖨 Print / Save as PDF</button>
+</div>
+<script>
+function uploadImg(input,box){
+  const f=input.files[0];if(!f)return;
+  const r=new FileReader();
+  r.onload=e=>{
+    box.innerHTML='<img src="'+e.target.result+'" style="width:100%;height:100%;object-fit:contain;border-radius:inherit;" alt="img">';
+  };
+  r.readAsDataURL(f);
+}
+function addCompanySlot(){
+  const row=document.getElementById('compRow');
+  const btn=document.getElementById('addBtn');
+  const count=row.querySelectorAll('.cslot').length+1;
+  const id='cs'+count;
+  const div=document.createElement('div');
+  div.className='cslot';
+  div.style.cssText='width:46px;height:32px;border-radius:5px;border:1.5px dashed #E85D04;background:#E85D0412;display:flex;align-items:center;justify-content:center;flex-direction:column;cursor:pointer;position:relative;overflow:hidden;flex-shrink:0;';
+  div.id=id;
+  div.innerHTML='<input type="file" accept="image/*" onchange="uploadImg(this,this.parentElement)" style="position:absolute;inset:0;opacity:0;cursor:pointer;width:100%;height:100%;"><span style="font-size:14px;font-weight:700;color:#E85D04;">+</span><span style="font-size:6px;color:#E85D04;font-family:monospace;">Co.'+count+'</span>';
+  row.insertBefore(div,btn);
+}
+</script>
+</body></html>

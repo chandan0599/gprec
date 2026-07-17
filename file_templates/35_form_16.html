@@ -1,0 +1,403 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Form 16</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600;9..144,700&family=Space+Mono:wght@400;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --navy-deep:#0a1730;
+    --navy:#0f1f3d;
+    --amber:#e8821a;
+    --amber-soft:#f0a34d;
+    --cream:#faf6ee;
+    --ink:#0f1f3d;
+    --muted:#6b7180;
+    --line:#e3ddd0;
+  }
+
+  *{box-sizing:border-box;}
+
+  body{
+    margin:0;
+    min-height:100vh;
+    display:flex;
+    align-items:flex-start;
+    justify-content:center;
+    background:radial-gradient(ellipse at top, #1a2a4d 0%, #060d1c 65%);
+    font-family:'Inter', sans-serif;
+    padding:40px 16px;
+  }
+
+  /* ===== STANDARD A4 ===== */
+  .sheet{
+    position:relative;
+    width:793px;
+    min-height:1122px;
+    background:var(--cream);
+    box-shadow:
+      0 30px 60px -20px rgba(0,0,0,0.55),
+      0 10px 25px -10px rgba(0,0,0,0.4);
+  }
+
+  /* ===== HEADER ===== */
+  .head{
+    background:linear-gradient(160deg, var(--navy) 0%, var(--navy-deep) 100%);
+    color:var(--cream);
+    padding:24px 44px 20px;
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+  }
+  .head-left{ display:flex; align-items:center; gap:16px; }
+  .logo-badge{
+    border:1.5px dashed rgba(232,130,26,0.55);
+    border-radius:10px;
+    width:48px; height:48px;
+    display:flex; flex-direction:column;
+    align-items:center; justify-content:center;
+    color:var(--amber-soft);
+    flex-shrink:0;
+  }
+  .logo-badge .plus{ font-size:14px; line-height:1; }
+  .logo-badge .word{ font-family:'Space Mono', monospace; font-size:6.5px; letter-spacing:1.5px; }
+
+  .org-name{
+    font-family:'Fraunces', serif;
+    font-weight:700;
+    font-size:17px;
+    line-height:1.2;
+  }
+  .org-sub{
+    font-size:10px;
+    letter-spacing:0.5px;
+    color:rgba(250,246,238,0.65);
+    margin-top:3px;
+  }
+
+  .cert-no{
+    text-align:right;
+    font-family:'Space Mono', monospace;
+    font-size:9.5px;
+    letter-spacing:1px;
+    color:var(--amber-soft);
+    line-height:1.6;
+  }
+  .cert-no b{ display:block; color:var(--cream); font-size:12px; }
+
+  /* ===== TITLE BAND ===== */
+  .title-band{
+    text-align:center;
+    padding:16px 20px 14px;
+    border-bottom:2px dashed var(--line);
+  }
+  .title-band .eyebrow{
+    font-family:'Space Mono', monospace;
+    font-size:9.5px;
+    letter-spacing:2.5px;
+    color:var(--amber);
+    font-weight:700;
+  }
+  .title-band .title{
+    font-family:'Fraunces', serif;
+    font-weight:600;
+    font-size:26px;
+    color:var(--ink);
+    margin-top:5px;
+  }
+  .title-band .sub{
+    font-size:11.5px;
+    color:var(--muted);
+    margin-top:4px;
+  }
+
+  /* ===== BODY ===== */
+  .body{ padding:22px 44px 10px; }
+
+  .section-label{
+    font-family:'Space Mono', monospace;
+    font-size:10px;
+    letter-spacing:2.2px;
+    color:var(--amber);
+    font-weight:700;
+    text-transform:uppercase;
+    margin:20px 0 10px;
+  }
+
+  .party-row{
+    display:flex;
+    gap:20px;
+  }
+  .party-box{
+    flex:1;
+    border:1px solid var(--line);
+    border-radius:8px;
+    padding:14px 16px;
+    background:#fff;
+  }
+  .party-box .role{
+    font-family:'Space Mono', monospace;
+    font-size:9px;
+    letter-spacing:1.5px;
+    color:var(--amber);
+    text-transform:uppercase;
+    margin-bottom:6px;
+  }
+  .party-box .name{
+    font-weight:700;
+    font-size:14px;
+    color:var(--ink);
+    margin-bottom:6px;
+  }
+  .party-box .detail{
+    font-size:11.5px;
+    color:var(--muted);
+    line-height:1.7;
+  }
+  .party-box .detail b{ color:var(--ink); font-weight:600; }
+
+  .meta-grid{
+    display:grid;
+    grid-template-columns:1fr 1fr 1fr;
+    gap:14px;
+    margin-top:16px;
+  }
+  .meta-grid .field label{
+    display:block;
+    font-family:'Space Mono', monospace;
+    font-size:9px;
+    letter-spacing:1.5px;
+    color:var(--amber);
+    margin-bottom:4px;
+  }
+  .meta-grid .field .value{
+    font-weight:700;
+    font-size:13px;
+    color:var(--ink);
+  }
+
+  table.data-table{
+    width:100%;
+    border-collapse:collapse;
+    margin-top:4px;
+  }
+  table.data-table th{
+    background:var(--navy);
+    color:var(--amber-soft);
+    font-family:'Space Mono', monospace;
+    font-size:9px;
+    letter-spacing:1px;
+    text-transform:uppercase;
+    padding:9px 10px;
+    text-align:left;
+  }
+  table.data-table td{
+    padding:9px 10px;
+    font-size:12.5px;
+    color:var(--ink);
+    border-bottom:1px solid var(--line);
+    background:#fff;
+  }
+  table.data-table td.amt{ text-align:right; font-family:'Space Mono', monospace; font-weight:700; }
+  table.data-table tr.total td{ background:#f3ede0; font-weight:700; }
+
+  .salary-table td:first-child{ font-weight:600; }
+  .salary-table tr.deduct td:first-child{ padding-left:22px; color:var(--muted); }
+
+  .tax-summary{
+    margin-top:20px;
+    background:var(--navy);
+    border-radius:10px;
+    padding:16px 22px;
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+  }
+  .tax-summary .label{
+    font-family:'Space Mono', monospace;
+    font-size:10.5px;
+    letter-spacing:1.5px;
+    color:var(--amber-soft);
+    text-transform:uppercase;
+  }
+  .tax-summary .amt{
+    font-family:'Fraunces', serif;
+    font-weight:700;
+    font-size:22px;
+    color:var(--cream);
+  }
+
+  .verify{
+    margin-top:26px;
+    font-size:11.5px;
+    color:var(--muted);
+    line-height:1.7;
+    border-top:1px solid var(--line);
+    padding-top:16px;
+  }
+  .verify b{ color:var(--ink); }
+
+  .sign-area{
+    display:flex;
+    justify-content:space-between;
+    align-items:flex-end;
+    margin-top:34px;
+    padding:0 4px;
+  }
+  .sign-area .place-date{
+    font-size:12px;
+    color:var(--muted);
+    line-height:1.8;
+  }
+  .sign-block{ text-align:center; width:210px; }
+  .sign-line{ border-top:1px solid var(--ink); height:30px; }
+  .sign-block .label{
+    font-size:9.5px;
+    letter-spacing:1.5px;
+    color:var(--muted);
+    text-transform:uppercase;
+    margin-top:6px;
+  }
+
+  .footer{
+    margin-top:26px;
+    padding:12px 44px;
+    background:var(--navy);
+    text-align:center;
+  }
+  .footer .note{
+    font-family:'Space Mono', monospace;
+    font-size:9px;
+    letter-spacing:1.5px;
+    color:rgba(250,246,238,0.6);
+  }
+
+</style>
+</head>
+<body>
+
+  <div class="sheet">
+
+    <div class="head">
+      <div class="head-left">
+        <div class="logo-badge">
+          <div class="plus">+</div>
+          <div class="word">LOGO</div>
+        </div>
+        <div>
+          <div class="org-name">St. Xavier College of Engineering</div>
+          <div class="org-sub">Human Resources · Payroll Cell</div>
+        </div>
+      </div>
+      <div class="cert-no">
+        CERTIFICATE NO.
+        <b>FRM16-2026-0847</b>
+      </div>
+    </div>
+
+    <div class="title-band">
+      <div class="eyebrow">INCOME TAX DEPARTMENT</div>
+      <div class="title">Form 16</div>
+      <div class="sub">Certificate under Section 203 of the Income-tax Act, 1961 for Tax Deducted at Source on Salary</div>
+    </div>
+
+    <div class="body">
+
+      <div class="party-row">
+        <div class="party-box">
+          <div class="role">Deductor (Employer)</div>
+          <div class="name">St. Xavier College of Engineering</div>
+          <div class="detail">
+            TAN: <b>HYDX01234E</b><br>
+            PAN: <b>AAACS1234F</b><br>
+            Address: <b>Main Campus, Hyderabad – 500081</b>
+          </div>
+        </div>
+        <div class="party-box">
+          <div class="role">Deductee (Employee)</div>
+          <div class="name">Lakkavaram Sai Chandan</div>
+          <div class="detail">
+            PAN: <b>ABCDE1234F</b><br>
+            Employee ID: <b>EMP-0847</b><br>
+            Designation: <b>Assistant Professor</b>
+          </div>
+        </div>
+      </div>
+
+      <div class="meta-grid">
+        <div class="field">
+          <label>Assessment Year</label>
+          <div class="value">2026 – 27</div>
+        </div>
+        <div class="field">
+          <label>Period</label>
+          <div class="value">01 Apr 2025 – 31 Mar 2026</div>
+        </div>
+        <div class="field">
+          <label>Employer Category</label>
+          <div class="value">Private (Autonomous)</div>
+        </div>
+      </div>
+
+      <div class="section-label">Part A · Summary of Tax Deducted at Source</div>
+      <table class="data-table">
+        <tr>
+          <th>Quarter</th>
+          <th>Receipt No.</th>
+          <th>Amount Paid / Credited</th>
+          <th>Tax Deducted</th>
+          <th>Tax Deposited</th>
+        </tr>
+        <tr><td>Q1 (Apr–Jun)</td><td>QTRA0847</td><td class="amt">₹1,80,000</td><td class="amt">₹8,400</td><td class="amt">₹8,400</td></tr>
+        <tr><td>Q2 (Jul–Sep)</td><td>QTRB0847</td><td class="amt">₹1,80,000</td><td class="amt">₹8,400</td><td class="amt">₹8,400</td></tr>
+        <tr><td>Q3 (Oct–Dec)</td><td>QTRC0847</td><td class="amt">₹1,80,000</td><td class="amt">₹8,400</td><td class="amt">₹8,400</td></tr>
+        <tr><td>Q4 (Jan–Mar)</td><td>QTRD0847</td><td class="amt">₹1,80,000</td><td class="amt">₹8,400</td><td class="amt">₹8,400</td></tr>
+        <tr class="total"><td colspan="2">Total</td><td class="amt">₹7,20,000</td><td class="amt">₹33,600</td><td class="amt">₹33,600</td></tr>
+      </table>
+
+      <div class="section-label">Part B · Details of Salary Paid &amp; Tax Computation</div>
+      <table class="data-table salary-table">
+        <tr><td>Gross Salary</td><td class="amt">₹8,40,000</td></tr>
+        <tr class="deduct"><td>Less: House Rent Allowance Exemption</td><td class="amt">– ₹90,000</td></tr>
+        <tr class="deduct"><td>Less: Standard Deduction</td><td class="amt">– ₹50,000</td></tr>
+        <tr><td>Income Chargeable Under "Salaries"</td><td class="amt">₹7,00,000</td></tr>
+        <tr class="deduct"><td>Less: Deductions under Chapter VI-A (80C, 80D)</td><td class="amt">– ₹1,50,000</td></tr>
+        <tr><td>Total Taxable Income</td><td class="amt">₹5,50,000</td></tr>
+        <tr><td>Tax Payable on Total Income</td><td class="amt">₹23,400</td></tr>
+        <tr class="deduct"><td>Less: Rebate under Section 87A</td><td class="amt">– ₹0</td></tr>
+        <tr><td>Health &amp; Education Cess (4%)</td><td class="amt">₹936</td></tr>
+        <tr class="total"><td>Total Tax Liability</td><td class="amt">₹24,336</td></tr>
+      </table>
+
+      <div class="tax-summary">
+        <span class="label">Total Tax Deducted at Source</span>
+        <span class="amt">₹33,600.00</span>
+      </div>
+
+      <div class="verify">
+        I, the undersigned, working in the capacity of <b>Head, Human Resources</b>, do hereby certify that the information given above is true and correct based on the books of account, documents, and other available records, and that it has been verified by me.
+      </div>
+
+      <div class="sign-area">
+        <div class="place-date">
+          Place: <b>Hyderabad</b><br>
+          Date: <b>15 Jun 2026</b>
+        </div>
+        <div class="sign-block">
+          <div class="sign-line"></div>
+          <div class="label">Signature of Person Responsible for Deduction of Tax</div>
+        </div>
+      </div>
+
+    </div>
+
+    <div class="footer">
+      <div class="note">FRM16-2026-0847 · THIS CERTIFICATE IS GENERATED FOR THE ABOVE ASSESSMENT YEAR</div>
+    </div>
+
+  </div>
+
+</body>
+</html>

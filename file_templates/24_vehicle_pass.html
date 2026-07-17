@@ -1,0 +1,384 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Hostel Outing Pass</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,300;9..144,500;9..144,600;9..144,700&family=Space+Mono:wght@400;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --navy-deep:#0a1730;
+    --navy:#0f1f3d;
+    --navy-soft:#16294d;
+    --amber:#e8821a;
+    --amber-soft:#f0a34d;
+    --cream:#faf6ee;
+    --rust:#7a4430;
+    --ink:#0f1f3d;
+  }
+
+  *{box-sizing:border-box;}
+
+  body{
+    margin:0;
+    min-height:100vh;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    background:radial-gradient(ellipse at top, #1a2a4d 0%, #060d1c 65%);
+    font-family:'Inter', sans-serif;
+    padding:48px 20px;
+  }
+
+  .ticket{
+    position:relative;
+    width:420px;
+    max-width:100%;
+    background:var(--cream);
+    border-radius:22px;
+    overflow:hidden;
+    box-shadow:
+      0 30px 60px -20px rgba(0,0,0,0.55),
+      0 10px 25px -10px rgba(0,0,0,0.4);
+  }
+
+  /* ===== TOP STUB ===== */
+  .stub{
+    position:relative;
+    background:
+      radial-gradient(circle at 88% 8%, rgba(232,130,26,0.10) 0%, transparent 45%),
+      linear-gradient(160deg, var(--navy) 0%, var(--navy-deep) 100%);
+    padding:26px 28px 38px;
+    color:var(--cream);
+    overflow:hidden;
+  }
+
+  /* shield / crest watermark */
+  .crest-mark{
+    position:absolute;
+    right:-60px;
+    bottom:-60px;
+    width:220px;
+    height:220px;
+    opacity:0.14;
+    pointer-events:none;
+  }
+
+  .stub-top{
+    display:flex;
+    align-items:flex-start;
+    justify-content:space-between;
+    position:relative;
+    z-index:2;
+  }
+
+  .logo-badge{
+    border:1.5px dashed rgba(232,130,26,0.55);
+    border-radius:10px;
+    padding:10px 22px;
+    text-align:center;
+    color:var(--amber-soft);
+  }
+  .logo-badge .plus{ font-size:15px; line-height:1; margin-bottom:2px;}
+  .logo-badge .word{
+    font-family:'Space Mono', monospace;
+    font-size:9px;
+    letter-spacing:2px;
+  }
+
+  .eticket-tag{
+    display:flex;
+    align-items:center;
+    gap:6px;
+    font-family:'Space Mono', monospace;
+    font-size:11px;
+    letter-spacing:2.5px;
+    color:var(--cream);
+    padding-top:4px;
+  }
+  .eticket-tag svg{ width:14px; height:14px; fill:var(--amber-soft); }
+
+  .eyebrow{
+    position:relative;
+    z-index:2;
+    text-align:center;
+    margin-top:22px;
+    font-family:'Space Mono', monospace;
+    font-size:11px;
+    letter-spacing:4px;
+    color:var(--amber-soft);
+  }
+  .eyebrow .sep{ opacity:0.5; margin:0 6px; }
+
+  .qr-wrap{
+    position:relative;
+    z-index:2;
+    margin:22px auto 0;
+    width:210px;
+    height:210px;
+    background:var(--cream);
+    border-radius:14px;
+    padding:14px;
+    box-shadow:0 12px 28px -10px rgba(0,0,0,0.5);
+  }
+  .qr-wrap svg{ width:100%; height:100%; display:block; }
+
+  .scan-caption{
+    position:relative;
+    z-index:2;
+    text-align:center;
+    margin-top:16px;
+    font-family:'Space Mono', monospace;
+    font-size:10px;
+    letter-spacing:3px;
+    color:rgba(250,246,238,0.65);
+  }
+
+  /* ===== PERFORATION ===== */
+  .perf{
+    position:relative;
+    height:0;
+  }
+  .perf::before{
+    content:"";
+    position:absolute;
+    left:0; right:0; top:-1px;
+    border-top:2px dashed rgba(122,68,48,0.35);
+  }
+  .notch{
+    position:absolute;
+    top:-16px;
+    width:32px; height:32px;
+    background:radial-gradient(ellipse at top, #1a2a4d 0%, #060d1c 65%);
+    border-radius:50%;
+  }
+  .notch.left{ left:-16px; }
+  .notch.right{ right:-16px; }
+
+  /* ===== BODY ===== */
+  .body{
+    padding:32px 28px 0;
+  }
+
+  .event-title{
+    font-family:'Fraunces', serif;
+    font-weight:600;
+    font-size:34px;
+    line-height:1.05;
+    color:var(--ink);
+    letter-spacing:-0.5px;
+  }
+  .event-sub{
+    font-family:'Inter', sans-serif;
+    font-weight:600;
+    font-size:12.5px;
+    letter-spacing:0.5px;
+    color:var(--rust);
+    margin-top:6px;
+  }
+
+  .rule{
+    width:52px;
+    height:3px;
+    background:var(--amber);
+    margin:14px 0 26px;
+    border-radius:2px;
+  }
+
+  .grid{
+    display:grid;
+    grid-template-columns:1fr 1fr;
+    row-gap:22px;
+    column-gap:16px;
+  }
+  .field label{
+    display:block;
+    font-family:'Space Mono', monospace;
+    font-size:10px;
+    letter-spacing:2px;
+    color:var(--amber);
+    margin-bottom:5px;
+  }
+  .field .value{
+    font-family:'Inter', sans-serif;
+    font-weight:700;
+    font-size:17px;
+    color:var(--ink);
+    line-height:1.25;
+  }
+  .field .value.mono{
+    font-family:'Space Mono', monospace;
+    font-size:16px;
+    letter-spacing:0.5px;
+  }
+
+  .status-pill{
+    display:inline-flex;
+    align-items:center;
+    gap:6px;
+    font-weight:700;
+    font-size:15px;
+    color:#1f7a4d;
+  }
+  .status-pill::before{
+    content:"";
+    width:7px; height:7px;
+    border-radius:50%;
+    background:#2fa866;
+    box-shadow:0 0 0 3px rgba(47,168,102,0.2);
+  }
+
+  /* ===== FOOTER ===== */
+  .footer{
+    margin:28px 28px 0;
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    background:var(--navy);
+    border-radius:10px;
+    padding:14px 18px;
+  }
+  .footer span{
+    font-family:'Space Mono', monospace;
+    font-size:11px;
+    letter-spacing:2.5px;
+    color:var(--amber-soft);
+  }
+  .footer span.admit{ color:var(--cream); }
+
+  .bottom-space{ height:28px; }
+
+</style>
+</head>
+<body>
+
+  <div class="ticket">
+
+    <div class="stub">
+      <svg class="crest-mark" viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg">
+        <circle cx="100" cy="100" r="95" fill="none" stroke="#e8821a" stroke-width="1"/>
+        <circle cx="100" cy="100" r="60" fill="none" stroke="#e8821a" stroke-width="1.5"/>
+        <circle cx="100" cy="100" r="10" fill="#e8821a"/>
+        <g stroke="#e8821a" stroke-width="4" stroke-linecap="round">
+          <line x1="100" y1="45" x2="100" y2="65"/>
+          <line x1="100" y1="135" x2="100" y2="155"/>
+          <line x1="45" y1="100" x2="65" y2="100"/>
+          <line x1="135" y1="100" x2="155" y2="100"/>
+          <line x1="61" y1="61" x2="75" y2="75"/>
+          <line x1="125" y1="125" x2="139" y2="139"/>
+          <line x1="139" y1="61" x2="125" y2="75"/>
+          <line x1="75" y1="125" x2="61" y2="139"/>
+        </g>
+      </svg>
+
+      <div class="stub-top">
+        <div class="logo-badge">
+          <div class="plus">+</div>
+          <div class="word">LOGO</div>
+        </div>
+        <div class="eticket-tag">
+          <svg viewBox="0 0 24 24"><path d="M5 11l1.5-4.5A2 2 0 0 1 8.4 5h7.2a2 2 0 0 1 1.9 1.5L19 11h1a1 1 0 0 1 1 1v6a1 1 0 0 1-1 1h-1v1a1 1 0 0 1-1 1h-1a1 1 0 0 1-1-1v-1H7v1a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1v-1H3a1 1 0 0 1-1-1v-6a1 1 0 0 1 1-1h2zm2.4-4L6.3 11h11.4l-1.1-4H7.4zM6 15a1.5 1.5 0 1 0 0-3 1.5 1.5 0 0 0 0 3zm12 0a1.5 1.5 0 1 0 0-3 1.5 1.5 0 0 0 0 3z"/></svg>
+          VEHICLE PASS
+        </div>
+      </div>
+
+      <div class="eyebrow">COLLEGE<span class="sep">·</span>VEHICLE PASS</div>
+
+      <div class="qr-wrap">
+        <svg viewBox="0 0 29 29" xmlns="http://www.w3.org/2000/svg">
+          <rect width="29" height="29" fill="#faf6ee"/>
+          <g fill="#0f1f3d">
+            <rect x="0" y="0" width="7" height="7"/>
+            <rect x="1.5" y="1.5" width="4" height="4" fill="#faf6ee"/>
+            <rect x="2.5" y="2.5" width="2" height="2" fill="#0f1f3d"/>
+            <rect x="22" y="0" width="7" height="7"/>
+            <rect x="23.5" y="1.5" width="4" height="4" fill="#faf6ee"/>
+            <rect x="24.5" y="2.5" width="2" height="2" fill="#0f1f3d"/>
+            <rect x="0" y="22" width="7" height="7"/>
+            <rect x="1.5" y="23.5" width="4" height="4" fill="#faf6ee"/>
+            <rect x="2.5" y="24.5" width="2" height="2" fill="#0f1f3d"/>
+            <rect x="9" y="1" width="1" height="1"/><rect x="11" y="1" width="1" height="1"/><rect x="13" y="2" width="2" height="1"/>
+            <rect x="16" y="1" width="1" height="2"/><rect x="18" y="0" width="1" height="1"/><rect x="9" y="4" width="2" height="1"/>
+            <rect x="12" y="4" width="1" height="2"/><rect x="15" y="4" width="1" height="1"/><rect x="17" y="5" width="2" height="1"/>
+            <rect x="9" y="7" width="1" height="1"/><rect x="11" y="8" width="2" height="1"/><rect x="14" y="7" width="1" height="2"/>
+            <rect x="17" y="7" width="1" height="1"/><rect x="19" y="8" width="1" height="1"/><rect x="0" y="9" width="1" height="2"/>
+            <rect x="2" y="9" width="2" height="1"/><rect x="5" y="10" width="1" height="1"/><rect x="8" y="9" width="1" height="1"/>
+            <rect x="10" y="10" width="1" height="2"/><rect x="13" y="9" width="2" height="1"/><rect x="16" y="10" width="1" height="1"/>
+            <rect x="18" y="9" width="1" height="2"/><rect x="21" y="9" width="1" height="1"/><rect x="23" y="10" width="2" height="1"/>
+            <rect x="26" y="9" width="1" height="2"/><rect x="0" y="12" width="2" height="1"/><rect x="3" y="13" width="1" height="1"/>
+            <rect x="6" y="12" width="1" height="2"/><rect x="9" y="12" width="1" height="1"/><rect x="11" y="13" width="2" height="1"/>
+            <rect x="14" y="12" width="1" height="1"/><rect x="16" y="13" width="1" height="2"/><rect x="19" y="12" width="1" height="1"/>
+            <rect x="21" y="12" width="2" height="1"/><rect x="24" y="13" width="1" height="1"/><rect x="27" y="12" width="1" height="2"/>
+            <rect x="1" y="15" width="1" height="2"/><rect x="4" y="16" width="1" height="1"/><rect x="7" y="15" width="2" height="1"/>
+            <rect x="10" y="16" width="1" height="1"/><rect x="12" y="15" width="1" height="2"/><rect x="15" y="16" width="2" height="1"/>
+            <rect x="18" y="15" width="1" height="1"/><rect x="20" y="16" width="1" height="2"/><rect x="23" y="15" width="1" height="1"/>
+            <rect x="25" y="16" width="2" height="1"/><rect x="9" y="18" width="1" height="1"/><rect x="11" y="19" width="1" height="1"/>
+            <rect x="13" y="18" width="2" height="1"/><rect x="16" y="19" width="1" height="2"/><rect x="19" y="18" width="1" height="1"/>
+            <rect x="21" y="19" width="2" height="1"/><rect x="24" y="18" width="1" height="2"/><rect x="9" y="21" width="2" height="1"/>
+            <rect x="12" y="21" width="1" height="2"/><rect x="15" y="21" width="1" height="1"/><rect x="17" y="22" width="2" height="1"/>
+            <rect x="20" y="21" width="1" height="2"/><rect x="23" y="21" width="1" height="1"/><rect x="9" y="24" width="1" height="2"/>
+            <rect x="12" y="25" width="2" height="1"/><rect x="15" y="24" width="1" height="1"/><rect x="17" y="25" width="1" height="2"/>
+            <rect x="20" y="24" width="2" height="1"/><rect x="23" y="25" width="1" height="1"/><rect x="26" y="24" width="1" height="2"/>
+            <rect x="9" y="27" width="1" height="1"/><rect x="11" y="27" width="2" height="1"/><rect x="14" y="27" width="1" height="1"/>
+            <rect x="17" y="27" width="1" height="1"/><rect x="19" y="27" width="2" height="1"/><rect x="22" y="27" width="1" height="1"/>
+          </g>
+        </svg>
+      </div>
+
+      <div class="scan-caption">SCAN AT PARKING GATE</div>
+    </div>
+
+    <div class="perf"></div>
+
+    <div class="body" style="padding-top:32px; position:relative;">
+      <div class="event-title">Vehicle Pass</div>
+      <div class="event-sub">St. Xavier College of Engineering · Campus Security</div>
+      <div class="rule"></div>
+
+      <div class="grid">
+        <div class="field">
+          <label>PASS ID</label>
+          <div class="value mono">VP-8QNYSH</div>
+        </div>
+        <div class="field">
+          <label>NAME</label>
+          <div class="value">Lakkavaram Sai Chandan</div>
+        </div>
+        <div class="field">
+          <label>ROLL NO.</label>
+          <div class="value mono">21CE0847</div>
+        </div>
+        <div class="field">
+          <label>VEHICLE TYPE</label>
+          <div class="value">Two-Wheeler</div>
+        </div>
+        <div class="field">
+          <label>VEHICLE NO.</label>
+          <div class="value mono">TS 09 EQ 3312</div>
+        </div>
+        <div class="field">
+          <label>PARKING ZONE</label>
+          <div class="value">Zone C · Block 2</div>
+        </div>
+        <div class="field">
+          <label>VALID TILL</label>
+          <div class="value">31 Dec 2026</div>
+        </div>
+        <div class="field">
+          <label>STATUS</label>
+          <div class="status-pill">Active</div>
+        </div>
+      </div>
+
+      <div class="footer">
+        <span>CAMPUS SECURITY</span>
+        <span class="admit">DISPLAY ON DASH</span>
+      </div>
+    </div>
+
+    <div class="bottom-space"></div>
+  </div>
+
+</body>
+</html>
