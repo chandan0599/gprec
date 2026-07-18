@@ -18251,11 +18251,11 @@ const startHomeFestCountdown = (event) => {
 
 // Compass-theme ticket banner watermark, ported directly from the supplied mock: a dashed orbit
 // ring, pulsing ring, and swaying needle centered behind the copy/timer, plus a faint dotted
-// travel path under the left-hand text. .home-fest-banner is pinned to the mock's 900:150 aspect
-// ratio (see styles.css) so preserveAspectRatio="none" never has to stretch the circles into
-// ellipses - the container is always proportioned to match this viewBox.
+// travel path under the left-hand text. preserveAspectRatio="xMidYMid slice" keeps the compass
+// circular (cropping overflow) instead of stretching it into an ellipse on mobile, where
+// .home-fest-banner drops its 900:150 aspect ratio for a taller stacked layout (see styles.css).
 const homeFestCompassSvg = `
-  <svg class="home-fest-bg" viewBox="0 0 900 150" preserveAspectRatio="none" aria-hidden="true" role="img">
+  <svg class="home-fest-bg" viewBox="0 0 900 150" preserveAspectRatio="xMidYMid slice" aria-hidden="true" role="img">
     <defs>
       <radialGradient id="homeFestBgGrad" cx="72%" cy="50%" r="75%">
         <stop offset="0%" stop-color="#1c2650"/>
