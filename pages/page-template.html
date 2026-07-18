@@ -11,11 +11,97 @@
     <link rel="stylesheet" href="../styles.css">
   </head>
   <body class="internal-page">
-    <header class="internal-header">
-      <a class="student-brand" href="../index.html">
-        <img src="../gprec-logo-enhanced.png" alt="G Pulla Reddy Engineering College">
-      </a>
-      <a class="login-home" href="../index.html"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m3 11 9-8 9 8M5 10v11h14V10M9 21v-6h6v6"/></svg>Home</a>
+    <svg class="icon-sprite" aria-hidden="true" focusable="false">
+      <symbol id="icon-lightbulb" viewBox="0 0 24 24"><path d="M9 21h6M10 17h4M8.2 14.2a6 6 0 1 1 7.6 0c-.9.7-1.3 1.6-1.4 2.8H9.6c-.1-1.2-.5-2.1-1.4-2.8Z"/></symbol>
+      <symbol id="icon-campus" viewBox="0 0 24 24"><path d="M3 21h18M5 21V9l7-4 7 4v12M9 21v-7h6v7M8 10h.01M12 10h.01M16 10h.01"/></symbol>
+      <symbol id="icon-users" viewBox="0 0 24 24"><path d="M16 19c0-2.2-1.8-4-4-4s-4 1.8-4 4M12 12a4 4 0 1 0 0-8 4 4 0 0 0 0 8ZM20 19c0-1.7-1.1-3.2-2.7-3.8M17 5.3a3 3 0 0 1 0 5.4M4 19c0-1.7 1.1-3.2 2.7-3.8M7 5.3a3 3 0 0 0 0 5.4"/></symbol>
+      <symbol id="icon-student" viewBox="0 0 24 24"><path d="m4 6 8-3 8 3-8 3zM7 8v3M17 8v3M9 12a3 3 0 1 0 6 0M5 21c.7-3.2 3.4-5 7-5s6.3 1.8 7 5"/></symbol>
+      <symbol id="icon-briefcase" viewBox="0 0 24 24"><path d="M10 6V5a2 2 0 0 1 2-2h0a2 2 0 0 1 2 2v1M4 8h16v11H4zM4 12h16M10 12v2h4v-2"/></symbol>
+      <symbol id="icon-file" viewBox="0 0 24 24"><path d="M6 3h8l4 4v14H6zM14 3v5h5M9 13h6M9 17h6"/></symbol>
+      <symbol id="icon-user-check" viewBox="0 0 24 24"><path d="M15 19c0-2.2-1.8-4-4-4s-4 1.8-4 4M11 12a4 4 0 1 0 0-8 4 4 0 0 0 0 8ZM16 11l2 2 4-5"/></symbol>
+      <symbol id="icon-server" viewBox="0 0 24 24"><path d="M5 4h14v6H5zM5 14h14v6H5zM8 7h.01M8 17h.01"/></symbol>
+      <symbol id="icon-key" viewBox="0 0 24 24"><path d="M14 8a5 5 0 1 0-1.4 3.5L21 20v-4h-4v-4h-4l-.4-.5A5 5 0 0 0 14 8Z"/></symbol>
+      <symbol id="icon-home" viewBox="0 0 24 24"><path d="m3 11 9-8 9 8M5 10v11h14V10M9 21v-6h6v6"/></symbol>
+      <symbol id="icon-info" viewBox="0 0 24 24"><path d="M12 17v-6M12 7h.01M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z"/></symbol>
+      <symbol id="icon-bell" viewBox="0 0 24 24"><path d="M18 8a6 6 0 0 0-12 0c0 7-3 7-3 9h18c0-2-3-2-3-9ZM10 21h4"/></symbol>
+      <symbol id="icon-book" viewBox="0 0 24 24"><path d="M4 5.5A2.5 2.5 0 0 1 6.5 3H20v16H6.5A2.5 2.5 0 0 0 4 21.5zM4 5.5v16M8 7h8"/></symbol>
+      <symbol id="icon-building" viewBox="0 0 24 24"><path d="M4 21h16M6 21V4h12v17M9 8h.01M12 8h.01M15 8h.01M9 12h.01M12 12h.01M15 12h.01M10 21v-5h4v5"/></symbol>
+      <symbol id="icon-map" viewBox="0 0 24 24"><path d="m9 18-6 3V6l6-3 6 3 6-3v15l-6 3zM9 3v15M15 6v15"/></symbol>
+      <symbol id="icon-award" viewBox="0 0 24 24"><path d="M12 15a6 6 0 1 0 0-12 6 6 0 0 0 0 12ZM9 14l-2 7 5-3 5 3-2-7"/></symbol>
+      <symbol id="icon-mail" viewBox="0 0 24 24"><path d="M4 6h16v12H4zM4 7l8 6 8-6"/></symbol>
+      <symbol id="icon-video" viewBox="0 0 24 24"><path d="M4 6h12v12H4zM16 10l5-3v10l-5-3z"/></symbol>
+    </svg>
+    <header class="site-header">
+      <div class="utility">
+        <div class="wrap utility-inner">
+          <button class="utility-toggle" type="button" aria-label="Toggle quick links" aria-expanded="false">Quick Links</button>
+          <nav aria-label="Quick links">
+            <a href="https://www.gprec.ac.in/idea-lab/" target="_blank" rel="noreferrer"><svg><use href="#icon-lightbulb"></use></svg>IDEA LAB</a>
+            <a href="campus-life.html"><svg><use href="#icon-campus"></use></svg>Campus Life</a>
+            <a href="careers.html"><svg><use href="#icon-briefcase"></use></svg>Careers</a>
+          </nav>
+          <nav class="service-nav" aria-label="Services">
+            <a href="mandatory-disclosures.html"><svg><use href="#icon-file"></use></svg>Mandatory Disclosures</a>
+            <a href="admin-login.html"><svg><use href="#icon-server"></use></svg>Central Services</a>
+            <a href="http://61.1.167.253/Login" target="_blank" rel="noreferrer"><svg><use href="#icon-key"></use></svg>ERP</a>
+            <div class="utility-menu">
+              <button type="button"><svg><use href="#icon-user-check"></use></svg>Login</button>
+              <div class="utility-dropdown">
+                <a href="student-login.html"><svg><use href="#icon-user-check"></use></svg>Student Login</a>
+                <a href="parent-login.html"><svg><use href="#icon-key"></use></svg>Parent Login</a>
+                <a href="faculty-login.html"><svg><use href="#icon-users"></use></svg>Faculty Login</a>
+                <a href="non-teaching-login.html"><svg><use href="#icon-briefcase"></use></svg>Staff Login</a>
+                <a href="student-login.html?demo=student"><svg><use href="#icon-user-check"></use></svg>Student Demo</a>
+                <a href="faculty-login.html?demo=faculty"><svg><use href="#icon-users"></use></svg>Faculty Demo</a>
+                <a href="admin-login.html?demo=admin"><svg><use href="#icon-server"></use></svg>Admin Demo</a>
+              </div>
+            </div>
+            <div class="utility-menu">
+              <button type="button"><svg><use href="#icon-award"></use></svg>Alumni</button>
+              <div class="utility-dropdown">
+                <a href="alumni-login.html"><svg><use href="#icon-award"></use></svg>Alumni Login</a>
+                <a href="alumni-login.html?demo=alumni"><svg><use href="#icon-award"></use></svg>Alumni Demo</a>
+                <a href="certificate-request.html"><svg><use href="#icon-file"></use></svg>Request Certificate</a>
+                <a href="https://alumni.gprec.ac.in/" target="_blank" rel="noreferrer"><svg><use href="#icon-users"></use></svg>Alumni Association</a>
+                <a href="https://www.gprec.ac.in/alumni/" target="_blank" rel="noreferrer"><svg><use href="#icon-file"></use></svg>Alumni Requirements</a>
+              </div>
+            </div>
+          </nav>
+        </div>
+      </div>
+
+      <div class="wrap nav-shell">
+        <a class="brand" href="../index.html">
+          <img src="../gprec-logo-enhanced.png" alt="G Pulla Reddy Engineering College">
+        </a>
+        <button class="menu-toggle" type="button" aria-label="Toggle navigation" aria-expanded="false">
+          <span></span>
+          <span></span>
+          <span></span>
+        </button>
+        <nav class="nav-links" aria-label="Primary navigation">
+          <a href="../index.html"><svg><use href="#icon-home"></use></svg>Home</a>
+          <a href="about-us.html"><svg><use href="#icon-info"></use></svg>About Us</a>
+          <div class="utility-menu">
+            <button type="button"><svg><use href="#icon-user-check"></use></svg>Admissions</button>
+            <div class="utility-dropdown">
+              <a href="admissions.html">Admissions</a>
+              <a href="fee-structure.html">Fee Structure</a>
+              <a href="scholarships.html">Scholarships</a>
+            </div>
+          </div>
+          <a href="https://www.gprec.ac.in/academics/academic-calendar/" target="_blank" rel="noreferrer"><svg><use href="#icon-book"></use></svg>Academics</a>
+          <div class="utility-menu">
+            <button type="button"><svg><use href="#icon-building"></use></svg>Departments</button>
+            <div class="utility-dropdown" data-departments-dropdown>
+            </div>
+          </div>
+          <a href="exam-cell.html"><svg><use href="#icon-file"></use></svg>Exam Cell</a>
+          <a href="../index.html#placements"><svg><use href="#icon-award"></use></svg>Training &amp; Placements</a>
+          <a href="research-development.html"><svg><use href="#icon-lightbulb"></use></svg>R&amp;D</a>
+          <a href="contact-us.html"><svg><use href="#icon-mail"></use></svg>Contact Us</a>
+        </nav>
+      </div>
     </header>
 
     <main>
