@@ -84,12 +84,12 @@ const hasStudentLogin = () => Boolean(getCurrentStudentId());
 // role just navigated to the login page without actually clearing localStorage, leaving the old
 // session (and chat history) intact for whoever logged in next.
 const gprecLogoutKeysByLoginPage = {
-  "student-login.html": ["gprecStudentId"],
-  "admin-login.html": ["gprecAdminRole", "gprecAdminEmail", "gprecAdminDepartment"],
-  "faculty-login.html": ["gprecFacultyEmail"],
-  "non-teaching-login.html": ["gprecNonTeachingEmail"],
-  "parent-login.html": ["gprecParentStudentId"],
-  "alumni-login.html": ["gprecAlumniEmail", "gprecAlumniName", "gprecAlumniBatch"]
+  "student-login.html": ["gprecStudentId", "gprecDemoMode"],
+  "admin-login.html": ["gprecAdminRole", "gprecAdminEmail", "gprecAdminDepartment", "gprecDemoMode"],
+  "faculty-login.html": ["gprecFacultyEmail", "gprecDemoMode"],
+  "non-teaching-login.html": ["gprecNonTeachingEmail", "gprecDemoMode"],
+  "parent-login.html": ["gprecParentStudentId", "gprecDemoMode"],
+  "alumni-login.html": ["gprecAlumniEmail", "gprecAlumniName", "gprecAlumniBatch", "gprecDemoMode"]
 };
 
 // The chat widget is shared across public pages and dashboards. Keep one per role + signed-in
@@ -194,6 +194,119 @@ const GPREC_ROLE_LOGIN_PAGE = {
   non_teaching: "non-teaching-login.html",
   alumni: "alumni-login.html"
 };
+
+const GPREC_DEMO_SESSIONS = {
+  student: {
+    activeRole: "student",
+    dashboard: "student-dashboard.html",
+    entries: { gprecStudentId: "20X51A0501" }
+  },
+  parent: {
+    activeRole: "parent",
+    dashboard: "parent-dashboard.html",
+    entries: { gprecParentStudentId: "20X51A0501" }
+  },
+  faculty: {
+    activeRole: "faculty",
+    dashboard: "faculty-dashboard.html",
+    entries: { gprecFacultyEmail: "k.ramesh@gprec.ac.in" }
+  },
+  non_teaching: {
+    activeRole: "non_teaching",
+    dashboard: "non-teaching-dashboard.html",
+    entries: { gprecNonTeachingEmail: "office.super@gprec.ac.in" }
+  },
+  alumni: {
+    activeRole: "alumni",
+    dashboard: "alumni-dashboard.html",
+    entries: {
+      gprecAlumniEmail: "preview.alumni@gprec.ac.in",
+      gprecAlumniName: "Preview Alumni",
+      gprecAlumniBatch: "2026"
+    }
+  },
+  admin: {
+    activeRole: "admin",
+    dashboard: "admin-dashboard.html",
+    entries: {
+      gprecAdminRole: "College Admin",
+      gprecAdminEmail: "admin@gprec.ac.in",
+      gprecAdminDepartment: "All"
+    }
+  },
+  department: {
+    activeRole: "admin",
+    dashboard: "department-dashboard.html",
+    entries: {
+      gprecAdminRole: "CSE Department Admin",
+      gprecAdminEmail: "cse.admin@gprec.ac.in",
+      gprecAdminDepartment: "CSE"
+    }
+  },
+  hostel: {
+    activeRole: "admin",
+    dashboard: "hostel-dashboard.html",
+    entries: {
+      gprecAdminRole: "Boys Hostel Warden",
+      gprecAdminEmail: "boys.warden@gprec.ac.in",
+      gprecAdminDepartment: "Boys Hostel"
+    }
+  },
+  exam: {
+    activeRole: "admin",
+    dashboard: "exam-cell-dashboard.html",
+    entries: {
+      gprecAdminRole: "Exam Cell Officer",
+      gprecAdminEmail: "exam.cell@gprec.ac.in",
+      gprecAdminDepartment: "Examinations"
+    }
+  },
+  placement: {
+    activeRole: "admin",
+    dashboard: "placement-dashboard.html",
+    entries: {
+      gprecAdminRole: "Placement Cell Officer",
+      gprecAdminEmail: "placement.cell@gprec.ac.in",
+      gprecAdminDepartment: "Placements"
+    }
+  }
+};
+GPREC_DEMO_SESSIONS.staff = GPREC_DEMO_SESSIONS.non_teaching;
+GPREC_DEMO_SESSIONS["non-teaching"] = GPREC_DEMO_SESSIONS.non_teaching;
+
+const gprecStartDemoSession = (role) => {
+  const demo = GPREC_DEMO_SESSIONS[role];
+  if (!demo) return null;
+  [
+    "gprecStudentId",
+    "gprecAdminRole",
+    "gprecAdminEmail",
+    "gprecAdminDepartment",
+    "gprecParentStudentId",
+    "gprecNonTeachingEmail",
+    "gprecAlumniEmail",
+    "gprecAlumniName",
+    "gprecAlumniBatch",
+    "gprecDemoMode"
+  ].forEach((key) => localStorage.removeItem(key));
+  localStorage.setItem("gprecSessionToken", `demo-${role}-session`);
+  localStorage.setItem("gprecActiveRole", demo.activeRole);
+  Object.entries(demo.entries).forEach(([key, value]) => localStorage.setItem(key, value));
+  localStorage.setItem("gprecDemoMode", role);
+  return demo;
+};
+
+const gprecDemoRole = new URLSearchParams(window.location.search).get("demo");
+const gprecDemoSession = gprecDemoRole ? gprecStartDemoSession(gprecDemoRole.toLowerCase()) : null;
+if (gprecDemoSession) {
+  const currentDemoRequiredRole = GPREC_DASHBOARD_ROLE[GPREC_CURRENT_ROUTE_FILE];
+  const currentDemoRequiredRoles = Array.isArray(currentDemoRequiredRole)
+    ? currentDemoRequiredRole
+    : [currentDemoRequiredRole].filter(Boolean);
+  if (!currentDemoRequiredRoles.includes(gprecDemoSession.activeRole)) {
+    window.location.replace(gprecPageUrl(gprecDemoSession.dashboard));
+  }
+}
 
 // Runs before any dashboard content renders. Previously only student-dashboard.html had this
 // check at all (line 67 in the old version of this file) - admin-dashboard.html and every one of
@@ -871,6 +984,7 @@ const gprecApiBaseUrl = () => {
   return `http://${window.location.hostname}:8766/api`;
 };
 const gprecDbRequest = (path, options = {}) => {
+  if (localStorage.getItem("gprecDemoMode")) return null;
   const baseUrl = gprecApiBaseUrl();
   if (!baseUrl) return null;
   const xhr = new XMLHttpRequest();
@@ -1233,6 +1347,24 @@ document.addEventListener("click", (event) => {
     appDrawerDropdown.classList.add("is-hidden");
   }
 });
+
+const bindGprecTap = (element, handler) => {
+  if (!element) return;
+  let handledPointer = false;
+  if (window.PointerEvent) {
+    element.addEventListener("pointerup", (event) => {
+      handledPointer = true;
+      window.setTimeout(() => {
+        handledPointer = false;
+      }, 0);
+      handler(event);
+    });
+  }
+  element.addEventListener("click", (event) => {
+    if (handledPointer) return;
+    handler(event);
+  });
+};
 
 // The clear-all button re-renders with whatever legacy items were last passed in, since only the
 // persisted feed is clearable server-side - the hand-built pending-action strings aren't stored
@@ -1757,25 +1889,25 @@ document.querySelector("#saveMaintenanceNoticeButton")?.addEventListener("click"
   }
 });
 
-menuToggle?.addEventListener("click", () => {
-  const isOpen = navLinks.classList.toggle("open");
+bindGprecTap(menuToggle, () => {
+  const isOpen = navLinks?.classList.toggle("open") || false;
   menuToggle.setAttribute("aria-expanded", String(isOpen));
 });
 
-utilityToggle?.addEventListener("click", () => {
-  const isOpen = utilityInner.classList.toggle("open");
+bindGprecTap(utilityToggle, () => {
+  const isOpen = utilityInner?.classList.toggle("open") || false;
   utilityToggle.setAttribute("aria-expanded", String(isOpen));
 });
 
 navLinks?.addEventListener("click", (event) => {
-  if (event.target.matches("a")) {
+  if (event.target.closest("a")) {
     navLinks.classList.remove("open");
     menuToggle?.setAttribute("aria-expanded", "false");
   }
 });
 
 utilityInner?.addEventListener("click", (event) => {
-  if (event.target.matches("a")) {
+  if (event.target.closest("a")) {
     utilityInner.classList.remove("open");
     utilityToggle?.setAttribute("aria-expanded", "false");
   }
@@ -1786,7 +1918,7 @@ utilityMenus.forEach((menu) => {
   menu.addEventListener("click", (event) => {
     event.stopPropagation();
   });
-  button?.addEventListener("click", (event) => {
+  bindGprecTap(button, (event) => {
     event.stopPropagation();
     utilityMenus.forEach((item) => {
       if (item !== menu) item.classList.remove("open");
@@ -11666,7 +11798,7 @@ const getGprecianReply = async (question) => {
   return getKeywordAnswer(contextualQuestion);
 };
 
-gprecianToggle?.addEventListener("click", () => {
+bindGprecTap(gprecianToggle, () => {
   gprecian?.classList.add("open");
 });
 
@@ -11674,11 +11806,11 @@ gprecianInput?.addEventListener("pointerdown", () => {
   gprecian?.classList.add("open");
 });
 
-gprecianClose?.addEventListener("click", () => {
+bindGprecTap(gprecianClose, () => {
   gprecian?.classList.remove("open");
 });
 
-gprecianExpand?.addEventListener("click", () => {
+bindGprecTap(gprecianExpand, () => {
   const expanded = gprecianPanel?.classList.toggle("expanded");
   gprecianExpand.setAttribute("aria-label", expanded ? "Shrink chat window" : "Expand chat window");
 });
@@ -11885,6 +12017,7 @@ const handleRolePasswordLogin = ({ form, feedback, email, password, roleType, su
     return;
   }
   Object.entries(localStorageEntries).forEach(([key, value]) => localStorage.setItem(key, value));
+  localStorage.removeItem("gprecDemoMode");
   localStorage.setItem("gprecSessionToken", result.token);
   localStorage.setItem("gprecActiveRole", roleType);
   feedback.textContent = successMessage;
@@ -11967,6 +12100,7 @@ portalForms.forEach((form) => {
       const volunteerLogin = gprecIsVolunteerStudentLogin();
       feedback.textContent = volunteerLogin ? "Event volunteer login successful. Opening volunteer dashboard..." : "Student login successful. Opening student dashboard...";
       feedback.classList.add("success");
+      localStorage.removeItem("gprecDemoMode");
       localStorage.setItem("gprecStudentId", result.rollNo);
       localStorage.setItem("gprecSessionToken", result.token);
       localStorage.setItem("gprecActiveRole", "student");
@@ -12121,6 +12255,7 @@ if (changePasswordForm) {
         showChangeFeedback("Current password is incorrect.", false);
         return;
       }
+      localStorage.removeItem("gprecDemoMode");
       Object.entries(pending.localStorageEntries || {}).forEach(([key, value]) => localStorage.setItem(key, value));
       localStorage.setItem("gprecSessionToken", result.token);
       localStorage.setItem("gprecActiveRole", pending.roleType);
@@ -12260,6 +12395,7 @@ window.handleGoogleAlumniSignIn = (response) => {
         showAlumniPopup("Could not verify your Google sign-in. Please try again.");
         return;
       }
+      localStorage.removeItem("gprecDemoMode");
       localStorage.setItem("gprecAlumniEmail", result.account.email);
       localStorage.setItem("gprecAlumniName", result.account.name || name);
       localStorage.setItem("gprecAlumniBatch", result.account.batchYear || existing.batchYear);
@@ -12366,6 +12502,7 @@ alumniSigninForm?.addEventListener("submit", (event) => {
   }
   alumniAuthFeedback.textContent = "Sign in successful. Opening alumni dashboard...";
   alumniAuthFeedback.classList.add("success");
+  localStorage.removeItem("gprecDemoMode");
   localStorage.setItem("gprecAlumniEmail", account.email);
   localStorage.setItem("gprecAlumniName", account.name || "");
   localStorage.setItem("gprecAlumniBatch", account.batchYear || "");
@@ -12411,6 +12548,7 @@ alumniSignupForm?.addEventListener("submit", (event) => {
   }
   alumniAuthFeedback.textContent = "Account created. Signing you in...";
   alumniAuthFeedback.classList.add("success");
+  localStorage.removeItem("gprecDemoMode");
   localStorage.setItem("gprecAlumniEmail", email);
   localStorage.setItem("gprecAlumniName", name);
   localStorage.setItem("gprecAlumniBatch", batchYear);
@@ -12476,6 +12614,7 @@ document.querySelector("#alumniCompleteButton")?.addEventListener("click", () =>
     alumniAuthFeedback.classList.remove("success");
     return;
   }
+  localStorage.removeItem("gprecDemoMode");
   localStorage.setItem("gprecAlumniEmail", result.account.email);
   localStorage.setItem("gprecAlumniName", name);
   localStorage.setItem("gprecAlumniBatch", batchYear);
@@ -12555,6 +12694,7 @@ if (parentOtpForm) {
       return;
     }
     showParentFeedback("Parent login successful. Opening parent dashboard...", true);
+    localStorage.removeItem("gprecDemoMode");
     localStorage.setItem("gprecParentStudentId", result.studentId);
     localStorage.setItem("gprecSessionToken", result.token);
     localStorage.setItem("gprecActiveRole", "parent");
@@ -15941,8 +16081,14 @@ document.querySelectorAll("[data-photo-slot]").forEach((el) => {
   }
 });
 
+const defaultHomeHeroSlides = [
+  { id: "demo-hero-campus", alt: "GPREC campus entrance", photoDataUrl: "https://www.gprec.ac.in/wp-content/uploads/2019/07/gprec-banner4.jpg" },
+  { id: "demo-hero-library", alt: "GPREC library", photoDataUrl: "https://www.gprec.ac.in/wp-content/uploads/2019/04/library.jpg" },
+  { id: "demo-hero-sports", alt: "GPREC sports facilities", photoDataUrl: "https://www.gprec.ac.in/wp-content/uploads/2019/07/sports.jpg" }
+];
+
 // Home page hero slider: fully admin-managed slide list (add/remove).
-const getHomeHeroSlides = () => getSiteContent("homeHeroSlides", []);
+const getHomeHeroSlides = () => getSiteContent("homeHeroSlides", defaultHomeHeroSlides);
 const saveHomeHeroSlides = (slides) => saveSiteContent("homeHeroSlides", slides);
 
 const regenerateHeroDots = () => {
@@ -16049,7 +16195,10 @@ addHomeHeroSlideButton?.addEventListener("click", async () => {
 });
 
 // About Us page History gallery: fully admin-managed slide list (add/remove).
-const getAboutHistorySlides = () => getSiteContent("aboutHistorySlides", []);
+const getAboutHistorySlides = () => getSiteContent("aboutHistorySlides", [
+  { id: "demo-history-founder", caption: "Founder legacy", photoDataUrl: "https://www.gprec.ac.in/wp-content/uploads/2019/04/G.-Pulla-Reddy-Garu.jpg" },
+  { id: "demo-history-campus", caption: "GPREC campus", photoDataUrl: "https://www.gprec.ac.in/wp-content/uploads/2019/07/gprec-banner4.jpg" }
+]);
 const saveAboutHistorySlides = (slides) => saveSiteContent("aboutHistorySlides", slides);
 
 const aboutHistoryGallery = document.querySelector("#aboutHistoryGallery");
@@ -16155,7 +16304,36 @@ addAboutHistorySlideButton?.addEventListener("click", async () => {
 });
 
 // Campus Life page: fully admin-managed slide list (add/remove), unlike the fixed slots above.
-const getCampusLifeSlides = () => getSiteContent("campusLifeSlides", []);
+const getCampusLifeSlides = () => getSiteContent("campusLifeSlides", [
+  {
+    id: "demo-campus-library",
+    title: "Academic Amenities",
+    description: "Library and learning resources for students and faculty.",
+    link: "https://www.gprec.ac.in/campus-life/libraries/",
+    photoDataUrl: "https://www.gprec.ac.in/wp-content/uploads/2019/04/library.jpg"
+  },
+  {
+    id: "demo-campus-hostels",
+    title: "Hostels",
+    description: "Residential facilities and student support services.",
+    link: "https://www.gprec.ac.in/campus-life/hostels/",
+    photoDataUrl: "https://www.gprec.ac.in/wp-content/uploads/2019/04/hostels.jpg"
+  },
+  {
+    id: "demo-campus-sports",
+    title: "Sports and Games",
+    description: "Outdoor and indoor sports facilities across campus.",
+    link: "https://www.gprec.ac.in/campus-life/sports-facilities/",
+    photoDataUrl: "https://www.gprec.ac.in/wp-content/uploads/2019/07/sports.jpg"
+  },
+  {
+    id: "demo-campus-clubs",
+    title: "Student Clubs",
+    description: "Co-curricular activities, student initiatives, and campus participation.",
+    link: "http://womencell.gprec.ac.in/",
+    photoDataUrl: "https://www.gprec.ac.in/wp-content/uploads/2019/04/womencell.jpg"
+  }
+]);
 const saveCampusLifeSlides = (slides) => saveSiteContent("campusLifeSlides", slides);
 
 const campusLifeGrid = document.querySelector("#campusLifeGrid");
@@ -16407,7 +16585,12 @@ addVideoButton?.addEventListener("click", () => {
 });
 
 // Photo Gallery: admin-managed list of photos, auto-scrolling marquee with a click-to-open lightbox.
-const getPhotoGallery = () => getSiteContent("photoGallery", []);
+const getPhotoGallery = () => getSiteContent("photoGallery", [
+  { id: "demo-photo-campus", caption: "GPREC Campus", photoDataUrl: "https://www.gprec.ac.in/wp-content/uploads/2019/07/gprec-banner4.jpg" },
+  { id: "demo-photo-library", caption: "Library", photoDataUrl: "https://www.gprec.ac.in/wp-content/uploads/2019/04/library.jpg" },
+  { id: "demo-photo-hostel", caption: "Hostels", photoDataUrl: "https://www.gprec.ac.in/wp-content/uploads/2019/04/hostels.jpg" },
+  { id: "demo-photo-sports", caption: "Sports Facilities", photoDataUrl: "https://www.gprec.ac.in/wp-content/uploads/2019/07/sports.jpg" }
+]);
 const savePhotoGallery = (photos) => saveSiteContent("photoGallery", photos);
 
 const photoGalleryTrack = document.querySelector("#photoGalleryTrack");
@@ -17949,17 +18132,17 @@ const saveFestCoordinators = (emails) => saveSiteContent("festCoordinators", ema
 const createFestActivityAsCoordinator = (fields) => gprecDbPost("/fest-activities/create", fields);
 // The fest's display name (shown on event-visitor-dashboard.html's branding) - admin-set instead
 // of the hardcoded "Campus Fest 2026" placeholder it shipped with.
-const getFestName = () => getSiteContent("festName", "Campus Fest 2026");
+const getFestName = () => getSiteContent("festName", "Udaan 2026");
 const saveFestName = (name) => saveSiteContent("festName", name);
 // The fest's own countdown target (date + optional time) and venue - admin-set, so the visitor
 // page's countdown/venue text has something to show even when no public Campus Event exists yet
 // (event-visitor-dashboard.html falls back to the nearest public Campus Event's own date/venue
 // when these are blank, so setting a Campus Event's date still works without this).
-const getFestDate = () => getSiteContent("festDate", "");
+const getFestDate = () => getSiteContent("festDate", "2026-09-05");
 const saveFestDate = (date) => saveSiteContent("festDate", date);
-const getFestTime = () => getSiteContent("festTime", "");
+const getFestTime = () => getSiteContent("festTime", "17:00");
 const saveFestTime = (time) => saveSiteContent("festTime", time);
-const getFestVenue = () => getSiteContent("festVenue", "");
+const getFestVenue = () => getSiteContent("festVenue", "Open Air Theatre, GPREC Campus");
 const saveFestVenue = (venue) => saveSiteContent("festVenue", venue);
 // Manual on/off switch for the Fest Settings-driven homepage banner (independent of the automatic
 // 24-hours-after-the-fest expiry in renderHomeFestBanner) - admin can always turn it off early, or

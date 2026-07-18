@@ -14620,7 +14620,7 @@ img.alumni-post-avatar {
   position: fixed;
   right: 22px;
   bottom: 22px;
-  z-index: 80;
+  z-index: 1002;
   display: grid;
   justify-items: end;
   gap: 12px;
