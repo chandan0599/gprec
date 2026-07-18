@@ -84,12 +84,12 @@ const hasStudentLogin = () => Boolean(getCurrentStudentId());
 // role just navigated to the login page without actually clearing localStorage, leaving the old
 // session (and chat history) intact for whoever logged in next.
 const gprecLogoutKeysByLoginPage = {
-  "student-login.html": ["gprecStudentId"],
-  "admin-login.html": ["gprecAdminRole", "gprecAdminEmail", "gprecAdminDepartment"],
-  "faculty-login.html": ["gprecFacultyEmail"],
-  "non-teaching-login.html": ["gprecNonTeachingEmail"],
-  "parent-login.html": ["gprecParentStudentId"],
-  "alumni-login.html": ["gprecAlumniEmail", "gprecAlumniName", "gprecAlumniBatch"]
+  "student-login.html": ["gprecStudentId", "gprecDemoMode"],
+  "admin-login.html": ["gprecAdminRole", "gprecAdminEmail", "gprecAdminDepartment", "gprecDemoMode"],
+  "faculty-login.html": ["gprecFacultyEmail", "gprecDemoMode"],
+  "non-teaching-login.html": ["gprecNonTeachingEmail", "gprecDemoMode"],
+  "parent-login.html": ["gprecParentStudentId", "gprecDemoMode"],
+  "alumni-login.html": ["gprecAlumniEmail", "gprecAlumniName", "gprecAlumniBatch", "gprecDemoMode"]
 };
 
 // The chat widget is shared across public pages and dashboards. Keep one per role + signed-in
@@ -194,6 +194,119 @@ const GPREC_ROLE_LOGIN_PAGE = {
   non_teaching: "non-teaching-login.html",
   alumni: "alumni-login.html"
 };
+
+const GPREC_DEMO_SESSIONS = {
+  student: {
+    activeRole: "student",
+    dashboard: "student-dashboard.html",
+    entries: { gprecStudentId: "20X51A0501" }
+  },
+  parent: {
+    activeRole: "parent",
+    dashboard: "parent-dashboard.html",
+    entries: { gprecParentStudentId: "20X51A0501" }
+  },
+  faculty: {
+    activeRole: "faculty",
+    dashboard: "faculty-dashboard.html",
+    entries: { gprecFacultyEmail: "k.ramesh@gprec.ac.in" }
+  },
+  non_teaching: {
+    activeRole: "non_teaching",
+    dashboard: "non-teaching-dashboard.html",
+    entries: { gprecNonTeachingEmail: "office.super@gprec.ac.in" }
+  },
+  alumni: {
+    activeRole: "alumni",
+    dashboard: "alumni-dashboard.html",
+    entries: {
+      gprecAlumniEmail: "preview.alumni@gprec.ac.in",
+      gprecAlumniName: "Preview Alumni",
+      gprecAlumniBatch: "2026"
+    }
+  },
+  admin: {
+    activeRole: "admin",
+    dashboard: "admin-dashboard.html",
+    entries: {
+      gprecAdminRole: "College Admin",
+      gprecAdminEmail: "admin@gprec.ac.in",
+      gprecAdminDepartment: "All"
+    }
+  },
+  department: {
+    activeRole: "admin",
+    dashboard: "department-dashboard.html",
+    entries: {
+      gprecAdminRole: "CSE Department Admin",
+      gprecAdminEmail: "cse.admin@gprec.ac.in",
+      gprecAdminDepartment: "CSE"
+    }
+  },
+  hostel: {
+    activeRole: "admin",
+    dashboard: "hostel-dashboard.html",
+    entries: {
+      gprecAdminRole: "Boys Hostel Warden",
+      gprecAdminEmail: "boys.warden@gprec.ac.in",
+      gprecAdminDepartment: "Boys Hostel"
+    }
+  },
+  exam: {
+    activeRole: "admin",
+    dashboard: "exam-cell-dashboard.html",
+    entries: {
+      gprecAdminRole: "Exam Cell Officer",
+      gprecAdminEmail: "exam.cell@gprec.ac.in",
+      gprecAdminDepartment: "Examinations"
+    }
+  },
+  placement: {
+    activeRole: "admin",
+    dashboard: "placement-dashboard.html",
+    entries: {
+      gprecAdminRole: "Placement Cell Officer",
+      gprecAdminEmail: "placement.cell@gprec.ac.in",
+      gprecAdminDepartment: "Placements"
+    }
+  }
+};
+GPREC_DEMO_SESSIONS.staff = GPREC_DEMO_SESSIONS.non_teaching;
+GPREC_DEMO_SESSIONS["non-teaching"] = GPREC_DEMO_SESSIONS.non_teaching;
+
+const gprecStartDemoSession = (role) => {
+  const demo = GPREC_DEMO_SESSIONS[role];
+  if (!demo) return null;
+  [
+    "gprecStudentId",
+    "gprecAdminRole",
+    "gprecAdminEmail",
+    "gprecAdminDepartment",
+    "gprecParentStudentId",
+    "gprecNonTeachingEmail",
+    "gprecAlumniEmail",
+    "gprecAlumniName",
+    "gprecAlumniBatch",
+    "gprecDemoMode"
+  ].forEach((key) => localStorage.removeItem(key));
+  localStorage.setItem("gprecSessionToken", `demo-${role}-session`);
+  localStorage.setItem("gprecActiveRole", demo.activeRole);
+  Object.entries(demo.entries).forEach(([key, value]) => localStorage.setItem(key, value));
+  localStorage.setItem("gprecDemoMode", role);
+  return demo;
+};
+
+const gprecDemoRole = new URLSearchParams(window.location.search).get("demo");
+const gprecDemoSession = gprecDemoRole ? gprecStartDemoSession(gprecDemoRole.toLowerCase()) : null;
+if (gprecDemoSession) {
+  const currentDemoRequiredRole = GPREC_DASHBOARD_ROLE[GPREC_CURRENT_ROUTE_FILE];
+  const currentDemoRequiredRoles = Array.isArray(currentDemoRequiredRole)
+    ? currentDemoRequiredRole
+    : [currentDemoRequiredRole].filter(Boolean);
+  if (!currentDemoRequiredRoles.includes(gprecDemoSession.activeRole)) {
+    window.location.replace(gprecPageUrl(gprecDemoSession.dashboard));
+  }
+}
 
 // Runs before any dashboard content renders. Previously only student-dashboard.html had this
 // check at all (line 67 in the old version of this file) - admin-dashboard.html and every one of
@@ -871,6 +984,7 @@ const gprecApiBaseUrl = () => {
   return `http://${window.location.hostname}:8766/api`;
 };
 const gprecDbRequest = (path, options = {}) => {
+  if (localStorage.getItem("gprecDemoMode")) return null;
   const baseUrl = gprecApiBaseUrl();
   if (!baseUrl) return null;
   const xhr = new XMLHttpRequest();
@@ -1233,6 +1347,24 @@ document.addEventListener("click", (event) => {
     appDrawerDropdown.classList.add("is-hidden");
   }
 });
+
+const bindGprecTap = (element, handler) => {
+  if (!element) return;
+  let handledPointer = false;
+  if (window.PointerEvent) {
+    element.addEventListener("pointerup", (event) => {
+      handledPointer = true;
+      window.setTimeout(() => {
+        handledPointer = false;
+      }, 0);
+      handler(event);
+    });
+  }
+  element.addEventListener("click", (event) => {
+    if (handledPointer) return;
+    handler(event);
+  });
+};
 
 // The clear-all button re-renders with whatever legacy items were last passed in, since only the
 // persisted feed is clearable server-side - the hand-built pending-action strings aren't stored
@@ -1757,25 +1889,25 @@ document.querySelector("#saveMaintenanceNoticeButton")?.addEventListener("click"
   }
 });
 
-menuToggle?.addEventListener("click", () => {
-  const isOpen = navLinks.classList.toggle("open");
+bindGprecTap(menuToggle, () => {
+  const isOpen = navLinks?.classList.toggle("open") || false;
   menuToggle.setAttribute("aria-expanded", String(isOpen));
 });
 
-utilityToggle?.addEventListener("click", () => {
-  const isOpen = utilityInner.classList.toggle("open");
+bindGprecTap(utilityToggle, () => {
+  const isOpen = utilityInner?.classList.toggle("open") || false;
   utilityToggle.setAttribute("aria-expanded", String(isOpen));
 });
 
 navLinks?.addEventListener("click", (event) => {
-  if (event.target.matches("a")) {
+  if (event.target.closest("a")) {
     navLinks.classList.remove("open");
     menuToggle?.setAttribute("aria-expanded", "false");
   }
 });
 
 utilityInner?.addEventListener("click", (event) => {
-  if (event.target.matches("a")) {
+  if (event.target.closest("a")) {
     utilityInner.classList.remove("open");
     utilityToggle?.setAttribute("aria-expanded", "false");
   }
@@ -1786,7 +1918,7 @@ utilityMenus.forEach((menu) => {
   menu.addEventListener("click", (event) => {
     event.stopPropagation();
   });
-  button?.addEventListener("click", (event) => {
+  bindGprecTap(button, (event) => {
     event.stopPropagation();
     utilityMenus.forEach((item) => {
       if (item !== menu) item.classList.remove("open");
@@ -2703,25 +2835,109 @@ const colfestArt = {
     </g>
     <polygon points="38,46 48,30 58,46" fill="#E85D04" opacity=".7"/>
     <polygon points="200,155 210,139 220,155" fill="#FF9A3C" opacity=".7"/>
-    <circle cx="240" cy="88" r="8" fill="none" stroke="#E85D04" stroke-width="1.5" opacity=".5"/>`
+    <circle cx="240" cy="88" r="8" fill="none" stroke="#E85D04" stroke-width="1.5" opacity=".5"/>`,
+  graduation: `<rect width="260" height="220" fill="#0A1433"/><ellipse cx="60" cy="60" rx="90" ry="90" fill="#0F2060" opacity=".8"/>
+    <rect x="18" y="192" width="224" height="20" rx="4" fill="#E85D04"/>
+    <text x="130" y="206" font-size="9" fill="#fff" font-family="Impact,sans-serif" text-anchor="middle" letter-spacing="2">CONGRATULATIONS CLASS OF 2025</text>
+    <g fill="#E85D04" opacity=".8">
+    <rect x="22" y="18" width="7" height="12" rx="2" transform="rotate(20 25 24)"/>
+    <rect x="52" y="10" width="6" height="10" rx="2" transform="rotate(-15 55 15)"/>
+    <rect x="88" y="16" width="7" height="11" rx="2" transform="rotate(30 91 21)"/>
+    <rect x="130" y="8" width="7" height="12" rx="2" transform="rotate(-10 133 14)"/>
+    <rect x="168" y="14" width="6" height="11" rx="2" transform="rotate(25 171 19)"/>
+    <rect x="208" y="10" width="7" height="11" rx="2" transform="rotate(-20 211 15)"/>
+    </g>
+    <circle cx="40" cy="32" r="4" fill="#FF9A3C" opacity=".7"/><circle cx="155" cy="20" r="4" fill="#FF9A3C" opacity=".7"/>
+    <circle cx="65" cy="90" r="14" fill="#E85D04"/><rect x="52" y="104" width="26" height="40" rx="6" fill="#E85D04"/>
+    <line x1="53" y1="114" x2="36" y2="128" stroke="#E85D04" stroke-width="6" stroke-linecap="round"/>
+    <line x1="77" y1="114" x2="94" y2="128" stroke="#E85D04" stroke-width="6" stroke-linecap="round"/>
+    <rect x="54" y="26" width="22" height="8" rx="3" fill="#0F2060"/>
+    <line x1="65" y1="26" x2="65" y2="20" stroke="#0F2060" stroke-width="3"/>
+    <line x1="59" y1="20" x2="71" y2="20" stroke="#0F2060" stroke-width="3"/>
+    <line x1="71" y1="20" x2="73" y2="28" stroke="#FF9A3C" stroke-width="1.8"/>
+    <rect x="57" y="144" width="10" height="26" rx="5" fill="#B44500"/><rect x="69" y="144" width="10" height="26" rx="5" fill="#B44500"/>
+    <circle cx="130" cy="82" r="16" fill="#FF9A3C"/><rect x="116" y="98" width="28" height="42" rx="6" fill="#FF9A3C"/>
+    <line x1="116" y1="110" x2="92" y2="86" stroke="#FF9A3C" stroke-width="7" stroke-linecap="round"/>
+    <line x1="144" y1="110" x2="168" y2="86" stroke="#FF9A3C" stroke-width="7" stroke-linecap="round"/>
+    <circle cx="92" cy="84" r="8" fill="#FF9A3C"/><circle cx="168" cy="84" r="8" fill="#FF9A3C"/>
+    <rect x="118" y="26" width="24" height="9" rx="3" fill="#0F2060"/>
+    <line x1="130" y1="26" x2="130" y2="19" stroke="#0F2060" stroke-width="3.5"/>
+    <line x1="123" y1="19" x2="137" y2="19" stroke="#0F2060" stroke-width="3.5"/>
+    <line x1="137" y1="19" x2="140" y2="28" stroke="#FF9A3C" stroke-width="2"/>
+    <rect x="121" y="140" width="10" height="26" rx="5" fill="#B44500"/><rect x="133" y="140" width="10" height="26" rx="5" fill="#B44500"/>
+    <circle cx="195" cy="90" r="14" fill="#E85D04"/><rect x="182" y="104" width="26" height="40" rx="6" fill="#E85D04"/>
+    <line x1="183" y1="114" x2="165" y2="128" stroke="#E85D04" stroke-width="6" stroke-linecap="round"/>
+    <line x1="207" y1="114" x2="225" y2="128" stroke="#E85D04" stroke-width="6" stroke-linecap="round"/>
+    <rect x="184" y="26" width="22" height="8" rx="3" fill="#0F2060"/>
+    <line x1="195" y1="26" x2="195" y2="20" stroke="#0F2060" stroke-width="3"/>
+    <line x1="189" y1="20" x2="201" y2="20" stroke="#0F2060" stroke-width="3"/>
+    <line x1="201" y1="20" x2="203" y2="28" stroke="#FF9A3C" stroke-width="1.8"/>
+    <rect x="185" y="144" width="10" height="26" rx="5" fill="#B44500"/><rect x="197" y="144" width="10" height="26" rx="5" fill="#B44500"/>`,
+  // Currency-note art recolored onto the shared navy/orange/amber palette every other colfest
+  // template uses (its file_templates source used off-palette #FFB74D/#FEF3C7 light-yellow tones
+  // that stood out against every other activity's poster once actually generated side by side).
+  placement: `<rect width="260" height="220" fill="#0A1433"/><ellipse cx="60" cy="60" rx="90" ry="90" fill="#0F2060" opacity=".8"/>
+    <path d="M100,102 L100,90 Q100,80 112,80 L152,80 Q164,80 164,90 L164,102" fill="none" stroke="#E85D04" stroke-width="7" stroke-linecap="round" stroke-linejoin="round"/>
+    <rect x="68" y="100" width="128" height="90" rx="10" fill="#E85D04"/>
+    <rect x="68" y="140" width="128" height="11" fill="#B44500"/>
+    <rect x="116" y="134" width="32" height="22" rx="4" fill="#FF9A3C"/>
+    <rect x="120" y="138" width="24" height="14" rx="3" fill="#faf6ee"/>
+    <circle cx="132" cy="145" r="4" fill="#E85D04"/>
+    <rect x="76" y="108" width="30" height="5" rx="2" fill="#FF9A3C" opacity=".35"/>
+    <line x1="220" y1="195" x2="220" y2="115" stroke="#FF9A3C" stroke-width="3.5" stroke-linecap="round"/>
+    <polygon points="220,103 212,121 228,121" fill="#FF9A3C"/>
+    <ellipse cx="42" cy="132" rx="16" ry="5" fill="#FF9A3C" stroke="#E85D04" stroke-width="1"/>
+    <ellipse cx="42" cy="126" rx="16" ry="5" fill="#faf6ee" stroke="#E85D04" stroke-width="1"/>
+    <ellipse cx="42" cy="120" rx="16" ry="5" fill="#FF9A3C" stroke="#E85D04" stroke-width="1"/>
+    <ellipse cx="42" cy="114" rx="16" ry="5" fill="#faf6ee" stroke="#E85D04" stroke-width="1"/>
+    <text x="42" y="117" font-size="9" fill="#B44500" font-family="Arial Black, sans-serif" font-weight="900" text-anchor="middle">₹</text>
+    <polygon points="132,62 125,76 132,94 139,76" fill="#0F2060"/>
+    <polygon points="128,62 136,62 132,70" fill="#0A1433"/>
+    <rect x="30" y="176" width="12" height="18" rx="2" fill="#E85D04" opacity=".5"/>
+    <rect x="46" y="162" width="12" height="32" rx="2" fill="#E85D04" opacity=".7"/>`,
+  convocation: `<rect width="260" height="220" fill="#0A1433"/><ellipse cx="62" cy="58" rx="90" ry="90" fill="#0F2060" opacity=".82"/><ellipse cx="218" cy="164" rx="76" ry="62" fill="#E85D04" opacity=".1"/>
+    <g opacity=".8"><circle cx="34" cy="32" r="4" fill="#FF9A3C"/><circle cx="224" cy="35" r="4" fill="#E85D04"/><rect x="58" y="18" width="7" height="12" rx="2" fill="#E85D04" transform="rotate(-18 61 24)"/><rect x="194" y="19" width="7" height="12" rx="2" fill="#FF9A3C" transform="rotate(24 197 25)"/></g>
+    <ellipse cx="131" cy="160" rx="70" ry="16" fill="#07102A" opacity=".42"/>
+    <path d="M29 88l101-40 101 40-101 40z" fill="#0A1433" stroke="#0F1E50" stroke-width="8" stroke-linejoin="round"/>
+    <path d="M54 88l76-30 76 30-76 30z" fill="#E85D04" opacity=".95"/>
+    <path d="M82 108l48 20 50-20v39l-16 4c-15 4-28 11-34 19-6-8-19-15-35-19l-13-3z" fill="#E85D04"/>
+    <path d="M82 108l48 20 50-20v18l-50 23-48-23z" fill="#F8FBFF" opacity=".9"/>
+    <path d="M103 125l27 11 50-28v39l-16 4c-15 4-28 11-34 19-6-8-19-15-35-19l-13-3v-40z" fill="#FF9A3C" opacity=".72"/>
+    <path d="M82 108v40l13 3c16 4 29 11 35 19 6-8 19-15 34-19l16-4v-39" fill="none" stroke="#0F1E50" stroke-width="6" stroke-linejoin="round"/>
+    <path d="M231 88v46" fill="none" stroke="#0F1E50" stroke-width="8" stroke-linecap="round"/>
+    <circle cx="231" cy="148" r="17" fill="none" stroke="#0F1E50" stroke-width="8"/>
+    <path d="M231 165v25" fill="none" stroke="#0F1E50" stroke-width="8" stroke-linecap="round"/>
+    <path d="M231 190l-13 22h26z" fill="none" stroke="#0F1E50" stroke-width="8" stroke-linejoin="round"/>
+    <path d="M231 88v46" fill="none" stroke="#FF9A3C" stroke-width="3" stroke-linecap="round"/>
+    <circle cx="231" cy="148" r="10" fill="#FF9A3C"/>
+    <rect x="34" y="184" width="192" height="10" rx="3" fill="#B44500"/>
+    <rect x="59" y="170" width="142" height="16" rx="4" fill="#E85D04"/>
+    <text x="130" y="181" font-size="9" fill="#fff" font-family="Courier New, monospace" font-weight="700" text-anchor="middle" letter-spacing="1.4">HONORING GRADUATES</text>`
 };
 const posterTemplates = [
   // College fest activity templates - same "colfest" layout body (real navy/orange branded card
   // design), just a different hand-drawn art panel + title per activity category. defaultTitle is
   // the catchy headline that template originally shipped with - auto-filled into the Title field
   // on selection (see event-management-dashboard.html) so admins have a real starting point
-  // instead of a blank input, still fully editable from there.
-  { id: "artexpo", name: "Art Exhibition", layout: "colfest", art: colfestArt.artExpo, defaultTitle: "Art Expo" },
-  { id: "dance", name: "Dance Competition", layout: "colfest", art: colfestArt.dance, defaultTitle: "Groove Off" },
-  { id: "music", name: "Music / Battle of Bands", layout: "colfest", art: colfestArt.music, defaultTitle: "Battle of Bands" },
-  { id: "code", name: "Tech / Coding Contest", layout: "colfest", art: colfestArt.code, defaultTitle: "Code Clash" },
-  { id: "drama", name: "Drama / Theatre", layout: "colfest", art: colfestArt.drama, defaultTitle: "Curtain Call" },
-  { id: "comedy", name: "Comedy / Stand-up", layout: "colfest", art: colfestArt.comedy, defaultTitle: "Laugh Riot" },
-  { id: "fashion", name: "Fashion Show", layout: "colfest", art: colfestArt.fashion, defaultTitle: "Ramp Walk" },
-  { id: "sports", name: "Sports", layout: "colfest", art: colfestArt.sports, defaultTitle: "Sports Arena" },
-  { id: "seminar", name: "Seminar", layout: "colfest", art: colfestArt.seminar, defaultTitle: "Think Tank" },
-  { id: "quiz", name: "Quiz", layout: "colfest", art: colfestArt.quiz, defaultTitle: "Quiz Quest" },
-  { id: "general", name: "General Event", layout: "colfest", art: colfestArt.general, defaultTitle: "Event Name" }
+  // instead of a blank input, still fully editable from there. subLine/fourthLabel come straight
+  // from that same activity's file_templates mockup (e.g. "23_bus_pass.html" sibling
+  // "19_placement_drive.html" labels its 4th chip "Package", not "Entry") - posterLayoutBody used
+  // to hardcode a single "COLLEGE FEST · PRESENTS" eyebrow and "ENTRY" label for every template
+  // regardless of which one was picked, losing that per-activity distinction.
+  { id: "artexpo", name: "Art Exhibition", layout: "colfest", art: colfestArt.artExpo, defaultTitle: "Art Expo", subLine: "COLFEST '25 · ANNUAL FEST", fourthLabel: "PRIZE / ENTRY" },
+  { id: "dance", name: "Dance Competition", layout: "colfest", art: colfestArt.dance, defaultTitle: "Groove Off", subLine: "COLFEST '25 · ANNUAL FEST", fourthLabel: "PRIZE / ENTRY" },
+  { id: "music", name: "Music / Battle of Bands", layout: "colfest", art: colfestArt.music, defaultTitle: "Battle of Bands", subLine: "COLFEST '25 · ANNUAL FEST", fourthLabel: "PRIZE / ENTRY" },
+  { id: "code", name: "Tech / Coding Contest", layout: "colfest", art: colfestArt.code, defaultTitle: "Code Clash", subLine: "COLFEST '25 · ANNUAL FEST", fourthLabel: "PRIZE / ENTRY" },
+  { id: "drama", name: "Drama / Theatre", layout: "colfest", art: colfestArt.drama, defaultTitle: "Curtain Call", subLine: "COLFEST '25 · ANNUAL FEST", fourthLabel: "PRIZE / ENTRY" },
+  { id: "comedy", name: "Comedy / Stand-up", layout: "colfest", art: colfestArt.comedy, defaultTitle: "Laugh Riot", subLine: "COLFEST '25 · ANNUAL FEST", fourthLabel: "PRIZE / ENTRY" },
+  { id: "fashion", name: "Fashion Show", layout: "colfest", art: colfestArt.fashion, defaultTitle: "Ramp Walk", subLine: "COLFEST '25 · ANNUAL FEST", fourthLabel: "PRIZE / ENTRY" },
+  { id: "sports", name: "Sports", layout: "colfest", art: colfestArt.sports, defaultTitle: "Sports Arena", subLine: "COLFEST '25 · ANNUAL FEST", fourthLabel: "PRIZE / ENTRY" },
+  { id: "seminar", name: "Seminar", layout: "colfest", art: colfestArt.seminar, defaultTitle: "Think Tank", subLine: "COLFEST '25 · ANNUAL FEST", fourthLabel: "PRIZE / ENTRY" },
+  { id: "quiz", name: "Quiz", layout: "colfest", art: colfestArt.quiz, defaultTitle: "Quiz Quest", subLine: "COLFEST '25 · BRAIN BATTLE", fourthLabel: "PRIZE / ENTRY" },
+  { id: "graduation", name: "Graduation Day", layout: "colfest", art: colfestArt.graduation, defaultTitle: "Graduation Day", subLine: "CELEBRATING CLASS OF 2025", fourthLabel: "BATCH" },
+  { id: "placement", name: "Placement Drive", layout: "colfest", art: colfestArt.placement, defaultTitle: "Placement Drive", subLine: "TRAINING & PLACEMENT CELL", fourthLabel: "PACKAGE" },
+  { id: "convocation", name: "Convocation", layout: "colfest", art: colfestArt.convocation, defaultTitle: "Convocation", subLine: "ACADEMIC YEAR 2025-26", fourthLabel: "BATCH" },
+  { id: "general", name: "General Event", layout: "colfest", art: colfestArt.general, defaultTitle: "Event Name", subLine: "DEPARTMENT EVENT · 2025", fourthLabel: "ENTRY" }
 ];
 const getPosterTemplate = (templateId) => posterTemplates.find((item) => item.id === templateId) || posterTemplates[0];
 const posterMonths = ["JAN", "FEB", "MAR", "APR", "MAY", "JUN", "JUL", "AUG", "SEP", "OCT", "NOV", "DEC"];
@@ -2789,12 +3005,12 @@ const posterLayoutBody = (layout, ctx) => {
     <rect x="0" y="0" width="${s(artW)}" height="${H}" fill="#0A1433"/>
     <svg x="0" y="0" width="${s(artW)}" height="${H}" viewBox="0 0 260 220" preserveAspectRatio="xMidYMid meet">${ctx.art || ""}</svg>
     <image x="${s(rightX)}" y="${s(56)}" width="${s(210)}" height="${s(60)}" href="${gprecLogoUrl}" preserveAspectRatio="xMinYMid meet"/>
-    <text x="${s(rightX + 2)}" y="${s(150)}" fill="${orange}" font-family="${posterFont}" font-size="${s(22)}" font-weight="900" letter-spacing="3">COLLEGE FEST · PRESENTS</text>
+    <text x="${s(rightX + 2)}" y="${s(150)}" fill="${orange}" font-family="${posterFont}" font-size="${s(22)}" font-weight="900" letter-spacing="3">${ctx.subLine || "COLLEGE FEST · PRESENTS"}</text>
     ${headlineLines.map((line, i) => `<text x="${s(rightX)}" y="${s(titleY + i * 96)}" fill="${ink}" font-family="${posterFont}" font-size="${s(92)}" font-weight="900">${line}</text>`).join("")}
     ${chip(rightX, gridY, colW, "#E85D0412", orange, "DATE", hasDate ? `${dateDay} ${dateYear}` : "Date TBA")}
     ${chip(col2X, gridY, colW, "#0F1E5012", ink, "VENUE", ctx.venue || "Venue TBA")}
     ${chip(rightX, gridY + 112, colW, "#FF9A3C18", "#b44500", "TIME", festTime || "Time TBA")}
-    ${chip(col2X, gridY + 112, colW, "#E85D0412", orange, "ENTRY", tagline || "Open to All")}
+    ${chip(col2X, gridY + 112, colW, "#E85D0412", orange, ctx.fourthLabel || "ENTRY", tagline || "Open to All")}
     <rect x="${s(rightX)}" y="${s(gridY + 224)}" width="${s(rightEnd - rightX)}" height="${s(90)}" rx="${s(10)}" fill="#E85D040a"/>
     <text x="${s(rightX + 26)}" y="${s(gridY + 256)}" fill="${orange}" font-family="${posterFont}" font-size="${s(20)}" font-weight="900" letter-spacing="2">INFO</text>
     <text x="${s(rightX + 26)}" y="${s(gridY + 292)}" fill="${ink}" font-family="${posterFont}" font-size="${s(27)}" font-weight="800">${infoLine}</text>
@@ -2828,6 +3044,7 @@ const posterTemplateSvgUrl = (template, fields, variant = "stage") => {
   const body = posterLayoutBody(template.layout, {
     s, W, H, title, subtitle, tagline, ctaText, hasDate, dateDay, dateYear,
     venue, typeLabel: (fields.type || "Poster").toUpperCase(), art: template.art,
+    subLine: template.subLine, fourthLabel: template.fourthLabel,
     footerEmail: escapeHtml(fields.footerEmail || footerContact.email || "")
   });
   return `data:image/svg+xml;charset=UTF-8,${encodeURIComponent(`
@@ -2837,28 +3054,77 @@ const posterTemplateSvgUrl = (template, fields, variant = "stage") => {
   `)}`;
 };
 
-const buildPosterFromTemplate = (templateId, fields) => {
-  const template = getPosterTemplate(templateId);
+// getPosterTemplate/posterTemplateSvgUrl (above) stay in place purely for backward compatibility -
+// posters published before this migration still carry their old templateId (e.g. "artexpo") and
+// their imageUrl/tileImageUrl were already baked at publish time, so they keep displaying fine;
+// getPosterTemplate is also still used by renderDesignedPosters' "Template" column name lookup for
+// those legacy rows via getPosterTemplateDisplayName below. New publishes go through
+// buildPosterFromTemplate, which now targets the exact same file_templates-matched real-HTML
+// engine (buildEventPosterHtml/EVENT_POSTER_TEMPLATES, renderEventPosterCard) as
+// admin-dashboard.html's internal Poster Design tool - real HTML/CSS rendered by
+// renderA4DocViaNativePng (with an html2canvas fallback), not a hand-built SVG string.
+const FEST_POSTER_EXCLUDED_TEMPLATE_IDS = new Set(["placement-drive", "graduation-day", "convocation"]);
+// Graduation Day/Placement Drive/Convocation are institutional events, not activities a College
+// Fest would run, so the fest dashboard's own designer only offers the other 11 - still available
+// in admin-dashboard.html's internal Poster Design tool, which isn't fest-scoped.
+const getFestActivityPosterTemplates = () => EVENT_POSTER_TEMPLATES.filter((template) => !FEST_POSTER_EXCLUDED_TEMPLATE_IDS.has(template.id));
+
+const getPosterTemplateDisplayName = (templateId) => {
+  const eventTemplate = EVENT_POSTER_TEMPLATES.find((template) => template.id === templateId);
+  return eventTemplate ? eventTemplate.name : getPosterTemplate(templateId).name;
+};
+
+const blobToDataUrl = (blob) =>
+  new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => resolve(reader.result);
+    reader.onerror = () => reject(new Error("Could not read generated poster image"));
+    reader.readAsDataURL(blob);
+  });
+
+const buildPosterFromTemplate = async (templateId, fields) => {
+  const template = getEventPosterTemplate(templateId);
+  const posterFields = {
+    art: template.art,
+    logoUrl: gprecLogoUrl,
+    orgLine: "G Pulla Reddy Engineering College",
+    subLine: fields.subLine || template.subLine,
+    titleLines: (fields.title || template.titleLines.join("\n")).split("\n").map((line) => line.trim()).filter(Boolean),
+    typeLine: fields.typeLine || template.typeLine,
+    date: fields.date || template.date,
+    venue: fields.venue || template.venue,
+    time: fields.time || template.time,
+    fourthLabel: template.fourthLabel,
+    fourthValue: fields.fourthValue || template.fourthValue,
+    info: fields.info || template.info,
+    infoLabel: template.infoLabel,
+    useCompanyLogos: false,
+    companyLogos: [],
+    footerLeft: fields.footerLeft || template.footerLeft,
+    footerCenter: fields.footerCenter || template.footerCenter,
+    footerRight: fields.footerRight || template.footerRight
+  };
+  const imageUrl = await blobToDataUrl(await renderEventPosterCard(posterFields));
   return {
     id: `poster-${Date.now()}`,
-    title: fields.title || "Untitled",
+    title: posterFields.titleLines.join(" ") || "Untitled",
     type: fields.type || "Poster",
     link: fields.link || "",
     templateId: template.id,
-    // Carried on the saved poster (not just used while generating the SVG above) so the real
-    // HTML/CSS badge overlay - shown only for this "aurora" template, see buildSpotlightPosterPlayer
-    // - can display the same per-poster text instead of always falling back to the site-wide fest
-    // name.
+    // Carried on the saved poster (not just used while generating the image above) so the real
+    // HTML/CSS badge overlay - shown only for the older "aurora" template, see
+    // buildSpotlightPosterPlayer - can display the same per-poster text instead of always falling
+    // back to the site-wide fest name.
     badgeText: fields.badgeText || "",
-    imageUrl: posterTemplateSvgUrl(template, fields, "stage"),
-    tileImageUrl: posterTemplateSvgUrl(template, fields, "tile"),
-    // Both the stage and tile SVGs above are generated at the exact same aspect ratio as their
-    // display boxes (16/9 either way), same as the fest announcement artwork - so this gets the
-    // same "no crop, no letterbox" treatment (.spotlight-poster-stage-artwork /
-    // .spotlight-poster-tile-artwork). customArtwork (distinct from festivalArtwork, which also
-    // covers the older single fest-announcement design) marks this as a Poster & Ad Designer
-    // creation specifically, so the generic GPREC badge (built for that one older design) doesn't
-    // get bolted onto it unless it's this specific template.
+    imageUrl,
+    tileImageUrl: imageUrl,
+    // 660:220 (3:1), not the 16:9 every other generated poster uses - see .spotlight-poster-stage-3x1
+    // (styles.css) and its toggle in buildSpotlightPosterPlayer/selectVisitorPosterTile, which is
+    // what keeps this from getting cropped down to a 16:9 box with "cover".
+    posterAspect: "3:1",
+    // customArtwork (distinct from festivalArtwork, which also covers the older single
+    // fest-announcement design) marks this as a Poster & Ad Designer creation specifically, so the
+    // generic GPREC badge (built for that one older design) doesn't get bolted onto it.
     festivalArtwork: true,
     customArtwork: true
   };
@@ -2980,7 +3246,13 @@ const getVisibleSpotlightPosters = (placement = "dashboard") => {
     public: settings.showPublicSpotlight
   };
   if (placementEnabled[placement] === false) return [];
-  return [...getSpotlightPosters()].reverse().slice(0, settings.maxVisible).map(festivalizePoster);
+  // internalOnly (admin-dashboard.html's own Poster Design "Publish to Internal Dashboards"
+  // button, as opposed to festPosterDesignerSection's public "Publish to All Dashboards") is only
+  // ever meant for authenticated staff/student dashboards, never the public visitor-login page or
+  // any future public placement - the show*/maxVisible settings above are global toggles with no
+  // per-poster concept, so that exclusion has to happen here instead.
+  const posters = getSpotlightPosters().filter((poster) => placement === "dashboard" || !poster.internalOnly);
+  return [...posters].reverse().slice(0, settings.maxVisible).map(festivalizePoster);
 };
 
 // Same stage + filmstrip player as event-visitor-dashboard.html's poster section (see that
@@ -3029,6 +3301,7 @@ const buildSpotlightPosterPlayer = (container, posters) => {
     stage.style.backgroundImage = poster.imageUrl ? `url(${JSON.stringify(poster.imageUrl)})` : "none";
     stage.classList.toggle("spotlight-poster-stage-empty", !poster.imageUrl);
     stage.classList.toggle("spotlight-poster-stage-artwork", Boolean(poster.festivalArtwork));
+    stage.classList.toggle("spotlight-poster-stage-3x1", poster.posterAspect === "3:1");
     // The GPREC badge overlay is the real HTML/CSS component (pixel-matches the visitor page's
     // static hero exactly, unlike hand-drawing a pill in SVG) - shown for the original single
     // fest-announcement artwork and for the "aurora" (Template 1) design, which is built to work
@@ -3107,7 +3380,7 @@ const renderSpotlightPosters = () => {
           <span>${escapeHtml(event.title)}</span>
           <small>${escapeHtml(event.venue || "Venue TBA")}</small>
         </div>
-        <a class="spotlight-register-link" href="${gprecPageUrl("event-visitor-dashboard.html")}?eventId=${encodeURIComponent(event.id)}&view=signup">Register Now</a>
+        <a class="spotlight-register-link" data-spotlight-apply-event="${escapeHtml(event.id)}" href="${gprecPageUrl("event-visitor-dashboard.html")}?eventId=${encodeURIComponent(event.id)}&view=signup">Register Now</a>
       `;
       return article;
     });
@@ -3118,23 +3391,38 @@ const renderSpotlightPosters = () => {
   }
 };
 
+// Promotes the college's own admin-configured Fest (Event Management Dashboard > Fest Settings),
+// not a hardcoded placeholder - was previously baked-in "Final Test Fest / 01 Dec 2026 / Main
+// Hall" sample copy regardless of what fest was actually configured (or whether one was at all).
+// Same expiry/enabled guard as renderHomeFestBanner so this doesn't keep promoting a fest that
+// already happened or that the admin turned off.
 const renderDefaultRegistrationNotice = () => {
   if (!spotlightGrid) return;
   spotlightGrid.querySelector("[data-registration-notice]")?.remove();
+  const festDate = getFestDate();
+  const festMoment = festDate ? new Date(`${festDate}T${getFestTime() || "00:00"}:00`) : null;
+  const festExpired = festMoment && !Number.isNaN(festMoment.getTime()) && Date.now() - festMoment.getTime() > 24 * 60 * 60 * 1000;
+  if (!festDate || !getFestBannerEnabled() || festExpired) return;
+
+  const festName = getFestName() || "Campus Fest";
+  const formattedDate = formatCampusEventDate(festDate);
+  const [dayPart, ...restDateParts] = formattedDate.split(" ");
+  const timeVenue = [formatCampusEventTime({ time: getFestTime() }), getFestVenue()].filter(Boolean).join(" | ");
+
   const article = document.createElement("article");
   article.className = "spotlight-card spotlight-card-event spotlight-card-registration";
-  article.setAttribute("data-registration-notice", "default-final-test-fest");
+  article.setAttribute("data-registration-notice", "gprec-fest");
   article.innerHTML = `
     <div class="spotlight-event-date">
-      <strong>01</strong>
-      <span>Dec<br>2026</span>
+      <strong>${escapeHtml(dayPart || "--")}</strong>
+      <span>${escapeHtml(restDateParts.join(" ") || "Date TBA")}</span>
     </div>
     <div class="spotlight-card-body">
       <strong>Register for Event<em>New</em></strong>
-      <span>Final Test Fest</span>
-      <small>10:00 AM onwards | Main Hall</small>
+      <span>${escapeHtml(festName)}</span>
+      <small>${escapeHtml(timeVenue || "Details TBA")}</small>
     </div>
-    <a class="spotlight-register-link" href="${gprecPageUrl("event-visitor-dashboard.html")}?view=signup">Register Now</a>
+    <a class="spotlight-register-link" data-spotlight-apply-fest="1" href="${gprecPageUrl("event-visitor-dashboard.html")}?view=signup">Register Now</a>
   `;
   spotlightGrid.prepend(article);
   spotlightGrid.scrollTop = 0;
@@ -4020,143 +4308,251 @@ if (adminNavButtons.length > 0 && adminPanels.length > 0) {
   }
 }
 
-// A short, stable-per-email 5-digit display code for the volunteer ID card below - purely
-// cosmetic (matches the "ID NO. 00000" reference design), not used for lookups/security, so a
-// simple deterministic hash is enough without needing a real sequential ID column.
-const shortIdFor = (value) => {
-  let hash = 0;
-  for (const ch of String(value)) hash = (hash * 31 + ch.charCodeAt(0)) >>> 0;
-  return String(hash % 100000).padStart(5, "0");
-};
-
-// Volunteer ID card - a portrait badge (navy diagonal wedge with vertical "VOLUNTEER" text, an
-// orange accent seam, name/date/ID on white), drawn on canvas and downloaded as PNG the same way
-// as the event ticket. GPREC's own navy/orange brand colors, not the reference design's literal
-// light-blue accent - kept consistent with every other document this app generates.
+// Portrait CR80-style card matching "30_volunteer_id_card_vertical.html": navy gradient top
+// panel (logo badge, ID TAG label, fest eyebrow) with a square photo overlapping the seam, cream
+// bottom panel with name + a sparse 2-row info list, footer tag. `admin.studentRoll` (optional -
+// only set when a student account holds the Event Volunteer role) resolves a real roll number;
+// "Event Name" has no per-volunteer assignment in this app's data model, so it shows the current
+// fest name (the same real value the Event Pass/homepage banner already use for "which event"),
+// not a fabricated per-volunteer assignment.
 const buildVolunteerIdCardImage = async (admin) => {
-  const W = 400;
-  const H = 600;
-  const canvas = document.createElement("canvas");
-  canvas.width = W;
-  canvas.height = H;
-  const ctx = canvas.getContext("2d");
-  const NAVY = "#04284a";
-  const ORANGE = "#ff8702";
-  const WHITE = "#ffffff";
+  await ensureBrandFontsLoaded();
+  const CARD_W = 272;
+  const SCALE = 3;
+  const NAVY_DEEP = "#0a1730", NAVY = "#0f1f3d", AMBER = "#e8821a", AMBER_SOFT = "#f0a34d";
+  const CREAM = "#faf6ee", INK = "#0f1f3d";
 
-  ctx.fillStyle = WHITE;
-  ctx.fillRect(0, 0, W, H);
-
-  ctx.fillStyle = NAVY;
-  ctx.beginPath();
-  ctx.moveTo(0, 0);
-  ctx.lineTo(W * 0.72, 0);
-  ctx.lineTo(0, H * 0.62);
-  ctx.closePath();
-  ctx.fill();
-
-  ctx.strokeStyle = ORANGE;
-  ctx.lineWidth = 10;
-  ctx.beginPath();
-  ctx.moveTo(W * 0.72 + 14, -14);
-  ctx.lineTo(-14, H * 0.62 + 14);
-  ctx.stroke();
-
-  // The navy wedge is a right triangle whose height shrinks the further right (larger x) the text
-  // sits - center this near the left edge (x=44, where the wedge is near its full H*0.62 height)
-  // and keep the rotated text short enough to stay within that height, or the far end silently
-  // lands on the white background and disappears (white-on-white).
-  ctx.save();
-  ctx.translate(44, H * 0.22);
-  ctx.rotate(-Math.PI / 2);
-  ctx.fillStyle = WHITE;
-  ctx.font = "800 34px Arial, sans-serif";
-  ctx.textAlign = "center";
-  ctx.textBaseline = "middle";
-  ctx.fillText("VOLUNTEER", 0, 0);
-  ctx.restore();
-
-  // GPREC mark in the open white area (top-right, clear of the navy wedge which only reaches
-  // x = W*0.72 at y = 0).
   const logoImg = new Image();
   await new Promise((resolve) => {
     logoImg.onload = resolve;
     logoImg.onerror = resolve;
     logoImg.src = gprecLogoUrl;
   });
-  if (logoImg.naturalWidth) {
-    const logoW = 96;
-    const logoH = (logoW * logoImg.naturalHeight) / logoImg.naturalWidth;
-    ctx.drawImage(logoImg, W - logoW - 24, 20, logoW, logoH);
-  }
-
-  // Photo circle - the uploaded admin photo if one was set when the volunteer account was
-  // created, otherwise a placeholder person silhouette so the layout still reads as an ID card.
-  const photoCx = W - 95;
-  const photoCy = H - 320;
-  const photoR = 52;
-  ctx.save();
-  ctx.beginPath();
-  ctx.arc(photoCx, photoCy, photoR, 0, Math.PI * 2);
-  ctx.closePath();
-  ctx.clip();
+  let photoImg = null;
   if (admin.photoUrl) {
-    const photoImg = new Image();
+    photoImg = new Image();
     await new Promise((resolve) => {
       photoImg.onload = resolve;
       photoImg.onerror = resolve;
       photoImg.src = admin.photoUrl;
     });
-    if (photoImg.naturalWidth) {
-      const coverScale = Math.max((photoR * 2) / photoImg.naturalWidth, (photoR * 2) / photoImg.naturalHeight);
-      const drawW = photoImg.naturalWidth * coverScale;
-      const drawH = photoImg.naturalHeight * coverScale;
-      ctx.drawImage(photoImg, photoCx - drawW / 2, photoCy - drawH / 2, drawW, drawH);
-    } else {
-      ctx.fillStyle = "#e5e7eb";
-      ctx.fillRect(photoCx - photoR, photoCy - photoR, photoR * 2, photoR * 2);
-    }
+    if (!photoImg.naturalWidth) photoImg = null;
+  }
+
+  const roundedRectPath = (ctx, x, y, w, h, r) => {
+    const rr = Math.min(r, w / 2, h / 2);
+    ctx.beginPath();
+    ctx.moveTo(x + rr, y);
+    ctx.arcTo(x + w, y, x + w, y + h, rr);
+    ctx.arcTo(x + w, y + h, x, y + h, rr);
+    ctx.arcTo(x, y + h, x, y, rr);
+    ctx.arcTo(x, y, x + w, y, rr);
+    ctx.closePath();
+  };
+
+  const topPanelH = 210;
+  const photoSize = 96;
+  const photoY = topPanelH - photoSize / 2;
+  const nameY = photoY + photoSize + 44;
+  const ruleY = nameY + 20;
+  const rowH = 60;
+  const rowsY = ruleY + 30;
+  const footerY = rowsY + rowH * 2 + 10;
+  const footerH = 40;
+  const totalH = footerY + footerH;
+  const padSides = 24;
+
+  const canvas = document.createElement("canvas");
+  canvas.width = CARD_W * SCALE;
+  canvas.height = totalH * SCALE;
+  const ctx = canvas.getContext("2d");
+  ctx.scale(SCALE, SCALE);
+
+  roundedRectPath(ctx, 0, 0, CARD_W, totalH, 16);
+  ctx.save();
+  ctx.clip();
+  ctx.fillStyle = CREAM;
+  ctx.fillRect(0, 0, CARD_W, totalH);
+
+  const topGrad = ctx.createLinearGradient(0, 0, CARD_W, topPanelH);
+  topGrad.addColorStop(0, NAVY);
+  topGrad.addColorStop(1, NAVY_DEEP);
+  ctx.fillStyle = topGrad;
+  ctx.fillRect(0, 0, CARD_W, topPanelH);
+
+  // Logo, left - real GPREC logo instead of the mockup's "+ LOGO" placeholder, no border box.
+  const badgeW = 60;
+  const badgeH = 30;
+  if (logoImg.naturalWidth) {
+    const logoH = badgeH - 12;
+    const logoW = (logoH * logoImg.naturalWidth) / logoImg.naturalHeight;
+    ctx.drawImage(logoImg, padSides + (badgeW - logoW) / 2, 16 + 6, logoW, logoH);
+  }
+
+  // "VOLUNTEER / ID CARD" tag, two lines, right-aligned.
+  ctx.textAlign = "right";
+  ctx.fillStyle = AMBER_SOFT;
+  ctx.font = "700 8.5px 'Space Mono'";
+  ctx.fillText("VOLUNTEER", CARD_W - padSides, 26);
+  ctx.fillText("ID CARD", CARD_W - padSides, 38);
+  ctx.textAlign = "center";
+  const festName = (getFestName() || "GPREC FEST").toUpperCase();
+  ctx.fillStyle = AMBER_SOFT;
+  ctx.font = "700 9.5px 'Space Mono'";
+  ctx.fillText(`${festName} · VOLUNTEER ID`, CARD_W / 2, 62);
+  ctx.textAlign = "left";
+
+  // Square photo (rounded corners, dashed border), overlapping the panel seam.
+  const photoX = (CARD_W - photoSize) / 2;
+  ctx.save();
+  roundedRectPath(ctx, photoX, photoY, photoSize, photoSize, 8);
+  ctx.clip();
+  ctx.fillStyle = "#dcd3c2";
+  ctx.fillRect(photoX, photoY, photoSize, photoSize);
+  if (photoImg) {
+    const coverScale = Math.max(photoSize / photoImg.naturalWidth, photoSize / photoImg.naturalHeight);
+    const drawW = photoImg.naturalWidth * coverScale;
+    const drawH = photoImg.naturalHeight * coverScale;
+    ctx.drawImage(photoImg, photoX + photoSize / 2 - drawW / 2, photoY + photoSize / 2 - drawH / 2, drawW, drawH);
   } else {
-    ctx.fillStyle = "#e5e7eb";
-    ctx.fillRect(photoCx - photoR, photoCy - photoR, photoR * 2, photoR * 2);
-    ctx.fillStyle = "#9aa5b1";
-    ctx.beginPath();
-    ctx.arc(photoCx, photoCy - 14, 20, 0, Math.PI * 2);
-    ctx.fill();
-    ctx.beginPath();
-    ctx.arc(photoCx, photoCy + 46, 34, Math.PI, 0, true);
-    ctx.fill();
+    ctx.fillStyle = NAVY;
+    ctx.font = "700 30px Inter";
+    ctx.textAlign = "center";
+    ctx.textBaseline = "middle";
+    const initials = (admin.name || "V").split(/\s+/).filter(Boolean).slice(0, 2).map((w) => w[0]).join("").toUpperCase();
+    ctx.fillText(initials, photoX + photoSize / 2, photoY + photoSize / 2);
+    ctx.textBaseline = "alphabetic";
   }
   ctx.restore();
-  ctx.strokeStyle = NAVY;
-  ctx.lineWidth = 3;
-  ctx.beginPath();
-  ctx.arc(photoCx, photoCy, photoR, 0, Math.PI * 2);
+  ctx.save();
+  ctx.strokeStyle = "rgba(232,130,26,0.55)";
+  ctx.lineWidth = 2;
+  ctx.setLineDash([4, 3]);
+  roundedRectPath(ctx, photoX, photoY, photoSize, photoSize, 8);
   ctx.stroke();
+  ctx.setLineDash([]);
+  ctx.restore();
 
-  // A student volunteer's roll number/branch (from their existing student profile, the same
-  // source their photo above came from) is shown as an extra line - a plain "no student details"
-  // ID card otherwise gives a volunteer coordinator nothing to cross-check the person against.
-  const studentProfile = admin.studentRoll ? defaultStudentProfiles[admin.studentRoll] : null;
+  ctx.fillStyle = INK;
+  ctx.font = "600 20px Fraunces";
+  ctx.textAlign = "center";
+  ctx.fillText(admin.name || "Volunteer", CARD_W / 2, nameY);
+  ctx.textAlign = "left";
+
+  // Short solid amber rule (not a full-width dashed line).
+  ctx.fillStyle = AMBER;
+  ctx.fillRect(CARD_W / 2 - 19, ruleY, 38, 2.5);
+
+  // Info rows: label left, value right, same baseline, dashed divider under each row.
+  const rows = [
+    ["ROLL NUMBER", admin.studentRoll || "-", true],
+    ["EVENT NAME", festName.replace(/·/g, "").trim() || "-", false]
+  ];
+  rows.forEach(([label, value, mono], i) => {
+    const y = rowsY + i * rowH;
+    ctx.fillStyle = "#6b7180";
+    ctx.font = "400 9px 'Space Mono'";
+    ctx.textAlign = "left";
+    ctx.fillText(label, padSides, y);
+    ctx.fillStyle = INK;
+    ctx.font = mono ? "700 12.5px 'Space Mono'" : "700 13px Inter";
+    ctx.textAlign = "right";
+    ctx.fillText(value, CARD_W - padSides, y);
+    ctx.textAlign = "left";
+    ctx.strokeStyle = "#e3ddd0";
+    ctx.lineWidth = 1;
+    ctx.setLineDash([3, 2]);
+    ctx.beginPath();
+    ctx.moveTo(padSides, y + 10);
+    ctx.lineTo(CARD_W - padSides, y + 10);
+    ctx.stroke();
+    ctx.setLineDash([]);
+  });
 
   ctx.fillStyle = NAVY;
+  ctx.fillRect(0, footerY, CARD_W, footerH);
+  ctx.fillStyle = AMBER_SOFT;
+  ctx.textAlign = "center";
+  ctx.font = "400 8px 'Space Mono'";
+  ctx.fillText("OFFICIAL VOLUNTEER IDENTIFICATION", CARD_W / 2, footerY + footerH / 2 + 3);
   ctx.textAlign = "left";
-  ctx.font = "600 16px Arial, sans-serif";
-  const issueDate = new Date().toLocaleDateString("en-IN", { day: "2-digit", month: "2-digit", year: "numeric" });
-  ctx.fillText(issueDate, W - 190, H - 210);
-  ctx.fillText(`ID NO. ${shortIdFor(admin.email)}`, W - 190, H - 182);
-  if (studentProfile) {
-    ctx.fillText(`Roll No: ${admin.studentRoll}`, W - 190, H - 154);
-    ctx.fillText(`Branch: ${studentProfile.branch || "-"}`, W - 190, H - 126);
-  }
 
-  // 22px (not 26px) so a typical two-word name ("SAI CHANDAN") fits on one line instead of
-  // wrapping into a cramped two-line stack - wrapCanvasText still wraps longer names gracefully.
-  ctx.font = "800 22px Arial, sans-serif";
-  wrapCanvasText(ctx, (admin.name || "Volunteer").toUpperCase(), W - 190, H - 50, 178, 27, 2);
-
+  ctx.restore();
   return new Promise((resolve) => canvas.toBlob(resolve, "image/png"));
 };
+
+// Fest-activity volunteer ID cards - a distinct feature from the Admin Directory's "Event
+// Volunteer" admin-role badge above (buildVolunteerIdCardImage/admin object): these are generated
+// per fest-activity assignment (event-management-dashboard.html's "Assign Volunteers" flow), one
+// real record per {activity, student roll}, with the faculty coordinator choosing vertical or
+// horizontal per activity (activity.idCardStyle) and the assigned student downloading their own.
+// `data`: { name, rollNumber, eventTitle, shift, validFrom, validTill, photoUrl, volunteerId }.
+const buildFestVolunteerIdCardVertical = (data) =>
+  renderPortraitIdCard({
+    chipText: "VOLUNTEER",
+    orgText: "G PULLA REDDY ENGINEERING COLLEGE",
+    cardTitle: `${getFestName() || "GPREC Fest"} · Volunteer ID`,
+    cardName: data.name,
+    roleText: "Volunteer",
+    photoUrl: data.photoUrl,
+    infoFields: [
+      ["VOLUNTEER ID", data.volunteerId || "-", true],
+      ["ROLL NUMBER", data.rollNumber || "-", true],
+      ["EVENT", data.eventTitle || "-", false],
+      ["SHIFT", data.shift || "-", false]
+    ],
+    noticeHeading: "Volunteer Card",
+    noticeText: `Wear this ID at all times during duty hours. Report to ${data.venue || "the venue"} at the start of your shift.`,
+    footerLeftLabel: "Valid From",
+    footerLeftValue: data.validFrom,
+    footerRightLabel: "Valid Till",
+    footerRightValue: data.validTill
+  });
+
+// Fixed CR80 card size (432x272, real ID-card proportions - unlike the other documents in this
+// file, this one doesn't grow with content since it's meant to match a physical card format), two
+// panels: navy left (logo, photo, "VOLUNTEER" tag) + cream right (name, role, info rows, validity
+// bar). Real-HTML + native-PNG, matching "38_volunteer_id_card_horizontal.html" exactly
+// (VOLUNTEER_ID_HORIZ_CSS/buildVolunteerIdHorizontalHtml defined near TICKET_WATERMARKS further
+// down - safe to reference here since that only happens inside this function's own body, deferred
+// until called, unlike a top-level template-literal interpolation).
+const buildFestVolunteerIdCardHorizontal = async (data) => {
+  await ensureBrandFontsLoaded();
+  const html = buildVolunteerIdHorizontalHtml({
+    eyebrow: `${(getFestName() || "GPREC FEST").toUpperCase()} · VOLUNTEER ID`,
+    name: data.name,
+    role: "VOLUNTEER",
+    infoFields: [
+      ["VOLUNTEER ID", data.volunteerId || "-", true],
+      ["ROLL NUMBER", data.rollNumber || "-", true],
+      ["EVENT NAME", data.eventTitle || "-", false],
+      ["SHIFT", data.shift || "-", false]
+    ],
+    validFrom: data.validFrom,
+    validTill: data.validTill,
+    photoUrl: data.photoUrl
+  });
+
+  const nativePng = await renderA4DocViaNativePng(html, VOLUNTEER_ID_HORIZ_CSS, ".vh-card", 432, 3);
+  if (nativePng) return nativePng;
+
+  const container = document.createElement("div");
+  container.style.cssText = "position:fixed; left:-10000px; top:0; pointer-events:none;";
+  container.innerHTML = `<style>${VOLUNTEER_ID_HORIZ_CSS}</style>${html}`;
+  document.body.appendChild(container);
+  try {
+    const cardEl = container.querySelector(".vh-card");
+    const canvas = await html2canvas(cardEl, { scale: 3, backgroundColor: null });
+    return new Promise((resolve) => canvas.toBlob(resolve, "image/png"));
+  } finally {
+    document.body.removeChild(container);
+  }
+};
+
+// Dispatcher: `style` is the faculty coordinator's per-activity choice (activity.idCardStyle),
+// defaulting to vertical when unset (e.g. an activity created before this option existed).
+const buildFestVolunteerIdCardImage = (data, style) =>
+  style === "horizontal" ? buildFestVolunteerIdCardHorizontal(data) : buildFestVolunteerIdCardVertical(data);
 
 if (adminDirectoryBody || addAdminButton) {
   const currentAdminEmail = (localStorage.getItem("gprecAdminEmail") || defaultAdminConfig.mainCollegeAdmin).toLowerCase();
@@ -6174,10 +6570,10 @@ const buildHallTicketPdf = async () => {
   const profile = defaultStudentProfiles[studentId];
   const statusEl = hallTicketStatus;
   const branch = profile?.branch || "CSE";
-  const schedule = getExamCellData(branch).filter(
+  const examSchedule = getExamCellData(branch).filter(
     (exam) => exam.rollFrom && exam.rollTo && studentId >= exam.rollFrom && studentId <= exam.rollTo
   );
-  if (!schedule.length) {
+  if (!examSchedule.length) {
     if (statusEl) statusEl.textContent = "Hall ticket not available yet - the exam cell hasn't published a schedule covering your roll number.";
     return null;
   }
@@ -6189,59 +6585,25 @@ const buildHallTicketPdf = async () => {
     return exam.startSeat + (Number.isFinite(offset) && offset >= 0 ? offset : 0);
   };
   const examCentreFor = (exam) => exam.location || exam.examCentre || exam.examCenter || "-";
-  const compactPdfCell = (value, maxLength = 34) => {
-    const text = String(value || "-");
-    return text.length > maxLength ? `${text.slice(0, maxLength - 3)}...` : text;
-  };
-  // Exam centre isn't shown here since it can differ per subject - it's shown per-row in the
-  // exam schedule table below instead, where a mixed-centre student sees the right one for each.
-  const identityTable = {
-    columns: [
-      { label: "Field", width: 150 },
-      { label: "Details", width: 300 }
-    ],
-    rows: [
-      ["Student Name", name],
-      ["Roll Number", studentId],
-      ["Branch", branch],
-      ["Class", profile?.className || "-"]
-    ]
-  };
-  const examTable = {
-    fontSize: 8,
-    columns: [
-      { label: "Subject", width: 116, maxLength: 23 },
-      { label: "Date", width: 62 },
-      { label: "Time", width: 92, maxLength: 18 },
-      { label: "Room", width: 44, maxLength: 8 },
-      { label: "Seat No.", width: 45 },
-      { label: "Exam Centre", width: 124, maxLength: 29 }
-    ],
-    rows: schedule.map((exam) => [
-      compactPdfCell(`${exam.code} - ${exam.subject}`, 23),
-      formatExamDate(exam.date),
-      compactPdfCell(exam.time, 18),
-      compactPdfCell(exam.room, 8),
-      String(seatFor(exam)),
-      compactPdfCell(examCentreFor(exam), 29)
-    ])
-  };
-  const table = [identityTable, examTable];
-  const footerLines = [
-    "- Candidates must carry this hall ticket along with a valid college ID to the examination hall.",
-    "- Report to the exam hall at least 30 minutes before the scheduled start time.",
-    "- Mobile phones, smart watches, and other electronic devices are strictly prohibited inside the exam hall.",
-    "- Occupy only the seat number allotted to you as shown above.",
-    "- No candidate will be permitted to enter after 15 minutes from the commencement of the exam.",
-    "- Carry only permitted stationery (blue/black pen); no textual material is allowed unless open-book.",
-    "- Any form of malpractice will lead to strict disciplinary action as per college examination rules.",
-    "- Submit the answer script to the invigilator before leaving the hall."
-  ];
+  const schedule = examSchedule.map((exam) => ({
+    subject: `${exam.code} - ${exam.subject}`,
+    date: formatExamDate(exam.date),
+    time: exam.time,
+    room: exam.room,
+    seat: String(seatFor(exam)),
+    centre: examCentreFor(exam)
+  }));
   const photoUrl = getExplicitProfilePhotoSrc(profile);
-  const pdf = await makePdfWithPhoto(
-    "GPREC Hall Ticket", [], photoUrl, name, table, footerLines, "Exam Instructions - Rules to Follow",
-    estimatePdfHeight({ table, footerLines, hasPhoto: true })
-  );
+  const pdf = await buildHallTicketImage({
+    ticketNo: makeShortPassId("HT", [studentId, branch]),
+    name,
+    rollNumber: studentId,
+    branch,
+    className: profile?.className,
+    dob: profile?.dob,
+    schedule,
+    photoUrl
+  });
   return { pdf, statusEl };
 };
 
@@ -8526,36 +8888,6 @@ if (hostelAllocationBody) {
   });
 }
 
-const outingCurfewNote = (outingType) =>
-  outingType === "Weekend Outing"
-    ? "Weekend Outing: Must return to hostel before 9:00 PM."
-    : "Weekday Outing: Must return to hostel before 8:00 PM.";
-
-const makeOutpassTable = (request) => {
-  const { room, hostel } = resolveStudentRoomHostel(request.studentId, request.room, request.hostel);
-  return {
-    columns: [
-      { label: "Field", width: 150 },
-      { label: "Details", width: 320 }
-    ],
-    rows: [
-      ["Student Name", resolveStudentDisplayName(request.studentId, request.studentName)],
-      ["Roll Number", request.studentId],
-      ["Room / Hostel", `${room} | ${hostel}`],
-      ["Student Mobile", resolveStudentMobile(request.studentId, request.studentMobile)],
-      ["Parent Mobile", resolveParentMobile(request.studentId, request.parentMobile)],
-      ["Outing Type", request.outingType || "-"],
-      ["Purpose of Visit", request.reason],
-      ["Place of Visit", request.place || "-"],
-      ["Out Time", request.outTime],
-      ["In Time (Expected Return)", request.returnTime],
-      ["Approved By", request.approvedBy || "-"],
-      ["Approved On", request.approvedOn || "-"],
-      ["Status", "Approved"]
-    ]
-  };
-};
-
 // Assigns (once, then reuses) a random opaque gate-scan token on a hostel pass record, persisted
 // via the same read-all/mutate-one/save-all round trip these hostel_*_requests tables already use
 // everywhere else - no dedicated token table needed. Re-downloading the same approved pass keeps
@@ -8583,26 +8915,48 @@ const ensureHostelGateToken = (getAll, saveAll, requestId) => {
 const hostelGateScanUrl = (passType, passId, token) =>
   `${window.location.origin}/pages/hostel-gate-scan.html?type=${passType}&id=${encodeURIComponent(passId)}&t=${token}`;
 
-const downloadOutingReceipt = (request) => {
-  const outpassTitle = request.outingType === "Weekend Outing"
-    ? "GPREC Hostel Outpass - Weekend Outing"
-    : "GPREC Hostel Outpass - Weekday Outing";
-  const photoUrl = getExplicitProfilePhotoSrc(defaultStudentProfiles[request.studentId]);
+// PNG, not a PDF - matches "23_hostal outingpass.html" exactly, same treatment as
+// buildBusPassImage/buildVehiclePassImage (no PDF-only anti-fraud seal/stamp overlay).
+const buildOutingPassImage = async (request) => {
   const displayName = resolveStudentDisplayName(request.studentId, request.studentName);
-  const outpassTable = makeOutpassTable(request);
-  const outpassFooterLines = [outingCurfewNote(request.outingType)];
+  const { room, hostel } = resolveStudentRoomHostel(request.studentId, request.room, request.hostel);
   const gateToken = ensureHostelGateToken(getOutingRequests, saveOutingRequests, request.id);
+  // Real gate-scan payload (unlike Bus/Vehicle Pass's plain-text QR) - hostel passes already had
+  // this verification flow (pages/hostel-gate-scan.html) before this redesign, kept unchanged.
   const qrText = gateToken ? hostelGateScanUrl("outing", request.id, gateToken) : null;
-  makePdfWithPhoto(
-    outpassTitle, [], photoUrl, displayName, outpassTable, outpassFooterLines, "Curfew Rules",
-    estimatePdfHeight({ table: outpassTable, footerLines: outpassFooterLines, hasPhoto: true, hasQr: Boolean(qrText) }),
-    qrText
-  ).then((pdf) => {
-    const link = document.createElement("a");
-    link.href = URL.createObjectURL(pdf);
-    link.download = `gprec-outpass-${request.studentId}.pdf`;
-    link.click();
+  const passId = makeShortPassId("HO", [request.id, request.studentId]);
+  // No separate "outing date" field exists on this record (it's a same-day request) - approvedOn
+  // is the closest real date available, rather than inventing one.
+  return renderTicketStubCard({
+    eyebrow: "HOSTEL · OUTING PASS",
+    scanCaption: "SCAN AT HOSTEL GATE",
+    tag: "GATE PASS",
+    tagIconPath: TICKET_ICON_PATHS.ticket,
+    qrText: qrText || passId,
+    title: "Outing Pass",
+    subtitle: `GPREC · ${hostel}`,
+    fields: [
+      { label: "PASS ID", value: passId, mono: true },
+      { label: "NAME", value: displayName },
+      { label: "ROOM / HOSTEL", value: `${room}, ${hostel}` },
+      { label: "DATE", value: request.approvedOn || "-" },
+      { label: "OUT TIME", value: request.outTime || "-", mono: true },
+      { label: "RETURN BY", value: request.returnTime || "-", mono: true },
+      { label: "DESTINATION", value: request.place || "-" },
+      { label: "STATUS", value: "Approved", status: true }
+    ],
+    footerLeft: "WARDEN APPROVED",
+    footerRight: "VALID TODAY ONLY",
+    watermarkSvg: TICKET_WATERMARKS.shield
   });
+};
+
+const downloadOutingReceipt = async (request) => {
+  const image = await buildOutingPassImage(request);
+  const link = document.createElement("a");
+  link.href = URL.createObjectURL(image);
+  link.download = `gprec-outpass-${request.studentId}.png`;
+  link.click();
 };
 
 const studentOutingBody = document.querySelector("#studentOutingBody");
@@ -8775,42 +9129,48 @@ if (hostelStudentData[currentOutingStudentId]) {
   }
 }
 
-const downloadHostelLeavePass = (request) => {
+// PNG, not a PDF - same treatment as buildOutingPassImage above (no separate mockup was provided
+// for the Leave variant, so it reuses the Outing Pass's shield watermark and field-mapping
+// conventions - see the redesign plan's note on this).
+const buildHostelLeavePassImage = async (request) => {
   const displayName = resolveStudentDisplayName(request.studentId, request.studentName);
   const { room, hostel } = resolveStudentRoomHostel(request.studentId, request.room, request.hostel);
-  const table = {
-    columns: [
-      { label: "Field", width: 150 },
-      { label: "Details", width: 320 }
-    ],
-    rows: [
-      ["Student Name", displayName],
-      ["Roll Number", request.studentId],
-      ["Room / Hostel", `${room} | ${hostel}`],
-      ["Leave Type", request.leaveType],
-      ["From Date", formatExamDate(request.fromDate)],
-      ["To Date", formatExamDate(request.toDate)],
-      ["Reason", request.reason],
-      ["Parent Mobile", resolveParentMobile(request.studentId, request.parentMobile)],
-      ["Approved By", request.approvedBy || "-"],
-      ["Approved On", request.approvedOn || "-"],
-      ["Status", "Approved"]
-    ]
-  };
-  const photoUrl = getExplicitProfilePhotoSrc(defaultStudentProfiles[request.studentId]);
-  const leavePassFooterLines = ["Carry this pass along with a valid college ID during your leave period."];
   const gateToken = ensureHostelGateToken(getHostelLeaveRequests, saveHostelLeaveRequests, request.id);
   const qrText = gateToken ? hostelGateScanUrl("leave", request.id, gateToken) : null;
-  makePdfWithPhoto(
-    "GPREC Hostel Leave Pass", [], photoUrl, displayName, table, leavePassFooterLines, "Notes",
-    estimatePdfHeight({ table, footerLines: leavePassFooterLines, hasPhoto: true, hasQr: Boolean(qrText) }),
-    qrText
-  ).then((pdf) => {
-    const link = document.createElement("a");
-    link.href = URL.createObjectURL(pdf);
-    link.download = `gprec-hostel-leave-pass-${request.studentId}.pdf`;
-    link.click();
+  const passId = makeShortPassId("HL", [request.id, request.studentId]);
+  return renderTicketStubCard({
+    eyebrow: "HOSTEL · LEAVE PASS",
+    scanCaption: "SCAN AT HOSTEL GATE",
+    tag: "GATE PASS",
+    tagIconPath: TICKET_ICON_PATHS.ticket,
+    qrText: qrText || passId,
+    title: "Leave Pass",
+    subtitle: `GPREC · ${hostel}`,
+    fields: [
+      { label: "PASS ID", value: passId, mono: true },
+      { label: "NAME", value: displayName },
+      { label: "ROOM / HOSTEL", value: `${room}, ${hostel}` },
+      { label: "LEAVE TYPE", value: request.leaveType || "-" },
+      { label: "FROM DATE", value: formatExamDate(request.fromDate) },
+      { label: "TO DATE", value: formatExamDate(request.toDate) },
+      // Paired with STATUS instead of its own fullWidth row - keeps this at the same 4-row/8-field
+      // shape as the Outing Pass (no separate mockup exists for the Leave variant to require
+      // otherwise), so both hostel passes come out the same overall height.
+      { label: "REASON", value: request.reason || "-" },
+      { label: "STATUS", value: "Approved", status: true }
+    ],
+    footerLeft: "WARDEN APPROVED",
+    footerRight: "CARRY VALID ID",
+    watermarkSvg: TICKET_WATERMARKS.shield
   });
+};
+
+const downloadHostelLeavePass = async (request) => {
+  const image = await buildHostelLeavePassImage(request);
+  const link = document.createElement("a");
+  link.href = URL.createObjectURL(image);
+  link.download = `gprec-hostel-leave-pass-${request.studentId}.png`;
+  link.click();
 };
 
 const renderHostelLeaveTable = (bodyEl, emptyEl, studentId, onChange) => {
@@ -11438,7 +11798,7 @@ const getGprecianReply = async (question) => {
   return getKeywordAnswer(contextualQuestion);
 };
 
-gprecianToggle?.addEventListener("click", () => {
+bindGprecTap(gprecianToggle, () => {
   gprecian?.classList.add("open");
 });
 
@@ -11446,11 +11806,11 @@ gprecianInput?.addEventListener("pointerdown", () => {
   gprecian?.classList.add("open");
 });
 
-gprecianClose?.addEventListener("click", () => {
+bindGprecTap(gprecianClose, () => {
   gprecian?.classList.remove("open");
 });
 
-gprecianExpand?.addEventListener("click", () => {
+bindGprecTap(gprecianExpand, () => {
   const expanded = gprecianPanel?.classList.toggle("expanded");
   gprecianExpand.setAttribute("aria-label", expanded ? "Shrink chat window" : "Expand chat window");
 });
@@ -11657,6 +12017,7 @@ const handleRolePasswordLogin = ({ form, feedback, email, password, roleType, su
     return;
   }
   Object.entries(localStorageEntries).forEach(([key, value]) => localStorage.setItem(key, value));
+  localStorage.removeItem("gprecDemoMode");
   localStorage.setItem("gprecSessionToken", result.token);
   localStorage.setItem("gprecActiveRole", roleType);
   feedback.textContent = successMessage;
@@ -11739,6 +12100,7 @@ portalForms.forEach((form) => {
       const volunteerLogin = gprecIsVolunteerStudentLogin();
       feedback.textContent = volunteerLogin ? "Event volunteer login successful. Opening volunteer dashboard..." : "Student login successful. Opening student dashboard...";
       feedback.classList.add("success");
+      localStorage.removeItem("gprecDemoMode");
       localStorage.setItem("gprecStudentId", result.rollNo);
       localStorage.setItem("gprecSessionToken", result.token);
       localStorage.setItem("gprecActiveRole", "student");
@@ -11893,6 +12255,7 @@ if (changePasswordForm) {
         showChangeFeedback("Current password is incorrect.", false);
         return;
       }
+      localStorage.removeItem("gprecDemoMode");
       Object.entries(pending.localStorageEntries || {}).forEach(([key, value]) => localStorage.setItem(key, value));
       localStorage.setItem("gprecSessionToken", result.token);
       localStorage.setItem("gprecActiveRole", pending.roleType);
@@ -12032,6 +12395,7 @@ window.handleGoogleAlumniSignIn = (response) => {
         showAlumniPopup("Could not verify your Google sign-in. Please try again.");
         return;
       }
+      localStorage.removeItem("gprecDemoMode");
       localStorage.setItem("gprecAlumniEmail", result.account.email);
       localStorage.setItem("gprecAlumniName", result.account.name || name);
       localStorage.setItem("gprecAlumniBatch", result.account.batchYear || existing.batchYear);
@@ -12138,6 +12502,7 @@ alumniSigninForm?.addEventListener("submit", (event) => {
   }
   alumniAuthFeedback.textContent = "Sign in successful. Opening alumni dashboard...";
   alumniAuthFeedback.classList.add("success");
+  localStorage.removeItem("gprecDemoMode");
   localStorage.setItem("gprecAlumniEmail", account.email);
   localStorage.setItem("gprecAlumniName", account.name || "");
   localStorage.setItem("gprecAlumniBatch", account.batchYear || "");
@@ -12183,6 +12548,7 @@ alumniSignupForm?.addEventListener("submit", (event) => {
   }
   alumniAuthFeedback.textContent = "Account created. Signing you in...";
   alumniAuthFeedback.classList.add("success");
+  localStorage.removeItem("gprecDemoMode");
   localStorage.setItem("gprecAlumniEmail", email);
   localStorage.setItem("gprecAlumniName", name);
   localStorage.setItem("gprecAlumniBatch", batchYear);
@@ -12248,6 +12614,7 @@ document.querySelector("#alumniCompleteButton")?.addEventListener("click", () =>
     alumniAuthFeedback.classList.remove("success");
     return;
   }
+  localStorage.removeItem("gprecDemoMode");
   localStorage.setItem("gprecAlumniEmail", result.account.email);
   localStorage.setItem("gprecAlumniName", name);
   localStorage.setItem("gprecAlumniBatch", batchYear);
@@ -12327,6 +12694,7 @@ if (parentOtpForm) {
       return;
     }
     showParentFeedback("Parent login successful. Opening parent dashboard...", true);
+    localStorage.removeItem("gprecDemoMode");
     localStorage.setItem("gprecParentStudentId", result.studentId);
     localStorage.setItem("gprecSessionToken", result.token);
     localStorage.setItem("gprecActiveRole", "parent");
@@ -12423,264 +12791,18 @@ const numberToWordsInr = (amount) => {
   return `${parts.join(" ")} Rupees Only`;
 };
 
-// Turns a flat array of "Label: Value" strings (the shape most receipt/certificate PDFs already
-// built their content in) into a two-column {columns, rows} table for makePdfWithPhoto/
-// makeSimplePdf - so dynamically-built lines (e.g. a certificate application's variable set of
-// form fields) still render as a real bordered table instead of a flat text list.
-const linesToTable = (lines, columnLabels = ["Field", "Value"]) => ({
-  columns: [
-    { label: columnLabels[0], width: 220 },
-    { label: columnLabels[1], width: 260 }
-  ],
-  rows: lines.map((line) => {
-    const idx = line.indexOf(": ");
-    return idx === -1 ? [line, ""] : [line.slice(0, idx), line.slice(idx + 2)];
-  })
-});
-
-// Renders the "Udaan 2K26" reference payment-receipt design onto a canvas (cream card, navy
-// header band, itemized payment table, total bar, amount-in-words, signature line, footer note),
-// same template-pixel-unit approach as buildEventTicketImage. Every "GPREC Payment Receipt"
-// download (fee/certificate payments, event registration, payment-history re-download) already
-// builds the same flat "Label: Value" receiptLines array via recordPayment() - this pulls the
-// handful of fields the new layout actually has room for (Received From, Roll No., Payment Mode,
-// one payable item, amount) out of that same array, so no caller needs to change.
-const buildPaymentReceiptImage = async (title, receiptLines) => {
-  await ensureBrandFontsLoaded();
-
-  const fields = {};
-  receiptLines.filter((line) => !line.startsWith("Note:")).forEach((line) => {
-    const idx = line.indexOf(": ");
-    if (idx !== -1) fields[line.slice(0, idx)] = line.slice(idx + 2);
-  });
-
-  const name = fields["Name"] || fields["Participant Name"] || `Student ${fields["Roll Number"] || ""}`.trim();
-  const rollNo = fields["Roll Number"] || "-";
-  const paymentMode = fields["Payment Type"] || "-";
-  const paymentDate = fields["Payment Date"] || "-";
-  const paymentTime = fields["Payment Time"] || "-";
-  const description = fields["Application"] || fields["Event"] || fields["Fee Type"] || title;
-  const amountRaw = fields["Amount Paid"] || fields["Registration Fee"] || "Rs. 0";
-  const amountNum = Number(String(amountRaw).replace(/[^\d.]/g, "")) || 0;
-  const status = fields["Payment Status"] || "Paid";
-
-  const receiptNo = (() => {
-    const source = [rollNo, paymentDate, description, amountRaw].join("|");
-    let hash = 0;
-    for (let i = 0; i < source.length; i += 1) hash = (hash * 31 + source.charCodeAt(i)) >>> 0;
-    return `RC-${new Date().getFullYear()}-${hash.toString(36).toUpperCase().padStart(4, "0").slice(-4)}`;
-  })();
-
-  const CARD_W = 440;
-  const SCALE = 2.4;
-
-  const NAVY_DEEP = "#0a1730";
-  const NAVY = "#0f1f3d";
-  const AMBER = "#e8821a";
-  const AMBER_SOFT = "#f0a34d";
-  const CREAM = "#faf6ee";
-  const INK = "#0f1f3d";
-  const MUTED = "#6b7180";
-  const LINE = "#e3ddd0";
-  const GREEN = "#1f7a4d";
-
-  const roundedRectPath = (ctx, x, y, width, height, radius) => {
-    const r = Math.min(radius, width / 2, height / 2);
-    ctx.beginPath();
-    ctx.moveTo(x + r, y);
-    ctx.arcTo(x + width, y, x + width, y + height, r);
-    ctx.arcTo(x + width, y + height, x, y + height, r);
-    ctx.arcTo(x, y + height, x, y, r);
-    ctx.arcTo(x, y, x + width, y, r);
-    ctx.closePath();
-  };
-  const letterSpaced = (text, spacing) => text.split("").join(" ".repeat(Math.round(spacing)));
-
-  // Measure the wrapped "Amount in words" line count up front (scratch context, no drawing) so
-  // the signature/footer blocks below it land in the right place regardless of amount length.
-  const measureCtx = document.createElement("canvas").getContext("2d");
-  measureCtx.font = "400 12.5px Inter";
-  const wordsText = `Amount in words: ${numberToWordsInr(amountNum)}`;
-  const wordsLines = canvasTextLines(measureCtx, wordsText, CARD_W - 56);
-  const wordsLineCount = Math.min(wordsLines.length, 2);
-
-  // ----- Layout (template-pixel units, top to bottom) -----
-  const padSides = 28;
-  const headH = 92;
-  const bodyPadTop = 26;
-  const rowPair1Y = headH + bodyPadTop;
-  const rowPair1H = 44;
-  const fieldBlockY = rowPair1Y + rowPair1H + 18;
-  const fieldBlockH = 29;
-  const rowPair2Y = fieldBlockY + fieldBlockH + 16;
-  const rowPair2H = 28;
-  const detailsLabelY = rowPair2Y + rowPair2H + 20;
-  const itemsY = detailsLabelY + 18;
-  const itemRowH = 42;
-  const totalRowH = 50;
-  const itemsH = itemRowH + totalRowH;
-  const inWordsY = itemsY + itemsH + 14;
-  const inWordsH = wordsLineCount * 18;
-  const statusY = inWordsY + inWordsH + 18;
-  const signAreaY = statusY + 34;
-  const signAreaH = 32 + 15 + 5;
-  const footerY = signAreaY + signAreaH + 22;
-  const footerH = 40;
-  const totalH = footerY + footerH + 22;
-
-  const canvas = document.createElement("canvas");
-  canvas.width = CARD_W * SCALE;
-  canvas.height = totalH * SCALE;
-  const ctx = canvas.getContext("2d");
-  ctx.scale(SCALE, SCALE);
-
-  roundedRectPath(ctx, 0, 0, CARD_W, totalH, 16);
-  ctx.save();
-  ctx.clip();
-  ctx.fillStyle = CREAM;
-  ctx.fillRect(0, 0, CARD_W, totalH);
-
-  // ----- Header band -----
-  const headGrad = ctx.createLinearGradient(0, 0, CARD_W * 0.6, headH);
-  headGrad.addColorStop(0, NAVY);
-  headGrad.addColorStop(1, NAVY_DEEP);
-  ctx.fillStyle = headGrad;
-  ctx.fillRect(0, 0, CARD_W, headH);
-
-  ctx.fillStyle = AMBER_SOFT;
-  ctx.font = "700 13px Inter";
-  ctx.fillText(letterSpaced("GPREC", 1.5), padSides, 38);
-  ctx.fillStyle = CREAM;
-  ctx.font = "600 22px Fraunces";
-  ctx.fillText("Payment Receipt", padSides, 64);
-
-  ctx.textAlign = "right";
-  ctx.fillStyle = AMBER_SOFT;
-  ctx.font = "700 10.5px 'Space Mono'";
-  ctx.fillText(letterSpaced("RECEIPT NO.", 1);, CARD_W - padSides, 34);
-  ctx.fillStyle = CREAM;
-  ctx.font = "700 13px 'Space Mono'";
-  ctx.fillText(receiptNo, CARD_W - padSides, 52);
-  ctx.textAlign = "left";
-
-  // ----- Date / Time row -----
-  const drawKV = (x, y, label, value, align = "left") => {
-    ctx.textAlign = align;
-    ctx.fillStyle = AMBER;
-    ctx.font = "700 10px Inter";
-    ctx.fillText(letterSpaced(label, 1.2), x, y);
-    ctx.fillStyle = INK;
-    ctx.font = "700 14px Inter";
-    ctx.fillText(value || "-", x, y + 18);
-    ctx.textAlign = "left";
-  };
-  drawKV(padSides, rowPair1Y + 12, "DATE", paymentDate);
-  drawKV(CARD_W - padSides, rowPair1Y + 12, "TIME", paymentTime, "right");
-  ctx.strokeStyle = LINE;
-  ctx.lineWidth = 1;
-  ctx.beginPath();
-  ctx.moveTo(padSides, rowPair1Y + rowPair1H);
-  ctx.lineTo(CARD_W - padSides, rowPair1Y + rowPair1H);
-  ctx.stroke();
-
-  // ----- Received From -----
-  ctx.fillStyle = AMBER;
-  ctx.font = "700 10px Inter";
-  ctx.fillText(letterSpaced("RECEIVED FROM", 1.2), padSides, fieldBlockY);
-  ctx.fillStyle = INK;
-  ctx.font = "700 15px Inter";
-  ctx.fillText(name, padSides, fieldBlockY + 19);
-
-  // ----- Roll No. / Payment Mode row -----
-  drawKV(padSides, rowPair2Y + 12, "ROLL NO.", rollNo);
-  drawKV(CARD_W - padSides, rowPair2Y + 12, "PAYMENT MODE", paymentMode, "right");
-
-  // ----- Payment Details label + itemized table -----
-  ctx.fillStyle = AMBER;
-  ctx.font = "700 10px Inter";
-  ctx.fillText(letterSpaced("PAYMENT DETAILS", 1.2), padSides, detailsLabelY);
-
-  const itemsW = CARD_W - padSides * 2;
-  roundedRectPath(ctx, padSides, itemsY, itemsW, itemsH, 8);
-  ctx.strokeStyle = LINE;
-  ctx.stroke();
-  ctx.fillStyle = INK;
-  ctx.font = "600 14px Inter";
-  ctx.fillText(description, padSides + 16, itemsY + 26);
-  ctx.textAlign = "right";
-  ctx.font = "700 14px 'Space Mono'";
-  ctx.fillText(amountRaw, CARD_W - padSides - 16, itemsY + 26);
-  ctx.textAlign = "left";
-  ctx.strokeStyle = LINE;
-  ctx.beginPath();
-  ctx.moveTo(padSides, itemsY + itemRowH);
-  ctx.lineTo(CARD_W - padSides, itemsY + itemRowH);
-  ctx.stroke();
-
-  ctx.fillStyle = NAVY;
-  ctx.beginPath();
-  ctx.moveTo(padSides, itemsY + itemRowH);
-  ctx.lineTo(padSides + itemsW, itemsY + itemRowH);
-  ctx.lineTo(padSides + itemsW, itemsY + itemsH - 8);
-  ctx.quadraticCurveTo(padSides + itemsW, itemsY + itemsH, padSides + itemsW - 8, itemsY + itemsH);
-  ctx.lineTo(padSides + 8, itemsY + itemsH);
-  ctx.quadraticCurveTo(padSides, itemsY + itemsH, padSides, itemsY + itemsH - 8);
-  ctx.closePath();
-  ctx.fill();
-  ctx.fillStyle = AMBER_SOFT;
-  ctx.font = "700 11px Inter";
-  ctx.fillText(letterSpaced("TOTAL PAID", 1.2), padSides + 16, itemsY + itemRowH + 30);
-  ctx.textAlign = "right";
-  ctx.fillStyle = CREAM;
-  ctx.font = "700 21px Fraunces";
-  ctx.fillText(amountRaw, CARD_W - padSides - 16, itemsY + itemRowH + 32);
-  ctx.textAlign = "left";
-
-  // ----- Amount in words -----
-  ctx.fillStyle = MUTED;
-  ctx.font = "italic 400 12.5px Inter";
-  wordsLines.slice(0, 2).forEach((line, i) => ctx.fillText(line, padSides, inWordsY + i * 18));
-
-  // ----- Status -----
-  ctx.fillStyle = GREEN;
-  ctx.beginPath();
-  ctx.arc(padSides + 4, statusY - 4, 4, 0, Math.PI * 2);
-  ctx.fill();
-  ctx.font = "700 14px Inter";
-  ctx.fillText(status === "Paid" ? "Payment Successful" : status, padSides + 16, statusY);
-
-  // ----- Signature -----
-  ctx.strokeStyle = INK;
-  ctx.lineWidth = 1;
-  ctx.beginPath();
-  ctx.moveTo(CARD_W - padSides - 150, signAreaY + 32);
-  ctx.lineTo(CARD_W - padSides, signAreaY + 32);
-  ctx.stroke();
-  ctx.textAlign = "center";
-  ctx.fillStyle = MUTED;
-  ctx.font = "700 9.5px Inter";
-  ctx.fillText(letterSpaced("AUTHORIZED SIGNATURE", 1.2), CARD_W - padSides - 75, signAreaY + 47);
-  ctx.textAlign = "left";
-
-  // ----- Footer -----
-  ctx.fillStyle = NAVY;
-  ctx.fillRect(0, footerY, CARD_W, footerH);
-  ctx.textAlign = "center";
-  ctx.fillStyle = "rgba(250,246,238,0.6)";
-  ctx.font = "700 9px 'Space Mono'";
-  ctx.fillText(letterSpaced("THIS IS A COMPUTER-GENERATED RECEIPT", 1), CARD_W / 2, footerY + footerH / 2 + 3);
-  ctx.textAlign = "left";
-
-  ctx.restore();
-  return canvas;
-};
-
 // Minimal single-page, single-image PDF - much smaller than buildSinglePagePdf (which also
-// carries table/stamp/seal machinery this doesn't need) since the payment receipt is now a fully
-// rendered canvas image, not real PDF text. One full-bleed JPEG XObject, page-sized to match the
-// image's own aspect ratio (in points, 1:1 with the canvas's template-pixel units - same "compact
-// page, not A4" approach buildSinglePagePdf already uses for challan-sized documents).
-const buildImageOnlyPdf = (jpegBytes, pageWidth, pageHeight) => {
+// carries table/stamp/seal machinery this doesn't need) since these are flattened canvas/
+// html2canvas images, not real PDF text (used by canvasCardToPdf below, the shared html2canvas
+// fallback for every real-HTML document in this file - Pay Slip, Form 16, Fee Challan, Hall
+// Ticket, Payment Receipt - plus the ID card/ticket-stub family's own canvas renders). One
+// full-bleed JPEG XObject, page-sized to match the image's own aspect ratio (in points, 1:1 with
+// the canvas's template-pixel units - same "compact page, not A4" approach buildSinglePagePdf
+// already uses for challan-sized documents).
+// `title`, if given, becomes the PDF's /Info /Title metadata - without it, viewers show a blank
+// or ugly default document name in their tab/window title, Preview.app's title bar, Finder's Get
+// Info, etc. (the same gap the native pdf_render_server.py path fixes via a real <title> tag).
+const buildImageOnlyPdf = (jpegBytes, pixelWidth, pixelHeight, pageWidth, pageHeight, title) => {
   const chunks = [];
   let position = 0;
   const offsets = [0];
@@ -12697,6 +12819,10 @@ const buildImageOnlyPdf = (jpegBytes, pageWidth, pageHeight) => {
     offsets.push(position);
     pushText(`${num} 0 obj\n`);
   };
+  // PDF string literals escape backslash/parens; strip anything outside Latin-1 (PDFDocEncoding
+  // has no notion of arbitrary Unicode) so a title with, say, an em dash can't corrupt the object.
+  const pdfStringLiteral = (value) =>
+    `(${String(value).replace(/\\/g, "\\\\").replace(/\(/g, "\\(").replace(/\)/g, "\\)").replace(/[^\x20-\x7e]/g, "")})`;
 
   pushText("%PDF-1.4\n");
   beginObj(1);
@@ -12708,65 +12834,115 @@ const buildImageOnlyPdf = (jpegBytes, pageWidth, pageHeight) => {
     `<< /Type /Page /Parent 2 0 R /MediaBox [0 0 ${pageWidth} ${pageHeight}] /Resources << /XObject << /Im1 4 0 R >> >> /Contents 5 0 R >>\nendobj\n`
   );
   beginObj(4);
-  pushText(`<< /Type /XObject /Subtype /Image /Width ${pageWidth * 4} /Height ${pageHeight * 4} /ColorSpace /DeviceRGB /BitsPerComponent 8 /Filter /DCTDecode /Length ${jpegBytes.length} >>\nstream\n`);
+  pushText(`<< /Type /XObject /Subtype /Image /Width ${pixelWidth} /Height ${pixelHeight} /ColorSpace /DeviceRGB /BitsPerComponent 8 /Filter /DCTDecode /Length ${jpegBytes.length} >>\nstream\n`);
   pushBytes(jpegBytes);
   pushText("\nendstream\nendobj\n");
   beginObj(5);
   const content = `q ${pageWidth} 0 0 ${pageHeight} 0 0 cm /Im1 Do Q`;
   pushText(`<< /Length ${content.length} >>\nstream\n${content}\nendstream\nendobj\n`);
 
-  const objectCount = 5;
+  let objectCount = 5;
+  let infoRef = "";
+  if (title) {
+    objectCount += 1;
+    beginObj(objectCount);
+    pushText(`<< /Title ${pdfStringLiteral(title)} >>\nendobj\n`);
+    infoRef = ` /Info ${objectCount} 0 R`;
+  }
+
   const xrefStart = position;
   pushText(`xref\n0 ${objectCount + 1}\n0000000000 65535 f \n`);
   offsets.slice(1).forEach((offset) => {
     pushText(`${String(offset).padStart(10, "0")} 00000 n \n`);
   });
-  pushText(`trailer\n<< /Size ${objectCount + 1} /Root 1 0 R >>\nstartxref\n${xrefStart}\n%%EOF`);
+  pushText(`trailer\n<< /Size ${objectCount + 1} /Root 1 0 R${infoRef} >>\nstartxref\n${xrefStart}\n%%EOF`);
 
   return new Blob(chunks, { type: "application/pdf" });
 };
 
-// Shared by every "GPREC Payment Receipt" download (certificate/fee payments, event
-// registration, and the payment-history re-download button) - all of them build the same flat
-// "Label: Value" line array via recordPayment()'s receiptLines, so one conversion covers all of
-// them. Renders the Udaan-reference receipt design (buildPaymentReceiptImage) and wraps it as a
-// single-image PDF (buildImageOnlyPdf) so it's still a downloadable "receipt.pdf" - trades the
-// old table-based PDF's selectable/searchable text for an exact match to that reference design.
-const makeReceiptPdf = async (title, receiptLines) => {
-  const canvas = await buildPaymentReceiptImage(title, receiptLines);
-  const jpegBytes = await new Promise((resolve, reject) => {
-    canvas.toBlob(
-      (blob) => {
-        if (!blob) {
-          reject(new Error("toBlob failed"));
-          return;
-        }
-        blob.arrayBuffer().then((buffer) => resolve(new Uint8Array(buffer))).catch(reject);
-      },
-      "image/jpeg",
-      0.95
-    );
-  });
-  // canvas.width/height are already SCALE-multiplied template-pixel units (see
-  // buildPaymentReceiptImage) - dividing by 4 (the max SCALE used there) isn't right in general,
-  // so derive the PDF's point size from the canvas's own pixel size and a fixed 4px-per-point
-  // density instead of hardcoding the caller's internal SCALE constant here.
-  const pageWidth = canvas.width / 4;
-  const pageHeight = canvas.height / 4;
-  return buildImageOnlyPdf(jpegBytes, pageWidth, pageHeight);
+const SEMESTER_YEAR_LABELS = {
+  "I Semester": "1st Yr", "II Semester": "1st Yr",
+  "III Semester": "2nd Yr", "IV Semester": "2nd Yr",
+  "V Semester": "3rd Yr", "VI Semester": "3rd Yr",
+  "VII Semester": "4th Yr", "VIII Semester": "4th Yr"
 };
+
+// Real-HTML + native-PNG portrait ID-card scaffold (navy header with compass watermark +
+// logo/chip, rectangular photo overlapping the seam, name+role, dashed-underline info rows, amber
+// notice box, two-column navy footer) - the shape behind both "28_temp_id_card.html" and
+// "29_volunteer_id_card.html", which are pixel-identical in structure/CSS, differing only in
+// copy. Same real-HTML/native-render approach as the ticket-stub family (PORTRAIT_ID_CSS/
+// buildPortraitIdHtml defined near TICKET_WATERMARKS further down, referenced here only inside
+// this function's body - safe regardless of file order since that reference is deferred until
+// this function is actually called, unlike a top-level template-literal interpolation).
+const renderPortraitIdCard = async ({
+  chipText, orgText, cardTitle, cardName, roleText, photoUrl, infoFields,
+  noticeHeading, noticeText, footerLeftLabel, footerLeftValue, footerRightLabel, footerRightValue
+}) => {
+  await ensureBrandFontsLoaded();
+  const html = buildPortraitIdHtml({
+    chipText, orgText, cardTitle, cardName, roleText, photoUrl, infoFields,
+    noticeHeading, noticeText, footerLeftLabel, footerLeftValue, footerRightLabel, footerRightValue
+  });
+
+  const nativePng = await renderA4DocViaNativePng(html, PORTRAIT_ID_CSS, ".pid-card", 360, 2.4);
+  if (nativePng) return nativePng;
+
+  const container = document.createElement("div");
+  container.style.cssText = "position:fixed; left:-10000px; top:0; pointer-events:none;";
+  container.innerHTML = `<style>${PORTRAIT_ID_CSS}</style>${html}`;
+  document.body.appendChild(container);
+  try {
+    const cardEl = container.querySelector(".pid-card");
+    const canvas = await html2canvas(cardEl, { scale: 2.4, backgroundColor: null });
+    return new Promise((resolve) => canvas.toBlob(resolve, "image/png"));
+  } finally {
+    document.body.removeChild(container);
+  }
+};
+
+const buildTempIdCardImage = (fields, photoUrl, cardName) =>
+  renderPortraitIdCard({
+    chipText: "TEMPORARY",
+    orgText: "G PULLA REDDY ENGINEERING COLLEGE",
+    cardTitle: "Student ID Card",
+    cardName,
+    roleText: "Student",
+    photoUrl,
+    infoFields: [
+      ["ID NO.", `ST-${fields.rollNumber || "-"}`, true],
+      ["DEPARTMENT", fields.branch || "-", false],
+      ["COURSE", fields.course || "B.Tech", false],
+      ["YEAR OF STUDY", fields.periodOfStudy || "-", false],
+      ["BLOOD GROUP", fields.bloodGroup || "-", false]
+    ],
+    noticeHeading: "Replacement Card",
+    noticeText: fields.noticeText || "-",
+    footerLeftLabel: "Issued",
+    footerLeftValue: fields.issued,
+    footerRightLabel: "Valid Till",
+    footerRightValue: fields.validUntil
+  });
 
 // Temp ID Card lines are built as field rows, then a blank-string separator, then a plain-English
 // disclaimer - same convention used elsewhere in this file for "table rows then footer text".
-const makeTempIdCardPdf = (lines, photoUrl, cardName) => {
-  const blankIndex = lines.indexOf("");
-  const tableLines = blankIndex === -1 ? lines : lines.slice(0, blankIndex);
-  const footerLines = blankIndex === -1 ? [] : lines.slice(blankIndex + 1);
-  const table = linesToTable(tableLines);
-  return makePdfWithPhoto(
-    "GPREC Temporary ID Card", [], photoUrl, cardName, table, footerLines, "Notes",
-    estimatePdfHeight({ table, footerLines, hasPhoto: true })
-  );
+// Signature/call sites unchanged - only the drawing (now buildTempIdCardImage, PNG-based to
+// match the reference design exactly, same as the ticket-stub family) changed underneath.
+const buildTempIdCardPng = async (lines, photoUrl, cardName) => {
+  const fields = {};
+  lines.forEach((line) => {
+    const idx = line.indexOf(": ");
+    if (idx !== -1) fields[line.slice(0, idx)] = line.slice(idx + 2);
+  });
+  return buildTempIdCardImage({
+    rollNumber: fields["Roll Number"],
+    branch: fields["Branch"],
+    periodOfStudy: fields["Period of Study"],
+    bloodGroup: fields["Blood Group"],
+    issued: fields["Issued"],
+    validUntil: fields["Valid Until"],
+    noticeText: `Original ID reported lost. Issued ${fields["Issued"] || "-"}, valid until the permanent card is reissued by the college office. Carry along with a valid photo proof.`
+  }, photoUrl, cardName);
 };
 
 // Vehicle Pass: gated behind admin approval (see #vehicle-pass in student/faculty dashboards),
@@ -12957,232 +13133,91 @@ const buildSinglePagePdf = (contentBytes, images = {}, pageWidth = 595, pageHeig
 // garbage (or nothing), which is worse than not having one. Instead each copy shows a generated
 // reference number as plain text (same YYMMDDHHMMSS shape as the real SNO) - it is NOT looked up
 // in the college's own system, since it was never submitted there.
+// Generates the same 3 staggered copies (College/Student/Bank) as before - only the drawing
+// (now buildFeeChallanImage, matching "33_gprec_fee_challan.html") changed. refNumber/today are
+// still our own generated reference number (not looked up in any real bank system), same as
+// the original comment on this function already noted.
 const makeChallanPdfs = async (name, rollNo, purposeLabel, amountNumber, amountWords) => {
-  const escapePdf = (value) => String(value).replace(/[\\()]/g, "\\$&");
-  // A real bank challan slip is a short, wide receipt, not a full A4 sheet - sized to just fit
-  // this document's actual content (header band + 10 lines) with a sensible margin, instead of
-  // the full-page 595x842 every other PDF in this app uses.
-  const pageWidth = 595;
-  // Trimmed so the page's bottom edge sits right at the closing double-rule (drawn after "Scroll
-  // No. Cash" below) with only a small margin - not the extra blank space a taller page would
-  // leave hanging below the content.
-  const pageHeight = 390;
-  const left = 60;
-  const right = 535;
-  const center = (left + right) / 2;
-  const textWidth = (value, size) => value.length * size * 0.5;
-
   const pad2 = (n) => String(n).padStart(2, "0");
   const now = new Date();
   const refNumber = `${pad2(now.getFullYear() % 100)}${pad2(now.getMonth() + 1)}${pad2(now.getDate())}${pad2(now.getHours())}${pad2(now.getMinutes())}${pad2(now.getSeconds())}`;
   const today = now.toLocaleDateString("en-IN", { day: "2-digit", month: "short", year: "numeric" });
 
-  // Loaded once and reused across all three copies. These are the original GPREC artwork assets,
-  // embedded at a higher PDF pixel density/quality so the logos stay closer to the source art.
-  let logoBytes = null;
-  let logoPixelWidth = 0;
-  let logoPixelHeight = 0;
-  try {
-    const logo = await loadImageAsJpegBytes(gprecLogoUrl, 154, 42, "#04284a", 4, 0.98);
-    logoBytes = logo.bytes;
-    logoPixelWidth = logo.pixelWidth;
-    logoPixelHeight = logo.pixelHeight;
-  } catch {
-    logoBytes = null;
-  }
-  let sealBytes = null;
-  let sealPixelWidth = 0;
-  let sealPixelHeight = 0;
-  try {
-    const seal = await loadImageAsJpegBytes(gprecSealUrl, 140, 150, "#ffffff", 4, 0.98);
-    sealBytes = seal.bytes;
-    sealPixelWidth = seal.pixelWidth;
-    sealPixelHeight = seal.pixelHeight;
-  } catch {
-    sealBytes = null;
-  }
-  let stampBytes = null;
-  let stampSize = 0;
-  try {
-    const stamp = await renderTextStampJpegBytes("GPREC - OFFICIAL DOCUMENT");
-    stampBytes = stamp.bytes;
-    stampSize = stamp.size;
-  } catch {
-    stampBytes = null;
-  }
-  const images = { logoBytes, logoPixelWidth, logoPixelHeight, sealBytes, sealPixelWidth, sealPixelHeight, stampBytes, stampSize };
-
-  const renderCopyPage = (label) => {
-    const contentLines = [];
-    // Faint centered original seal watermark, first in the stream so the header band/text
-    // naturally paint over it, then the diagonal "OFFICIAL DOCUMENT" stamp.
-    const watermarkWidth = 140;
-    const watermarkHeight = 150;
-    if (sealBytes) {
-      contentLines.push("q", "/GS1 gs", `${watermarkWidth} 0 0 ${watermarkHeight} ${(pageWidth - watermarkWidth) / 2} ${(pageHeight - watermarkHeight) / 2} cm`, "/ImSeal Do", "Q");
-    }
-    const stampRenderSize = Math.min(stampSize, 230);
-    if (stampBytes) {
-      contentLines.push("q", "/GS2 gs", `${stampRenderSize} 0 0 ${stampRenderSize} ${(pageWidth - stampRenderSize) / 2} ${(pageHeight - stampRenderSize) / 2} cm`, "/ImStamp Do", "Q");
-    }
-
-    // Branded header band - same navy bar + logo treatment as every other official PDF in this
-    // app, with the title where makePdfWithPhoto would put it.
-    const headerHeight = 70;
-    const headerBottom = pageHeight - headerHeight;
-    contentLines.push("q", `${pdfNavyColor} rg`, `0 ${headerBottom} ${pageWidth} ${headerHeight} re`, "f", "Q");
-    contentLines.push(...pdfHeaderAccentLineOps(pageWidth, headerBottom));
-    if (logoBytes) {
-      contentLines.push("q", `154 0 0 42 20 ${headerBottom + (headerHeight - 42) / 2} cm`, "/ImLogo Do", "Q");
-    } else {
-      contentLines.push("BT", "1 1 1 rg", "/F2 20 Tf", `20 ${headerBottom + headerHeight / 2 - 7} Td`, "(GPREC) Tj", "ET");
-    }
-    contentLines.push("BT", `${pdfNavyColor} rg`, "/F2 17 Tf", `202 ${headerBottom - 40} Td`, "(GPREC Fee Challan) Tj", "ET", "0 0 0 rg");
-
-    const text = (value, x, y, size = 10, bold = true) => {
-      contentLines.push("BT", `/${bold ? "F2" : "F1"} ${size} Tf`, `${x} ${y} Td`, `(${escapePdf(value)}) Tj`, "ET");
-    };
-    const centered = (value, y, size = 11) => text(value, center - textWidth(value, size) / 2, y, size);
-    const rightAligned = (value, y, size = 10) => text(value, right - textWidth(value, size), y, size);
-    // Draws a left-to-right run of segments on one line. A segment with `underlineWidth` gets a
-    // FIXED-length blank line of that width (matching the real slip's fixed-length blank rules,
-    // e.g. "Rs. ____________ /- (Rupees ____...____ Only)") with its text written at the start of
-    // that blank, rather than an underline sized to hug the text - the cursor still advances by
-    // the fixed width so later segments land in the same place regardless of value length.
-    const row = (segments, y, size = 10) => {
-      let x = left;
-      segments.forEach((segment) => {
-        // Large amounts (lakhs/crores) spell out to long strings - shrink just that segment's
-        // font so it still fits its fixed blank width instead of overflowing into the next
-        // segment; short/typical amounts render at the normal size. The 0.82 factor is a safety
-        // margin: textWidth()'s 0.5-per-char estimate runs a bit narrow versus how Helvetica-Bold
-        // actually renders, so solving for an "exact fit" size still overflows in practice -
-        // shrinking further than the math strictly requires leaves real headroom.
-        const segmentSize = segment.underlineWidth && textWidth(segment.text, size) > segment.underlineWidth
-          ? Math.max(6.5, ((segment.underlineWidth / segment.text.length) / 0.5) * 0.82)
-          : size;
-        text(segment.text, x, y, segmentSize, true);
-        const naturalWidth = textWidth(segment.text, segmentSize);
-        const advance = segment.underlineWidth ? Math.max(segment.underlineWidth, naturalWidth) : naturalWidth;
-        if (segment.underlineWidth) {
-          contentLines.push("q", "0 0 0 RG", "0.5 w", `${x} ${y - 2} m`, `${x + advance} ${y - 2} l`, "S", "Q");
-        }
-        x += advance;
-      });
-    };
-
-    // Real Code 128 (Set C, numeric-pairs) barcode encoding the reference number - the bar-width
-    // table and checksum algorithm here are copied verbatim from the widely-used python-barcode
-    // library (barcode.charsets.code128) and cross-checked byte-for-byte against its own output
-    // for this exact reference number before being transcribed, specifically because a
-    // hand-guessed symbol table that LOOKS right but decodes wrong would be worse than no barcode
-    // at all. It's still our own generated reference number, not looked up in the college's system.
-    const barcodeWidth = 140;
-    const barcodeHeight = 30;
-    const barcodeX = right - barcodeWidth;
-    const barcodeTop = headerBottom - 20;
-    const pattern = encodeCode128C(refNumber);
-    const moduleWidth = barcodeWidth / pattern.length;
-    let moduleX = barcodeX;
-    let runStart = null;
-    for (let i = 0; i <= pattern.length; i++) {
-      const bit = pattern[i];
-      if (bit === "1") {
-        if (runStart === null) runStart = moduleX;
-      } else if (runStart !== null) {
-        contentLines.push("q", "0 0 0 rg", `${runStart} ${barcodeTop - barcodeHeight} ${moduleX - runStart} ${barcodeHeight} re`, "f", "Q");
-        runStart = null;
-      }
-      moduleX += moduleWidth;
-    }
-    text(refNumber, barcodeX + barcodeWidth / 2 - textWidth(refNumber, 8) / 2, barcodeTop - barcodeHeight - 10, 8, false);
-
-    let y = headerBottom - 76;
-    text(`SNO: ${refNumber}`, left, y, 9);
-    centered(label, y);
-    y -= 26;
-    centered("ANDHRA BANK", y); y -= 16;
-    centered("G. PULLA REDDY ENGINEERING COLLEGE KURNOOL - 518007", y); y -= 30;
-    text("Paid in to the Credit of S.B. A/c No. 152110011031255; of G.P.R.E.C.,  KURNOOL", left, y); y -= 26;
-    // Both blanks END at the same x (~520pt) rather than sharing the same raw width - the Rs. row
-    // has a longer prefix ("Rs. .../- (Rupees ") before its blank than "towards " does, so its
-    // blank is narrower (285) but still reaches the same right-hand stopping point as the towards
-    // blank (420), leaving room for " Only)" after it.
-    row([
-      { text: "Rs. " },
-      { text: String(amountNumber), underlineWidth: 95 },
-      { text: " /- (Rupees " },
-      { text: amountWords, underlineWidth: 285 },
-      { text: " Only)" }
-    ], y); y -= 26;
-    row([{ text: "towards " }, { text: purposeLabel, underlineWidth: 420 }], y); y -= 26;
-    text(`Name: ${name.toUpperCase()};`, left, y); rightAligned(`Roll No.: ${rollNo}`, y); y -= 26;
-    row([{ text: "Paid By " }, { text: "", underlineWidth: 150 }], y); rightAligned(`Date: ${today}`, y); y -= 26;
-    text("Teller", left, y); rightAligned("Entered by", y); y -= 16;
-    text("Head Cashier", left, y); y -= 16;
-    text("Scroll No. Cash", left, y); y -= 16;
-    // Double horizontal rule - the real slip's own closing mark between copies. The page ends
-    // shortly after it instead of trailing off with extra blank space below.
-    contentLines.push("q", "0 0 0 RG", "0.75 w", `${left - 6} ${y} m`, `${right + 6} ${y} l`, "S", `${left - 6} ${y - 3} m`, `${right + 6} ${y - 3} l`, "S", "Q");
-
-    return buildSinglePagePdf(new TextEncoder().encode(contentLines.join("\n")), images, pageWidth, pageHeight);
-  };
+  const renderCopy = (copyLabel) =>
+    buildFeeChallanImage({ copyLabel, refNumber, name, rollNo, purposeLabel, amountNumber, amountWords, today });
 
   return [
-    { label: "College Copy", fileSuffix: "college-copy", blob: renderCopyPage("COLLEGE COPY") },
-    { label: "Student Copy", fileSuffix: "student-copy", blob: renderCopyPage("STUDENT COPY") },
-    { label: "Bank Copy", fileSuffix: "bank-copy", blob: renderCopyPage("BANK COPY") }
+    { label: "College Copy", fileSuffix: "college-copy", blob: await renderCopy("COLLEGE COPY") },
+    { label: "Student Copy", fileSuffix: "student-copy", blob: await renderCopy("STUDENT COPY") },
+    { label: "Bank Copy", fileSuffix: "bank-copy", blob: await renderCopy("BANK COPY") }
   ];
 };
 
-const makeVehiclePassPdf = (name, photoUrl, pass) => {
-  const table = linesToTable([
-    `Name: ${name}`,
-    `Vehicle Type: ${pass.vehicleType}`,
-    `Vehicle Number: ${pass.vehicleNumber}`,
-    `Driving License Number: ${pass.licenseNumber}`,
-    `Valid Until: ${pass.validUntil || "-"}`
-  ]);
-  const footerLines = [
-    "This pass permits the holder to bring the above vehicle onto campus for parking.",
-    "Present this pass along with the original driving license and vehicle RC on request.",
-    "- Always wear a helmet (two-wheeler) or fasten your seatbelt (car).",
-    "- Do not exceed the campus speed limit of 10 km/h.",
-    "- Park only in the designated parking areas.",
-    "- No triple riding, rash driving, or mobile phone use while driving.",
-    "- Report any accident or breakdown to campus security immediately."
-  ];
-  return makePdfWithPhoto(
-    "GPREC Vehicle Pass", [], photoUrl, name, table, footerLines, "Notes & Safety Rules",
-    estimatePdfHeight({ table, footerLines, hasPhoto: true })
-  );
+// PNG, not a PDF - matches "24_vehicle_pass.html" exactly, same treatment as buildBusPassImage
+// (no PDF-only anti-fraud seal/stamp overlay - see that function's comment). photoUrl is accepted
+// (callers already resolve it) but unused - the ticket-stub design has no photo slot, matching
+// the mockup, which shows no photo either.
+const buildVehiclePassImage = async (name, photoUrl, pass, requester) => {
+  const passId = makeShortPassId("VP", [requester?.id, pass.vehicleNumber, pass.licenseNumber]);
+  const idLabel = requester?.type === "faculty" ? "FACULTY EMAIL" : "ROLL NO.";
+  return renderTicketStubCard({
+    eyebrow: "COLLEGE · VEHICLE PASS",
+    scanCaption: "SCAN AT PARKING GATE",
+    tag: "VEHICLE PASS",
+    tagIconPath: TICKET_ICON_PATHS.car,
+    // Plain identifying text, not a verification-page URL - there's no gate-scan backend for
+    // vehicle passes (unlike hostel passes), so scanning this just shows the pass details.
+    qrText: `GPREC Vehicle Pass ${passId} | ${pass.vehicleNumber} | Valid till ${pass.validUntil || "-"}`,
+    title: "Vehicle Pass",
+    subtitle: "GPREC · Campus Security",
+    fields: [
+      { label: "PASS ID", value: passId, mono: true },
+      { label: "NAME", value: name },
+      { label: idLabel, value: requester?.id || "-", mono: true },
+      { label: "VEHICLE TYPE", value: pass.vehicleType },
+      { label: "VEHICLE NO.", value: pass.vehicleNumber, mono: true },
+      { label: "PARKING ZONE", value: pass.parkingZone || "Not Assigned" },
+      { label: "VALID TILL", value: pass.validUntil || "-" },
+      { label: "STATUS", value: "Active", status: true }
+    ],
+    footerLeft: "CAMPUS SECURITY",
+    footerRight: "DISPLAY ON DASH",
+    watermarkSvg: TICKET_WATERMARKS.target
+  });
 };
 
 // Bus Pass: gated behind admin approval of the bus request (see #bus-service), same pattern as
-// makeVehiclePassPdf just for the Bus Service opt-in instead of a self-driven vehicle.
-const makeBusPassPdf = (name, photoUrl, request, requester) => {
-  const table = linesToTable([
-    `Name: ${name}`,
-    ...(requester?.type === "student" ? [`Roll Number: ${requester.id}`] : requester?.type === "faculty" ? [`Faculty Email: ${requester.id}`] : []),
-    `Bus Number: ${request.busNumber}`,
-    `Route: ${request.routeName}`,
-    `Driver: ${request.driverName}${request.driverMobile ? ` (${request.driverMobile})` : ""}`,
-    `Pickup Point: ${request.pickupPoint || "-"} (Approx. ${request.pickupTime || "-"})`,
-    `Drop Point: ${request.dropPoint || "-"} (Approx. ${request.dropTime || "-"})`,
-    `Issued: ${request.requestedAt || "-"}`,
-    `Valid Until: ${request.validUntil || "-"}`
-  ]);
-  const footerLines = [
-    "This pass permits the holder to board the above bus on its published route.",
-    "Present this pass to the driver/conductor along with your college ID on request.",
-    "- Be at the designated stop at least 5 minutes before the scheduled time.",
-    "- Maintain discipline on board - no rash behavior, littering, or misuse of emergency exits.",
-    "- Report any issue with the bus or driver to the Transportation Office immediately."
-  ];
-  return makePdfWithPhoto(
-    "GPREC Bus Pass", [], photoUrl, name, table, footerLines, "Notes & Safety Rules",
-    estimatePdfHeight({ table, footerLines, hasPhoto: true })
-  );
+// buildVehiclePassImage just for the Bus Service opt-in instead of a self-driven vehicle.
+// PNG, not a PDF - matches "23_bus_pass.html" exactly with no PDF-only anti-fraud seal/stamp
+// overlay, same treatment as buildEventTicketImage (see that function's comment on why PNG
+// outputs skip the seal).
+const buildBusPassImage = async (name, photoUrl, request, requester) => {
+  const passId = makeShortPassId("BP", [requester?.id, request.busNumber, request.requestedAt]);
+  const idLabel = requester?.type === "faculty" ? "FACULTY EMAIL" : "ROLL NO.";
+  return renderTicketStubCard({
+    eyebrow: "COLLEGE · BUS PASS",
+    scanCaption: "SCAN WHILE BOARDING",
+    tag: "BUS PASS",
+    tagIconPath: TICKET_ICON_PATHS.bus,
+    // Plain identifying text (see buildVehiclePassImage's qrText comment) - no gate-scan backend
+    // for bus passes yet.
+    qrText: `GPREC Bus Pass ${passId} | Route ${request.routeName || "-"} | Valid till ${request.validUntil || "-"}`,
+    title: "Bus Pass",
+    subtitle: "GPREC · Transport Department",
+    fields: [
+      { label: "PASS ID", value: passId, mono: true },
+      { label: "NAME", value: name },
+      { label: idLabel, value: requester?.id || "-", mono: true },
+      { label: "ROUTE NO.", value: request.routeName || "-" },
+      { label: "BOARDING POINT", value: request.pickupPoint || "-" },
+      { label: "BUS NO.", value: request.busNumber, mono: true },
+      { label: "VALID TILL", value: request.validUntil || "-" },
+      { label: "STATUS", value: "Active", status: true }
+    ],
+    footerLeft: "TRANSPORT DEPT.",
+    footerRight: "NON-TRANSFERABLE",
+    watermarkSvg: TICKET_WATERMARKS.route
+  });
 };
 
 // Non-Teaching Staff Dashboard: profile, leave application, and payroll. Leave requests share the
@@ -13297,51 +13332,23 @@ if (nonTeachingDashboardName) {
     const basic = 28000;
     const da = 2800;
     const hra = 5600;
-    const gross = basic + da + hra;
     const pf = 3360;
     const professionalTax = 200;
-    const deductions = pf + professionalTax;
-    const netPay = gross - deductions;
-
-    const identityTable = {
-      columns: [
-        { label: "Field", width: 150 },
-        { label: "Details", width: 300 }
-      ],
-      rows: [
-        ["Employee Name", staffRecord.name],
-        ["Designation", staffRecord.designation],
-        ["Section", staffRecord.section],
-        ["Email", staffRecord.email],
-        ["Pay Period", month]
-      ]
-    };
-    const payTable = {
-      columns: [
-        { label: "Component", width: 220 },
-        { label: "Type", width: 110 },
-        { label: "Amount (Rs.)", width: 110 }
-      ],
-      rows: [
-        ["Basic Pay", "Earning", basic.toLocaleString("en-IN")],
-        ["Dearness Allowance (DA)", "Earning", da.toLocaleString("en-IN")],
-        ["House Rent Allowance (HRA)", "Earning", hra.toLocaleString("en-IN")],
-        ["Provident Fund (PF)", "Deduction", pf.toLocaleString("en-IN")],
-        ["Professional Tax", "Deduction", professionalTax.toLocaleString("en-IN")]
-      ]
-    };
-    const summaryTable = {
-      columns: [
-        { label: "Pay Summary", width: 220 },
-        { label: "Amount (Rs.)", width: 220 }
-      ],
-      rows: [
-        ["Gross Pay", gross.toLocaleString("en-IN")],
-        ["Total Deductions", deductions.toLocaleString("en-IN")],
-        ["Net Pay", netPay.toLocaleString("en-IN")]
-      ]
-    };
-    const pdf = await makeSimplePdf(`GPREC Payslip - ${month}`, [], [identityTable, payTable, summaryTable]);
+    const employeeId = makeShortPassId("EMP", [staffRecord.email]);
+    const bankKey = `non-teaching-${staffRecord.email}`;
+    const bankDetails = getBankDetailsFor(bankKey, null);
+    const bankLineParts = buildPaySlipBankLineParts(bankDetails);
+    const pdf = await buildPaySlipImage({
+      slipNo: makeShortPassId("PS", [staffRecord.email, month]),
+      employeeName: staffRecord.name,
+      employeeId,
+      designation: staffRecord.designation,
+      department: staffRecord.section,
+      month,
+      earnings: [["Basic Pay", basic], ["Dearness Allowance", da], ["House Rent Allowance", hra]],
+      deductions: [["Provident Fund", pf], ["Professional Tax", professionalTax]],
+      bankLineParts
+    });
     const link = document.createElement("a");
     link.href = URL.createObjectURL(pdf);
     link.download = `payslip-${month.replace(/\s+/g, "-")}.pdf`;
@@ -13403,37 +13410,18 @@ if (nonTeachingDashboardName) {
     const annualNet = annualGross - annualDeductions;
     const estimatedTax = Math.round(annualGross * 0.05);
 
-    const identityTable = {
-      columns: [
-        { label: "Field", width: 150 },
-        { label: "Details", width: 300 }
-      ],
-      rows: [
-        ["Employee Name", staffRecord.name],
-        ["Designation", staffRecord.designation],
-        ["Section", staffRecord.section],
-        ["Financial Year", financialYear]
-      ]
-    };
-    const taxTable = {
-      columns: [
-        { label: "Particulars", width: 260 },
-        { label: "Amount (Rs.)", width: 140 }
-      ],
-      rows: [
-        ["Gross Annual Pay", annualGross.toLocaleString("en-IN")],
-        ["Total Deductions", annualDeductions.toLocaleString("en-IN")],
-        ["Net Annual Pay", annualNet.toLocaleString("en-IN")],
-        ["Estimated Tax Deducted (TDS)", estimatedTax.toLocaleString("en-IN")]
-      ]
-    };
-    const pdf = await makeSimplePdf(
-      `GPREC Form 16 - ${financialYear}`,
-      [],
-      [identityTable, taxTable],
-      ["This is a system-generated tax summary. The official Form 16 (Part A & B) is issued separately as per Income Tax rules."],
-      "Note"
-    );
+    const pdf = await buildForm16Image({
+      certNo: makeShortPassId("FRM16", [staffRecord.email, financialYear]),
+      employeeName: staffRecord.name,
+      employeeId: makeShortPassId("EMP", [staffRecord.email]),
+      designation: staffRecord.designation,
+      department: staffRecord.section,
+      financialYear,
+      annualGross,
+      annualDeductions,
+      annualNet,
+      estimatedTax
+    });
     const link = document.createElement("a");
     link.href = URL.createObjectURL(pdf);
     link.download = `form16-${financialYear}.pdf`;
@@ -14859,6 +14847,7 @@ const recordCertificatePayment = async (paymentType, paymentReference) => {
     const rollNumber = alumniRollNumberField?.value.trim() || getCurrentStudentId();
     const alumniName = document.querySelector("#alumniFullName")?.value.trim();
     const paymentDate = new Date().toLocaleDateString("en-IN", { day: "2-digit", month: "short", year: "numeric" });
+    const paymentTime = new Date().toLocaleTimeString("en-IN", { hour: "2-digit", minute: "2-digit", hour12: true });
 
     const readLabelFields = (container) =>
       [...(container?.querySelectorAll("label") || [])].map((label) => {
@@ -14889,6 +14878,7 @@ const recordCertificatePayment = async (paymentType, paymentReference) => {
       `Payment Type: ${paymentType}`,
       `Payment Reference: ${paymentReference}`,
       `Payment Date: ${paymentDate}`,
+      `Payment Time: ${paymentTime}`,
       "Payment Status: Paid",
       `Note: Show this receipt to the ${submitOffice} to complete your request.`
     ];
@@ -14939,8 +14929,8 @@ const recordCertificatePayment = async (paymentType, paymentReference) => {
         // it fails to load).
         tempIdPhotoUrl = getExplicitProfilePhotoSrc(defaultStudentProfiles[rollNumber]);
         tempIdCardName = cardName;
-        const tempIdPdf = await makeTempIdCardPdf(tempIdLines, tempIdPhotoUrl, cardName);
-        tempIdCardDownload.href = URL.createObjectURL(tempIdPdf);
+        const tempIdImage = await buildTempIdCardPng(tempIdLines, tempIdPhotoUrl, cardName);
+        tempIdCardDownload.href = URL.createObjectURL(tempIdImage);
         tempIdCardDownload.classList.add("ready");
       } else {
         tempIdCardDownload.classList.remove("ready");
@@ -15005,10 +14995,10 @@ const renderPaymentHistoryTable = () => {
     button.addEventListener("click", async () => {
       const record = paymentHistory[Number(button.dataset.tempidIndex)];
       if (!record?.tempIdLines) return;
-      const pdf = await makeTempIdCardPdf(record.tempIdLines, record.tempIdPhotoUrl, record.tempIdCardName);
+      const image = await buildTempIdCardPng(record.tempIdLines, record.tempIdPhotoUrl, record.tempIdCardName);
       const link = document.createElement("a");
-      link.href = URL.createObjectURL(pdf);
-      link.download = "gprec-temporary-id-card.pdf";
+      link.href = URL.createObjectURL(image);
+      link.download = "gprec-temporary-id-card.png";
       link.click();
     });
   });
@@ -15466,10 +15456,10 @@ if (busServiceListBody) {
       requester.type === "student"
         ? getExplicitProfilePhotoSrc(defaultStudentProfiles[requester.id])
         : normalizeProfilePhotoUrl(lookupFacultyRecordByEmail(requester.id)?.photoUrl);
-    const pdf = await makeBusPassPdf(requester.name, photoUrl, currentBusRequest, requester);
+    const image = await buildBusPassImage(requester.name, photoUrl, currentBusRequest, requester);
     const link = document.createElement("a");
-    link.href = URL.createObjectURL(pdf);
-    link.download = `gprec-bus-pass-${requester.id}.pdf`;
+    link.href = URL.createObjectURL(image);
+    link.download = `gprec-bus-pass-${requester.id}.png`;
     link.click();
     URL.revokeObjectURL(link.href);
   });
@@ -16004,10 +15994,10 @@ if (vehiclePassForm) {
       requester.type === "student"
         ? getExplicitProfilePhotoSrc(defaultStudentProfiles[requester.id])
         : normalizeProfilePhotoUrl(lookupFacultyRecordByEmail(requester.id)?.photoUrl);
-    const pdf = await makeVehiclePassPdf(requester.name, photoUrl, currentPass);
+    const image = await buildVehiclePassImage(requester.name, photoUrl, currentPass, requester);
     const link = document.createElement("a");
-    link.href = URL.createObjectURL(pdf);
-    link.download = `gprec-vehicle-pass-${requester.id}.pdf`;
+    link.href = URL.createObjectURL(image);
+    link.download = `gprec-vehicle-pass-${requester.id}.png`;
     link.click();
     URL.revokeObjectURL(link.href);
   });
@@ -16091,8 +16081,14 @@ document.querySelectorAll("[data-photo-slot]").forEach((el) => {
   }
 });
 
+const defaultHomeHeroSlides = [
+  { id: "demo-hero-campus", alt: "GPREC campus entrance", photoDataUrl: "https://www.gprec.ac.in/wp-content/uploads/2019/07/gprec-banner4.jpg" },
+  { id: "demo-hero-library", alt: "GPREC library", photoDataUrl: "https://www.gprec.ac.in/wp-content/uploads/2019/04/library.jpg" },
+  { id: "demo-hero-sports", alt: "GPREC sports facilities", photoDataUrl: "https://www.gprec.ac.in/wp-content/uploads/2019/07/sports.jpg" }
+];
+
 // Home page hero slider: fully admin-managed slide list (add/remove).
-const getHomeHeroSlides = () => getSiteContent("homeHeroSlides", []);
+const getHomeHeroSlides = () => getSiteContent("homeHeroSlides", defaultHomeHeroSlides);
 const saveHomeHeroSlides = (slides) => saveSiteContent("homeHeroSlides", slides);
 
 const regenerateHeroDots = () => {
@@ -16199,7 +16195,10 @@ addHomeHeroSlideButton?.addEventListener("click", async () => {
 });
 
 // About Us page History gallery: fully admin-managed slide list (add/remove).
-const getAboutHistorySlides = () => getSiteContent("aboutHistorySlides", []);
+const getAboutHistorySlides = () => getSiteContent("aboutHistorySlides", [
+  { id: "demo-history-founder", caption: "Founder legacy", photoDataUrl: "https://www.gprec.ac.in/wp-content/uploads/2019/04/G.-Pulla-Reddy-Garu.jpg" },
+  { id: "demo-history-campus", caption: "GPREC campus", photoDataUrl: "https://www.gprec.ac.in/wp-content/uploads/2019/07/gprec-banner4.jpg" }
+]);
 const saveAboutHistorySlides = (slides) => saveSiteContent("aboutHistorySlides", slides);
 
 const aboutHistoryGallery = document.querySelector("#aboutHistoryGallery");
@@ -16305,7 +16304,36 @@ addAboutHistorySlideButton?.addEventListener("click", async () => {
 });
 
 // Campus Life page: fully admin-managed slide list (add/remove), unlike the fixed slots above.
-const getCampusLifeSlides = () => getSiteContent("campusLifeSlides", []);
+const getCampusLifeSlides = () => getSiteContent("campusLifeSlides", [
+  {
+    id: "demo-campus-library",
+    title: "Academic Amenities",
+    description: "Library and learning resources for students and faculty.",
+    link: "https://www.gprec.ac.in/campus-life/libraries/",
+    photoDataUrl: "https://www.gprec.ac.in/wp-content/uploads/2019/04/library.jpg"
+  },
+  {
+    id: "demo-campus-hostels",
+    title: "Hostels",
+    description: "Residential facilities and student support services.",
+    link: "https://www.gprec.ac.in/campus-life/hostels/",
+    photoDataUrl: "https://www.gprec.ac.in/wp-content/uploads/2019/04/hostels.jpg"
+  },
+  {
+    id: "demo-campus-sports",
+    title: "Sports and Games",
+    description: "Outdoor and indoor sports facilities across campus.",
+    link: "https://www.gprec.ac.in/campus-life/sports-facilities/",
+    photoDataUrl: "https://www.gprec.ac.in/wp-content/uploads/2019/07/sports.jpg"
+  },
+  {
+    id: "demo-campus-clubs",
+    title: "Student Clubs",
+    description: "Co-curricular activities, student initiatives, and campus participation.",
+    link: "http://womencell.gprec.ac.in/",
+    photoDataUrl: "https://www.gprec.ac.in/wp-content/uploads/2019/04/womencell.jpg"
+  }
+]);
 const saveCampusLifeSlides = (slides) => saveSiteContent("campusLifeSlides", slides);
 
 const campusLifeGrid = document.querySelector("#campusLifeGrid");
@@ -16557,7 +16585,12 @@ addVideoButton?.addEventListener("click", () => {
 });
 
 // Photo Gallery: admin-managed list of photos, auto-scrolling marquee with a click-to-open lightbox.
-const getPhotoGallery = () => getSiteContent("photoGallery", []);
+const getPhotoGallery = () => getSiteContent("photoGallery", [
+  { id: "demo-photo-campus", caption: "GPREC Campus", photoDataUrl: "https://www.gprec.ac.in/wp-content/uploads/2019/07/gprec-banner4.jpg" },
+  { id: "demo-photo-library", caption: "Library", photoDataUrl: "https://www.gprec.ac.in/wp-content/uploads/2019/04/library.jpg" },
+  { id: "demo-photo-hostel", caption: "Hostels", photoDataUrl: "https://www.gprec.ac.in/wp-content/uploads/2019/04/hostels.jpg" },
+  { id: "demo-photo-sports", caption: "Sports Facilities", photoDataUrl: "https://www.gprec.ac.in/wp-content/uploads/2019/07/sports.jpg" }
+]);
 const savePhotoGallery = (photos) => saveSiteContent("photoGallery", photos);
 
 const photoGalleryTrack = document.querySelector("#photoGalleryTrack");
@@ -18099,17 +18132,17 @@ const saveFestCoordinators = (emails) => saveSiteContent("festCoordinators", ema
 const createFestActivityAsCoordinator = (fields) => gprecDbPost("/fest-activities/create", fields);
 // The fest's display name (shown on event-visitor-dashboard.html's branding) - admin-set instead
 // of the hardcoded "Campus Fest 2026" placeholder it shipped with.
-const getFestName = () => getSiteContent("festName", "Campus Fest 2026");
+const getFestName = () => getSiteContent("festName", "Udaan 2026");
 const saveFestName = (name) => saveSiteContent("festName", name);
 // The fest's own countdown target (date + optional time) and venue - admin-set, so the visitor
 // page's countdown/venue text has something to show even when no public Campus Event exists yet
 // (event-visitor-dashboard.html falls back to the nearest public Campus Event's own date/venue
 // when these are blank, so setting a Campus Event's date still works without this).
-const getFestDate = () => getSiteContent("festDate", "");
+const getFestDate = () => getSiteContent("festDate", "2026-09-05");
 const saveFestDate = (date) => saveSiteContent("festDate", date);
-const getFestTime = () => getSiteContent("festTime", "");
+const getFestTime = () => getSiteContent("festTime", "17:00");
 const saveFestTime = (time) => saveSiteContent("festTime", time);
-const getFestVenue = () => getSiteContent("festVenue", "");
+const getFestVenue = () => getSiteContent("festVenue", "Open Air Theatre, GPREC Campus");
 const saveFestVenue = (venue) => saveSiteContent("festVenue", venue);
 // Manual on/off switch for the Fest Settings-driven homepage banner (independent of the automatic
 // 24-hours-after-the-fest expiry in renderHomeFestBanner) - admin can always turn it off early, or
@@ -18194,90 +18227,83 @@ const startHomeFestCountdown = (event) => {
     minutes: document.querySelector("#homeFestCountdownMinutes"),
     seconds: document.querySelector("#homeFestCountdownSeconds")
   };
+  let lastSeconds = null;
   const update = () => {
     if (!target || Object.values(parts).some((part) => !part)) return;
     const diff = Math.max(0, target.getTime() - Date.now());
+    const seconds = Math.floor((diff / 1000) % 60);
     parts.days.textContent = String(Math.floor(diff / 86400000)).padStart(2, "0");
     parts.hours.textContent = String(Math.floor((diff / 3600000) % 24)).padStart(2, "0");
     parts.minutes.textContent = String(Math.floor((diff / 60000) % 60)).padStart(2, "0");
-    parts.seconds.textContent = String(Math.floor((diff / 1000) % 60)).padStart(2, "0");
+    parts.seconds.textContent = String(seconds).padStart(2, "0");
+    // Pulse the seconds digit on every tick, same as the compass-theme banner mock, so the
+    // countdown reads as "alive" rather than a static number that happens to change once a second.
+    if (seconds !== lastSeconds) {
+      parts.seconds.classList.remove("tick");
+      void parts.seconds.offsetWidth;
+      parts.seconds.classList.add("tick");
+      lastSeconds = seconds;
+    }
   };
   update();
   window.gprecHomeFestCountdownTimer = window.setInterval(update, 1000);
 };
 
-// Same compass/star artwork as the visitor login page's hero (.visitor-compass-art), reused here
-// so the homepage banner carries the same ColFest visual identity - see .home-fest-banner
-// .visitor-compass-art in styles.css for the smaller, lower-opacity sizing this context needs.
-const homeFestCompassArt = `
-  <div class="visitor-compass-art" aria-hidden="true">
-    <svg viewBox="0 0 680 620" role="img">
-      <defs>
-        <linearGradient id="homeCompassHot" x1="0" x2="1" y1="0" y2="1">
-          <stop offset="0" stop-color="#FF9A3C"/>
-          <stop offset=".46" stop-color="#E85D04"/>
-          <stop offset="1" stop-color="#B44500"/>
-        </linearGradient>
-        <linearGradient id="homeCompassGlass" x1="0" x2="1" y1="0" y2="1">
-          <stop offset="0" stop-color="#ffffff" stop-opacity=".22"/>
-          <stop offset="1" stop-color="#ffffff" stop-opacity=".04"/>
-        </linearGradient>
-      </defs>
-      <circle cx="120" cy="122" r="7" fill="#223269"/>
-      <circle cx="220" cy="122" r="7" fill="#223269"/>
-      <circle cx="320" cy="122" r="7" fill="#223269"/>
-      <circle cx="420" cy="122" r="7" fill="#223269"/>
-      <circle cx="520" cy="122" r="7" fill="#223269"/>
-      <circle cx="620" cy="122" r="7" fill="#223269"/>
-      <circle cx="120" cy="220" r="7" fill="#223269"/>
-      <circle cx="220" cy="220" r="7" fill="#223269"/>
-      <circle cx="320" cy="220" r="7" fill="#223269"/>
-      <circle cx="420" cy="220" r="7" fill="#223269"/>
-      <path d="M190 112 160 166h62z" fill="#B44500"/>
-      <path d="M590 430 560 482h62z" fill="#FF9A3C" opacity=".8"/>
-      <circle cx="630" cy="286" r="28" fill="none" stroke="#B44500" stroke-width="6"/>
-      <rect x="190" y="170" width="330" height="330" rx="28" fill="none" stroke="#B44500" stroke-width="6" opacity=".8" transform="rotate(14 355 335)"/>
-      <circle cx="355" cy="335" r="145" fill="none" stroke="#E85D04" stroke-width="6" opacity=".82"/>
-      <circle cx="355" cy="335" r="96" fill="none" stroke="#B44500" stroke-width="3" opacity=".78"/>
-      <path d="M355 198 395 335 355 472 315 335z" fill="url(#homeCompassHot)"/>
-      <path d="M218 335 355 295 492 335 355 375z" fill="#E85D04"/>
-      <path d="M250 276 355 304 433 238 405 343 474 392 355 376 306 454 313 351z" fill="none" stroke="#FF9A3C" stroke-width="4" opacity=".7"/>
-      <circle cx="355" cy="335" r="62" fill="#B44500"/>
-      <circle cx="355" cy="335" r="35" fill="#E85D04"/>
-      <circle cx="355" cy="335" r="18" fill="#FF9A3C"/>
-      <path d="M355 198 377 294 355 315 333 294z" fill="url(#homeCompassGlass)"/>
-      <path d="M218 335 315 315 337 335 315 355z" fill="url(#homeCompassGlass)"/>
-    </svg>
-  </div>
+// Compass-theme ticket banner watermark, ported directly from the supplied mock: a dashed orbit
+// ring, pulsing ring, and swaying needle centered behind the copy/timer, plus a faint dotted
+// travel path under the left-hand text. .home-fest-banner is pinned to the mock's 900:150 aspect
+// ratio (see styles.css) so preserveAspectRatio="none" never has to stretch the circles into
+// ellipses - the container is always proportioned to match this viewBox.
+const homeFestCompassSvg = `
+  <svg class="home-fest-bg" viewBox="0 0 900 150" preserveAspectRatio="none" aria-hidden="true" role="img">
+    <defs>
+      <radialGradient id="homeFestBgGrad" cx="72%" cy="50%" r="75%">
+        <stop offset="0%" stop-color="#1c2650"/>
+        <stop offset="55%" stop-color="#101a3a"/>
+        <stop offset="100%" stop-color="#0A1024"/>
+      </radialGradient>
+      <clipPath id="homeFestBgClip"><rect width="900" height="150"/></clipPath>
+    </defs>
+    <rect width="900" height="150" fill="url(#homeFestBgGrad)"/>
+    <g clip-path="url(#homeFestBgClip)">
+      <g transform="translate(455,80)">
+        <g class="home-fest-dashring"><circle r="70" fill="none" stroke="#E85D04" stroke-width="1" stroke-dasharray="2 8" opacity=".2"/></g>
+        <g class="home-fest-ring"><circle r="55" fill="none" stroke="#E85D04" stroke-width="1" opacity=".15"/></g>
+        <circle r="34" fill="#1a2040" stroke="#E85D04" stroke-width="1" opacity=".5"/>
+        <circle r="27" fill="#1e2450" stroke="#E85D04" stroke-width=".5" opacity=".35"/>
+        <g class="home-fest-compass-group">
+          <polygon points="0,-25 6.5,-6.5 25,0 6.5,6.5 0,25 -6.5,6.5 -25,0 -6.5,-6.5" fill="none" stroke="#FF9A3C" stroke-width="1" opacity=".35" transform="rotate(22.5)"/>
+        </g>
+        <g class="home-fest-needle">
+          <polygon points="0,-25 6.5,-6.5 25,0 6.5,6.5 0,25 -6.5,6.5 -25,0 -6.5,-6.5" fill="#E85D04" opacity=".6"/>
+          <circle r="9" fill="#B44500" opacity=".7"/>
+          <circle r="5.6" fill="#E85D04" opacity=".7"/>
+          <circle r="2.8" fill="#FF9A3C" opacity=".7"/>
+        </g>
+      </g>
+      <path d="M 40 120 Q 150 130 260 105 T 400 82" stroke="#E85D04" stroke-width="1" stroke-dasharray="1 8" fill="none" opacity=".3"/>
+      <circle cx="40" cy="120" r="3" fill="#FF9A3C" opacity=".6"/>
+    </g>
+  </svg>
 `;
 
-// Small festive doodles (music notes, confetti, a star, a streamer) scattered across the full
-// banner width at low opacity - unlike the compass (one focal illustration on the right), this
-// spreads a few lightweight fest motifs behind the copy/countdown so the banner reads as
-// "festival" at a glance without competing with the text for attention.
-const homeFestDoodles = `
-  <div class="home-fest-doodles" aria-hidden="true">
-    <svg viewBox="0 0 1600 260" preserveAspectRatio="none" role="img">
-      <g class="home-fest-doodle-float" style="animation-delay:0s"><text x="470" y="60" font-size="34" fill="#FF9A3C" font-family="Arial" opacity=".5">&#9834;</text></g>
-      <g class="home-fest-doodle-float" style="animation-delay:1.4s"><text x="560" y="150" font-size="26" fill="#E85D04" font-family="Arial" opacity=".4">&#9835;</text></g>
-      <g class="home-fest-doodle-twinkle" style="animation-delay:.3s"><path d="M700 40 706 54 720 56 710 66 712 80 700 73 688 80 690 66 680 56 694 54z" fill="#FF9A3C" opacity=".5"/></g>
-      <g class="home-fest-doodle-twinkle" style="animation-delay:1.1s"><circle cx="770" cy="90" r="5" fill="#E85D04" opacity=".5"/></g>
-      <g class="home-fest-doodle-twinkle" style="animation-delay:.7s"><circle cx="800" cy="60" r="4" fill="#FF9A3C" opacity=".45"/></g>
-      <g class="home-fest-doodle-float" style="animation-delay:.5s"><rect x="820" y="130" width="9" height="15" rx="2" fill="#B44500" opacity=".45" transform="rotate(-20 824 137)"/></g>
-      <g class="home-fest-doodle-float" style="animation-delay:1.8s"><rect x="850" y="40" width="9" height="15" rx="2" fill="#E85D04" opacity=".4" transform="rotate(18 854 47)"/></g>
-      <g class="home-fest-doodle-wiggle"><path d="M900 180c14-20 28-20 42 0s28 20 42 0" fill="none" stroke="#FF9A3C" stroke-width="6" stroke-linecap="round" opacity=".35"/></g>
-      <g class="home-fest-doodle-twinkle" style="animation-delay:1.6s"><circle cx="1000" cy="50" r="4" fill="#E85D04" opacity=".5"/></g>
-      <g class="home-fest-doodle-twinkle" style="animation-delay:.2s"><circle cx="1030" cy="90" r="6" fill="#FF9A3C" opacity=".4"/></g>
-      <g class="home-fest-doodle-twinkle" style="animation-delay:.9s"><path d="M1080 60 1086 74 1100 76 1090 86 1092 100 1080 93 1068 100 1070 86 1060 76 1074 74z" fill="#E85D04" opacity=".4"/></g>
-    </svg>
+const homeFestTickSvg = `<svg viewBox="0 0 10 10"><circle cx="5" cy="5" r="4" fill="none" stroke="#E85D04" stroke-width="1"/><line x1="5" y1="5" x2="5" y2="1.5" stroke="#FF9A3C" stroke-width="1"/></svg>`;
+
+const homeFestTimerMarkup = (label) => `
+  <div class="home-fest-timer" aria-label="Countdown to ${escapeHtml(label)}">
+    <div class="tunit"><strong class="tval" id="homeFestCountdownDays">--</strong><span class="tlabel">Days</span></div>
+    <div class="tsep">${homeFestTickSvg}</div>
+    <div class="tunit"><strong class="tval" id="homeFestCountdownHours">--</strong><span class="tlabel">Hours</span></div>
+    <div class="tsep">${homeFestTickSvg}</div>
+    <div class="tunit"><strong class="tval" id="homeFestCountdownMinutes">--</strong><span class="tlabel">Min</span></div>
+    <div class="tsep">${homeFestTickSvg}</div>
+    <div class="tunit"><strong class="tval" id="homeFestCountdownSeconds">--</strong><span class="tlabel">Sec</span></div>
   </div>
 `;
 
 const renderHomeFestBanner = () => {
   const banner = document.querySelector("#homeFestBanner");
   if (!banner) return;
-  banner.dataset.visitorTheme = getFestVisitorTheme();
-  banner.dataset.compassPosition = getFestVisitorCompassPosition();
   const today = new Date(new Date().toDateString());
   const event = getCampusEvents()
     .filter((item) => isCampusEventBannerActive(item, today))
@@ -18302,26 +18328,22 @@ const renderHomeFestBanner = () => {
     banner.classList.remove("is-hidden");
     const festEvent = { title: getFestName(), date: festDate, time: getFestTime(), venue: getFestVenue() || "GPREC Campus" };
     banner.innerHTML = `
-      ${homeFestDoodles}
-      ${homeFestCompassArt}
-      <div class="home-fest-copy">
-        <p class="eyebrow">Campus Fest</p>
-        <h2>${escapeHtml(festEvent.title)}</h2>
-        <p>Registration opens soon - check back for event details.</p>
-        <div class="home-fest-meta">
-          <span>${formatCampusEventDate(festEvent.date)}</span>
-          <span>${escapeHtml(formatCampusEventTime(festEvent))}</span>
-          <span>${escapeHtml(festEvent.venue)}</span>
+      ${homeFestCompassSvg}
+      <div class="home-fest-overlay">
+        <div class="home-fest-left">
+          <p class="home-fest-tag">Campus Fest</p>
+          <h2 class="home-fest-title">${escapeHtml(festEvent.title)}</h2>
+          <p class="home-fest-subtitle">Registration opens soon - check back for event details.</p>
+          <div class="home-fest-meta">
+            <span><span class="dir">N</span> ${formatCampusEventDate(festEvent.date)}</span>
+            <span><span class="dir">E</span> ${escapeHtml(formatCampusEventTime(festEvent))}</span>
+            <span><span class="dir">S</span> ${escapeHtml(festEvent.venue)}</span>
+          </div>
         </div>
-      </div>
-      <div class="home-fest-side">
-        <div class="home-fest-countdown" aria-label="Countdown to ${escapeHtml(festEvent.title)}">
-          <span><strong id="homeFestCountdownDays">--</strong><small>Days</small></span>
-          <span><strong id="homeFestCountdownHours">--</strong><small>Hours</small></span>
-          <span><strong id="homeFestCountdownMinutes">--</strong><small>Min</small></span>
-          <span><strong id="homeFestCountdownSeconds">--</strong><small>Sec</small></span>
+        <div class="home-fest-right">
+          ${homeFestTimerMarkup(festEvent.title)}
+          <a class="home-fest-cta" href="${gprecPageUrl("event-visitor-dashboard.html")}?view=signup">Register Now</a>
         </div>
-        <a class="home-fest-cta" href="${gprecPageUrl("event-visitor-dashboard.html")}?view=signup">Register Now</a>
       </div>
     `;
     startHomeFestCountdown(festEvent);
@@ -18331,27 +18353,23 @@ const renderHomeFestBanner = () => {
   banner.classList.remove("is-hidden");
   const fee = Number(event.fee) || 0;
   banner.innerHTML = `
-    ${homeFestDoodles}
-    ${homeFestCompassArt}
-    <div class="home-fest-copy">
-      <p class="eyebrow">Campus Fest Registration</p>
-      <h2>${escapeHtml(event.title)}</h2>
-      <p>${escapeHtml(event.description || "Register for the upcoming public campus event and download your pass instantly.")}</p>
-      <div class="home-fest-meta">
-        <span>${formatCampusEventDate(event.date)}</span>
-        <span>${escapeHtml(formatCampusEventTime(event))}</span>
-        <span>${escapeHtml(event.venue || "GPREC Campus")}</span>
-        <span>${fee ? `Rs. ${fee.toLocaleString("en-IN")}` : "Free entry"}</span>
+    ${homeFestCompassSvg}
+    <div class="home-fest-overlay">
+      <div class="home-fest-left">
+        <p class="home-fest-tag">Campus Fest Registration</p>
+        <h2 class="home-fest-title">${escapeHtml(event.title)}</h2>
+        <p class="home-fest-subtitle">${escapeHtml(event.description || "Register for the upcoming public campus event and download your pass instantly.")}</p>
+        <div class="home-fest-meta">
+          <span><span class="dir">N</span> ${formatCampusEventDate(event.date)}</span>
+          <span><span class="dir">E</span> ${escapeHtml(formatCampusEventTime(event))}</span>
+          <span><span class="dir">S</span> ${escapeHtml(event.venue || "GPREC Campus")}</span>
+          <span>${fee ? `Rs. ${fee.toLocaleString("en-IN")}` : "Free entry"}</span>
+        </div>
       </div>
-    </div>
-    <div class="home-fest-side">
-      <div class="home-fest-countdown" aria-label="Countdown to ${escapeHtml(event.title)}">
-        <span><strong id="homeFestCountdownDays">--</strong><small>Days</small></span>
-        <span><strong id="homeFestCountdownHours">--</strong><small>Hours</small></span>
-        <span><strong id="homeFestCountdownMinutes">--</strong><small>Min</small></span>
-        <span><strong id="homeFestCountdownSeconds">--</strong><small>Sec</small></span>
+      <div class="home-fest-right">
+        ${homeFestTimerMarkup(event.title)}
+        <a class="home-fest-cta" href="${gprecPageUrl("event-visitor-dashboard.html")}?eventId=${encodeURIComponent(event.id)}&view=signup">Register Now</a>
       </div>
-      <a class="home-fest-cta" href="${gprecPageUrl("event-visitor-dashboard.html")}?eventId=${encodeURIComponent(event.id)}&view=signup">Register Now</a>
     </div>
   `;
   startHomeFestCountdown(event);
@@ -18394,12 +18412,13 @@ const renderCampusEvents = () => {
 
 renderCampusEvents();
 
-document.querySelector("#campusEventGrid")?.addEventListener("click", (event) => {
-  const button = event.target.closest("[data-campus-event-id]");
-  if (!button) return;
-  const selected = getCampusEvents().find((item) => item.id === button.dataset.campusEventId);
-  if (!selected) return;
-  activeEvent = { id: selected.id, name: selected.title, fee: Number(selected.fee) || 0, date: selected.date, venue: selected.venue, capacity: selected.capacity };
+// Shared by the Campus Events grid's own "Apply Now" buttons and every shortcut into the same
+// flow (spotlight cards' "Register Now" for a public campus event, the Fest's own promo card) -
+// one place that opens #eventApplyForm against a given {id, name, fee, date, venue, capacity} so
+// every entry point produces an identical registration record and downloadable Event Pass.
+const openCampusEventApply = (eventLike) => {
+  if (!eventLike || !eventApplyForm) return false;
+  activeEvent = { id: eventLike.id, name: eventLike.name, fee: Number(eventLike.fee) || 0, date: eventLike.date, venue: eventLike.venue, capacity: eventLike.capacity || null };
   const hasFee = activeEvent.fee > 0;
   if (eventApplyTitle) eventApplyTitle.textContent = activeEvent.name;
   eventFeeRow?.classList.toggle("is-hidden", !hasFee);
@@ -18410,6 +18429,37 @@ document.querySelector("#campusEventGrid")?.addEventListener("click", (event) =>
   eventFeedback?.classList.add("is-hidden");
   eventApplyForm?.classList.remove("is-hidden");
   eventApplyForm?.scrollIntoView({ behavior: "smooth", block: "start" });
+  return true;
+};
+
+document.querySelector("#campusEventGrid")?.addEventListener("click", (event) => {
+  const button = event.target.closest("[data-campus-event-id]");
+  if (!button) return;
+  const selected = getCampusEvents().find((item) => item.id === button.dataset.campusEventId);
+  if (!selected) return;
+  openCampusEventApply({ id: selected.id, name: selected.title, fee: selected.fee, date: selected.date, venue: selected.venue, capacity: selected.capacity });
+});
+
+// Spotlight grid's own "Register Now" shortcuts (a public campus event's card, or the Fest's own
+// promo card from renderDefaultRegistrationNotice) used to always link out to the external Fest
+// visitor portal - a separate signed-out account system meant for outside guests, not someone
+// already signed in here. On a page with its own #eventApplyForm (student dashboard), route
+// through the exact same in-account flow #campusEventGrid's "Apply Now" uses instead, so
+// registering doesn't require creating a second, unrelated account. Pages without that form
+// (faculty/non-teaching/alumni/parent dashboards, which have no student-style apply flow) fall
+// through to the link's own href unchanged.
+spotlightGrid?.addEventListener("click", (event) => {
+  const link = event.target.closest("[data-spotlight-apply-event], [data-spotlight-apply-fest]");
+  if (!link || !eventApplyForm) return;
+  event.preventDefault();
+  if (link.dataset.spotlightApplyFest) {
+    openCampusEventApply({ id: "gprec-fest", name: getFestName(), fee: 0, date: getFestDate(), venue: getFestVenue() });
+    return;
+  }
+  const selected = getCampusEvents().find((item) => item.id === link.dataset.spotlightApplyEvent);
+  if (selected) {
+    openCampusEventApply({ id: selected.id, name: selected.title, fee: selected.fee, date: selected.date, venue: selected.venue, capacity: selected.capacity });
+  }
 });
 
 const saveCampusEventRegistration = ({ paymentType = "Free", paymentReference = "-", paymentStatus = "Registered" } = {}) => {
@@ -18537,30 +18587,2099 @@ const drawFittedCanvasText = (ctx, text, x, y, maxWidth, { maxLines = 2, maxFont
   return { lines: visibleLines.length, lineHeight, height: visibleLines.length * lineHeight };
 };
 
-// Draws a portrait ticket-stub pass - a downloadable PNG, not a PDF, so it can be saved straight
-// to a phone's photo gallery ahead of real Apple/Google Wallet integration (which needs signing
-// credentials this app doesn't have yet). Layout/colors match the "Udaan 2K26" reference design:
-// a navy stub (compass watermark, GPREC logo, QR) on top, a dashed perforation with side notches,
-// then a cream body with the event title and a field grid. All drawing happens in template-pixel
-// units (the same numbers as the original 420-wide HTML mockup) - SCALE below is the only place
-// that turns those into real output pixels, so the layout math elsewhere stays a 1:1 mirror of
-// the mockup's CSS instead of pre-multiplied numbers that are hard to cross-check against it.
-const buildEventTicketImage = async (registration, event) => {
+// Each ticket-stub mockup's own eticket-tag icon (24x24 viewBox path data, transcribed verbatim
+// from the mockup HTML) - ticket for Event Pass, bus for Bus Pass, car for Vehicle Pass, gate
+// for both Hostel passes (their mockup reuses the same gate glyph as the Event Pass' ticket icon).
+const TICKET_ICON_PATHS = {
+  ticket: "M22 10V6a2 2 0 0 0-2-2H4a2 2 0 0 0-2 2v4a2 2 0 0 1 0 4v4a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-4a2 2 0 0 1 0-4zM9 6v2h2V6H9zm0 4v2h2v-2H9zm0 4v2h2v-2H9zm0 4v2h2v-2H9z",
+  bus: "M4 16c0 .88.39 1.67 1 2.22V20a1 1 0 0 0 1 1h1a1 1 0 0 0 1-1v-1h8v1a1 1 0 0 0 1 1h1a1 1 0 0 0 1-1v-1.78c.61-.55 1-1.34 1-2.22V6c0-3.5-3.58-4-8-4s-8 .5-8 4v10zm3.5 1a1.5 1.5 0 1 1 0-3 1.5 1.5 0 0 1 0 3zm9 0a1.5 1.5 0 1 1 0-3 1.5 1.5 0 0 1 0 3zM18 11H6V6h12v5z",
+  car: "M5 11l1.5-4.5A2 2 0 0 1 8.4 5h7.2a2 2 0 0 1 1.9 1.5L19 11h1a1 1 0 0 1 1 1v6a1 1 0 0 1-1 1h-1v1a1 1 0 0 1-1 1h-1a1 1 0 0 1-1-1v-1H7v1a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1v-1H3a1 1 0 0 1-1-1v-6a1 1 0 0 1 1-1h2zm2.4-4L6.3 11h11.4l-1.1-4H7.4zM6 15a1.5 1.5 0 1 0 0-3 1.5 1.5 0 0 0 0 3zm12 0a1.5 1.5 0 1 0 0-3 1.5 1.5 0 0 0 0 3z"
+};
+
+// Shared "festival ticket" card shape (navy stub with QR + dashed perforation + cream body with a
+// field grid + navy footer bar) used by the Event Pass, Bus Pass, Vehicle Pass, and Hostel
+// Outing/Leave Pass - they're all the same template family, differing only in watermark art,
+// eyebrow/tag/title copy, which fields show, and whether the perforation has cut notches (Event
+// Pass's mockup markup includes those two semicircle divs; the pass mockups share the same CSS
+// class but never actually include them, so `showNotches` defaults off).
+// `fields`: [{ label, value, mono, status, fullWidth }] - non-fullWidth fields pair up two per
+// row in reading order; a fullWidth field always starts its own row. `status: true` draws a
+// green dot + green text instead of the normal ink value (for a "STATUS: Active/Approved" field).
+// Shared @font-face declarations for every real-HTML document in this file (the ticket-stub
+// family below, and Pay Slip/Form 16/Hall Ticket/Fee Challan further down) - html2canvas only
+// gets correct space-glyph metrics for a custom font if it can find a real @font-face rule for it
+// in a stylesheet; fonts registered purely via the FontFace API (ensureBrandFontsLoaded's
+// approach, used by every canvas-fillText doc in this file) render with the right glyphs but
+// collapse word spacing under html2canvas specifically. Same URLs, just also declared as
+// @font-face here so html2canvas's own font-metrics lookup finds them. Defined here (before its
+// first user) rather than down near Pay Slip, since TDZ means a `const` can't be referenced by
+// anything defined earlier in the file even via a template-literal interpolation.
+const A4_DOC_FONT_FACES = `
+@font-face{ font-family:'Fraunces'; font-weight:500; src:url('https://fonts.gstatic.com/s/fraunces/v38/6NUh8FyLNQOQZAnv9bYEvDiIdE9Ea92uemAk_WBq8U_9v0c2Wa0K7iN7hzFUPJH58nib1603gg7S2nfgRYIchRuTCf7W.ttf'); }
+@font-face{ font-family:'Fraunces'; font-weight:600; src:url('https://fonts.gstatic.com/s/fraunces/v38/6NUh8FyLNQOQZAnv9bYEvDiIdE9Ea92uemAk_WBq8U_9v0c2Wa0K7iN7hzFUPJH58nib1603gg7S2nfgRYIcaRyTCf7W.ttf'); }
+@font-face{ font-family:'Fraunces'; font-weight:700; src:url('https://fonts.gstatic.com/s/fraunces/v38/6NUh8FyLNQOQZAnv9bYEvDiIdE9Ea92uemAk_WBq8U_9v0c2Wa0K7iN7hzFUPJH58nib1603gg7S2nfgRYIcUByTCf7W.ttf'); }
+@font-face{ font-family:'Space Mono'; font-weight:400; src:url('https://fonts.gstatic.com/s/spacemono/v17/i7dPIFZifjKcF5UAWdDRYEF8QA.ttf'); }
+@font-face{ font-family:'Space Mono'; font-weight:700; src:url('https://fonts.gstatic.com/s/spacemono/v17/i7dMIFZifjKcF5UAWdDRaPpZUFWaGw.ttf'); }
+@font-face{ font-family:'Inter'; font-weight:400; src:url('https://fonts.gstatic.com/s/inter/v20/UcCO3FwrK3iLTeHuS_nVMrMxCp50SjIw2boKoduKmMEVuLyfAZ9hjQ.ttf'); }
+@font-face{ font-family:'Inter'; font-weight:500; src:url('https://fonts.gstatic.com/s/inter/v20/UcCO3FwrK3iLTeHuS_nVMrMxCp50SjIw2boKoduKmMEVuI6fAZ9hjQ.ttf'); }
+@font-face{ font-family:'Inter'; font-weight:600; src:url('https://fonts.gstatic.com/s/inter/v20/UcCO3FwrK3iLTeHuS_nVMrMxCp50SjIw2boKoduKmMEVuGKYAZ9hjQ.ttf'); }
+@font-face{ font-family:'Inter'; font-weight:700; src:url('https://fonts.gstatic.com/s/inter/v20/UcCO3FwrK3iLTeHuS_nVMrMxCp50SjIw2boKoduKmMEVuFuYAZ9hjQ.ttf'); }
+`;
+
+// Real-HTML + native-PDF version of the "Udaan 2K26" reference payment-receipt design (cream
+// card, navy header band, itemized payment table, total bar, amount-in-words, status line,
+// signature line, footer note), matching "25_payment_receipt.html" exactly - replaces the
+// previous canvas port whose hand-measured pixel constants could silently drift from the actual
+// CSS (e.g. the status dot's box-shadow halo got lost that way). Every "GPREC Payment Receipt"
+// download (fee/certificate payments, event registration, payment-history re-download) already
+// builds the same flat "Label: Value" receiptLines array via recordPayment() - this pulls the
+// handful of fields the layout actually has room for (Received From, Roll No., Payment Mode, one
+// payable item, amount) out of that same array, so no caller needs to change.
+const PAYMENT_RECEIPT_CSS = `
+${A4_DOC_FONT_FACES}
+.pr-sheet{
+  --pr-navy-deep:#0a1730; --pr-navy:#0f1f3d; --pr-amber:#e8821a; --pr-amber-soft:#f0a34d;
+  --pr-cream:#faf6ee; --pr-ink:#0f1f3d; --pr-muted:#6b7180; --pr-line:#e3ddd0; --pr-green:#1f7a4d;
+  position:relative; width:440px; background:var(--pr-cream); font-family:'Inter',sans-serif;
+  line-height:normal; overflow:hidden;
+}
+.pr-sheet, .pr-sheet *{ box-sizing:border-box; }
+.pr-watermark-seal{ position:absolute; top:50%; left:50%; transform:translate(-50%,-50%); width:42%; opacity:0.16; mix-blend-mode:multiply; pointer-events:none; }
+.pr-watermark-text{ position:absolute; top:48%; left:50%; transform:translate(-50%,-50%) rotate(-15deg); opacity:0.07; color:var(--pr-navy); font-weight:700; font-size:26px; white-space:nowrap; pointer-events:none; }
+.pr-head{ position:relative; background:linear-gradient(160deg, var(--pr-navy) 0%, var(--pr-navy-deep) 100%); color:var(--pr-cream); padding:24px 28px; display:flex; align-items:center; justify-content:space-between; }
+.pr-head-left{ display:flex; flex-direction:column; align-items:flex-start; gap:6px; }
+.pr-logo-img{ height:22px; width:auto; flex-shrink:0; display:block; }
+.pr-doc-title{ font-family:'Fraunces', serif; font-weight:600; font-size:22px; }
+.pr-receipt-no{ text-align:right; font-family:'Space Mono', monospace; font-size:10.5px; color:var(--pr-amber-soft); letter-spacing:1px; line-height:1.6; }
+.pr-receipt-no b{ display:block; color:var(--pr-cream); font-size:13px; }
+.pr-body{ position:relative; padding:26px 28px 8px; }
+.pr-row-pair{ display:flex; justify-content:space-between; padding-bottom:16px; margin-bottom:18px; border-bottom:1px solid var(--pr-line); }
+.pr-row-pair.pr-no-line{ border-bottom:none; margin-bottom:6px; padding-bottom:0; }
+.pr-k{ font-size:10px; letter-spacing:1.5px; color:var(--pr-amber); text-transform:uppercase; font-weight:700; margin-bottom:4px; }
+.pr-v{ font-size:14px; font-weight:700; color:var(--pr-ink); }
+.pr-field-block{ margin-bottom:16px; }
+.pr-field-block .pr-v{ font-size:15px; }
+.pr-items{ margin-top:6px; border:1px solid var(--pr-line); border-radius:8px; overflow:hidden; }
+.pr-item-row{ display:flex; justify-content:space-between; padding:12px 16px; font-size:14px; }
+.pr-item-row .pr-desc{ color:var(--pr-ink); font-weight:600; }
+.pr-item-row .pr-amt{ font-family:'Space Mono', monospace; font-weight:700; color:var(--pr-ink); }
+.pr-total-row{ background:var(--pr-navy); color:var(--pr-cream); padding:14px 16px; display:flex; justify-content:space-between; align-items:center; }
+.pr-total-row .pr-label{ font-size:12px; letter-spacing:1.5px; text-transform:uppercase; font-weight:700; color:var(--pr-amber-soft); }
+.pr-total-row .pr-amt{ font-family:'Fraunces', serif; font-size:22px; font-weight:700; }
+.pr-in-words{ margin-top:14px; font-size:12.5px; color:var(--pr-muted); font-style:italic; }
+.pr-in-words b{ color:var(--pr-ink); font-style:normal; font-weight:600; }
+.pr-status-line{ margin-top:18px; display:flex; align-items:center; gap:8px; }
+.pr-status-dot{ width:8px; height:8px; border-radius:50%; background:var(--pr-green); box-shadow:0 0 0 3px rgba(31,122,77,0.18); }
+.pr-status-line .pr-status-label{ font-weight:700; font-size:14px; color:var(--pr-green); letter-spacing:0.3px; }
+.pr-sign-area{ margin-top:30px; display:flex; justify-content:flex-end; }
+.pr-sign-block{ text-align:center; width:150px; }
+.pr-sign-line{ border-top:1px solid var(--pr-ink); height:32px; }
+.pr-sign-block .pr-sign-label{ font-size:9.5px; letter-spacing:1.5px; color:var(--pr-muted); text-transform:uppercase; margin-top:5px; }
+.pr-footer{ position:relative; margin-top:22px; padding:14px 28px; background:var(--pr-navy); text-align:center; }
+.pr-footer .pr-note{ font-family:'Space Mono', monospace; font-size:9.5px; letter-spacing:1px; color:rgba(250,246,238,0.6); }
+.pr-bottom-space{ height:22px; }
+`;
+
+const buildPaymentReceiptHtml = ({ receiptNo, paymentDate, paymentTime, name, rollNo, paymentMode, description, amountRaw, wordsText, statusLabel }) => `
+    <div class="pr-sheet">
+      <img class="pr-watermark-seal" src="${gprecSealUrl}" alt="">
+      <div class="pr-watermark-text">GPREC &middot; OFFICIAL DOCUMENT</div>
+      <div class="pr-head">
+        <div class="pr-head-left">
+          <img class="pr-logo-img" src="${gprecLogoUrl}" alt="">
+          <div class="pr-doc-title">Payment Receipt</div>
+        </div>
+        <div class="pr-receipt-no">RECEIPT NO.<b>${escapeHtml(receiptNo)}</b></div>
+      </div>
+      <div class="pr-body">
+        <div class="pr-row-pair">
+          <div><div class="pr-k">Date</div><div class="pr-v">${escapeHtml(paymentDate)}</div></div>
+          <div style="text-align:right;"><div class="pr-k">Time</div><div class="pr-v">${escapeHtml(paymentTime)}</div></div>
+        </div>
+        <div class="pr-field-block">
+          <div class="pr-k">Received From</div>
+          <div class="pr-v">${escapeHtml(name)}</div>
+        </div>
+        <div class="pr-row-pair pr-no-line">
+          <div><div class="pr-k">Roll No.</div><div class="pr-v">${escapeHtml(rollNo)}</div></div>
+          <div style="text-align:right;"><div class="pr-k">Payment Mode</div><div class="pr-v">${escapeHtml(paymentMode)}</div></div>
+        </div>
+        <div class="pr-field-block" style="margin-top:20px;">
+          <div class="pr-k">Payment Details</div>
+        </div>
+        <div class="pr-items">
+          <div class="pr-item-row">
+            <span class="pr-desc">${escapeHtml(description)}</span>
+            <span class="pr-amt">${escapeHtml(amountRaw)}</span>
+          </div>
+          <div class="pr-total-row">
+            <span class="pr-label">Total Paid</span>
+            <span class="pr-amt">${escapeHtml(amountRaw)}</span>
+          </div>
+        </div>
+        <div class="pr-in-words">Amount in words: <b>${escapeHtml(wordsText)}</b></div>
+        <div class="pr-status-line">
+          <span class="pr-status-dot"></span>
+          <span class="pr-status-label">${escapeHtml(statusLabel)}</span>
+        </div>
+        <div class="pr-sign-area">
+          <div class="pr-sign-block">
+            <div class="pr-sign-line"></div>
+            <div class="pr-sign-label">Authorized Signature</div>
+          </div>
+        </div>
+      </div>
+      <div class="pr-footer">
+        <div class="pr-note">THIS IS A COMPUTER-GENERATED RECEIPT &middot; KEEP FOR YOUR RECORDS</div>
+      </div>
+      <div class="pr-bottom-space"></div>
+    </div>
+  `;
+
+const makeReceiptPdf = async (title, receiptLines) => {
   await ensureBrandFontsLoaded();
 
-  const CARD_W = 420;
-  const SCALE = 2.4;
+  const fields = {};
+  receiptLines.filter((line) => !line.startsWith("Note:")).forEach((line) => {
+    const idx = line.indexOf(": ");
+    if (idx !== -1) fields[line.slice(0, idx)] = line.slice(idx + 2);
+  });
 
-  const NAVY_DEEP = "#0a1730";
-  const NAVY = "#0f1f3d";
-  const AMBER = "#e8821a";
-  const AMBER_SOFT = "#f0a34d";
-  const CREAM = "#faf6ee";
-  const RUST = "#7a4430";
-  const INK = "#0f1f3d";
-  const GREEN = "#2fa866";
-  const GREEN_TEXT = "#1f7a4d";
+  const name = fields["Name"] || fields["Participant Name"] || `Student ${fields["Roll Number"] || ""}`.trim();
+  const rollNo = fields["Roll Number"] || "-";
+  const paymentMode = fields["Payment Type"] || "-";
+  const paymentDate = fields["Payment Date"] || "-";
+  const paymentTime = fields["Payment Time"] || "-";
+  const description = fields["Application"] || fields["Event"] || fields["Fee Type"] || title;
+  const amountRaw = fields["Amount Paid"] || fields["Registration Fee"] || "Rs. 0";
+  const amountNum = Number(String(amountRaw).replace(/rs\.?/gi, "").replace(/[^\d.]/g, "")) || 0;
+  const status = fields["Payment Status"] || "Paid";
+  const statusLabel = status === "Paid" ? "Payment Successful" : status;
 
+  const receiptNo = (() => {
+    const source = [rollNo, paymentDate, description, amountRaw].join("|");
+    let hash = 0;
+    for (let i = 0; i < source.length; i += 1) hash = (hash * 31 + source.charCodeAt(i)) >>> 0;
+    return `RC-${new Date().getFullYear()}-${hash.toString(36).toUpperCase().padStart(4, "0").slice(-4)}`;
+  })();
+
+  const wordsText = numberToWordsInr(amountNum);
+
+  const html = buildPaymentReceiptHtml({
+    receiptNo, paymentDate, paymentTime, name, rollNo, paymentMode, description, amountRaw, wordsText, statusLabel
+  });
+
+  // Real Chromium print (pdf_render_server.py, a local Playwright service) is the true
+  // pixel-perfect path - not an approximation like html2canvas, which re-implements text
+  // layout/painting in JS and can never fully match native rendering. Falls back to html2canvas
+  // only if that local server isn't running, so the download button still works either way.
+  const nativePdf = await renderA4DocViaNativePdf(html, PAYMENT_RECEIPT_CSS, ".pr-sheet", title, "#faf6ee");
+  if (nativePdf) return nativePdf;
+
+  const container = document.createElement("div");
+  container.style.cssText = "position:fixed; left:-10000px; top:0; pointer-events:none;";
+  container.innerHTML = `<style>${PAYMENT_RECEIPT_CSS}</style>${html}`;
+  document.body.appendChild(container);
+  try {
+    const sheetEl = container.querySelector(".pr-sheet");
+    const canvas = await html2canvas(sheetEl, { scale: 2.4, backgroundColor: "#faf6ee" });
+    return canvasCardToPdf({ canvas, pageWidth: sheetEl.offsetWidth, pageHeight: sheetEl.offsetHeight }, title);
+  } finally {
+    document.body.removeChild(container);
+  }
+};
+
+// Real-HTML + native-PNG version of the shared "festival ticket" card (navy stub with QR +
+// dashed perforation + cream body with a field grid + navy footer bar) used by the Event Pass,
+// Bus Pass, Vehicle Pass, and Hostel Outing/Leave Pass - they're all the same template family,
+// differing only in watermark art, eyebrow/tag/title copy, which fields show, and whether the
+// perforation has cut notches (only the Event Pass sets showNotches). Matches "22_event_pass.html"
+// (CSS identical to 23_bus_pass.html/24_vehicle_pass.html for these shared elements) exactly -
+// same real-HTML/native-render approach as buildPaySlipImage etc., replacing the previous
+// hand-measured canvas port whose pixel constants could silently drift from the actual CSS.
+const TICKET_STUB_CSS = `
+${A4_DOC_FONT_FACES}
+.ts-card{
+  --ts-navy-deep:#0a1730; --ts-navy:#0f1f3d; --ts-amber:#e8821a; --ts-amber-soft:#f0a34d;
+  --ts-cream:#faf6ee; --ts-ink:#0f1f3d; --ts-green:#2fa866; --ts-green-text:#1f7a4d;
+  position:relative; width:420px; background:var(--ts-cream); border-radius:22px; overflow:hidden;
+  font-family:'Inter', sans-serif; line-height:normal;
+}
+.ts-card, .ts-card *{ box-sizing:border-box; }
+.ts-stub{
+  position:relative; overflow:hidden;
+  background:
+    radial-gradient(circle at 88% 8%, rgba(232,130,26,0.10) 0%, transparent 45%),
+    linear-gradient(160deg, var(--ts-navy) 0%, var(--ts-navy-deep) 100%);
+  padding:26px 28px 38px; color:var(--ts-cream);
+}
+.ts-watermark{ position:absolute; pointer-events:none; }
+.ts-stub-top{ display:flex; align-items:flex-start; justify-content:space-between; position:relative; z-index:2; }
+.ts-logo-img{ height:37px; width:auto; display:block; }
+.ts-eticket-tag{ display:flex; align-items:center; gap:6px; font-family:'Space Mono', monospace; font-size:11px; letter-spacing:2.5px; color:var(--ts-cream); padding-top:4px; }
+.ts-eticket-tag svg{ width:14px; height:14px; fill:var(--ts-amber-soft); }
+.ts-eyebrow{ position:relative; z-index:2; text-align:center; margin-top:22px; font-family:'Space Mono', monospace; font-size:11px; letter-spacing:4px; color:var(--ts-amber-soft); }
+.ts-qr-wrap{ position:relative; z-index:2; margin:22px auto 0; width:210px; height:210px; background:var(--ts-cream); border-radius:14px; padding:14px; box-shadow:0 12px 28px -10px rgba(0,0,0,0.5); }
+.ts-qr-wrap svg{ width:100%; height:100%; display:block; }
+.ts-scan-caption{ position:relative; z-index:2; text-align:center; margin-top:16px; font-family:'Space Mono', monospace; font-size:10px; letter-spacing:3px; color:rgba(250,246,238,0.65); }
+.ts-perf{ position:relative; height:0; }
+.ts-perf::before{ content:""; position:absolute; left:0; right:0; top:-1px; border-top:2px dashed rgba(122,68,48,0.35); }
+.ts-notch{ position:absolute; top:-16px; width:32px; height:32px; background:radial-gradient(ellipse at top, #1a2a4d 0%, #060d1c 65%); border-radius:50%; }
+.ts-notch.ts-left{ left:-16px; }
+.ts-notch.ts-right{ right:-16px; }
+.ts-body{ padding:32px 28px 0; }
+.ts-title{ font-family:'Fraunces', serif; font-weight:600; font-size:34px; line-height:1.05; color:var(--ts-ink); letter-spacing:-0.5px; margin:0; }
+.ts-subtitle{ font-family:'Inter', sans-serif; font-weight:600; font-size:13px; color:#7a4430; margin-top:14px; }
+.ts-rule{ width:52px; height:3px; background:var(--ts-amber); margin:14px 0 26px; border-radius:2px; }
+.ts-grid{ display:grid; grid-template-columns:1fr 1fr; row-gap:22px; column-gap:16px; }
+.ts-field.ts-full{ grid-column:1 / -1; }
+.ts-field label{ display:block; font-family:'Space Mono', monospace; font-size:10px; letter-spacing:2px; color:var(--ts-amber); margin-bottom:5px; }
+.ts-field .ts-value{ font-family:'Inter', sans-serif; font-weight:700; font-size:17px; color:var(--ts-ink); line-height:1.25; }
+.ts-field .ts-value.ts-mono{ font-family:'Space Mono', monospace; font-size:16px; letter-spacing:0.5px; }
+.ts-status-pill{ display:inline-flex; align-items:center; gap:6px; font-weight:700; font-size:15px; color:var(--ts-green-text); }
+.ts-status-pill::before{ content:""; width:7px; height:7px; border-radius:50%; background:var(--ts-green); box-shadow:0 0 0 3px rgba(47,168,102,0.2); }
+.ts-footer{ margin:28px 28px 0; display:flex; align-items:center; justify-content:space-between; background:var(--ts-navy); border-radius:10px; padding:14px 18px; }
+.ts-footer{ gap:12px; }
+.ts-footer span{ font-family:'Space Mono', monospace; font-size:10px; letter-spacing:1px; color:var(--ts-amber-soft); white-space:nowrap; }
+.ts-footer span.ts-admit{ color:var(--ts-cream); }
+.ts-bottom-space{ height:28px; }
+`;
+
+// Each mockup's own decorative background line-art (200x200 viewBox, orange strokes/fills) -
+// transcribed verbatim from the reference HTML (compass is literally copied from
+// "22_event_pass.html"'s own `.compass` svg) or the prior canvas version's bctx path calls
+// (shield/target/route, which drew the identical shapes as canvas primitives before this redesign).
+const TICKET_WATERMARKS = {
+  compass: `<svg viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg">
+    <circle cx="100" cy="100" r="95" fill="none" stroke="#e8821a" stroke-width="1"/>
+    <circle cx="100" cy="100" r="70" fill="none" stroke="#e8821a" stroke-width="1"/>
+    <g stroke="#e8821a" stroke-width="1">
+      <line x1="100" y1="5" x2="100" y2="195"/>
+      <line x1="5" y1="100" x2="195" y2="100"/>
+      <line x1="30" y1="30" x2="170" y2="170"/>
+      <line x1="170" y1="30" x2="30" y2="170"/>
+    </g>
+    <polygon points="100,20 112,100 100,180 88,100" fill="#e8821a"/>
+    <polygon points="20,100 100,88 180,100 100,112" fill="#e8821a" opacity="0.6"/>
+    <circle cx="100" cy="100" r="10" fill="#e8821a"/>
+  </svg>`,
+  shield: `<svg viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg">
+    <path d="M100,10 L170,35 L170,95 C170,145 140,175 100,195 C60,175 30,145 30,95 L30,35 Z" fill="none" stroke="#e8821a" stroke-width="1.2"/>
+    <path d="M100,30 L152,50 L152,95 C152,133 130,156 100,172 C70,156 48,133 48,95 L48,50 Z" fill="none" stroke="#e8821a" stroke-width="1"/>
+    <line x1="100" y1="30" x2="100" y2="172" stroke="#e8821a" stroke-width="0.8"/>
+    <line x1="48" y1="90" x2="152" y2="90" stroke="#e8821a" stroke-width="0.8"/>
+    <circle cx="100" cy="90" r="18" fill="#e8821a" opacity="0.6"/>
+  </svg>`,
+  target: `<svg viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg">
+    <circle cx="100" cy="100" r="95" fill="none" stroke="#e8821a" stroke-width="1"/>
+    <circle cx="100" cy="100" r="60" fill="none" stroke="#e8821a" stroke-width="1.5"/>
+    <circle cx="100" cy="100" r="10" fill="#e8821a"/>
+    <g stroke="#e8821a" stroke-width="4" stroke-linecap="round">
+      <line x1="100" y1="45" x2="100" y2="65"/>
+      <line x1="100" y1="135" x2="100" y2="155"/>
+      <line x1="45" y1="100" x2="65" y2="100"/>
+      <line x1="135" y1="100" x2="155" y2="100"/>
+      <line x1="61" y1="61" x2="75" y2="75"/>
+      <line x1="125" y1="125" x2="139" y2="139"/>
+      <line x1="139" y1="61" x2="125" y2="75"/>
+      <line x1="75" y1="125" x2="61" y2="139"/>
+    </g>
+  </svg>`,
+  route: `<svg viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg">
+    <circle cx="100" cy="100" r="95" fill="none" stroke="#e8821a" stroke-width="1"/>
+    <path d="M20,130 C60,100 80,160 120,130 C150,108 165,130 185,118" fill="none" stroke="#e8821a" stroke-width="2" stroke-linecap="round" stroke-dasharray="6 7"/>
+    <circle cx="20" cy="130" r="6" fill="#e8821a"/>
+    <circle cx="185" cy="118" r="6" fill="#e8821a"/>
+    <circle cx="100" cy="55" r="3" fill="#e8821a"/>
+    <circle cx="130" cy="55" r="3" fill="#e8821a"/>
+    <circle cx="160" cy="55" r="3" fill="#e8821a"/>
+  </svg>`
+};
+
+// Portrait ID-card family (Temp ID / fest-Volunteer vertical): matches "28_temp_id_card.html" and
+// "29_volunteer_id_card.html" exactly - those two mockups are pixel-identical in CSS/structure,
+// differing only in copy, so one template covers both. `.pid-crest` reuses TICKET_WATERMARKS.compass
+// verbatim (that svg is byte-identical to these mockups' own `.crest-mark`).
+const PORTRAIT_ID_CSS = `
+${A4_DOC_FONT_FACES}
+.pid-card{
+  --pid-navy-deep:#0a1730; --pid-navy:#0f1f3d; --pid-navy-soft:#16294d; --pid-amber:#e8821a; --pid-amber-soft:#f0a34d;
+  --pid-cream:#faf6ee; --pid-ink:#0f1f3d; --pid-muted:#6b7180; --pid-line:#e3ddd0;
+  position:relative; width:360px; background:var(--pid-cream); border-radius:24px; overflow:hidden;
+  font-family:'Inter', sans-serif; line-height:normal;
+}
+.pid-card, .pid-card *{ box-sizing:border-box; }
+
+.pid-head{ background:linear-gradient(150deg, var(--pid-navy) 0%, var(--pid-navy-deep) 100%); color:var(--pid-cream); padding:22px 24px 58px; position:relative; overflow:hidden; }
+.pid-crest{ position:absolute; right:-56px; top:-40px; width:190px; height:190px; opacity:0.12; pointer-events:none; }
+.pid-crest svg{ width:100%; height:100%; display:block; }
+.pid-head-row{ display:flex; align-items:flex-start; justify-content:space-between; position:relative; z-index:2; }
+.pid-logo-img{ height:28px; width:auto; display:block; }
+.pid-chip{ display:flex; align-items:center; gap:5px; font-family:'Space Mono', monospace; font-size:10px; letter-spacing:2px; color:var(--pid-cream); align-self:flex-start; padding-top:6px; }
+.pid-chip svg{ width:13px; height:13px; fill:var(--pid-amber-soft); flex-shrink:0; }
+.pid-org{ position:relative; z-index:2; margin-top:18px; font-size:11px; letter-spacing:1.8px; text-transform:uppercase; color:var(--pid-amber-soft); font-weight:700; }
+.pid-card-title{ position:relative; z-index:2; font-family:'Fraunces', serif; font-weight:600; font-size:23px; margin-top:5px; }
+
+.pid-identity{ position:relative; z-index:3; padding:0 24px; margin-top:-42px; }
+.pid-photo-wrap{ width:92px; height:110px; background:var(--pid-cream); border-radius:14px; padding:5px; box-shadow:0 12px 24px -8px rgba(0,0,0,0.4); flex-shrink:0; }
+.pid-photo-inner{ width:100%; height:100%; border-radius:10px; border:1.4px dashed #c9b98a; display:flex; align-items:center; justify-content:center; overflow:hidden; color:#0f1f3d; font-weight:700; font-size:26px; font-family:'Inter', sans-serif; background:#dcd3c2; }
+.pid-photo-inner img{ width:100%; height:100%; object-fit:cover; display:block; }
+.pid-who{ margin-top:14px; }
+.pid-name{ font-family:'Fraunces', serif; font-weight:700; font-size:23px; color:var(--pid-ink); line-height:1.15; }
+.pid-role{ font-size:11px; font-weight:700; letter-spacing:1.5px; text-transform:uppercase; color:var(--pid-amber); margin-top:5px; }
+
+.pid-details{ padding:22px 24px 0; }
+.pid-row{ display:flex; justify-content:space-between; align-items:baseline; padding:10px 0; border-bottom:1px dashed var(--pid-line); }
+.pid-row:last-child{ border-bottom:none; }
+.pid-row .k{ font-family:'Space Mono', monospace; font-size:9px; letter-spacing:1.8px; color:var(--pid-muted); text-transform:uppercase; }
+.pid-row .v{ font-weight:700; font-size:14px; color:var(--pid-ink); text-align:right; }
+.pid-row .v.mono{ font-family:'Space Mono', monospace; font-size:13px; }
+
+.pid-notice{ margin:16px 24px 0; background:rgba(232,130,26,0.08); border:1px solid rgba(232,130,26,0.35); border-left:4px solid var(--pid-amber); border-radius:10px; padding:12px 14px; }
+.pid-notice b{ display:block; font-family:'Space Mono', monospace; font-size:9px; letter-spacing:1.8px; text-transform:uppercase; color:var(--pid-amber); margin-bottom:4px; }
+.pid-notice p{ margin:0; font-size:11.5px; color:var(--pid-ink); line-height:1.55; }
+
+.pid-footer{ margin-top:20px; background:var(--pid-navy); padding:14px 24px; display:flex; justify-content:space-between; align-items:center; }
+.pid-footer .k{ font-family:'Space Mono', monospace; font-size:8.5px; letter-spacing:1.8px; color:rgba(250,246,238,0.55); }
+.pid-footer .v{ font-family:'Space Mono', monospace; font-size:12px; font-weight:700; letter-spacing:1px; color:var(--pid-amber-soft); margin-top:3px; }
+.pid-footer .issued{ text-align:right; }
+`;
+
+const buildPortraitIdHtml = ({
+  chipText, orgText, cardTitle, cardName, roleText, photoUrl, infoFields,
+  noticeHeading, noticeText, footerLeftLabel, footerLeftValue, footerRightLabel, footerRightValue,
+  logoUrl = gprecLogoUrl
+}) => {
+  const initials = (cardName || "S").split(/\s+/).filter(Boolean).slice(0, 2).map((w) => w[0]).join("").toUpperCase();
+  const photoInner = photoUrl ? `<img src="${photoUrl}" alt="">` : escapeHtml(initials);
+  const rowsHtml = (infoFields || []).map(([label, value, mono]) => `
+    <div class="pid-row">
+      <span class="k">${escapeHtml(label)}</span>
+      <span class="v${mono ? " mono" : ""}">${escapeHtml(value || "-")}</span>
+    </div>`).join("");
+
+  return `
+    <div class="pid-card">
+      <div class="pid-head">
+        <div class="pid-crest">${TICKET_WATERMARKS.compass}</div>
+        <div class="pid-head-row">
+          <img class="pid-logo-img" src="${logoUrl}" alt="">
+          <div class="pid-chip">
+            <svg viewBox="0 0 24 24"><path d="${TICKET_ICON_PATHS.ticket}"/></svg>
+            ${escapeHtml(chipText)}
+          </div>
+        </div>
+        <div class="pid-org">${escapeHtml(orgText)}</div>
+        <div class="pid-card-title">${escapeHtml(cardTitle)}</div>
+      </div>
+      <div class="pid-identity">
+        <div class="pid-photo-wrap">
+          <div class="pid-photo-inner">${photoInner}</div>
+        </div>
+        <div class="pid-who">
+          <div class="pid-name">${escapeHtml(cardName || "Student")}</div>
+          <div class="pid-role">${escapeHtml((roleText || "Student").toUpperCase())}</div>
+        </div>
+      </div>
+      <div class="pid-details">${rowsHtml}</div>
+      <div class="pid-notice">
+        <b>${escapeHtml((noticeHeading || "").toUpperCase())}</b>
+        <p>${escapeHtml(noticeText || "-")}</p>
+      </div>
+      <div class="pid-footer">
+        <div>
+          <div class="k">${escapeHtml((footerLeftLabel || "").toUpperCase())}</div>
+          <div class="v">${escapeHtml((footerLeftValue || "-").toUpperCase())}</div>
+        </div>
+        <div class="issued">
+          <div class="k">${escapeHtml((footerRightLabel || "").toUpperCase())}</div>
+          <div class="v">${escapeHtml((footerRightValue || "-").toUpperCase())}</div>
+        </div>
+      </div>
+    </div>
+  `;
+};
+
+// Horizontal fest-Volunteer ID (CR80 card, 432x272): matches
+// "38_volunteer_id_card_horizontal.html" exactly. Its `.crest-mark` is a simpler variant of the
+// portrait cards' compass (two rings, a cross with no diagonals, one polygon, one center circle -
+// no second faint polygon), transcribed verbatim rather than reused from TICKET_WATERMARKS.
+const VOLUNTEER_HORIZ_WATERMARK_SVG = `<svg viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg">
+  <circle cx="100" cy="100" r="95" fill="none" stroke="#e8821a" stroke-width="1"/>
+  <circle cx="100" cy="100" r="70" fill="none" stroke="#e8821a" stroke-width="1"/>
+  <g stroke="#e8821a" stroke-width="1">
+    <line x1="100" y1="5" x2="100" y2="195"/>
+    <line x1="5" y1="100" x2="195" y2="100"/>
+  </g>
+  <polygon points="100,20 112,100 100,180 88,100" fill="#e8821a"/>
+  <circle cx="100" cy="100" r="10" fill="#e8821a"/>
+</svg>`;
+
+const VOLUNTEER_ID_HORIZ_CSS = `
+${A4_DOC_FONT_FACES}
+.vh-card{
+  --vh-navy-deep:#0a1730; --vh-navy:#0f1f3d; --vh-amber:#e8821a; --vh-amber-soft:#f0a34d;
+  --vh-cream:#faf6ee; --vh-ink:#0f1f3d; --vh-muted:#6b7180; --vh-line:#e3ddd0;
+  position:relative; width:432px; height:272px; background:var(--vh-cream); border-radius:16px; overflow:hidden;
+  display:flex; font-family:'Inter', sans-serif; line-height:normal;
+}
+.vh-card, .vh-card *{ box-sizing:border-box; }
+
+.vh-left{ position:relative; width:150px; flex-shrink:0; background:linear-gradient(160deg, var(--vh-navy) 0%, var(--vh-navy-deep) 100%); color:var(--vh-cream); padding:16px 14px; display:flex; flex-direction:column; align-items:center; overflow:hidden; }
+.vh-crest{ position:absolute; left:-50px; bottom:-50px; width:180px; height:180px; opacity:0.12; pointer-events:none; }
+.vh-crest svg{ width:100%; height:100%; display:block; }
+
+.vh-logo-img{ position:relative; z-index:2; height:24px; width:auto; display:block; }
+
+.vh-photo-wrap{ position:relative; z-index:2; margin-top:12px; width:96px; height:112px; background:var(--vh-cream); border-radius:10px; padding:4px; box-shadow:0 8px 18px -6px rgba(0,0,0,0.5); }
+.vh-photo-inner{ width:100%; height:100%; border-radius:7px; border:1.3px dashed #c9b98a; display:flex; align-items:center; justify-content:center; overflow:hidden; color:#0f1f3d; font-weight:700; font-size:24px; font-family:'Inter', sans-serif; background:#dcd3c2; }
+.vh-photo-inner img{ width:100%; height:100%; object-fit:cover; display:block; }
+
+.vh-id-tag{ position:relative; z-index:2; margin-top:auto; padding-top:10px; display:flex; align-items:center; gap:5px; font-family:'Space Mono', monospace; font-size:8.5px; letter-spacing:1.8px; color:rgba(250,246,238,0.75); }
+.vh-id-tag svg{ width:11px; height:11px; fill:var(--vh-amber-soft); flex-shrink:0; }
+
+.vh-right{ flex:1; padding:16px 22px 14px; display:flex; flex-direction:column; }
+.vh-eyebrow{ font-family:'Space Mono', monospace; font-size:9px; letter-spacing:2.2px; color:var(--vh-amber); font-weight:700; }
+.vh-name{ font-family:'Fraunces', serif; font-weight:700; font-size:20px; color:var(--vh-ink); margin-top:6px; line-height:1.12; }
+.vh-role{ font-size:9.5px; font-weight:700; letter-spacing:1.3px; text-transform:uppercase; color:var(--vh-amber); margin-top:4px; }
+
+.vh-info-list{ flex:1; margin-top:10px; }
+.vh-row{ display:flex; justify-content:space-between; align-items:baseline; padding:5px 0; border-bottom:1px dashed var(--vh-line); }
+.vh-row:last-child{ border-bottom:none; }
+.vh-row .k{ font-family:'Space Mono', monospace; font-size:8.5px; letter-spacing:1.5px; color:var(--vh-muted); text-transform:uppercase; }
+.vh-row .v{ font-weight:700; font-size:12px; color:var(--vh-ink); text-align:right; }
+.vh-row .v.mono{ font-family:'Space Mono', monospace; font-size:11.5px; }
+
+.vh-validity{ display:flex; justify-content:space-between; align-items:center; background:var(--vh-navy); border-radius:8px; padding:8px 14px; margin-top:8px; }
+.vh-validity .slot .k{ font-family:'Space Mono', monospace; font-size:7px; letter-spacing:1.5px; color:rgba(250,246,238,0.55); }
+.vh-validity .slot .v{ font-family:'Space Mono', monospace; font-size:10.5px; font-weight:700; letter-spacing:0.5px; color:var(--vh-amber-soft); margin-top:2px; }
+.vh-validity .slot.right{ text-align:right; }
+`;
+
+const buildVolunteerIdHorizontalHtml = ({ eyebrow, name, role, infoFields, validFrom, validTill, photoUrl, logoUrl = gprecLogoUrl }) => {
+  const initials = (name || "V").split(/\s+/).filter(Boolean).slice(0, 2).map((w) => w[0]).join("").toUpperCase();
+  const photoInner = photoUrl ? `<img src="${photoUrl}" alt="">` : escapeHtml(initials);
+  const rowsHtml = (infoFields || []).map(([label, value, mono]) => `
+    <div class="vh-row">
+      <span class="k">${escapeHtml(label)}</span>
+      <span class="v${mono ? " mono" : ""}">${escapeHtml(value || "-")}</span>
+    </div>`).join("");
+
+  return `
+    <div class="vh-card">
+      <div class="vh-left">
+        <div class="vh-crest">${VOLUNTEER_HORIZ_WATERMARK_SVG}</div>
+        <img class="vh-logo-img" src="${logoUrl}" alt="">
+        <div class="vh-photo-wrap"><div class="vh-photo-inner">${photoInner}</div></div>
+        <div class="vh-id-tag">
+          <svg viewBox="0 0 24 24"><path d="${TICKET_ICON_PATHS.ticket}"/></svg>
+          VOLUNTEER
+        </div>
+      </div>
+      <div class="vh-right">
+        <div class="vh-eyebrow">${escapeHtml(eyebrow)}</div>
+        <div class="vh-name">${escapeHtml(name || "Volunteer")}</div>
+        <div class="vh-role">${escapeHtml(role || "Volunteer")}</div>
+        <div class="vh-info-list">${rowsHtml}</div>
+        <div class="vh-validity">
+          <div class="slot">
+            <div class="k">VALID FROM</div>
+            <div class="v">${escapeHtml((validFrom || "-").toUpperCase())}</div>
+          </div>
+          <div class="slot right">
+            <div class="k">VALID TILL</div>
+            <div class="v">${escapeHtml((validTill || "-").toUpperCase())}</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  `;
+};
+
+// Real QR (not decorative) as an inline SVG - merges adjacent dark modules in the same row into
+// one wide <rect> (same run-length approach as buildFeeChallanBarcodeSvg) instead of one <rect>
+// per module.
+const buildTicketQrSvg = (text, size) => {
+  const qr = qrcode(0, "H");
+  qr.addData(text);
+  qr.make();
+  const n = qr.getModuleCount();
+  const cell = size / n;
+  const rects = [];
+  for (let row = 0; row < n; row++) {
+    let runStart = null;
+    for (let col = 0; col <= n; col++) {
+      const dark = col < n && qr.isDark(row, col);
+      if (dark) {
+        if (runStart === null) runStart = col;
+      } else if (runStart !== null) {
+        const x = (runStart * cell).toFixed(2);
+        const w = ((col - runStart) * cell).toFixed(2);
+        rects.push(`<rect x="${x}" y="${(row * cell).toFixed(2)}" width="${w}" height="${(cell + 0.5).toFixed(2)}" fill="#0f1f3d"/>`);
+        runStart = null;
+      }
+    }
+  }
+  return `<svg width="${size}" height="${size}" viewBox="0 0 ${size} ${size}" xmlns="http://www.w3.org/2000/svg"><rect width="${size}" height="${size}" fill="#faf6ee"/>${rects.join("")}</svg>`;
+};
+
+const buildTicketStubHtml = ({
+  eyebrow, scanCaption, tag, tagIconPath, qrText, logoUrl = gprecLogoUrl,
+  title, subtitle, fields, footerLeft, footerRight, showNotches = false,
+  watermarkSvg = null, watermarkSize = 220, watermarkOpacity = 0.14
+}) => {
+  const qrSvg = buildTicketQrSvg(qrText, 182);
+  const fieldsHtml = (fields || []).map((f) => {
+    const cls = `ts-field${f.fullWidth ? " ts-full" : ""}`;
+    if (f.status) {
+      return `<div class="${cls}"><label>${escapeHtml(f.label)}</label><div class="ts-status-pill">${escapeHtml(f.value || "-")}</div></div>`;
+    }
+    const valCls = f.mono ? "ts-value ts-mono" : "ts-value";
+    return `<div class="${cls}"><label>${escapeHtml(f.label)}</label><div class="${valCls}">${escapeHtml(f.value || "-")}</div></div>`;
+  }).join("");
+
+  return `
+    <div class="ts-card">
+      <div class="ts-stub">
+        ${watermarkSvg ? `<div class="ts-watermark" style="width:${watermarkSize}px;height:${watermarkSize}px;right:${160 - watermarkSize}px;bottom:${160 - watermarkSize}px;opacity:${watermarkOpacity};">${watermarkSvg}</div>` : ""}
+        <div class="ts-stub-top">
+          <img class="ts-logo-img" src="${logoUrl}" alt="">
+          <div class="ts-eticket-tag">
+            ${tagIconPath ? `<svg viewBox="0 0 24 24"><path d="${tagIconPath}"/></svg>` : ""}
+            ${escapeHtml(tag)}
+          </div>
+        </div>
+        <div class="ts-eyebrow">${escapeHtml(eyebrow)}</div>
+        <div class="ts-qr-wrap">${qrSvg}</div>
+        <div class="ts-scan-caption">${escapeHtml(scanCaption)}</div>
+      </div>
+      <div class="ts-perf">${showNotches ? `<div class="ts-notch ts-left"></div><div class="ts-notch ts-right"></div>` : ""}</div>
+      <div class="ts-body">
+        <div class="ts-title">${escapeHtml(title || "GPREC")}</div>
+        ${subtitle ? `<div class="ts-subtitle">${escapeHtml(subtitle)}</div>` : ""}
+        <div class="ts-rule"></div>
+        <div class="ts-grid">${fieldsHtml}</div>
+        <div class="ts-footer">
+          <span>${escapeHtml(footerLeft)}</span>
+          <span class="ts-admit">${escapeHtml(footerRight)}</span>
+        </div>
+      </div>
+      <div class="ts-bottom-space"></div>
+    </div>
+  `;
+};
+
+// `fields`: [{ label, value, mono, status, fullWidth }] - non-fullWidth fields pair up two per
+// row via CSS Grid; `fullWidth` spans the full row width (`grid-column:1/-1`). `status: true`
+// draws a green dot + green text instead of the normal ink value. `watermarkSvg` is one of
+// TICKET_WATERMARKS (or omitted for none, e.g. the two Hostel passes... no, those use `shield`);
+// `showWatermark`/`drawBackgroundArt` (the pre-redesign params) are gone - every real caller
+// already set showWatermark:false (the seal-JPEG anti-fraud overlay never actually applied to any
+// of these PNG-output ticket-stub docs), so there was nothing left for that flag to do.
+const renderTicketStubCard = async ({
+  eyebrow, scanCaption, tag, tagIconPath, qrText, logoUrl = gprecLogoUrl,
+  title, subtitle, fields, footerLeft, footerRight, showNotches = false,
+  watermarkSvg = null, watermarkSize = 220, watermarkOpacity = 0.14
+}) => {
+  await ensureBrandFontsLoaded();
+  const html = buildTicketStubHtml({
+    eyebrow, scanCaption, tag, tagIconPath, qrText, logoUrl, title, subtitle, fields,
+    footerLeft, footerRight, showNotches, watermarkSvg, watermarkSize, watermarkOpacity
+  });
+
+  const nativePng = await renderA4DocViaNativePng(html, TICKET_STUB_CSS, ".ts-card", 420, 2.4);
+  if (nativePng) return nativePng;
+
+  const container = document.createElement("div");
+  container.style.cssText = "position:fixed; left:-10000px; top:0; pointer-events:none;";
+  container.innerHTML = `<style>${TICKET_STUB_CSS}</style>${html}`;
+  document.body.appendChild(container);
+  try {
+    const cardEl = container.querySelector(".ts-card");
+    const canvas = await html2canvas(cardEl, { scale: 2.4, backgroundColor: null });
+    return new Promise((resolve) => canvas.toBlob(resolve, "image/png"));
+  } finally {
+    document.body.removeChild(container);
+  }
+};
+
+// Shared canvas -> JPEG Uint8Array conversion, same toBlob/arrayBuffer pattern used throughout
+// this file's other PDF-embedded-image code (loadImageAsJpegBytes) - factored out here so every
+// ticket-stub-family document wrapping its canvas into a PDF doesn't repeat it.
+const canvasToJpegBytes = (canvas, quality = 0.95) =>
+  new Promise((resolve, reject) => {
+    canvas.toBlob(
+      (blob) => {
+        if (!blob) {
+          reject(new Error("toBlob failed"));
+          return;
+        }
+        blob.arrayBuffer().then((buffer) => resolve(new Uint8Array(buffer))).catch(reject);
+      },
+      "image/jpeg",
+      quality
+    );
+  });
+
+// Short readable pass code for the ticket-stub docs that don't already have their own ID concept
+// (Bus/Vehicle Pass) - same deterministic short-hash approach as buildEventTicketImage's
+// makeTicketCode, so re-downloading the same approved pass always shows the same code.
+const makeShortPassId = (prefix, parts) => {
+  const source = parts.filter(Boolean).join("|");
+  let hash = 0;
+  for (let i = 0; i < source.length; i += 1) hash = (hash * 31 + source.charCodeAt(i)) >>> 0;
+  return `${prefix}-${hash.toString(36).toUpperCase().padStart(6, "0").slice(-6)}`;
+};
+
+const A4_DOC_COLORS = {
+  NAVY_DEEP: "#0a1730",
+  NAVY: "#0f1f3d",
+  AMBER: "#e8821a",
+  AMBER_SOFT: "#f0a34d",
+  CREAM: "#faf6ee",
+  INK: "#0f1f3d",
+  MUTED: "#6b7180",
+  LINE: "#e3ddd0"
+};
+const a4DocRoundedRectPath = (ctx, x, y, w, h, r) => {
+  const rr = Math.min(r, w / 2, h / 2);
+  ctx.beginPath();
+  ctx.moveTo(x + rr, y);
+  ctx.arcTo(x + w, y, x + w, y + h, rr);
+  ctx.arcTo(x + w, y + h, x, y + h, rr);
+  ctx.arcTo(x, y + h, x, y, rr);
+  ctx.arcTo(x, y, x + w, y, rr);
+  ctx.closePath();
+};
+
+// Shared header band (logo + org name + doc number, top right) for the A4-sheet document family
+// (Pay Slip, Form 16) - matches "34_pay_slip.html"/"35_form_16.html"'s identical header chrome.
+const drawA4DocHeader = async (ctx, cardW, docNoLabel, docNo, sizes = {}) => {
+  const { orgNameSize = 15, orgSubSize = 9.5, docNoLabelSize = 10, docNoSize = 14, padX = 32 } = sizes;
+  const { NAVY, NAVY_DEEP, AMBER_SOFT, CREAM } = A4_DOC_COLORS;
+  const headH = 78;
+  const headGrad = ctx.createLinearGradient(0, 0, cardW * 0.5, headH);
+  headGrad.addColorStop(0, NAVY);
+  headGrad.addColorStop(1, NAVY_DEEP);
+  ctx.fillStyle = headGrad;
+  ctx.fillRect(0, 0, cardW, headH);
+
+  const logoImg = new Image();
+  await new Promise((resolve) => {
+    logoImg.onload = resolve;
+    logoImg.onerror = resolve;
+    logoImg.src = gprecLogoUrl;
+  });
+  // Logo beside a two-line org name + department (matching the mockup's `.org-name`/`.org-sub`
+  // hierarchy - a single plain line loses the bold-college-name/muted-subtitle distinction).
+  let textX = padX;
+  if (logoImg.naturalWidth) {
+    const logoH = 26;
+    const logoW = (logoH * logoImg.naturalWidth) / logoImg.naturalHeight;
+    ctx.drawImage(logoImg, padX, (headH - logoH) / 2, logoW, logoH);
+    textX = padX + logoW + 14;
+  }
+  ctx.fillStyle = CREAM;
+  ctx.font = `700 ${orgNameSize}px Fraunces`;
+  ctx.fillText("G Pulla Reddy Engineering College", textX, 38);
+  ctx.fillStyle = "rgba(250,246,238,0.65)";
+  ctx.font = `400 ${orgSubSize}px Inter`;
+  ctx.fillText("Human Resources Department", textX, 56);
+
+  ctx.textAlign = "right";
+  ctx.fillStyle = AMBER_SOFT;
+  ctx.font = `700 ${docNoLabelSize}px 'Space Mono'`;
+  ctx.fillText(docNoLabel, cardW - padX, 32);
+  ctx.font = `700 ${docNoSize}px 'Space Mono'`;
+  ctx.fillStyle = CREAM;
+  ctx.fillText(docNo, cardW - padX, 52);
+  ctx.textAlign = "left";
+  return headH;
+};
+
+// Shared footer bar for the A4-sheet document family.
+const drawA4DocFooter = (ctx, cardW, y, text, fontSize = 10) => {
+  const { NAVY } = A4_DOC_COLORS;
+  const h = 32;
+  ctx.fillStyle = NAVY;
+  ctx.fillRect(0, y, cardW, h);
+  ctx.fillStyle = "rgba(250,246,238,0.6)";
+  ctx.textAlign = "center";
+  ctx.font = `400 ${fontSize}px 'Space Mono'`;
+  ctx.fillText(text, cardW / 2, y + h / 2 + 3);
+  ctx.textAlign = "left";
+  return h;
+};
+
+// Builds the muted-label/bold-value segments for the pay slip's bank line, matching
+// "34_pay_slip.html"'s `.bank-line b` styling (plain muted text with bold ink values) - shared
+// by both the staff and faculty pay slip forms so the mask/date formatting stays identical.
+const buildPaySlipBankLineParts = (bankDetails) => {
+  if (!bankDetails?.accountNumber) return [{ text: "Bank details not on file", bold: false }];
+  const paymentDate = new Date().toLocaleDateString("en-IN", { day: "2-digit", month: "short", year: "numeric" });
+  return [
+    { text: "Paid to Bank A/c: ", bold: false },
+    { text: maskAccountNumber(bankDetails.accountNumber), bold: true },
+    { text: " · Bank: ", bold: false },
+    { text: bankDetails.bankName || "-", bold: true },
+    { text: " · Payment Date: ", bold: false },
+    { text: paymentDate, bold: true }
+  ];
+};
+
+// Renders real markup (not a hand-drawn canvas reimplementation) through html2canvas so pay-slip
+// output can never drift from its HTML/CSS source of truth - every earlier canvas port of
+// "34_pay_slip.html" quietly missed some property (a color, a font-weight, a border-radius) that
+// only showed up on side-by-side comparison. All class names are "ps-" prefixed and the design
+// tokens live on .ps-sheet itself (not :root) so this can't leak into or collide with styles.css,
+// which already defines --navy/--ink/--muted/--line/--green at the document root with different
+// values. The container renders off-screen (position:fixed, far off left) so html2canvas can lay
+// it out at full size without it ever being visible in the live page. (A4_DOC_FONT_FACES, shared
+// by every one of these real-HTML documents including the ticket-stub family, is defined earlier
+// in the file, above TICKET_STUB_CSS, since that's the first one that needs it.)
+const PAY_SLIP_CSS = `
+${A4_DOC_FONT_FACES}
+.ps-sheet{
+  --ps-navy-deep:#0a1730; --ps-navy:#0f1f3d; --ps-amber:#e8821a; --ps-amber-soft:#f0a34d;
+  --ps-cream:#faf6ee; --ps-ink:#0f1f3d; --ps-muted:#6b7180; --ps-line:#e3ddd0;
+  position:relative; width:793px; background:var(--ps-cream); font-family:'Inter',sans-serif;
+  /* This container lives inside the live app's document.body, which styles.css sets to
+     line-height:1.6 - the mockup this matches is a standalone page with no such override
+     (its line-height is the UA default "normal"), so without resetting it here every line of
+     text renders taller than the reference and the whole card grows past its true height. */
+  line-height:normal;
+}
+.ps-sheet, .ps-sheet *{ box-sizing:border-box; }
+.ps-head{ background:linear-gradient(160deg, var(--ps-navy) 0%, var(--ps-navy-deep) 100%); color:var(--ps-cream); padding:26px 44px 22px; display:flex; align-items:center; justify-content:space-between; }
+.ps-head-left{ display:flex; align-items:center; gap:16px; }
+/* The real logo (unlike the mockup's square "+LOGO" upload placeholder) is a wide horizontal
+   lockup (~3.65:1) - forcing it into a 52x52 square via object-fit:contain shrank it to a barely
+   visible sliver. Sized by height instead, matching the 26px height this same logo already uses
+   in every other canvas-drawn document in this app (hall tickets, ID cards, etc). */
+.ps-logo-img{ height:26px; width:auto; flex-shrink:0; display:block; }
+.ps-org-name{ font-family:'Fraunces', serif; font-weight:700; font-size:19px; line-height:1.2; }
+.ps-org-sub{ font-size:10.5px; letter-spacing:1px; color:rgba(250,246,238,0.65); margin-top:3px; }
+.ps-slip-no{ text-align:right; font-family:'Space Mono', monospace; font-size:10px; letter-spacing:1.5px; color:var(--ps-amber-soft); line-height:1.6; }
+.ps-slip-no b{ display:block; color:var(--ps-cream); font-size:13px; }
+.ps-title-band{ text-align:center; padding:18px 20px 16px; border-bottom:2px dashed var(--ps-line); }
+.ps-title-band .ps-eyebrow{ font-family:'Space Mono', monospace; font-size:10.5px; letter-spacing:3px; color:var(--ps-amber); font-weight:700; }
+.ps-title-band .ps-title{ font-family:'Fraunces', serif; font-weight:600; font-size:28px; color:var(--ps-ink); margin-top:6px; }
+.ps-title-band .ps-period{ font-size:12.5px; font-weight:600; color:var(--ps-muted); margin-top:4px; }
+.ps-body{ padding:26px 44px 10px; }
+.ps-emp-grid{ display:grid; grid-template-columns:1fr 1fr; row-gap:14px; column-gap:24px; padding-bottom:22px; border-bottom:1px solid var(--ps-line); }
+.ps-emp-grid .ps-field label{ display:block; font-family:'Space Mono', monospace; font-size:9.5px; letter-spacing:1.8px; color:var(--ps-amber); margin-bottom:4px; }
+.ps-emp-grid .ps-field .ps-value{ font-weight:700; font-size:14px; color:var(--ps-ink); }
+.ps-emp-grid .ps-field .ps-value.ps-mono{ font-family:'Space Mono', monospace; font-size:13.5px; }
+.ps-tables-row{ display:flex; gap:20px; margin-top:24px; }
+.ps-table-col{ flex:1; }
+.ps-table-col .ps-section-label{ font-family:'Space Mono', monospace; font-size:10px; letter-spacing:2px; color:var(--ps-amber); font-weight:700; text-transform:uppercase; margin-bottom:10px; }
+table.ps-amt-table{ width:100%; border-collapse:collapse; }
+table.ps-amt-table td{ padding:9px 10px; font-size:13px; color:var(--ps-ink); border-bottom:1px solid var(--ps-line); background:#fff; }
+table.ps-amt-table td.ps-amt{ text-align:right; font-family:'Space Mono', monospace; font-weight:700; }
+table.ps-amt-table tr.ps-total td{ background:var(--ps-navy); color:var(--ps-cream); font-weight:700; }
+table.ps-amt-table tr.ps-total td.ps-amt{ color:var(--ps-amber-soft); }
+.ps-net-pay{ margin-top:22px; background:var(--ps-navy); border-radius:10px; padding:16px 22px; display:flex; justify-content:space-between; align-items:center; }
+.ps-net-pay .ps-label{ font-family:'Space Mono', monospace; font-size:11px; letter-spacing:2px; color:var(--ps-amber-soft); text-transform:uppercase; }
+.ps-net-pay .ps-amt{ font-family:'Fraunces', serif; font-weight:700; font-size:26px; color:var(--ps-cream); }
+.ps-net-words{ margin-top:10px; font-size:12px; color:var(--ps-muted); font-style:italic; }
+.ps-net-words b{ color:var(--ps-ink); font-style:normal; font-weight:600; }
+.ps-bank-line{ margin-top:20px; font-size:12px; color:var(--ps-muted); }
+.ps-bank-line b{ color:var(--ps-ink); }
+.ps-footer{ margin-top:30px; padding:14px 44px; background:var(--ps-navy); text-align:center; }
+.ps-footer .ps-note{ font-family:'Space Mono', monospace; font-size:9.5px; letter-spacing:1.5px; color:rgba(250,246,238,0.6); }
+`;
+
+const paySlipAmtRowsHtml = (rows, blankRows) =>
+  rows.map(([label, amount]) => `<tr><td>${escapeHtml(label)}</td><td class="ps-amt">₹${amount.toLocaleString("en-IN")}</td></tr>`).join("")
+  + `<tr><td>&nbsp;</td><td class="ps-amt">&nbsp;</td></tr>`.repeat(Math.max(0, blankRows));
+
+const paySlipTotalRowHtml = (label, value) =>
+  `<tr class="ps-total"><td>${escapeHtml(label)}</td><td class="ps-amt">₹${value.toLocaleString("en-IN")}</td></tr>`;
+
+const paySlipBankLineHtml = (bankLineParts) =>
+  bankLineParts.map(({ text, bold }) => (bold ? `<b>${escapeHtml(text)}</b>` : escapeHtml(text))).join("");
+
+// Tries the local pdf_render_server.py (real Chromium page.pdf(), not a re-implementation) for
+// pixel-perfect output; returns null - not a throw - on any failure (server not running, network
+// error, timeout) so callers can silently fall back to the html2canvas path instead of breaking
+// the download button when a developer hasn't started that local server.
+const renderA4DocViaNativePdf = async (html, css, rootSelector, title, background) => {
+  try {
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 5000);
+    const response = await fetch("http://localhost:8767/render-pdf", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ html, css, width: 793, rootSelector, title, background }),
+      signal: controller.signal
+    });
+    clearTimeout(timeout);
+    if (!response.ok) return null;
+    return await response.blob();
+  } catch (err) {
+    return null;
+  }
+};
+
+// Same as renderA4DocViaNativePdf but for documents that download as a plain image (the
+// ticket-stub family: Event/Bus/Vehicle/Hostel passes) - hits /render-png, which uses Playwright
+// element.screenshot() instead of page.pdf(). Returns null (not a throw) on any failure so callers
+// fall back to html2canvas cleanly.
+const renderA4DocViaNativePng = async (html, css, rootSelector, width, scale) => {
+  try {
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 5000);
+    const response = await fetch("http://localhost:8767/render-png", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ html, css, width, scale, rootSelector }),
+      signal: controller.signal
+    });
+    clearTimeout(timeout);
+    if (!response.ok) return null;
+    return await response.blob();
+  } catch (err) {
+    return null;
+  }
+};
+
+
+// Poster Design (admin-dashboard.html only): internal-only tool that fills in and downloads the
+// fest-poster mockups in file_templates/ (08_art_exhibition.html .. 21_convocation.html - all
+// share identical CSS/layout, differing only in the .art SVG illustration and default copy).
+// Same real-HTML + native-PNG pipeline as buildBusPassImage/renderTicketStubCard above (build an
+// HTML string matching the mockup, hit renderA4DocViaNativePng, fall back to html2canvas) -
+// deliberately does NOT publish anywhere, unlike festPosterDesignerSection's SVG posters
+// (event-management-dashboard.html, posterTemplates/buildPosterFromTemplate above) which publish
+// to every dashboard via getSpotlightPosters(). This is just a download-and-print tool.
+const EVENT_POSTER_CSS = `
+/* Square corners, not rounded - rounded corners here meant the rendered PNG (captured with
+   omit_background:true by pdf_render_server.py's /render-png, so anything outside this element's
+   own clip is transparent) had a transparent sliver at each corner. That's correct, real alpha
+   transparency, not a rendering defect - but it shows as a stray white/blank gap in any context
+   that doesn't paint a matching-colored backdrop behind it (opening the downloaded file directly,
+   a filmstrip thumbnail, etc.), which is most places this poster actually gets used. A plain
+   rectangle has no clip and therefore nothing to leave a gap anywhere it's displayed. */
+.epd-poster{ width:660px; height:220px; overflow:hidden; display:flex; flex-direction:row; box-shadow:0 6px 24px rgba(0,0,0,.15); font-family:Arial, sans-serif; background:#fff; line-height:normal; }
+.epd-poster, .epd-poster *{ box-sizing:border-box; }
+/* .epd-art-wrap deliberately bleeds 4px above/below its own 220px slot (padding grows it,
+   negative margin pulls it back to the same visual position) so its navy background paints over
+   that gap outright, whatever is actually causing it, rather than chasing the exact layout cause
+   further - .epd-poster's own overflow:hidden at exactly 220px clips the bleed back down anyway,
+   so this never shows past the poster's real edge. */
+.epd-art-wrap{ width:260px; min-width:260px; height:220px; padding:4px 0; margin:-4px 0; box-sizing:content-box; flex-shrink:0; background:#0A1433; border-right:3px solid #E85D04; overflow:hidden; }
+.epd-art{ width:260px; min-width:260px; height:220px; display:block; }
+/* min-height:0 (alongside the min-width:0 already here) is the actual fix for the bottom-edge gap -
+   flex items default to min-height:auto, which stops them shrinking below their own content's
+   natural height even when the flex container (.epd-poster) has an explicit smaller height set.
+   With head+body+footer's combined natural height slightly exceeding 220px, .epd-right (and with
+   it, .epd-poster's own cross-axis size) was quietly growing past the declared 220px instead of
+   .epd-poster's overflow:hidden clipping the excess - .epd-art's fixed 220px height didn't grow to
+   match, leaving a sliver of .epd-poster's own white background exposed below it, with whatever
+   .epd-right content had been pushed just past 220px (usually the info box's own background)
+   showing through at that same row on the right side. */
+.epd-right{ flex:1; min-width:0; min-height:0; display:flex; flex-direction:column; background:#fff; }
+.epd-head{ display:flex; align-items:center; gap:8px; padding:8px 14px 6px; border-bottom:1px solid rgba(15,30,80,.08); }
+.epd-logo{ height:30px; width:auto; flex-shrink:0; display:block; }
+.epd-org{ font-size:9.5px; font-weight:700; letter-spacing:1.5px; text-transform:uppercase; color:#0F1E50; }
+.epd-line{ font-size:7.5px; letter-spacing:1px; font-family:'Courier New',monospace; color:#E85D04; margin-top:1px; }
+.epd-body{ display:flex; flex:1; min-width:0; min-height:0; padding:8px 14px; gap:10px; align-items:center; }
+.epd-title-col{ flex:0 0 auto; }
+.epd-title{ font-size:28px; font-weight:900; line-height:.82; font-family:Impact,'Arial Black',sans-serif; letter-spacing:-1px; text-transform:uppercase; color:#0F1E50; }
+.epd-type{ font-size:8px; letter-spacing:2px; text-transform:uppercase; font-family:'Courier New',monospace; color:#E85D04; margin-top:5px; }
+.epd-rule{ width:24px; height:2px; background:#E85D04; margin:5px 0; }
+.epd-fields{ flex:1; min-width:0; min-height:0; display:flex; flex-direction:column; gap:5px; }
+.epd-grid{ display:grid; grid-template-columns:1fr 1fr; gap:5px; }
+.epd-field{ border-radius:4px; padding:5px 8px; }
+.epd-flabel{ font-size:7.5px; letter-spacing:1.5px; text-transform:uppercase; font-family:'Courier New',monospace; font-weight:700; margin-bottom:1px; }
+.epd-fvalue{ font-size:11px; font-weight:700; color:#0F1E50; }
+.epd-info{ border-radius:4px; padding:5px 8px; background:#E85D040a; width:100%; }
+.epd-info .epd-fvalue{ font-size:10px; }
+.epd-companies{ border-radius:4px; padding:4px 8px; background:#E85D040a; width:100%; }
+.epd-companies-row{ display:flex; gap:5px; flex-wrap:wrap; align-items:center; margin-top:4px; }
+.epd-company-logo{ width:46px; height:32px; border-radius:5px; background:#fff; flex-shrink:0; overflow:hidden; display:flex; align-items:center; justify-content:center; }
+.epd-company-logo img{ width:100%; height:100%; object-fit:contain; }
+.epd-footer{ display:flex; align-items:center; justify-content:space-between; padding:6px 14px; background:#0A1433; font-size:9px; font-weight:700; font-family:'Courier New',monospace; letter-spacing:.5px; }
+`;
+
+// useCompanyLogos/companyLogos: only Placement Drive's mockup ("19_placement_drive.html") swaps
+// the shared Info box for a "Recruiting Companies" row of uploaded company logo chips instead of
+// a plain text line - every other template keeps the plain Info box.
+const buildEventPosterInfoSection = ({ infoLabel, info, useCompanyLogos, companyLogos }) => {
+  if (!useCompanyLogos) {
+    return `
+          <div class="epd-info">
+            <div class="epd-flabel" style="color:#E85D04;">${escapeHtml(infoLabel)}</div>
+            <div class="epd-fvalue">${escapeHtml(info)}</div>
+          </div>`;
+  }
+  const logos = companyLogos || [];
+  const logosHtml = logos.length
+    ? logos.map((src) => `<div class="epd-company-logo"><img src="${src}" alt=""></div>`).join("")
+    : `<div class="epd-fvalue">${escapeHtml(info)}</div>`;
+  return `
+          <div class="epd-companies">
+            <div class="epd-flabel" style="color:#E85D04;">${escapeHtml(infoLabel)}</div>
+            <div class="epd-companies-row">${logosHtml}</div>
+          </div>`;
+};
+
+const buildEventPosterHtml = ({
+  art, logoUrl = gprecLogoUrl, orgLine, subLine, titleLines, typeLine,
+  date, venue, time, fourthLabel, fourthValue, info, infoLabel, useCompanyLogos, companyLogos,
+  footerLeft, footerCenter, footerRight
+}) => `
+  <div class="epd-poster">
+    <div class="epd-art-wrap">${art}</div>
+    <div class="epd-right">
+      <div class="epd-head">
+        <img class="epd-logo" src="${logoUrl}" alt="">
+        <div>
+          <div class="epd-org">${escapeHtml(orgLine)}</div>
+          <div class="epd-line">${escapeHtml(subLine)}</div>
+        </div>
+      </div>
+      <div class="epd-body">
+        <div class="epd-title-col">
+          <div class="epd-title">${titleLines.map(escapeHtml).join("<br>")}</div>
+          <div class="epd-type">${escapeHtml(typeLine)}</div>
+          <div class="epd-rule"></div>
+        </div>
+        <div class="epd-fields">
+          <div class="epd-grid">
+            <div class="epd-field" style="background:#E85D0412;">
+              <div class="epd-flabel" style="color:#E85D04;">Date</div>
+              <div class="epd-fvalue">${escapeHtml(date)}</div>
+            </div>
+            <div class="epd-field" style="background:#0F1E5012;">
+              <div class="epd-flabel" style="color:#0F1E50;">Venue</div>
+              <div class="epd-fvalue">${escapeHtml(venue)}</div>
+            </div>
+          </div>
+          <div class="epd-grid">
+            <div class="epd-field" style="background:#FF9A3C18;">
+              <div class="epd-flabel" style="color:#b44500;">Time</div>
+              <div class="epd-fvalue">${escapeHtml(time)}</div>
+            </div>
+            <div class="epd-field" style="background:#E85D0412;">
+              <div class="epd-flabel" style="color:#E85D04;">${escapeHtml(fourthLabel)}</div>
+              <div class="epd-fvalue">${escapeHtml(fourthValue)}</div>
+            </div>
+          </div>
+          ${buildEventPosterInfoSection({ infoLabel, info, useCompanyLogos, companyLogos })}
+        </div>
+      </div>
+      <div class="epd-footer">
+        <span style="color:#FF9A3C;">${escapeHtml(footerLeft)}</span>
+        <span style="color:#fff;">${escapeHtml(footerCenter)}</span>
+        <span style="color:#FF9A3C;">${escapeHtml(footerRight)}</span>
+      </div>
+    </div>
+  </div>
+`;
+
+// Each template's `.art` SVG transcribed verbatim from its file_templates mockup (only the
+// class name changed, from "art" to "epd-art").
+const EVENT_POSTER_ART = {
+  artExhibition: `<svg class="epd-art" width="260" height="220" viewBox="0 0 260 220" xmlns="http://www.w3.org/2000/svg"><rect width="260" height="220" fill="#0A1433"/><ellipse cx="60" cy="60" rx="90" ry="90" fill="#0F2060" opacity=".8"/><polygon points="30,38 40,22 50,38" fill="#E85D04" opacity=".7"/><polygon points="210,38 220,22 230,38" fill="#FF9A3C" opacity=".6"/><ellipse cx="200" cy="160" rx="80" ry="80" fill="#E85D04" opacity=".1"/>
+<ellipse cx="80" cy="155" rx="52" ry="42" fill="#0F2060" stroke="#E85D04" stroke-width="1.5"/>
+<circle cx="55" cy="143" r="9" fill="#E85D04"/><circle cx="75" cy="135" r="9" fill="#FF9A3C"/>
+<circle cx="98" cy="135" r="9" fill="#fff" opacity=".7"/><circle cx="113" cy="145" r="9" fill="#E85D04" opacity=".6"/>
+<circle cx="80" cy="155" r="16" fill="#0A1433"/>
+<rect x="148" y="88" width="72" height="56" rx="4" fill="#0F2060" stroke="#E85D04" stroke-width="1.5"/>
+<rect x="154" y="94" width="60" height="44" rx="2" fill="#0A1433"/>
+<circle cx="184" cy="114" r="12" fill="#E85D04" opacity=".5"/>
+<circle cx="184" cy="108" r="3" fill="#fff" opacity=".6"/>
+<path d="M177 120 Q184 128 191 120" fill="none" stroke="#FF9A3C" stroke-width="1.5" stroke-linecap="round"/>
+<rect x="138" y="80" width="7" height="55" rx="3" fill="#FF9A3C" transform="rotate(-30 141 107)"/>
+<rect x="137" y="128" width="10" height="18" rx="2" fill="#E85D04" transform="rotate(-30 142 137)"/></svg>`,
+  dance: `<svg class="epd-art" width="260" height="220" viewBox="0 0 260 220" xmlns="http://www.w3.org/2000/svg"><rect width="260" height="220" fill="#0A1433"/><ellipse cx="60" cy="60" rx="90" ry="90" fill="#0F2060" opacity=".8"/><polygon points="30,38 40,22 50,38" fill="#E85D04" opacity=".7"/><polygon points="210,38 220,22 230,38" fill="#FF9A3C" opacity=".6"/><ellipse cx="220" cy="180" rx="70" ry="70" fill="#E85D04" opacity=".12"/>
+<circle cx="85" cy="72" r="14" fill="#E85D04"/>
+<line x1="85" y1="86" x2="85" y2="128" stroke="#E85D04" stroke-width="6" stroke-linecap="round"/>
+<line x1="85" y1="100" x2="58" y2="84" stroke="#E85D04" stroke-width="5" stroke-linecap="round"/>
+<line x1="85" y1="100" x2="112" y2="90" stroke="#E85D04" stroke-width="5" stroke-linecap="round"/>
+<line x1="85" y1="128" x2="64" y2="158" stroke="#E85D04" stroke-width="5" stroke-linecap="round"/>
+<line x1="85" y1="128" x2="108" y2="156" stroke="#E85D04" stroke-width="5" stroke-linecap="round"/>
+<circle cx="175" cy="80" r="14" fill="#FF9A3C"/>
+<line x1="175" y1="94" x2="175" y2="136" stroke="#FF9A3C" stroke-width="6" stroke-linecap="round"/>
+<line x1="175" y1="108" x2="150" y2="90" stroke="#FF9A3C" stroke-width="5" stroke-linecap="round"/>
+<line x1="175" y1="108" x2="200" y2="124" stroke="#FF9A3C" stroke-width="5" stroke-linecap="round"/>
+<line x1="175" y1="136" x2="156" y2="166" stroke="#FF9A3C" stroke-width="5" stroke-linecap="round"/>
+<line x1="175" y1="136" x2="196" y2="164" stroke="#FF9A3C" stroke-width="5" stroke-linecap="round"/>
+<text x="120" y="60" font-size="26" fill="#E85D04" font-family="Arial" opacity=".7">♪</text>
+<text x="28" y="140" font-size="20" fill="#FF9A3C" font-family="Arial" opacity=".6">♫</text>
+<rect x="20" y="178" width="220" height="4" rx="2" fill="#E85D04" opacity=".3"/></svg>`,
+  music: `<svg class="epd-art" width="260" height="220" viewBox="0 0 260 220" xmlns="http://www.w3.org/2000/svg"><rect width="260" height="220" fill="#0A1433"/><ellipse cx="60" cy="60" rx="90" ry="90" fill="#0F2060" opacity=".8"/><polygon points="30,38 40,22 50,38" fill="#E85D04" opacity=".7"/><polygon points="210,38 220,22 230,38" fill="#FF9A3C" opacity=".6"/><ellipse cx="210" cy="160" rx="70" ry="60" fill="#E85D04" opacity=".1"/>
+<ellipse cx="100" cy="148" rx="34" ry="42" fill="#E85D04"/>
+<ellipse cx="100" cy="148" rx="25" ry="30" fill="#B44500"/>
+<rect x="96" y="56" width="8" height="96" rx="3" fill="#7a3a0a"/>
+<line x1="94" y1="56" x2="90" y2="174" stroke="#fff" stroke-width=".9" opacity=".6"/>
+<line x1="97" y1="56" x2="96" y2="174" stroke="#fff" stroke-width=".9" opacity=".6"/>
+<line x1="100" y1="56" x2="102" y2="174" stroke="#fff" stroke-width=".9" opacity=".6"/>
+<line x1="103" y1="56" x2="108" y2="174" stroke="#fff" stroke-width=".9" opacity=".6"/>
+<rect x="90" y="44" width="20" height="24" rx="4" fill="#5a2d0c"/>
+<circle cx="88" cy="51" r="3" fill="#FF9A3C"/><circle cx="88" cy="60" r="3" fill="#FF9A3C"/>
+<circle cx="112" cy="51" r="3" fill="#FF9A3C"/><circle cx="112" cy="60" r="3" fill="#FF9A3C"/>
+<circle cx="100" cy="140" r="11" fill="#7a3a0a"/><circle cx="100" cy="140" r="7" fill="#0A1433"/>
+<rect x="168" y="100" width="20" height="32" rx="10" fill="#0F2060" stroke="#E85D04" stroke-width="1.5"/>
+<rect x="171" y="103" width="14" height="25" rx="7" fill="#1a2a60"/>
+<rect x="176" y="132" width="4" height="28" fill="#FF9A3C"/>
+<rect x="169" y="158" width="18" height="4" rx="2" fill="#E85D04"/>
+<text x="32" y="120" font-size="30" fill="#E85D04" font-family="Arial" opacity=".5">♪</text>
+<text x="200" y="90" font-size="24" fill="#FF9A3C" font-family="Arial" opacity=".6">♫</text></svg>`,
+  tech: `<svg class="epd-art" width="260" height="220" viewBox="0 0 260 220" xmlns="http://www.w3.org/2000/svg"><rect width="260" height="220" fill="#0A1433"/><ellipse cx="60" cy="60" rx="90" ry="90" fill="#0F2060" opacity=".8"/><polygon points="30,38 40,22 50,38" fill="#E85D04" opacity=".7"/><polygon points="210,38 220,22 230,38" fill="#FF9A3C" opacity=".6"/><ellipse cx="220" cy="170" rx="70" ry="60" fill="#E85D04" opacity=".1"/>
+<rect x="52" y="82" width="148" height="92" rx="8" fill="#0F2060" stroke="#E85D04" stroke-width="1.5"/>
+<rect x="60" y="90" width="132" height="76" rx="4" fill="#0A1433"/>
+<rect x="68" y="100" width="55" height="5" rx="2" fill="#E85D04" opacity=".8"/>
+<rect x="68" y="110" width="40" height="4" rx="2" fill="#FF9A3C" opacity=".7"/>
+<rect x="78" y="119" width="70" height="4" rx="2" fill="#fff" opacity=".35"/>
+<rect x="78" y="128" width="50" height="4" rx="2" fill="#E85D04" opacity=".6"/>
+<rect x="68" y="137" width="80" height="4" rx="2" fill="#FF9A3C" opacity=".5"/>
+<rect x="78" y="146" width="60" height="4" rx="2" fill="#fff" opacity=".3"/>
+<rect x="68" y="155" width="35" height="4" rx="2" fill="#E85D04" opacity=".5"/>
+<rect x="35" y="174" width="182" height="10" rx="5" fill="#0F2060" stroke="#E85D04" stroke-width="1"/>
+<text x="22" y="78" font-size="20" fill="#E85D04" font-family="'Courier New',monospace" font-weight="bold" opacity=".7">&lt;/&gt;</text>
+<text x="200" y="78" font-size="18" fill="#FF9A3C" font-family="'Courier New',monospace" font-weight="bold" opacity=".7">{}</text>
+<text x="18" y="140" font-size="15" fill="#E85D04" font-family="'Courier New',monospace" opacity=".5">()</text>
+<text x="218" y="150" font-size="14" fill="#FF9A3C" font-family="'Courier New',monospace" opacity=".5">[]</text>
+<circle cx="28" cy="46" r="3.5" fill="#E85D04" opacity=".6"/>
+<circle cx="232" cy="46" r="3.5" fill="#FF9A3C" opacity=".6"/></svg>`,
+  drama: `<svg class="epd-art" width="260" height="220" viewBox="0 0 260 220" xmlns="http://www.w3.org/2000/svg"><rect width="260" height="220" fill="#0A1433"/><ellipse cx="60" cy="60" rx="90" ry="90" fill="#0F2060" opacity=".8"/><polygon points="30,38 40,22 50,38" fill="#E85D04" opacity=".7"/><polygon points="210,38 220,22 230,38" fill="#FF9A3C" opacity=".6"/><ellipse cx="220" cy="170" rx="70" ry="60" fill="#E85D04" opacity=".1"/>
+<path d="M18,18 Q48,72 28,148 Q38,168 18,208" fill="#E85D04" opacity=".8"/>
+<path d="M242,18 Q212,72 232,148 Q222,168 242,208" fill="#E85D04" opacity=".8"/>
+<rect x="18" y="178" width="224" height="6" rx="2" fill="#B44500" opacity=".6"/>
+<circle cx="95" cy="108" r="32" fill="#FF9A3C" stroke="#E85D04" stroke-width="2"/>
+<circle cx="83" cy="100" r="5" fill="#0A1433"/>
+<circle cx="107" cy="100" r="5" fill="#0A1433"/>
+<path d="M82,120 Q95,134 108,120" fill="none" stroke="#0A1433" stroke-width="2.5" stroke-linecap="round"/>
+<circle cx="175" cy="108" r="32" fill="#0F2060" stroke="#E85D04" stroke-width="2"/>
+<circle cx="163" cy="100" r="5" fill="#fff" opacity=".8"/>
+<circle cx="187" cy="100" r="5" fill="#fff" opacity=".8"/>
+<path d="M163,124 Q175,112 187,124" fill="none" stroke="#fff" stroke-width="2.5" stroke-linecap="round"/>
+<ellipse cx="163" cy="114" rx="2" ry="4" fill="#E85D04" opacity=".7"/>
+<ellipse cx="187" cy="114" rx="2" ry="4" fill="#E85D04" opacity=".7"/>
+<ellipse cx="95" cy="178" rx="26" ry="6" fill="#FF9A3C" opacity=".25"/>
+<ellipse cx="175" cy="178" rx="26" ry="6" fill="#E85D04" opacity=".2"/></svg>`,
+  comedy: `<svg class="epd-art" width="260" height="220" viewBox="0 0 260 220" xmlns="http://www.w3.org/2000/svg"><rect width="260" height="220" fill="#0A1433"/><ellipse cx="60" cy="60" rx="90" ry="90" fill="#0F2060" opacity=".8"/><polygon points="30,38 40,22 50,38" fill="#E85D04" opacity=".7"/><polygon points="210,38 220,22 230,38" fill="#FF9A3C" opacity=".6"/><ellipse cx="220" cy="170" rx="70" ry="60" fill="#E85D04" opacity=".1"/>
+<rect x="117" y="50" width="26" height="90" rx="13" fill="#0F2060" stroke="#E85D04" stroke-width="2"/>
+<rect x="120" y="53" width="20" height="84" rx="10" fill="#1a2a60"/>
+<line x1="124" y1="60" x2="136" y2="60" stroke="#E85D04" stroke-width="1" opacity=".5"/>
+<line x1="122" y1="70" x2="138" y2="70" stroke="#E85D04" stroke-width="1" opacity=".5"/>
+<line x1="122" y1="80" x2="138" y2="80" stroke="#E85D04" stroke-width="1" opacity=".5"/>
+<line x1="122" y1="90" x2="138" y2="90" stroke="#E85D04" stroke-width="1" opacity=".5"/>
+<line x1="122" y1="100" x2="138" y2="100" stroke="#E85D04" stroke-width="1" opacity=".5"/>
+<line x1="124" y1="110" x2="136" y2="110" stroke="#E85D04" stroke-width="1" opacity=".5"/>
+<rect x="124" y="138" width="12" height="3" rx="1" fill="#E85D04"/>
+<rect x="127" y="141" width="6" height="30" fill="#FF9A3C"/>
+<rect x="116" y="169" width="28" height="5" rx="2" fill="#E85D04"/>
+<path d="M100,65 Q88,95 100,125" fill="none" stroke="#E85D04" stroke-width="2.5" stroke-linecap="round"/>
+<path d="M86,52 Q66,95 86,138" fill="none" stroke="#E85D04" stroke-width="2" stroke-linecap="round" opacity=".6"/>
+<path d="M160,65 Q172,95 160,125" fill="none" stroke="#FF9A3C" stroke-width="2.5" stroke-linecap="round"/>
+<path d="M174,52 Q194,95 174,138" fill="none" stroke="#FF9A3C" stroke-width="2" stroke-linecap="round" opacity=".6"/>
+<text x="18" y="58" font-size="14" fill="#E85D04" font-family="Impact,sans-serif" opacity=".7">HA!</text>
+<text x="210" y="58" font-size="13" fill="#FF9A3C" font-family="Impact,sans-serif" opacity=".7">LOL!</text>
+<text x="22" y="200" font-size="12" fill="#E85D04" font-family="Impact,sans-serif" opacity=".5">XD!</text>
+<text x="200" y="200" font-size="12" fill="#FF9A3C" font-family="Impact,sans-serif" opacity=".5">ROFL</text>
+<polyline points="0,8 13,0 26,8 39,0 52,8 65,0 78,8 91,0 104,8 117,0 130,8 143,0 156,8 169,0 182,8 195,0 208,8 221,0 234,8 247,0 260,8" fill="none" stroke="#E85D04" stroke-width="2"/>
+<polyline points="0,212 13,220 26,212 39,220 52,212 65,220 78,212 91,220 104,212 117,220 130,212 143,220 156,212 169,220 182,212 195,220 208,212 221,220 234,212 247,220 260,212" fill="none" stroke="#E85D04" stroke-width="2"/></svg>`,
+  fashion: `<svg class="epd-art" width="260" height="220" viewBox="0 0 260 220" xmlns="http://www.w3.org/2000/svg"><rect width="260" height="220" fill="#0A1433"/><ellipse cx="60" cy="60" rx="90" ry="90" fill="#0F2060" opacity=".8"/><polygon points="30,38 40,22 50,38" fill="#E85D04" opacity=".7"/><polygon points="210,38 220,22 230,38" fill="#FF9A3C" opacity=".6"/><ellipse cx="220" cy="170" rx="70" ry="60" fill="#E85D04" opacity=".1"/>
+<circle cx="85" cy="58" r="16" fill="#E85D04"/>
+<path d="M71,76 Q85,84 99,76 L108,148 Q85,154 62,148 Z" fill="#E85D04"/>
+<rect x="72" y="108" width="26" height="5" rx="2" fill="#FF9A3C"/>
+<rect x="73" y="148" width="8" height="32" rx="4" fill="#B44500"/>
+<rect x="85" y="148" width="8" height="32" rx="4" fill="#B44500"/>
+<rect x="69" y="177" width="14" height="5" rx="2" fill="#E85D04"/>
+<rect x="81" y="177" width="14" height="5" rx="2" fill="#E85D04"/>
+<circle cx="178" cy="58" r="16" fill="#0F2060" stroke="#E85D04" stroke-width="1.5"/>
+<path d="M164,76 Q178,84 192,76 L200,148 Q178,154 156,148 Z" fill="#0F2060" stroke="#E85D04" stroke-width="1"/>
+<rect x="174" y="84" width="8" height="32" rx="2" fill="#fff" opacity=".7"/>
+<path d="M176,90 L182,90 L178,106 Z" fill="#E85D04"/>
+<rect x="164" y="148" width="8" height="32" rx="4" fill="#1a2a60"/>
+<rect x="176" y="148" width="8" height="32" rx="4" fill="#1a2a60"/>
+<rect x="160" y="177" width="14" height="5" rx="2" fill="#0F2060" stroke="#E85D04" stroke-width="1"/>
+<rect x="172" y="177" width="14" height="5" rx="2" fill="#0F2060" stroke="#E85D04" stroke-width="1"/>
+<rect x="18" y="182" width="224" height="4" rx="2" fill="#E85D04" opacity=".5"/>
+<text x="122" y="52" font-size="18" fill="#FF9A3C" font-family="Arial" opacity=".6">✦</text></svg>`,
+  sports: `<svg class="epd-art" width="260" height="220" viewBox="0 0 260 220" xmlns="http://www.w3.org/2000/svg"><rect width="260" height="220" fill="#0A1433"/><ellipse cx="60" cy="60" rx="90" ry="90" fill="#0F2060" opacity=".8"/><polygon points="30,38 40,22 50,38" fill="#E85D04" opacity=".7"/><polygon points="210,38 220,22 230,38" fill="#FF9A3C" opacity=".6"/><ellipse cx="220" cy="170" rx="70" ry="60" fill="#E85D04" opacity=".1"/>
+<circle cx="90" cy="100" r="40" fill="#fff" stroke="#0A1433" stroke-width="2"/>
+<path d="M90 60 L90 140" stroke="#0A1433" stroke-width="1.5"/>
+<path d="M50 100 L130 100" stroke="#0A1433" stroke-width="1.5"/>
+<path d="M62,72 Q90,85 118,72" fill="none" stroke="#0A1433" stroke-width="1"/>
+<path d="M62,128 Q90,115 118,128" fill="none" stroke="#0A1433" stroke-width="1"/>
+<circle cx="90" cy="100" r="10" fill="#E85D04" opacity=".6"/>
+<circle cx="90" cy="75" r="7" fill="#E85D04" opacity=".4"/>
+<circle cx="68" cy="87" r="6" fill="#E85D04" opacity=".4"/>
+<circle cx="112" cy="87" r="6" fill="#E85D04" opacity=".4"/>
+<rect x="168" y="118" width="56" height="46" rx="4" fill="#FF9A3C" stroke="#E85D04" stroke-width="1.5"/>
+<rect x="182" y="162" width="28" height="9" rx="2" fill="#E85D04"/>
+<rect x="178" y="170" width="36" height="7" rx="2" fill="#B44500"/>
+<path d="M168,133 Q153,138 156,153 Q158,163 168,163" fill="none" stroke="#E85D04" stroke-width="3"/>
+<path d="M224,133 Q239,138 236,153 Q234,163 224,163" fill="none" stroke="#E85D04" stroke-width="3"/>
+<text x="186" y="150" font-size="18" fill="#fff" font-family="Arial">★</text>
+<line x1="238" y1="185" x2="238" y2="110" stroke="#E85D04" stroke-width="3.5" stroke-linecap="round"/>
+<polygon points="238,98 230,116 246,116" fill="#E85D04"/></svg>`,
+  seminar: `<svg class="epd-art" width="260" height="220" viewBox="0 0 260 220" xmlns="http://www.w3.org/2000/svg"><rect width="260" height="220" fill="#0A1433"/><ellipse cx="60" cy="60" rx="90" ry="90" fill="#0F2060" opacity=".8"/><polygon points="30,38 40,22 50,38" fill="#E85D04" opacity=".7"/><polygon points="210,38 220,22 230,38" fill="#FF9A3C" opacity=".6"/><ellipse cx="220" cy="170" rx="70" ry="60" fill="#E85D04" opacity=".1"/>
+<rect x="104" y="148" width="60" height="46" rx="4" fill="#0F2060" stroke="#E85D04" stroke-width="1.5"/>
+<rect x="96" y="140" width="78" height="12" rx="3" fill="#B44500"/>
+<circle cx="134" cy="100" r="18" fill="#E85D04"/>
+<rect x="120" y="118" width="28" height="32" rx="6" fill="#E85D04"/>
+<line x1="120" y1="128" x2="94" y2="112" stroke="#E85D04" stroke-width="6" stroke-linecap="round"/>
+<line x1="148" y1="128" x2="174" y2="112" stroke="#E85D04" stroke-width="6" stroke-linecap="round"/>
+<rect x="130" y="138" width="8" height="12" rx="4" fill="#FF9A3C"/>
+<circle cx="208" cy="66" r="26" fill="#FF9A3C"/>
+<rect x="202" y="88" width="12" height="7" rx="2" fill="#E85D04"/>
+<rect x="200" y="94" width="16" height="4" rx="2" fill="#B44500"/>
+<line x1="208" y1="32" x2="208" y2="24" stroke="#FF9A3C" stroke-width="2.5" stroke-linecap="round"/>
+<line x1="228" y1="46" x2="234" y2="40" stroke="#FF9A3C" stroke-width="2.5" stroke-linecap="round"/>
+<line x1="242" y1="66" x2="250" y2="66" stroke="#FF9A3C" stroke-width="2.5" stroke-linecap="round"/>
+<line x1="188" y1="46" x2="182" y2="40" stroke="#FF9A3C" stroke-width="2.5" stroke-linecap="round"/>
+<ellipse cx="60" cy="198" rx="14" ry="7" fill="#0F2060" stroke="#E85D04" stroke-width="1"/>
+<ellipse cx="134" cy="200" rx="14" ry="7" fill="#0F2060" stroke="#E85D04" stroke-width="1"/>
+<ellipse cx="208" cy="198" rx="14" ry="7" fill="#0F2060" stroke="#E85D04" stroke-width="1"/>
+<rect x="47" y="182" width="26" height="18" rx="13" fill="#0F2060" stroke="#E85D04" stroke-width="1"/>
+<rect x="121" y="182" width="26" height="18" rx="13" fill="#0F2060" stroke="#E85D04" stroke-width="1"/>
+<rect x="195" y="182" width="26" height="18" rx="13" fill="#0F2060" stroke="#E85D04" stroke-width="1"/></svg>`,
+  quiz: `<svg class="epd-art" width="260" height="220" viewBox="0 0 260 220" xmlns="http://www.w3.org/2000/svg"><rect width="260" height="220" fill="#0A1433"/><ellipse cx="62" cy="58" rx="90" ry="90" fill="#0F2060" opacity=".8"/><ellipse cx="222" cy="166" rx="70" ry="58" fill="#E85D04" opacity=".1"/>
+<g opacity=".85"><circle cx="36" cy="34" r="4" fill="#FF9A3C"/><circle cx="221" cy="31" r="4" fill="#E85D04"/><rect x="64" y="18" width="7" height="12" rx="2" fill="#E85D04" transform="rotate(-18 67 24)"/><rect x="189" y="18" width="7" height="12" rx="2" fill="#FF9A3C" transform="rotate(24 192 24)"/></g>
+<rect x="31" y="52" width="86" height="60" rx="8" fill="#F8FBFF" transform="rotate(-8 74 82)"/>
+<rect x="43" y="64" width="36" height="6" rx="3" fill="#E85D04" transform="rotate(-8 61 67)"/>
+<path d="M76 92c0-13 19-11 19-24 0-9-8-15-20-15-11 0-19 5-23 13" fill="none" stroke="#0F1E50" stroke-width="6" stroke-linecap="round" transform="rotate(-8 73 72)"/>
+<circle cx="83" cy="101" r="4" fill="#0F1E50"/>
+<rect x="143" y="45" width="76" height="56" rx="8" fill="#FF9A3C" transform="rotate(8 181 73)"/>
+<text x="180" y="73" font-size="31" fill="#0A1433" font-family="Impact,'Arial Black',sans-serif" text-anchor="middle" transform="rotate(8 180 73)">Q?</text>
+<rect x="57" y="129" width="146" height="39" rx="7" fill="#0F2060" stroke="#E85D04" stroke-width="2"/>
+<text x="130" y="154" font-size="13" fill="#fff" font-family="'Courier New',monospace" font-weight="700" text-anchor="middle" letter-spacing="2">QUIZ MASTER</text>
+<rect x="78" y="175" width="36" height="16" rx="8" fill="#0F2060" stroke="#E85D04" stroke-width="1.5"/>
+<rect x="145" y="175" width="36" height="16" rx="8" fill="#0F2060" stroke="#FF9A3C" stroke-width="1.5"/>
+<ellipse cx="96" cy="174" rx="13" ry="7" fill="#E85D04"/><ellipse cx="163" cy="174" rx="13" ry="7" fill="#FF9A3C"/>
+<rect x="38" y="184" width="184" height="10" rx="3" fill="#B44500"/>
+<rect x="73" y="116" width="114" height="12" rx="3" fill="#E85D04"/>
+<text x="130" y="125" font-size="8" fill="#fff" font-family="'Courier New',monospace" font-weight="700" text-anchor="middle" letter-spacing="1.5">FASTEST FINGER FIRST</text></svg>`,
+  graduation: `<svg class="epd-art" width="260" height="220" viewBox="0 0 260 220" xmlns="http://www.w3.org/2000/svg"><rect width="260" height="220" fill="#0A1433"/><ellipse cx="60" cy="60" rx="90" ry="90" fill="#0F2060" opacity=".8"/>
+<rect x="18" y="192" width="224" height="20" rx="4" fill="#E85D04"/>
+<text x="130" y="206" font-size="9" fill="#fff" font-family="Impact,sans-serif" text-anchor="middle" letter-spacing="2">CONGRATULATIONS CLASS OF 2025</text>
+<g fill="#E85D04" opacity=".8">
+<rect x="22" y="18" width="7" height="12" rx="2" transform="rotate(20 25 24)"/>
+<rect x="52" y="10" width="6" height="10" rx="2" transform="rotate(-15 55 15)"/>
+<rect x="88" y="16" width="7" height="11" rx="2" transform="rotate(30 91 21)"/>
+<rect x="130" y="8" width="7" height="12" rx="2" transform="rotate(-10 133 14)"/>
+<rect x="168" y="14" width="6" height="11" rx="2" transform="rotate(25 171 19)"/>
+<rect x="208" y="10" width="7" height="11" rx="2" transform="rotate(-20 211 15)"/>
+</g>
+<circle cx="40" cy="32" r="4" fill="#FF9A3C" opacity=".7"/><circle cx="155" cy="20" r="4" fill="#FF9A3C" opacity=".7"/>
+<circle cx="65" cy="90" r="14" fill="#E85D04"/><rect x="52" y="104" width="26" height="40" rx="6" fill="#E85D04"/>
+<line x1="53" y1="114" x2="36" y2="128" stroke="#E85D04" stroke-width="6" stroke-linecap="round"/>
+<line x1="77" y1="114" x2="94" y2="128" stroke="#E85D04" stroke-width="6" stroke-linecap="round"/>
+<rect x="54" y="26" width="22" height="8" rx="3" fill="#0F2060"/>
+<line x1="65" y1="26" x2="65" y2="20" stroke="#0F2060" stroke-width="3"/>
+<line x1="59" y1="20" x2="71" y2="20" stroke="#0F2060" stroke-width="3"/>
+<line x1="71" y1="20" x2="73" y2="28" stroke="#FF9A3C" stroke-width="1.8"/>
+<rect x="57" y="144" width="10" height="26" rx="5" fill="#B44500"/><rect x="69" y="144" width="10" height="26" rx="5" fill="#B44500"/>
+<circle cx="130" cy="82" r="16" fill="#FF9A3C"/><rect x="116" y="98" width="28" height="42" rx="6" fill="#FF9A3C"/>
+<line x1="116" y1="110" x2="92" y2="86" stroke="#FF9A3C" stroke-width="7" stroke-linecap="round"/>
+<line x1="144" y1="110" x2="168" y2="86" stroke="#FF9A3C" stroke-width="7" stroke-linecap="round"/>
+<circle cx="92" cy="84" r="8" fill="#FF9A3C"/><circle cx="168" cy="84" r="8" fill="#FF9A3C"/>
+<rect x="118" y="26" width="24" height="9" rx="3" fill="#0F2060"/>
+<line x1="130" y1="26" x2="130" y2="19" stroke="#0F2060" stroke-width="3.5"/>
+<line x1="123" y1="19" x2="137" y2="19" stroke="#0F2060" stroke-width="3.5"/>
+<line x1="137" y1="19" x2="140" y2="28" stroke="#FF9A3C" stroke-width="2"/>
+<rect x="121" y="140" width="10" height="26" rx="5" fill="#B44500"/><rect x="133" y="140" width="10" height="26" rx="5" fill="#B44500"/>
+<circle cx="195" cy="90" r="14" fill="#E85D04"/><rect x="182" y="104" width="26" height="40" rx="6" fill="#E85D04"/>
+<line x1="183" y1="114" x2="165" y2="128" stroke="#E85D04" stroke-width="6" stroke-linecap="round"/>
+<line x1="207" y1="114" x2="225" y2="128" stroke="#E85D04" stroke-width="6" stroke-linecap="round"/>
+<rect x="184" y="26" width="22" height="8" rx="3" fill="#0F2060"/>
+<line x1="195" y1="26" x2="195" y2="20" stroke="#0F2060" stroke-width="3"/>
+<line x1="189" y1="20" x2="201" y2="20" stroke="#0F2060" stroke-width="3"/>
+<line x1="201" y1="20" x2="203" y2="28" stroke="#FF9A3C" stroke-width="1.8"/>
+<rect x="185" y="144" width="10" height="26" rx="5" fill="#B44500"/><rect x="197" y="144" width="10" height="26" rx="5" fill="#B44500"/></svg>`,
+  placement: `<svg class="epd-art" width="260" height="220" viewBox="0 0 260 220" xmlns="http://www.w3.org/2000/svg"><rect width="260" height="220" fill="#0A1433"/><ellipse cx="60" cy="60" rx="90" ry="90" fill="#0F2060" opacity=".8"/>
+<path d="M100,102 L100,90 Q100,80 112,80 L152,80 Q164,80 164,90 L164,102" fill="none" stroke="#E85D04" stroke-width="7" stroke-linecap="round" stroke-linejoin="round"/>
+<rect x="68" y="100" width="128" height="90" rx="10" fill="#E85D04"/>
+<rect x="68" y="140" width="128" height="11" fill="#B44500"/>
+<rect x="116" y="134" width="32" height="22" rx="4" fill="#FF9A3C"/>
+<rect x="120" y="138" width="24" height="14" rx="3" fill="#FF9A3C"/>
+<circle cx="132" cy="145" r="4" fill="#E85D04"/>
+<rect x="76" y="108" width="30" height="5" rx="2" fill="#FF9A3C" opacity=".35"/>
+<line x1="220" y1="195" x2="220" y2="115" stroke="#FF9A3C" stroke-width="3.5" stroke-linecap="round"/>
+<polygon points="220,103 212,121 228,121" fill="#FF9A3C"/>
+<ellipse cx="42" cy="132" rx="16" ry="5" fill="#FF9A3C" stroke="#E85D04" stroke-width="1"/>
+<ellipse cx="42" cy="126" rx="16" ry="5" fill="#FF9A3C" stroke="#E85D04" stroke-width="1"/>
+<ellipse cx="42" cy="120" rx="16" ry="5" fill="#FF9A3C" stroke="#E85D04" stroke-width="1"/>
+<ellipse cx="42" cy="114" rx="16" ry="5" fill="#faf6ee" stroke="#E85D04" stroke-width="1"/>
+<text x="42" y="117" font-size="9" fill="#B44500" font-family="'Arial Black',sans-serif" font-weight="900" text-anchor="middle">₹</text>
+<polygon points="132,62 125,76 132,94 139,76" fill="#0F2060"/>
+<polygon points="128,62 136,62 132,70" fill="#0A1433"/>
+<rect x="30" y="176" width="12" height="18" rx="2" fill="#E85D04" opacity=".5"/>
+<rect x="46" y="162" width="12" height="32" rx="2" fill="#E85D04" opacity=".7"/></svg>`,
+  general: `<svg class="epd-art" width="260" height="220" viewBox="0 0 260 220" xmlns="http://www.w3.org/2000/svg"><rect width="260" height="220" fill="#0A1433"/><ellipse cx="60" cy="60" rx="90" ry="90" fill="#0F2060" opacity=".8"/>
+<ellipse cx="220" cy="180" rx="80" ry="80" fill="#E85D04" opacity=".1"/>
+<g fill="#ffffff" opacity=".05">
+<circle cx="25" cy="35" r="1.5"/><circle cx="55" cy="35" r="1.5"/><circle cx="85" cy="35" r="1.5"/><circle cx="115" cy="35" r="1.5"/><circle cx="145" cy="35" r="1.5"/><circle cx="175" cy="35" r="1.5"/><circle cx="205" cy="35" r="1.5"/><circle cx="235" cy="35" r="1.5"/>
+<circle cx="25" cy="65" r="1.5"/><circle cx="55" cy="65" r="1.5"/><circle cx="85" cy="65" r="1.5"/><circle cx="115" cy="65" r="1.5"/><circle cx="145" cy="65" r="1.5"/>
+</g>
+<rect x="50" y="50" width="120" height="120" rx="8" fill="none" stroke="#E85D04" stroke-width="1.5" opacity=".4" transform="rotate(15 110 110)"/>
+<circle cx="128" cy="115" r="55" fill="#1a2040" stroke="#E85D04" stroke-width="1" opacity=".6"/>
+<circle cx="128" cy="115" r="46" fill="#1e2450" stroke="#E85D04" stroke-width=".5" opacity=".4"/>
+<g transform="translate(128,115)">
+<polygon points="0,-40 10,-10 40,0 10,10 0,40 -10,10 -40,0 -10,-10" fill="#E85D04" opacity=".9"/>
+<polygon points="0,-40 10,-10 40,0 10,10 0,40 -10,10 -40,0 -10,-10" fill="none" stroke="#FF9A3C" stroke-width="1.2" opacity=".5" transform="rotate(22.5)"/>
+<circle r="16" fill="#B44500"/>
+<circle r="10" fill="#E85D04"/>
+<circle r="5" fill="#FF9A3C"/>
+</g>
+<polygon points="38,46 48,30 58,46" fill="#E85D04" opacity=".7"/>
+<polygon points="200,155 210,139 220,155" fill="#FF9A3C" opacity=".7"/>
+<circle cx="240" cy="88" r="8" fill="none" stroke="#E85D04" stroke-width="1.5" opacity=".5"/></svg>`,
+  convocation: `<svg class="epd-art" width="260" height="220" viewBox="0 0 260 220" xmlns="http://www.w3.org/2000/svg"><rect width="260" height="220" fill="#0A1433"/><ellipse cx="62" cy="58" rx="90" ry="90" fill="#0F2060" opacity=".82"/><ellipse cx="218" cy="164" rx="76" ry="62" fill="#E85D04" opacity=".1"/>
+<g opacity=".8"><circle cx="34" cy="32" r="4" fill="#FF9A3C"/><circle cx="224" cy="35" r="4" fill="#E85D04"/><rect x="58" y="18" width="7" height="12" rx="2" fill="#E85D04" transform="rotate(-18 61 24)"/><rect x="194" y="19" width="7" height="12" rx="2" fill="#FF9A3C" transform="rotate(24 197 25)"/></g>
+<ellipse cx="131" cy="160" rx="70" ry="16" fill="#07102A" opacity=".42"/>
+<path d="M29 88l101-40 101 40-101 40z" fill="#0A1433" stroke="#0F1E50" stroke-width="8" stroke-linejoin="round"/>
+<path d="M54 88l76-30 76 30-76 30z" fill="#E85D04" opacity=".95"/>
+<path d="M82 108l48 20 50-20v39l-16 4c-15 4-28 11-34 19-6-8-19-15-35-19l-13-3z" fill="#E85D04"/>
+<path d="M82 108l48 20 50-20v18l-50 23-48-23z" fill="#F8FBFF" opacity=".9"/>
+<path d="M103 125l27 11 50-28v39l-16 4c-15 4-28 11-34 19-6-8-19-15-35-19l-13-3v-40z" fill="#FF9A3C" opacity=".72"/>
+<path d="M82 108v40l13 3c16 4 29 11 35 19 6-8 19-15 34-19l16-4v-39" fill="none" stroke="#0F1E50" stroke-width="6" stroke-linejoin="round"/>
+<path d="M231 88v46" fill="none" stroke="#0F1E50" stroke-width="8" stroke-linecap="round"/>
+<circle cx="231" cy="148" r="17" fill="none" stroke="#0F1E50" stroke-width="8"/>
+<path d="M231 165v25" fill="none" stroke="#0F1E50" stroke-width="8" stroke-linecap="round"/>
+<path d="M231 190l-13 22h26z" fill="none" stroke="#0F1E50" stroke-width="8" stroke-linejoin="round"/>
+<path d="M231 88v46" fill="none" stroke="#FF9A3C" stroke-width="3" stroke-linecap="round"/>
+<circle cx="231" cy="148" r="10" fill="#FF9A3C"/>
+<rect x="34" y="184" width="192" height="10" rx="3" fill="#B44500"/>
+<rect x="59" y="170" width="142" height="16" rx="4" fill="#E85D04"/>
+<text x="130" y="181" font-size="9" fill="#fff" font-family="'Courier New',monospace" font-weight="700" text-anchor="middle" letter-spacing="1.4">HONORING GRADUATES</text></svg>`
+};
+
+// Each entry mirrors one file_templates/*.html fest-poster mockup 1:1 (id doubles as the
+// downloaded file's slug) - subLine, typeLine, fourthLabel/fourthValue, footer text, and default
+// date/venue/time all match that specific mockup's own default copy, not a generic placeholder
+// shared across every template. `titleLines` join with <br> in buildEventPosterHtml, same as the
+// mockup's own two/three-line Impact-font title.
+const EVENT_POSTER_TEMPLATES = [
+  { id: "art-exhibition", name: "Art Exhibition", art: EVENT_POSTER_ART.artExhibition, subLine: "ColFest '25 · Annual Fest", titleLines: ["ART", "EXPO"], typeLine: "Art Exhibition", date: "15 March 2025", venue: "Main Auditorium", time: "10 AM – 4 PM", fourthLabel: "Prize / Entry", fourthValue: "₹10,000", info: "Add event info or rules here", infoLabel: "Info", footerLeft: "colfest.in", footerCenter: "@colfest25", footerRight: "contact@college.edu" },
+  { id: "dance-competition", name: "Dance Competition", art: EVENT_POSTER_ART.dance, subLine: "ColFest '25 · Annual Fest", titleLines: ["GROOVE", "OFF"], typeLine: "Dance Competition", date: "15 March 2025", venue: "Main Auditorium", time: "10 AM – 4 PM", fourthLabel: "Prize / Entry", fourthValue: "₹10,000", info: "Add event info or rules here", infoLabel: "Info", footerLeft: "colfest.in", footerCenter: "@colfest25", footerRight: "contact@college.edu" },
+  { id: "music-battle-of-bands", name: "Music / Battle of Bands", art: EVENT_POSTER_ART.music, subLine: "ColFest '25 · Annual Fest", titleLines: ["BATTLE", "OF BANDS"], typeLine: "Music Competition", date: "15 March 2025", venue: "Main Auditorium", time: "10 AM – 4 PM", fourthLabel: "Prize / Entry", fourthValue: "₹10,000", info: "Add event info or rules here", infoLabel: "Info", footerLeft: "colfest.in", footerCenter: "@colfest25", footerRight: "contact@college.edu" },
+  { id: "tech-coding-contest", name: "Tech / Coding Contest", art: EVENT_POSTER_ART.tech, subLine: "ColFest '25 · Annual Fest", titleLines: ["CODE", "CLASH"], typeLine: "Tech & Coding Contest", date: "15 March 2025", venue: "Main Auditorium", time: "10 AM – 4 PM", fourthLabel: "Prize / Entry", fourthValue: "₹10,000", info: "Add event info or rules here", infoLabel: "Info", footerLeft: "colfest.in", footerCenter: "@colfest25", footerRight: "contact@college.edu" },
+  { id: "drama-theatre", name: "Drama / Theatre", art: EVENT_POSTER_ART.drama, subLine: "ColFest '25 · Annual Fest", titleLines: ["CURTAIN", "CALL"], typeLine: "Drama & Theatre", date: "15 March 2025", venue: "Main Auditorium", time: "10 AM – 4 PM", fourthLabel: "Prize / Entry", fourthValue: "₹10,000", info: "Add event info or rules here", infoLabel: "Info", footerLeft: "colfest.in", footerCenter: "@colfest25", footerRight: "contact@college.edu" },
+  { id: "comedy-standup", name: "Comedy / Stand-up", art: EVENT_POSTER_ART.comedy, subLine: "ColFest '25 · Annual Fest", titleLines: ["LAUGH", "RIOT"], typeLine: "Stand-up Comedy Night", date: "15 March 2025", venue: "Main Auditorium", time: "10 AM – 4 PM", fourthLabel: "Prize / Entry", fourthValue: "₹10,000", info: "Add event info or rules here", infoLabel: "Info", footerLeft: "colfest.in", footerCenter: "@colfest25", footerRight: "contact@college.edu" },
+  { id: "fashion-show", name: "Fashion Show", art: EVENT_POSTER_ART.fashion, subLine: "ColFest '25 · Annual Fest", titleLines: ["RAMP", "WALK"], typeLine: "Fashion Show", date: "15 March 2025", venue: "Main Auditorium", time: "10 AM – 4 PM", fourthLabel: "Prize / Entry", fourthValue: "₹10,000", info: "Add event info or rules here", infoLabel: "Info", footerLeft: "colfest.in", footerCenter: "@colfest25", footerRight: "contact@college.edu" },
+  { id: "sports", name: "Sports", art: EVENT_POSTER_ART.sports, subLine: "ColFest '25 · Annual Fest", titleLines: ["SPORTS", "ARENA"], typeLine: "Sports Championship", date: "15 March 2025", venue: "Main Auditorium", time: "10 AM – 4 PM", fourthLabel: "Prize / Entry", fourthValue: "₹10,000", info: "Add event info or rules here", infoLabel: "Info", footerLeft: "colfest.in", footerCenter: "@colfest25", footerRight: "contact@college.edu" },
+  { id: "seminar", name: "Seminar", art: EVENT_POSTER_ART.seminar, subLine: "ColFest '25 · Annual Fest", titleLines: ["THINK", "TANK"], typeLine: "Guest Seminar", date: "15 March 2025", venue: "Main Auditorium", time: "10 AM – 4 PM", fourthLabel: "Prize / Entry", fourthValue: "₹10,000", info: "Add event info or rules here", infoLabel: "Info", footerLeft: "colfest.in", footerCenter: "@colfest25", footerRight: "contact@college.edu" },
+  { id: "quiz", name: "Quiz", art: EVENT_POSTER_ART.quiz, subLine: "ColFest '25 · Brain Battle", titleLines: ["QUIZ", "QUEST"], typeLine: "General Quiz", date: "16 March 2025", venue: "Seminar Hall", time: "2 PM – 5 PM", fourthLabel: "Prize / Entry", fourthValue: "₹5,000", info: "Teams of 2 · Spot registration available", infoLabel: "Info", footerLeft: "colfest.in", footerCenter: "@colfest25", footerRight: "contact@college.edu" },
+  { id: "graduation-day", name: "Graduation Day", art: EVENT_POSTER_ART.graduation, subLine: "Celebrating Class of 2025", titleLines: ["GRADUA", "TION DAY"], typeLine: "Farewell & Graduation", date: "22 Apr 2025", venue: "College Grounds", time: "4 PM – 9 PM", fourthLabel: "Batch", fourthValue: "2021 – 2025", info: "Add event info or rules here", infoLabel: "Info", footerLeft: "college.edu", footerCenter: "✦ Class of 2025 ✦", footerRight: "events@college.edu" },
+  { id: "placement-drive", name: "Placement Drive", art: EVENT_POSTER_ART.placement, subLine: "Training & Placement Cell", titleLines: ["PLACE", "MENT DRIVE"], typeLine: "Campus Recruitment 2025", date: "10 March 2025", venue: "Seminar Hall", time: "9 AM – 5 PM", fourthLabel: "Package", fourthValue: "3–18 LPA", info: "Add participating companies here", infoLabel: "Recruiting Companies", useCompanyLogos: true, footerLeft: "placement.college.edu", footerCenter: "@placement_cell", footerRight: "placements@college.edu" },
+  { id: "general-event", name: "General Event", art: EVENT_POSTER_ART.general, subLine: "Department Event · 2025", titleLines: ["EVENT", "NAME"], typeLine: "Type of Event", date: "15 March 2025", venue: "Main Auditorium", time: "10 AM – 4 PM", fourthLabel: "Entry", fourthValue: "Open to All", info: "Add event info or rules here", infoLabel: "Info", footerLeft: "college.edu", footerCenter: "✦ Register Now ✦", footerRight: "events@college.edu" },
+  { id: "convocation", name: "Convocation", art: EVENT_POSTER_ART.convocation, subLine: "Academic Year 2025-26", titleLines: ["CONVO", "CATION"], typeLine: "Degree Award Ceremony", date: "22 April 2026", venue: "Main Auditorium", time: "10 AM – 1 PM", fourthLabel: "Batch", fourthValue: "2022 – 2026", info: "Graduates are requested to report 1 hour early", infoLabel: "Info", footerLeft: "college.edu", footerCenter: "Convocation 2026", footerRight: "contact@college.edu" }
+];
+
+const getEventPosterTemplate = (id) => EVENT_POSTER_TEMPLATES.find((template) => template.id === id) || EVENT_POSTER_TEMPLATES[0];
+
+const renderEventPosterCard = async (fields) => {
+  const html = buildEventPosterHtml(fields);
+  const nativePng = await renderA4DocViaNativePng(html, EVENT_POSTER_CSS, ".epd-poster", 660, 2);
+  if (nativePng) return nativePng;
+
+  const container = document.createElement("div");
+  container.style.cssText = "position:fixed; left:-10000px; top:0; pointer-events:none;";
+  container.innerHTML = `<style>${EVENT_POSTER_CSS}</style>${html}`;
+  document.body.appendChild(container);
+  try {
+    const cardEl = container.querySelector(".epd-poster");
+    const canvas = await html2canvas(cardEl, { scale: 2, backgroundColor: "#ffffff" });
+    return new Promise((resolve) => canvas.toBlob(resolve, "image/png"));
+  } finally {
+    document.body.removeChild(container);
+  }
+};
+
+const eventPosterTemplateSelect = document.querySelector("#eventPosterTemplateSelect");
+if (eventPosterTemplateSelect) {
+  const eventPosterPreviewFrame = document.querySelector("#eventPosterPreviewFrame");
+  const eventPosterPreviewWrap = document.querySelector(".event-poster-preview-wrap");
+  const eventPosterPreviewScale = document.querySelector(".event-poster-preview-scale");
+  const eventPosterTitleInput = document.querySelector("#eventPosterTitleInput");
+  const eventPosterTypeInput = document.querySelector("#eventPosterTypeInput");
+  const eventPosterSubLineInput = document.querySelector("#eventPosterSubLineInput");
+  const eventPosterDateInput = document.querySelector("#eventPosterDateInput");
+  const eventPosterVenueInput = document.querySelector("#eventPosterVenueInput");
+  const eventPosterTimeInput = document.querySelector("#eventPosterTimeInput");
+  const eventPosterFourthLabelText = document.querySelector("#eventPosterFourthLabelText");
+  const eventPosterFourthValueInput = document.querySelector("#eventPosterFourthValueInput");
+  const eventPosterInfoLabelText = document.querySelector("#eventPosterInfoLabelText");
+  const eventPosterInfoInput = document.querySelector("#eventPosterInfoInput");
+  const eventPosterInfoField = document.querySelector("#eventPosterInfoField");
+  const eventPosterCompanyLogosField = document.querySelector("#eventPosterCompanyLogosField");
+  const eventPosterCompanyLogosInput = document.querySelector("#eventPosterCompanyLogosInput");
+  const eventPosterFooterLeftInput = document.querySelector("#eventPosterFooterLeftInput");
+  const eventPosterFooterCenterInput = document.querySelector("#eventPosterFooterCenterInput");
+  const eventPosterFooterRightInput = document.querySelector("#eventPosterFooterRightInput");
+  const eventPosterDownloadButton = document.querySelector("#eventPosterDownloadButton");
+  const eventPosterFeedback = document.querySelector("#eventPosterFeedback");
+  const eventPosterPublishInternalButton = document.querySelector("#eventPosterPublishInternalButton");
+  const eventPosterPublishedBody = document.querySelector("#eventPosterPublishedBody");
+  const eventPosterPublishedEmpty = document.querySelector("#eventPosterPublishedEmpty");
+
+  eventPosterTemplateSelect.innerHTML = EVENT_POSTER_TEMPLATES
+    .map((template) => `<option value="${escapeHtml(template.id)}">${escapeHtml(template.name)}</option>`)
+    .join("");
+
+  // Placement Drive's mockup ("19_placement_drive.html") is the only one whose Info box is a row
+  // of uploaded company logo chips instead of a plain text line - read via FileReader into data:
+  // URIs (same self-contained-image approach as gprecLogoUrl) so the render pipeline never needs
+  // network access to embed them. Cleared whenever the template changes so switching away from
+  // Placement Drive and back doesn't resurrect a stale upload from a previous session.
+  let eventPosterCompanyLogoDataUrls = [];
+
+  // fourthLabel/infoLabel are NOT free-text inputs - each mockup gives that field a fixed name
+  // (Prize/Entry, Batch, Package, Recruiting Companies, ...) tied to what the value actually means
+  // for that activity, so they're shown as read-only label text next to the value input instead of
+  // letting an admin retype/mismatch them.
+  const applyEventPosterTemplateDefaults = () => {
+    const template = getEventPosterTemplate(eventPosterTemplateSelect.value);
+    if (eventPosterTitleInput) eventPosterTitleInput.value = template.titleLines.join("\n");
+    if (eventPosterTypeInput) eventPosterTypeInput.value = template.typeLine;
+    if (eventPosterSubLineInput) eventPosterSubLineInput.value = template.subLine;
+    if (eventPosterDateInput) eventPosterDateInput.value = template.date;
+    if (eventPosterVenueInput) eventPosterVenueInput.value = template.venue;
+    if (eventPosterTimeInput) eventPosterTimeInput.value = template.time;
+    if (eventPosterFourthLabelText) eventPosterFourthLabelText.textContent = template.fourthLabel;
+    if (eventPosterFourthValueInput) eventPosterFourthValueInput.value = template.fourthValue;
+    if (eventPosterInfoLabelText) eventPosterInfoLabelText.textContent = template.infoLabel;
+    if (eventPosterInfoInput) eventPosterInfoInput.value = template.info;
+    if (eventPosterFooterLeftInput) eventPosterFooterLeftInput.value = template.footerLeft;
+    if (eventPosterFooterCenterInput) eventPosterFooterCenterInput.value = template.footerCenter;
+    if (eventPosterFooterRightInput) eventPosterFooterRightInput.value = template.footerRight;
+    eventPosterInfoField?.classList.toggle("is-hidden", Boolean(template.useCompanyLogos));
+    eventPosterCompanyLogosField?.classList.toggle("is-hidden", !template.useCompanyLogos);
+    eventPosterCompanyLogoDataUrls = [];
+    if (eventPosterCompanyLogosInput) eventPosterCompanyLogosInput.value = "";
+  };
+
+  const currentEventPosterFields = () => {
+    const template = getEventPosterTemplate(eventPosterTemplateSelect.value);
+    return {
+      art: template.art,
+      logoUrl: gprecLogoUrl,
+      orgLine: "G Pulla Reddy Engineering College",
+      subLine: eventPosterSubLineInput?.value.trim() || template.subLine,
+      titleLines: (eventPosterTitleInput?.value || template.titleLines.join("\n")).split("\n").map((line) => line.trim()).filter(Boolean),
+      typeLine: eventPosterTypeInput?.value.trim() || template.typeLine,
+      date: eventPosterDateInput?.value.trim() || template.date,
+      venue: eventPosterVenueInput?.value.trim() || template.venue,
+      time: eventPosterTimeInput?.value.trim() || template.time,
+      fourthLabel: template.fourthLabel,
+      fourthValue: eventPosterFourthValueInput?.value.trim() || template.fourthValue,
+      info: eventPosterInfoInput?.value.trim() || template.info,
+      infoLabel: template.infoLabel,
+      useCompanyLogos: Boolean(template.useCompanyLogos),
+      companyLogos: eventPosterCompanyLogoDataUrls,
+      footerLeft: eventPosterFooterLeftInput?.value.trim() || template.footerLeft,
+      footerCenter: eventPosterFooterCenterInput?.value.trim() || template.footerCenter,
+      footerRight: eventPosterFooterRightInput?.value.trim() || template.footerRight
+    };
+  };
+
+  const updateEventPosterPreview = () => {
+    if (!eventPosterPreviewFrame) return;
+    const html = buildEventPosterHtml(currentEventPosterFields());
+    eventPosterPreviewFrame.srcdoc = `<!doctype html><html><head><style>body{margin:0;}${EVENT_POSTER_CSS}</style></head><body>${html}</body></html>`;
+  };
+
+  // Scales the fixed 660x220 iframe down to fit the stage's actual rendered width, same
+  // full-width-responsive feel as festPosterDesignerSection's .spotlight-poster-stage - a CSS
+  // width alone wouldn't shrink an iframe's own content, only its viewport. A ResizeObserver
+  // (not just a window "resize" listener) is what makes this actually work: on first page load
+  // #poster-design isn't the active admin-panel yet (display:none until its nav item is clicked),
+  // so the wrap's clientWidth is 0 and a one-time scale(0) would leave the preview invisible
+  // forever with no window resize ever firing to recompute it - the observer re-fires the moment
+  // the panel becomes visible and gets a real width, with no dependency on the nav-switch code.
+  const rescaleEventPosterPreview = () => {
+    if (!eventPosterPreviewWrap || !eventPosterPreviewScale) return;
+    const width = eventPosterPreviewWrap.clientWidth;
+    if (!width) return;
+    eventPosterPreviewScale.style.transform = `scale(${width / 660})`;
+  };
+  if (eventPosterPreviewWrap && "ResizeObserver" in window) {
+    new ResizeObserver(rescaleEventPosterPreview).observe(eventPosterPreviewWrap);
+  } else {
+    window.addEventListener("resize", rescaleEventPosterPreview);
+  }
+
+  applyEventPosterTemplateDefaults();
+  updateEventPosterPreview();
+  rescaleEventPosterPreview();
+
+  eventPosterTemplateSelect.addEventListener("change", () => {
+    applyEventPosterTemplateDefaults();
+    updateEventPosterPreview();
+  });
+  [
+    eventPosterTitleInput, eventPosterTypeInput, eventPosterSubLineInput, eventPosterDateInput,
+    eventPosterVenueInput, eventPosterTimeInput, eventPosterFourthValueInput,
+    eventPosterInfoInput, eventPosterFooterLeftInput, eventPosterFooterCenterInput, eventPosterFooterRightInput
+  ].forEach((field) => field?.addEventListener("input", updateEventPosterPreview));
+
+  eventPosterCompanyLogosInput?.addEventListener("change", async () => {
+    const files = [...(eventPosterCompanyLogosInput.files || [])].slice(0, 6);
+    eventPosterCompanyLogoDataUrls = await Promise.all(
+      files.map(
+        (file) =>
+          new Promise((resolve) => {
+            const reader = new FileReader();
+            reader.onload = () => resolve(reader.result);
+            reader.onerror = () => resolve(null);
+            reader.readAsDataURL(file);
+          })
+      )
+    ).then((results) => results.filter(Boolean));
+    updateEventPosterPreview();
+  });
+
+  eventPosterDownloadButton?.addEventListener("click", async () => {
+    eventPosterDownloadButton.disabled = true;
+    if (eventPosterFeedback) eventPosterFeedback.textContent = "Generating poster...";
+    try {
+      const fields = currentEventPosterFields();
+      const image = await renderEventPosterCard(fields);
+      const link = document.createElement("a");
+      link.href = URL.createObjectURL(image);
+      link.download = `${getEventPosterTemplate(eventPosterTemplateSelect.value).id}-poster.png`;
+      link.click();
+      URL.revokeObjectURL(link.href);
+      if (eventPosterFeedback) eventPosterFeedback.textContent = "Poster downloaded.";
+    } catch (err) {
+      if (eventPosterFeedback) eventPosterFeedback.textContent = "Could not generate poster - try again.";
+    } finally {
+      eventPosterDownloadButton.disabled = false;
+    }
+  });
+
+  // Publishes into the same getSpotlightPosters() store festPosterDesignerSection's "Publish to
+  // All Dashboards" uses, but flagged internalOnly:true so getVisibleSpotlightPosters excludes it
+  // from the public visitor-login page - this is the one place in this tool that leaves
+  // download-only territory, so it's deliberately a separate button/flag rather than reusing that
+  // one's unrestricted publish path.
+  const renderEventPosterPublished = () => {
+    if (!eventPosterPublishedBody) return;
+    const published = getSpotlightPosters().filter((poster) => poster.internalOnly);
+    eventPosterPublishedEmpty?.classList.toggle("is-hidden", published.length > 0);
+    eventPosterPublishedBody.innerHTML = published
+      .map(
+        (poster) => `
+          <tr>
+            <td>${escapeHtml(poster.title)}</td>
+            <td>${escapeHtml(getPosterTemplateDisplayName(poster.templateId))}</td>
+            <td><button type="button" class="icon-btn-delete" data-event-poster-remove="${escapeHtml(poster.id)}" aria-label="Remove" title="Remove">${deleteIconSvg}</button></td>
+          </tr>
+        `
+      )
+      .join("");
+  };
+  renderEventPosterPublished();
+
+  eventPosterPublishedBody?.addEventListener("click", (event) => {
+    const removeButton = event.target.closest("[data-event-poster-remove]");
+    if (!removeButton) return;
+    saveSpotlightPosters(getSpotlightPosters().filter((item) => item.id !== removeButton.dataset.eventPosterRemove));
+    renderEventPosterPublished();
+  });
+
+  eventPosterPublishInternalButton?.addEventListener("click", async () => {
+    eventPosterPublishInternalButton.disabled = true;
+    if (eventPosterFeedback) {
+      eventPosterFeedback.textContent = "Publishing poster...";
+      eventPosterFeedback.classList.remove("success");
+    }
+    try {
+      const template = getEventPosterTemplate(eventPosterTemplateSelect.value);
+      const fields = {
+        title: eventPosterTitleInput?.value.trim() || template.titleLines.join("\n"),
+        subLine: eventPosterSubLineInput?.value.trim(),
+        typeLine: eventPosterTypeInput?.value.trim(),
+        date: eventPosterDateInput?.value.trim(),
+        venue: eventPosterVenueInput?.value.trim(),
+        time: eventPosterTimeInput?.value.trim(),
+        fourthValue: eventPosterFourthValueInput?.value.trim(),
+        info: eventPosterInfoInput?.value.trim(),
+        footerLeft: eventPosterFooterLeftInput?.value.trim(),
+        footerCenter: eventPosterFooterCenterInput?.value.trim(),
+        footerRight: eventPosterFooterRightInput?.value.trim(),
+        type: "Poster",
+        link: ""
+      };
+      const poster = await buildPosterFromTemplate(eventPosterTemplateSelect.value, fields);
+      poster.internalOnly = true;
+      saveSpotlightPosters([...getSpotlightPosters(), poster]);
+      renderEventPosterPublished();
+      if (eventPosterFeedback) {
+        eventPosterFeedback.textContent = `"${poster.title}" published to internal dashboards.`;
+        eventPosterFeedback.classList.add("success");
+      }
+    } catch (err) {
+      if (eventPosterFeedback) {
+        eventPosterFeedback.textContent = "Could not publish poster - try again.";
+        eventPosterFeedback.classList.remove("success");
+      }
+    } finally {
+      eventPosterPublishInternalButton.disabled = false;
+    }
+  });
+}
+
+// Pay Slip matching "34_pay_slip.html": navy header, dashed title band, 2-col employee grid,
+// side-by-side Earnings/Deductions tables (real components only - no invented allowances beyond
+// what this app's payroll constants already include), navy Net Pay bar, amount-in-words, bank
+// line (real account details via getBankDetailsFor when on file), navy footer.
+const buildPaySlipImage = async ({ slipNo, employeeName, employeeId, designation, department, month, earnings, deductions, bankLineParts }) => {
+  await ensureBrandFontsLoaded();
+
+  const gross = earnings.reduce((sum, [, amount]) => sum + amount, 0);
+  const totalDeductions = deductions.reduce((sum, [, amount]) => sum + amount, 0);
+  const netPay = gross - totalDeductions;
+  const tableRows = Math.max(earnings.length, deductions.length);
+
+  // PAN and Date of Joining have no data source anywhere in this app (no HR/payroll record
+  // tracks them) - shown as "-" rather than invented, same honest-gap approach used elsewhere
+  // in this redesign (e.g. Vehicle Pass's Parking Zone).
+  const html = `
+    <div class="ps-sheet">
+      <div class="ps-head">
+        <div class="ps-head-left">
+          <img class="ps-logo-img" src="${gprecLogoUrl}" alt="">
+          <div>
+            <div class="ps-org-name">G Pulla Reddy Engineering College</div>
+            <div class="ps-org-sub">Human Resources Department</div>
+          </div>
+        </div>
+        <div class="ps-slip-no">PAYSLIP NO.<b>${escapeHtml(slipNo)}</b></div>
+      </div>
+      <div class="ps-title-band">
+        <div class="ps-eyebrow">SALARY STATEMENT</div>
+        <div class="ps-title">Pay Slip</div>
+        <div class="ps-period">For the Month of ${escapeHtml(month)}</div>
+      </div>
+      <div class="ps-body">
+        <div class="ps-emp-grid">
+          <div class="ps-field"><label>Employee Name</label><div class="ps-value">${escapeHtml(employeeName)}</div></div>
+          <div class="ps-field"><label>Employee ID</label><div class="ps-value ps-mono">${escapeHtml(employeeId)}</div></div>
+          <div class="ps-field"><label>Designation</label><div class="ps-value">${escapeHtml(designation)}</div></div>
+          <div class="ps-field"><label>Department</label><div class="ps-value">${escapeHtml(department)}</div></div>
+          <div class="ps-field"><label>PAN</label><div class="ps-value ps-mono">-</div></div>
+          <div class="ps-field"><label>Date of Joining</label><div class="ps-value">-</div></div>
+        </div>
+        <div class="ps-tables-row">
+          <div class="ps-table-col">
+            <div class="ps-section-label">Earnings</div>
+            <table class="ps-amt-table">${paySlipAmtRowsHtml(earnings, tableRows - earnings.length)}${paySlipTotalRowHtml("Gross Earnings", gross)}</table>
+          </div>
+          <div class="ps-table-col">
+            <div class="ps-section-label">Deductions</div>
+            <table class="ps-amt-table">${paySlipAmtRowsHtml(deductions, tableRows - deductions.length)}${paySlipTotalRowHtml("Total Deductions", totalDeductions)}</table>
+          </div>
+        </div>
+        <div class="ps-net-pay">
+          <span class="ps-label">Net Pay</span>
+          <span class="ps-amt">₹${netPay.toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+        </div>
+        <div class="ps-net-words">Net pay in words: <b>${escapeHtml(numberToWordsInr(netPay))}</b></div>
+        <div class="ps-bank-line">${paySlipBankLineHtml(bankLineParts)}</div>
+      </div>
+      <div class="ps-footer">
+        <div class="ps-note">THIS IS A COMPUTER-GENERATED PAYSLIP AND DOES NOT REQUIRE A SIGNATURE</div>
+      </div>
+    </div>
+  `;
+
+  // Real Chromium print (pdf_render_server.py, a local Playwright service) is the true
+  // pixel-perfect path - not an approximation like html2canvas, which re-implements text
+  // layout/painting in JS and can never fully match native rendering. Falls back to html2canvas
+  // only if that local server isn't running, so the download button still works either way.
+  const nativePdf = await renderA4DocViaNativePdf(html, PAY_SLIP_CSS, ".ps-sheet", `Pay Slip - ${slipNo}`);
+  if (nativePdf) return nativePdf;
+
+  const container = document.createElement("div");
+  container.style.cssText = "position:fixed; left:-10000px; top:0; pointer-events:none;";
+  container.innerHTML = `<style>${PAY_SLIP_CSS}</style>${html}`;
+  document.body.appendChild(container);
+  try {
+    const sheetEl = container.querySelector(".ps-sheet");
+    const canvas = await html2canvas(sheetEl, { scale: 2, backgroundColor: "#faf6ee" });
+    return canvasCardToPdf({ canvas, pageWidth: sheetEl.offsetWidth, pageHeight: sheetEl.offsetHeight }, `Pay Slip - ${slipNo}`);
+  } finally {
+    document.body.removeChild(container);
+  }
+};
+
+// Same real-HTML + native-PDF approach as buildPaySlipImage, matching "35_form_16.html" exactly
+// (all classes "f16-" prefixed, tokens scoped to .f16-sheet, line-height:normal to block the
+// site-wide styles.css line-height:1.6 leak). PAN/TAN have no data source anywhere in this app -
+// shown as "-" rather than invented. Part B keeps this app's own 4 real computed figures (gross,
+// PF+professional-tax deductions, net, estimated TDS) rather than the mockup's full HRA-exemption/
+// 80C/rebate/cess breakdown, since this app has no data to honestly fill those in with.
+const FORM16_CSS = `
+${A4_DOC_FONT_FACES}
+.f16-sheet{
+  --f16-navy-deep:#0a1730; --f16-navy:#0f1f3d; --f16-amber:#e8821a; --f16-amber-soft:#f0a34d;
+  --f16-cream:#faf6ee; --f16-ink:#0f1f3d; --f16-muted:#6b7180; --f16-line:#e3ddd0;
+  position:relative; width:793px; background:var(--f16-cream); font-family:'Inter',sans-serif;
+  line-height:normal;
+}
+.f16-sheet, .f16-sheet *{ box-sizing:border-box; }
+.f16-head{ background:linear-gradient(160deg, var(--f16-navy) 0%, var(--f16-navy-deep) 100%); color:var(--f16-cream); padding:24px 44px 20px; display:flex; align-items:center; justify-content:space-between; }
+.f16-head-left{ display:flex; align-items:center; gap:16px; }
+.f16-logo-img{ height:24px; width:auto; flex-shrink:0; display:block; }
+.f16-org-name{ font-family:'Fraunces', serif; font-weight:700; font-size:17px; line-height:1.2; }
+.f16-org-sub{ font-size:10px; letter-spacing:0.5px; color:rgba(250,246,238,0.65); margin-top:3px; }
+.f16-cert-no{ text-align:right; font-family:'Space Mono', monospace; font-size:9.5px; letter-spacing:1px; color:var(--f16-amber-soft); line-height:1.6; }
+.f16-cert-no b{ display:block; color:var(--f16-cream); font-size:12px; }
+.f16-title-band{ text-align:center; padding:16px 20px 14px; border-bottom:2px dashed var(--f16-line); }
+.f16-title-band .f16-eyebrow{ font-family:'Space Mono', monospace; font-size:9.5px; letter-spacing:2.5px; color:var(--f16-amber); font-weight:700; }
+.f16-title-band .f16-title{ font-family:'Fraunces', serif; font-weight:600; font-size:26px; color:var(--f16-ink); margin-top:5px; }
+.f16-title-band .f16-sub{ font-size:11.5px; color:var(--f16-muted); margin-top:4px; }
+.f16-body{ padding:22px 44px 10px; }
+.f16-section-label{ font-family:'Space Mono', monospace; font-size:10px; letter-spacing:2.2px; color:var(--f16-amber); font-weight:700; text-transform:uppercase; margin:20px 0 10px; }
+.f16-party-row{ display:flex; gap:20px; }
+.f16-party-box{ flex:1; border:1px solid var(--f16-line); border-radius:8px; padding:14px 16px; background:#fff; }
+.f16-party-box .f16-role{ font-family:'Space Mono', monospace; font-size:9px; letter-spacing:1.5px; color:var(--f16-amber); text-transform:uppercase; margin-bottom:6px; }
+.f16-party-box .f16-name{ font-weight:700; font-size:14px; color:var(--f16-ink); margin-bottom:6px; }
+.f16-party-box .f16-detail{ font-size:11.5px; color:var(--f16-muted); line-height:1.7; }
+.f16-party-box .f16-detail b{ color:var(--f16-ink); font-weight:600; }
+.f16-meta-grid{ display:grid; grid-template-columns:1fr 1fr 1fr; gap:14px; margin-top:16px; }
+.f16-meta-grid .f16-field label{ display:block; font-family:'Space Mono', monospace; font-size:9px; letter-spacing:1.5px; color:var(--f16-amber); margin-bottom:4px; }
+.f16-meta-grid .f16-field .f16-value{ font-weight:700; font-size:13px; color:var(--f16-ink); }
+table.f16-data-table{ width:100%; border-collapse:collapse; margin-top:4px; }
+table.f16-data-table th{ background:var(--f16-navy); color:var(--f16-amber-soft); font-family:'Space Mono', monospace; font-size:9px; letter-spacing:1px; text-transform:uppercase; padding:9px 10px; text-align:left; }
+table.f16-data-table td{ padding:9px 10px; font-size:12.5px; color:var(--f16-ink); border-bottom:1px solid var(--f16-line); background:#fff; }
+table.f16-data-table td.f16-amt{ text-align:right; font-family:'Space Mono', monospace; font-weight:700; }
+table.f16-data-table tr.f16-total td{ background:#f3ede0; font-weight:700; }
+.f16-salary-table td:first-child{ font-weight:600; }
+.f16-salary-table tr.f16-deduct td:first-child{ padding-left:22px; color:var(--f16-muted); }
+.f16-tax-summary{ margin-top:20px; background:var(--f16-navy); border-radius:10px; padding:16px 22px; display:flex; justify-content:space-between; align-items:center; }
+.f16-tax-summary .f16-label{ font-family:'Space Mono', monospace; font-size:10.5px; letter-spacing:1.5px; color:var(--f16-amber-soft); text-transform:uppercase; }
+.f16-tax-summary .f16-amt{ font-family:'Fraunces', serif; font-weight:700; font-size:22px; color:var(--f16-cream); }
+.f16-verify{ margin-top:26px; font-size:11.5px; color:var(--f16-muted); line-height:1.7; border-top:1px solid var(--f16-line); padding-top:16px; }
+.f16-verify b{ color:var(--f16-ink); }
+.f16-sign-area{ display:flex; justify-content:space-between; align-items:flex-end; margin-top:34px; padding:0 4px; }
+.f16-sign-area .f16-place-date{ font-size:12px; color:var(--f16-muted); line-height:1.8; }
+.f16-sign-block{ text-align:center; width:210px; }
+.f16-sign-line{ border-top:1px solid var(--f16-ink); height:30px; }
+.f16-sign-block .f16-label{ font-size:9.5px; letter-spacing:1.5px; color:var(--f16-muted); text-transform:uppercase; margin-top:6px; }
+.f16-footer{ margin-top:26px; padding:12px 44px; background:var(--f16-navy); text-align:center; }
+.f16-footer .f16-note{ font-family:'Space Mono', monospace; font-size:9px; letter-spacing:1.5px; color:rgba(250,246,238,0.6); }
+`;
+
+const buildForm16Image = async ({ certNo, employeeName, employeeId, designation, department, financialYear, annualGross, annualDeductions, annualNet, estimatedTax }) => {
+  await ensureBrandFontsLoaded();
+
+  const fyStart = Number(String(financialYear).slice(0, 4)) || new Date().getFullYear();
+  const period = `01 Apr ${fyStart} - 31 Mar ${fyStart + 1}`;
+  const assessmentYear = `${fyStart + 1} - ${String(fyStart + 2).slice(-2)}`;
+  const quarterAmount = annualGross / 4;
+  const quarterTax = estimatedTax / 4;
+  const today = new Date().toLocaleDateString("en-IN", { day: "2-digit", month: "short", year: "numeric" });
+
+  const partARows = ["Q1 (Apr–Jun)", "Q2 (Jul–Sep)", "Q3 (Oct–Dec)", "Q4 (Jan–Mar)"]
+    .map((q, qi) => {
+      // Own generated receipt number (not looked up in any real payroll system), same pattern as
+      // every other reference number this app hand-generates (e.g. the Fee Challan's refNumber).
+      const receiptNo = makeShortPassId("QTR", [certNo, qi]);
+      return `<tr><td>${q}</td><td>${receiptNo}</td><td class="f16-amt">₹${quarterAmount.toLocaleString("en-IN", { maximumFractionDigits: 0 })}</td><td class="f16-amt">₹${quarterTax.toLocaleString("en-IN", { maximumFractionDigits: 0 })}</td><td class="f16-amt">₹${quarterTax.toLocaleString("en-IN", { maximumFractionDigits: 0 })}</td></tr>`;
+    })
+    .join("");
+
+  const html = `
+    <div class="f16-sheet">
+      <div class="f16-head">
+        <div class="f16-head-left">
+          <img class="f16-logo-img" src="${gprecLogoUrl}" alt="">
+          <div>
+            <div class="f16-org-name">G Pulla Reddy Engineering College</div>
+            <div class="f16-org-sub">Human Resources · Payroll Cell</div>
+          </div>
+        </div>
+        <div class="f16-cert-no">CERTIFICATE NO.<b>${escapeHtml(certNo)}</b></div>
+      </div>
+      <div class="f16-title-band">
+        <div class="f16-eyebrow">INCOME TAX DEPARTMENT</div>
+        <div class="f16-title">Form 16</div>
+        <div class="f16-sub">Certificate under Section 203 of the Income-tax Act, 1961 for Tax Deducted at Source on Salary</div>
+      </div>
+      <div class="f16-body">
+        <div class="f16-party-row">
+          <div class="f16-party-box">
+            <div class="f16-role">Deductor (Employer)</div>
+            <div class="f16-name">G Pulla Reddy Engineering College</div>
+            <div class="f16-detail">TAN: <b>-</b><br>PAN: <b>-</b><br>Address: <b>Kurnool, Andhra Pradesh</b></div>
+          </div>
+          <div class="f16-party-box">
+            <div class="f16-role">Deductee (Employee)</div>
+            <div class="f16-name">${escapeHtml(employeeName)}</div>
+            <div class="f16-detail">PAN: <b>-</b><br>Employee ID: <b>${escapeHtml(employeeId)}</b><br>Designation: <b>${escapeHtml(designation)}${department ? `, ${escapeHtml(department)}` : ""}</b></div>
+          </div>
+        </div>
+        <div class="f16-meta-grid">
+          <div class="f16-field"><label>Assessment Year</label><div class="f16-value">${assessmentYear}</div></div>
+          <div class="f16-field"><label>Period</label><div class="f16-value">${period}</div></div>
+          <div class="f16-field"><label>Employer Category</label><div class="f16-value">Autonomous Institution</div></div>
+        </div>
+        <div class="f16-section-label">Part A · Summary of Tax Deducted at Source</div>
+        <table class="f16-data-table">
+          <tr><th>Quarter</th><th>Receipt No.</th><th>Amount Paid</th><th>Tax Deducted</th><th>Tax Deposited</th></tr>
+          ${partARows}
+          <tr class="f16-total"><td colspan="2">Total</td><td class="f16-amt">₹${annualGross.toLocaleString("en-IN")}</td><td class="f16-amt">₹${estimatedTax.toLocaleString("en-IN")}</td><td class="f16-amt">₹${estimatedTax.toLocaleString("en-IN")}</td></tr>
+        </table>
+        <div class="f16-section-label">Part B · Salary and Tax Computation</div>
+        <table class="f16-data-table f16-salary-table">
+          <tr><td>Gross Annual Pay</td><td class="f16-amt">₹${annualGross.toLocaleString("en-IN")}</td></tr>
+          <tr class="f16-deduct"><td>Total Deductions (PF + Professional Tax)</td><td class="f16-amt">– ₹${annualDeductions.toLocaleString("en-IN")}</td></tr>
+          <tr><td>Net Annual Pay</td><td class="f16-amt">₹${annualNet.toLocaleString("en-IN")}</td></tr>
+          <tr class="f16-total"><td>Estimated Tax Deducted (TDS)</td><td class="f16-amt">₹${estimatedTax.toLocaleString("en-IN")}</td></tr>
+        </table>
+        <div class="f16-tax-summary">
+          <span class="f16-label">Total Tax Deducted at Source</span>
+          <span class="f16-amt">₹${estimatedTax.toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+        </div>
+        <div class="f16-verify">
+          I, the undersigned, working in the capacity of <b>Head, Human Resources</b>, do hereby certify that the information given above is true and correct based on the books of account, documents, and other available records, and that it has been verified by me.
+        </div>
+        <div class="f16-sign-area">
+          <div class="f16-place-date">Place: <b>Kurnool</b><br>Date: <b>${today}</b></div>
+          <div class="f16-sign-block">
+            <div class="f16-sign-line"></div>
+            <div class="f16-label">Signature of Person Responsible for Deduction of Tax</div>
+          </div>
+        </div>
+      </div>
+      <div class="f16-footer">
+        <div class="f16-note">${escapeHtml(certNo)} · ASSESSMENT YEAR ${fyStart + 1}-${String(fyStart + 2).slice(-2)}</div>
+      </div>
+    </div>
+  `;
+
+  const nativePdf = await renderA4DocViaNativePdf(html, FORM16_CSS, ".f16-sheet", `Form 16 - ${certNo}`);
+  if (nativePdf) return nativePdf;
+
+  const container = document.createElement("div");
+  container.style.cssText = "position:fixed; left:-10000px; top:0; pointer-events:none;";
+  container.innerHTML = `<style>${FORM16_CSS}</style>${html}`;
+  document.body.appendChild(container);
+  try {
+    const sheetEl = container.querySelector(".f16-sheet");
+    const canvas = await html2canvas(sheetEl, { scale: 2, backgroundColor: "#faf6ee" });
+    return canvasCardToPdf({ canvas, pageWidth: sheetEl.offsetWidth, pageHeight: sheetEl.offsetHeight }, `Form 16 - ${certNo}`);
+  } finally {
+    document.body.removeChild(container);
+  }
+};
+
+// Renders a { canvas, pageWidth, pageHeight } result (from renderTicketStubCard or any other
+// canvas-based document renderer in this file) into a downloadable PDF via buildImageOnlyPdf -
+// shared by every one of these documents that must stay a "X.pdf" download (Bus/Vehicle/Hostel
+// passes, Temp ID Card, ...), unlike the Event Pass which stays a plain PNG.
+const canvasCardToPdf = async (cardResult, title) => {
+  const { canvas, pageWidth, pageHeight } = cardResult;
+  const jpegBytes = await canvasToJpegBytes(canvas);
+  return buildImageOnlyPdf(jpegBytes, canvas.width, canvas.height, pageWidth, pageHeight, title);
+};
+
+// Same real-HTML + native-PDF approach as buildPaySlipImage/buildForm16Image, matching
+// "32_hall_ticket_certificate_style.html" (gold/maroon "certificate" palette, double gold frame -
+// distinct from every other doc in this app, which uses the cream/navy/amber set). Per prior
+// explicit direction, the mockup's decorative shield/crest SVG is replaced with the real GPREC
+// logo, and its curved rotating-text stamp is omitted entirely since the logo already carries
+// that "official" cue - reintroducing it would be a step backwards. Also reuses the already-loaded
+// Fraunces instead of fetching the mockup's Playfair Display for just one title.
+const HALL_TICKET_CSS = `
+${A4_DOC_FONT_FACES}
+.ht-sheet{
+  --ht-navy:#16233f; --ht-navy-deep:#0d1729; --ht-gold:#a9812f; --ht-gold-soft:#c9a75e;
+  --ht-paper:#faf8f3; --ht-ink:#1e2430; --ht-muted:#6b7180; --ht-maroon:#7a2e2e; --ht-line:#d8d2c2;
+  position:relative; width:793px; background:var(--ht-paper); font-family:'Inter',sans-serif;
+  line-height:normal;
+}
+.ht-sheet, .ht-sheet *{ box-sizing:border-box; }
+.ht-frame{ margin:20px; border:1.5px solid var(--ht-gold); padding:4px; }
+.ht-frame-inner{ border:1px solid var(--ht-gold-soft); padding:0 0 30px; }
+.ht-header{ background:linear-gradient(180deg, var(--ht-navy) 0%, var(--ht-navy-deep) 100%); color:var(--ht-paper); padding:26px 40px 22px; text-align:center; position:relative; }
+.ht-crest-logo{ height:36px; width:auto; margin:0 auto 10px; display:block; }
+.ht-college-name{ font-family:'Inter', sans-serif; font-weight:700; font-size:15px; letter-spacing:2.5px; text-transform:uppercase; color:var(--ht-gold-soft); }
+.ht-college-sub{ font-size:10.5px; letter-spacing:0.5px; color:rgba(250,248,243,0.6); margin-top:3px; }
+.ht-pass-title{ font-family:'Fraunces', serif; font-weight:700; font-size:28px; margin-top:12px; }
+.ht-pass-sub{ font-size:12px; color:var(--ht-gold-soft); margin-top:4px; letter-spacing:0.5px; }
+.ht-ticket-no{ position:absolute; top:22px; right:26px; font-family:'Space Mono', monospace; font-size:10px; letter-spacing:1px; color:var(--ht-gold-soft); text-align:right; line-height:1.6; }
+.ht-ticket-no b{ display:block; color:var(--ht-paper); font-size:12.5px; }
+.ht-content{ padding:30px 40px 4px; }
+.ht-top-row{ display:flex; gap:22px; align-items:flex-start; padding-bottom:22px; border-bottom:1px solid var(--ht-line); }
+.ht-photo-box{ width:100px; height:120px; flex-shrink:0; border:1.5px dashed #b7ae95; display:flex; align-items:center; justify-content:center; text-align:center; color:#a39c86; font-family:'Space Mono', monospace; font-size:9px; letter-spacing:1.5px; overflow:hidden; }
+.ht-photo-box img{ width:100%; height:100%; object-fit:cover; }
+.ht-id-fields{ flex:1; }
+.ht-id-grid{ display:grid; grid-template-columns:1fr 1fr; row-gap:12px; column-gap:20px; }
+.ht-id-grid .ht-k{ font-size:10px; letter-spacing:1.5px; color:var(--ht-muted); text-transform:uppercase; font-weight:600; margin-bottom:3px; }
+.ht-id-grid .ht-v{ font-size:14.5px; font-weight:700; color:var(--ht-ink); }
+.ht-section-label{ font-size:11px; letter-spacing:2.5px; color:var(--ht-gold); font-weight:700; text-transform:uppercase; margin:26px 0 12px; text-align:center; }
+table.ht-schedule{ width:100%; border-collapse:collapse; }
+table.ht-schedule th{ border-bottom:1.5px solid var(--ht-navy); font-family:'Inter', sans-serif; font-size:10px; letter-spacing:1px; text-transform:uppercase; color:var(--ht-navy); padding:8px 10px; text-align:left; }
+table.ht-schedule td{ padding:10px 10px; font-size:13px; color:var(--ht-ink); border-bottom:1px solid var(--ht-line); }
+/* The reference splits "Subject Code"/"Subject Name" into two narrow columns; this app's real
+   schedule data only has one combined "CODE - Name" field, which is wider - without width hints
+   it squeezes Date/Time into an ugly wrap. Not from the mockup, just proportioned sensibly. */
+table.ht-schedule th:nth-child(1), table.ht-schedule td:nth-child(1){ width:26%; }
+table.ht-schedule th:nth-child(2), table.ht-schedule td:nth-child(2){ width:13%; white-space:nowrap; }
+table.ht-schedule th:nth-child(3), table.ht-schedule td:nth-child(3){ width:13%; white-space:nowrap; }
+table.ht-schedule th:nth-child(4), table.ht-schedule td:nth-child(4){ width:9%; }
+table.ht-schedule th:nth-child(5), table.ht-schedule td:nth-child(5){ width:8%; }
+table.ht-schedule th:nth-child(6), table.ht-schedule td:nth-child(6){ width:31%; }
+.ht-instructions{ margin-top:26px; }
+.ht-instructions ul{ margin:10px 0 0; padding-left:18px; }
+.ht-instructions li{ font-size:12px; color:var(--ht-muted); line-height:1.8; }
+.ht-instructions li b{ color:var(--ht-ink); }
+.ht-sign-area{ position:relative; display:flex; justify-content:space-between; align-items:flex-end; margin-top:40px; padding:0 6px 4px; }
+.ht-sign-block{ text-align:center; width:44%; }
+.ht-sign-line{ border-top:1px solid var(--ht-ink); margin-bottom:6px; height:30px; }
+.ht-sign-block .ht-label{ font-size:9.5px; letter-spacing:2px; color:var(--ht-muted); text-transform:uppercase; }
+.ht-footer-strip{ margin-top:26px; background:var(--ht-navy); padding:11px 40px; display:flex; align-items:center; justify-content:space-between; }
+.ht-footer-strip .ht-note{ font-size:9.5px; letter-spacing:1px; color:rgba(250,248,243,0.65); }
+.ht-footer-strip .ht-id{ font-family:'Space Mono', monospace; font-size:10px; letter-spacing:1.5px; color:var(--ht-gold-soft); }
+`;
+
+const buildHallTicketImage = async ({ ticketNo, name, rollNumber, branch, className, dob, schedule, photoUrl }) => {
+  await ensureBrandFontsLoaded();
+
+  const initials = (name || "S").split(/\s+/).filter(Boolean).slice(0, 2).map((w) => w[0]).join("").toUpperCase();
+  const idFields = [
+    ["Student Name", name], ["Roll Number", rollNumber],
+    ["Course / Branch", `B.Tech · ${branch}`], ["Class", className || "-"],
+    ["Date of Birth", dob || "-"]
+  ];
+  // Exam centre isn't shown up top since it can differ per subject - it's a column in the
+  // schedule table below instead, same reasoning the original canvas version already had.
+  const scheduleRows = schedule.map((row) =>
+    `<tr><td>${escapeHtml(row.subject)}</td><td>${escapeHtml(row.date)}</td><td>${escapeHtml(row.time)}</td><td>${escapeHtml(row.room)}</td><td>${escapeHtml(row.seat)}</td><td>${escapeHtml(row.centre)}</td></tr>`
+  ).join("");
+
+  const html = `
+    <div class="ht-sheet">
+      <div class="ht-frame"><div class="ht-frame-inner">
+        <div class="ht-header">
+          <div class="ht-ticket-no">HALL TICKET NO.<b>${escapeHtml(ticketNo)}</b></div>
+          <img class="ht-crest-logo" src="${gprecLogoUrl}" alt="">
+          <div class="ht-college-name">G Pulla Reddy Engineering College</div>
+          <div class="ht-college-sub">Autonomous Institution · Kurnool</div>
+          <div class="ht-pass-title">Hall Ticket</div>
+          <div class="ht-pass-sub">End Semester Examinations</div>
+        </div>
+        <div class="ht-content">
+          <div class="ht-top-row">
+            <div class="ht-photo-box">${photoUrl ? `<img src="${photoUrl}" alt="">` : `<span style="font-family:Inter,sans-serif;font-weight:700;font-size:26px;color:var(--ht-navy)">${escapeHtml(initials)}</span>`}</div>
+            <div class="ht-id-fields">
+              <div class="ht-id-grid">
+                ${idFields.map(([label, value]) => `<div><div class="ht-k">${escapeHtml(label)}</div><div class="ht-v">${escapeHtml(value)}</div></div>`).join("")}
+              </div>
+            </div>
+          </div>
+          <div class="ht-section-label">Examination Schedule</div>
+          <table class="ht-schedule">
+            <tr><th>Subject</th><th>Date</th><th>Time</th><th>Room</th><th>Seat</th><th>Exam Centre</th></tr>
+            ${scheduleRows}
+          </table>
+          <div class="ht-instructions">
+            <div class="ht-section-label" style="text-align:left;">Instructions</div>
+            <ul>
+              <li>Carry this <b>hall ticket</b> and your college ID card to every exam.</li>
+              <li>Report to the exam center <b>30 minutes before</b> the session begins.</li>
+              <li>Mobile phones and smart devices are <b>not permitted</b> in the hall.</li>
+              <li>Occupy only the seat number allotted to you.</li>
+              <li>No candidate is permitted entry <b>after 15 minutes</b> from the start of the exam.</li>
+            </ul>
+          </div>
+          <div class="ht-sign-area">
+            <div class="ht-sign-block"><div class="ht-sign-line"></div><div class="ht-label">Student Signature</div></div>
+            <div class="ht-sign-block"><div class="ht-sign-line"></div><div class="ht-label">Controller of Examinations</div></div>
+          </div>
+        </div>
+        <div class="ht-footer-strip">
+          <div class="ht-note">This hall ticket must be presented at the examination hall along with a valid photo ID.</div>
+          <div class="ht-id">${escapeHtml(ticketNo)}</div>
+        </div>
+      </div></div>
+    </div>
+  `;
+
+  const nativePdf = await renderA4DocViaNativePdf(html, HALL_TICKET_CSS, ".ht-sheet", `Hall Ticket - ${rollNumber}`);
+  if (nativePdf) return nativePdf;
+
+  const container = document.createElement("div");
+  container.style.cssText = "position:fixed; left:-10000px; top:0; pointer-events:none;";
+  container.innerHTML = `<style>${HALL_TICKET_CSS}</style>${html}`;
+  document.body.appendChild(container);
+  try {
+    const sheetEl = container.querySelector(".ht-sheet");
+    const canvas = await html2canvas(sheetEl, { scale: 2, backgroundColor: "#e9e6de" });
+    return canvasCardToPdf({ canvas, pageWidth: sheetEl.offsetWidth, pageHeight: sheetEl.offsetHeight }, `Hall Ticket - ${rollNumber}`);
+  } finally {
+    document.body.removeChild(container);
+  }
+};
+
+// Same real-HTML + native-PDF approach as buildPaySlipImage/buildForm16Image/buildHallTicketImage,
+// matching "33_gprec_fee_challan.html" (bank-form palette distinct from every other document -
+// dark gray page margin around off-white paper, Inter + Space Mono only, no Fraunces - matching
+// the mockup dropping the serif font entirely). Two deliberate departures from the mockup, both
+// already established in the prior canvas version and preserved here: a real Code 128 (Set C)
+// barcode built from encodeCode128C's bar/space bit string instead of the mockup's fake repeating-
+// gradient strip, and the same faint seal + diagonal "OFFICIAL DOCUMENT" watermark every other
+// official document in this app carries (the mockup itself doesn't show one). `copyLabel` is
+// "COLLEGE COPY"/"STUDENT COPY"/"BANK COPY" - the only difference between the 3 copies
+// makeChallanPdfs produces.
+const FEE_CHALLAN_CSS = `
+${A4_DOC_FONT_FACES}
+.fc-sheet{
+  --fc-navy:#0f1f3d; --fc-navy-deep:#0a1730; --fc-amber:#e8821a; --fc-ink:#16233f; --fc-line:#c9c2ae; --fc-paper:#fdfcf9; --fc-muted:#5f6472;
+  position:relative; width:720px; background:var(--fc-paper); font-family:'Inter',sans-serif; line-height:normal; overflow:hidden;
+}
+.fc-sheet, .fc-sheet *{ box-sizing:border-box; }
+.fc-watermark-seal{ position:absolute; top:50%; left:50%; transform:translate(-50%,-50%); height:50%; opacity:0.06; pointer-events:none; }
+.fc-watermark-text{ position:absolute; top:50%; left:50%; transform:translate(-50%,-50%) rotate(-30deg); opacity:0.06; color:var(--fc-navy); font-weight:700; font-size:26px; white-space:nowrap; pointer-events:none; }
+.fc-head-band{ position:relative; background:var(--fc-navy); padding:20px 32px; display:flex; align-items:center; gap:14px; }
+.fc-logo-img{ height:26px; width:auto; flex-shrink:0; display:block; }
+.fc-head-band .fc-college{ color:#fff; font-weight:700; font-size:16px; letter-spacing:0.3px; }
+.fc-head-band .fc-loc{ color:rgba(255,255,255,0.6); font-size:11px; margin-top:2px; }
+.fc-title-row{ position:relative; display:flex; align-items:center; justify-content:space-between; padding:22px 32px 14px; border-bottom:1.5px solid var(--fc-ink); }
+.fc-title-row .fc-title{ font-size:22px; font-weight:700; color:var(--fc-ink); }
+.fc-barcode-block{ text-align:center; }
+.fc-barcode-block .fc-num{ font-family:'Space Mono', monospace; font-size:9.5px; letter-spacing:1px; color:var(--fc-muted); margin-top:4px; }
+.fc-meta-row{ position:relative; display:flex; justify-content:space-between; padding:12px 32px 0; font-size:12.5px; font-weight:700; color:var(--fc-ink); }
+.fc-meta-row .fc-copy-tag{ color:var(--fc-amber); letter-spacing:1px; }
+.fc-bank-block{ position:relative; text-align:center; padding:20px 32px 4px; }
+.fc-bank-block .fc-bank{ font-size:14px; font-weight:700; color:var(--fc-ink); }
+.fc-bank-block .fc-college2{ font-size:13px; font-weight:600; color:var(--fc-ink); margin-top:3px; }
+.fc-challan-body{ position:relative; padding:20px 32px 8px; }
+.fc-line-row{ display:flex; align-items:baseline; gap:6px; padding:10px 0; font-size:13.5px; color:var(--fc-ink); }
+.fc-line-row .fc-lbl{ font-weight:600; white-space:nowrap; }
+.fc-line-row .fc-blank{ flex:1; border-bottom:1.3px solid var(--fc-ink); padding-bottom:2px; font-weight:700; min-height:18px; }
+.fc-line-row .fc-blank.fc-short{ flex:0 0 140px; }
+.fc-amount-row{ display:flex; align-items:baseline; gap:10px; padding:12px 0; font-size:14px; color:var(--fc-ink); }
+.fc-amount-row .fc-rs{ font-weight:700; font-size:16px; color:var(--fc-amber); }
+.fc-amount-row .fc-amt-blank{ border-bottom:1.3px solid var(--fc-ink); padding:0 8px 2px; font-weight:700; min-width:80px; text-align:center; }
+.fc-amount-row .fc-words-blank{ flex:1; border-bottom:1.3px solid var(--fc-ink); padding-bottom:2px; font-weight:700; }
+.fc-two-col-row{ display:flex; justify-content:space-between; gap:24px; padding:10px 0; }
+.fc-two-col-row .fc-line-row{ flex:1; padding:0; }
+.fc-sign-footer{ position:relative; display:flex; justify-content:space-between; padding:26px 32px 30px; }
+.fc-sign-footer .fc-col div{ font-size:12.5px; font-weight:600; color:var(--fc-ink); padding:6px 0; }
+`;
+
+// Builds the real Code 128 (Set C) barcode as an inline SVG - adjacent dark modules merged into
+// one wide <rect> (same run-length approach every other bar/QR renderer in this file uses) rather
+// than one <rect> per module.
+const buildFeeChallanBarcodeSvg = (refNumber, width, height) => {
+  const pattern = encodeCode128C(refNumber);
+  const moduleW = width / pattern.length;
+  const rects = [];
+  let x = 0;
+  let runStart = null;
+  for (let i = 0; i <= pattern.length; i++) {
+    const bit = pattern[i];
+    if (bit === "1") {
+      if (runStart === null) runStart = x;
+    } else if (runStart !== null) {
+      rects.push(`<rect x="${runStart.toFixed(2)}" y="0" width="${(x - runStart).toFixed(2)}" height="${height}" fill="#16233f"/>`);
+      runStart = null;
+    }
+    x += moduleW;
+  }
+  return `<svg width="${width}" height="${height}" viewBox="0 0 ${width} ${height}" xmlns="http://www.w3.org/2000/svg">${rects.join("")}</svg>`;
+};
+
+const buildFeeChallanImage = async ({ copyLabel, refNumber, name, rollNo, purposeLabel, amountNumber, amountWords, today }) => {
+  await ensureBrandFontsLoaded();
+
+  const barcodeSvg = buildFeeChallanBarcodeSvg(refNumber, 170, 28);
+
+  const html = `
+    <div class="fc-sheet">
+      <img class="fc-watermark-seal" src="${gprecSealUrl}" alt="">
+      <div class="fc-watermark-text">GPREC · OFFICIAL DOCUMENT</div>
+      <div class="fc-head-band">
+        <img class="fc-logo-img" src="${gprecLogoUrl}" alt="">
+        <div>
+          <div class="fc-college">G. Pulla Reddy Engineering College</div>
+          <div class="fc-loc">Kurnool · G.P.R.E.C.</div>
+        </div>
+      </div>
+      <div class="fc-title-row">
+        <div class="fc-title">GPREC Fee Challan</div>
+        <div class="fc-barcode-block">
+          ${barcodeSvg}
+          <div class="fc-num">${escapeHtml(refNumber)}</div>
+        </div>
+      </div>
+      <div class="fc-meta-row">
+        <span>SNO: ${escapeHtml(refNumber)}</span>
+        <span class="fc-copy-tag">${escapeHtml(copyLabel)}</span>
+      </div>
+      <div class="fc-bank-block">
+        <div class="fc-bank">ANDHRA BANK</div>
+        <div class="fc-college2">G. PULLA REDDY ENGINEERING COLLEGE KURNOOL - 518007</div>
+      </div>
+      <div class="fc-challan-body">
+        <div class="fc-line-row">
+          <span class="fc-lbl">Paid in to the Credit of</span>
+          <span class="fc-blank">S.B. A/c No. 152110011031255; of G.P.R.E.C., KURNOOL</span>
+        </div>
+        <div class="fc-amount-row">
+          <span class="fc-rs">Rs.</span>
+          <span class="fc-amt-blank">${escapeHtml(String(amountNumber))}</span>
+          <span>/- (Rupees</span>
+          <span class="fc-words-blank">${escapeHtml(amountWords)}</span>
+          <span>Only)</span>
+        </div>
+        <div class="fc-line-row">
+          <span class="fc-lbl">towards</span>
+          <span class="fc-blank">${escapeHtml(purposeLabel)}</span>
+        </div>
+        <div class="fc-two-col-row">
+          <div class="fc-line-row"><span class="fc-lbl">Name:</span><span class="fc-blank">${escapeHtml(name.toUpperCase())}</span></div>
+          <div class="fc-line-row"><span class="fc-lbl">Roll No.:</span><span class="fc-blank fc-short">${escapeHtml(rollNo)}</span></div>
+        </div>
+        <div class="fc-two-col-row">
+          <div class="fc-line-row"><span class="fc-lbl">Paid By</span><span class="fc-blank">&nbsp;</span></div>
+          <div class="fc-line-row"><span class="fc-lbl">Date:</span><span class="fc-blank fc-short">${escapeHtml(today)}</span></div>
+        </div>
+      </div>
+      <div class="fc-sign-footer">
+        <div class="fc-col">
+          <div>Teller</div>
+          <div>Head Cashier</div>
+          <div>Scroll No. Cash</div>
+        </div>
+        <div class="fc-col" style="text-align:right;">
+          <div>Entered by</div>
+        </div>
+      </div>
+    </div>
+  `;
+
+  const nativePdf = await renderA4DocViaNativePdf(html, FEE_CHALLAN_CSS, ".fc-sheet", `GPREC Fee Challan - ${rollNo}`);
+  if (nativePdf) return nativePdf;
+
+  const container = document.createElement("div");
+  container.style.cssText = "position:fixed; left:-10000px; top:0; pointer-events:none;";
+  container.innerHTML = `<style>${FEE_CHALLAN_CSS}</style>${html}`;
+  document.body.appendChild(container);
+  try {
+    const sheetEl = container.querySelector(".fc-sheet");
+    const canvas = await html2canvas(sheetEl, { scale: 2, backgroundColor: "#fdfcf9" });
+    return canvasCardToPdf({ canvas, pageWidth: sheetEl.offsetWidth, pageHeight: sheetEl.offsetHeight }, `GPREC Fee Challan - ${rollNo}`);
+  } finally {
+    document.body.removeChild(container);
+  }
+};
+
+// Draws a ticket-format pass - a downloadable PNG, not a PDF, so it can be saved straight
+// to a phone's photo gallery ahead of real Apple/Google Wallet integration (which needs signing
+// credentials this app doesn't have yet). Layout/colors match the "Udaan 2K26" reference design -
+// see renderTicketStubCard for the shared card shape this and the other ticket-family passes use.
+const buildEventTicketImage = async (registration, event) => {
   // A public/external registration's response already carries a server-generated gateToken (see
   // register_for_public_event in portal_db_server.py) - the caller has no session to look it back
   // up via getCampusEventRegistrations() the way ensureEventGateToken normally does.
@@ -18582,256 +20701,27 @@ const buildEventTicketImage = async (registration, event) => {
   const ticketCode = makeTicketCode();
   const festName = (getFestName() || "GPREC FEST").toUpperCase();
 
-  const logoImg = new Image();
-  await new Promise((resolve) => {
-    logoImg.onload = resolve;
-    logoImg.onerror = resolve;
-    logoImg.src = gprecLogoUrl;
+  return renderTicketStubCard({
+    eyebrow: `${festName} · EVENT PASS`,
+    scanCaption: "SCAN AT ENTRY GATE",
+    tag: "E-TICKET",
+    tagIconPath: TICKET_ICON_PATHS.ticket,
+    qrText: scanUrl,
+    title: event.name || "GPREC Event",
+    fields: [
+      { label: "TICKET ID", value: ticketCode, mono: true },
+      { label: "NAME", value: registration.participantName },
+      { label: "DATE", value: formatCampusEventDate(event.date) },
+      { label: "STATUS", value: registration.paymentStatus || "Registered", status: true },
+      { label: "LOCATION", value: event.venue || "Venue TBA", fullWidth: true }
+    ],
+    footerLeft: festName,
+    footerRight: "ADMIT ONE",
+    showNotches: true,
+    watermarkSvg: TICKET_WATERMARKS.compass,
+    watermarkSize: 230,
+    watermarkOpacity: 0.16
   });
-
-  // Measured on a scratch context first (font-only, no drawing) so the event title's actual
-  // wrapped line count can push everything below it down correctly - the mockup's body height
-  // isn't fixed, it just grows with content, same as the real HTML/CSS would.
-  const measureCtx = document.createElement("canvas").getContext("2d");
-  measureCtx.font = "600 34px Fraunces";
-  const titleLines = canvasTextLines(measureCtx, event.name || "GPREC Event", 364);
-  const titleLineCount = Math.min(titleLines.length, 2);
-
-  const roundedRectPath = (ctx, x, y, width, height, radius) => {
-    const r = Math.min(radius, width / 2, height / 2);
-    ctx.beginPath();
-    ctx.moveTo(x + r, y);
-    ctx.arcTo(x + width, y, x + width, y + height, r);
-    ctx.arcTo(x + width, y + height, x, y + height, r);
-    ctx.arcTo(x, y + height, x, y, r);
-    ctx.arcTo(x, y, x + width, y, r);
-    ctx.closePath();
-  };
-  const fillRoundedRect = (ctx, x, y, width, height, radius, fillStyle) => {
-    roundedRectPath(ctx, x, y, width, height, radius);
-    ctx.fillStyle = fillStyle;
-    ctx.fill();
-  };
-  const letterSpaced = (text, spacing) => text.split("").join(" ".repeat(Math.round(spacing)));
-
-  // ----- Layout (template-pixel units, top to bottom) -----
-  const stubPadTop = 26;
-  const stubPadSides = 28;
-  const stubTopRowH = 40;
-  const eyebrowY = stubPadTop + stubTopRowH + 22;
-  const qrWrapY = eyebrowY + 14 + 22;
-  const qrWrapSize = 210;
-  const scanCaptionY = qrWrapY + qrWrapSize + 16;
-  const stubH = scanCaptionY + 14 + 38;
-
-  const bodyPadTop = 32;
-  const bodyPadSides = 28;
-  const titleY = stubH + bodyPadTop;
-  const titleLineH = 36;
-  const ruleY = titleY + titleLineCount * titleLineH - titleLineH + 14 + 8;
-  const gridY = ruleY + 3 + 26;
-  const fieldRowH = 52;
-  const fieldRowGap = 22;
-  const gridRows = 3; // Ticket ID/Name, Date/Status, Location
-  const gridBottom = gridY + gridRows * fieldRowH + (gridRows - 1) * fieldRowGap;
-  const footerY = gridBottom + 28;
-  const footerH = 44;
-  const totalH = footerY + footerH + 22;
-
-  const canvas = document.createElement("canvas");
-  canvas.width = CARD_W * SCALE;
-  canvas.height = totalH * SCALE;
-  const ctx = canvas.getContext("2d");
-  ctx.scale(SCALE, SCALE);
-
-  const cardRadius = 22;
-  roundedRectPath(ctx, 0, 0, CARD_W, totalH, cardRadius);
-  ctx.save();
-  ctx.clip();
-  ctx.fillStyle = CREAM;
-  ctx.fillRect(0, 0, CARD_W, totalH);
-
-  // ----- Stub (navy gradient header) -----
-  const stubGrad = ctx.createLinearGradient(0, 0, CARD_W * 0.6, stubH);
-  stubGrad.addColorStop(0, NAVY);
-  stubGrad.addColorStop(1, NAVY_DEEP);
-  ctx.fillStyle = stubGrad;
-  ctx.fillRect(0, 0, CARD_W, stubH);
-
-  // Compass-rose watermark, bottom-right of the stub, matching the mockup's faint ring/diamond art.
-  ctx.save();
-  ctx.globalAlpha = 0.16;
-  ctx.translate(CARD_W - 70 + 115, stubH - 70 + 115);
-  ctx.strokeStyle = AMBER;
-  ctx.lineWidth = 1;
-  [95, 70].forEach((r) => {
-    ctx.beginPath();
-    ctx.arc(0, 0, r, 0, Math.PI * 2);
-    ctx.stroke();
-  });
-  ctx.beginPath();
-  ctx.moveTo(0, -95); ctx.lineTo(0, 95);
-  ctx.moveTo(-95, 0); ctx.lineTo(95, 0);
-  ctx.moveTo(-70, -70); ctx.lineTo(70, 70);
-  ctx.moveTo(70, -70); ctx.lineTo(-70, 70);
-  ctx.stroke();
-  ctx.fillStyle = AMBER;
-  ctx.beginPath();
-  ctx.moveTo(0, -80); ctx.lineTo(12, 0); ctx.lineTo(0, 80); ctx.lineTo(-12, 0);
-  ctx.closePath();
-  ctx.fill();
-  ctx.globalAlpha = 0.16 * 0.6;
-  ctx.beginPath();
-  ctx.moveTo(-80, 0); ctx.lineTo(0, -12); ctx.lineTo(80, 0); ctx.lineTo(0, 12);
-  ctx.closePath();
-  ctx.fill();
-  ctx.globalAlpha = 0.16;
-  ctx.beginPath();
-  ctx.arc(0, 0, 10, 0, Math.PI * 2);
-  ctx.fill();
-  ctx.restore();
-
-  // Logo badge (dashed box, real GPREC logo instead of the mockup's "+ LOGO" placeholder).
-  const badgeW = 96;
-  const badgeH = stubTopRowH;
-  ctx.save();
-  ctx.strokeStyle = "rgba(232,130,26,0.55)";
-  ctx.lineWidth = 1.5;
-  ctx.setLineDash([4, 3]);
-  roundedRectPath(ctx, stubPadSides, stubPadTop, badgeW, badgeH, 10);
-  ctx.stroke();
-  ctx.setLineDash([]);
-  ctx.restore();
-  if (logoImg.naturalWidth) {
-    const logoH = badgeH - 16;
-    const logoW = (logoH * logoImg.naturalWidth) / logoImg.naturalHeight;
-    ctx.drawImage(logoImg, stubPadSides + (badgeW - logoW) / 2, stubPadTop + 8, logoW, logoH);
-  }
-
-  // E-TICKET tag, top right.
-  ctx.fillStyle = CREAM;
-  ctx.font = "700 11px 'Space Mono'";
-  ctx.textAlign = "right";
-  ctx.fillText(letterSpaced("E-TICKET", 1.5), CARD_W - stubPadSides, stubPadTop + 12);
-  ctx.textAlign = "left";
-
-  // Eyebrow: "<FEST NAME> · EVENT PASS", centered.
-  ctx.fillStyle = AMBER_SOFT;
-  ctx.font = "700 11px 'Space Mono'";
-  ctx.textAlign = "center";
-  ctx.fillText(letterSpaced(`${festName} · EVENT PASS`, 2), CARD_W / 2, eyebrowY);
-  ctx.textAlign = "left";
-
-  // QR box (cream, rounded, drop shadow) with the real gate-scan QR inside.
-  const qrWrapX = (CARD_W - qrWrapSize) / 2;
-  ctx.save();
-  ctx.shadowColor = "rgba(0,0,0,0.5)";
-  ctx.shadowBlur = 20;
-  ctx.shadowOffsetY = 10;
-  fillRoundedRect(ctx, qrWrapX, qrWrapY, qrWrapSize, qrWrapSize, 14, CREAM);
-  ctx.restore();
-  const qr = qrcode(0, "H");
-  qr.addData(scanUrl);
-  qr.make();
-  const moduleCount = qr.getModuleCount();
-  const qrInnerSize = qrWrapSize - 28;
-  const qrInnerX = qrWrapX + 14;
-  const qrInnerY = qrWrapY + 14;
-  const moduleSize = qrInnerSize / moduleCount;
-  ctx.fillStyle = NAVY;
-  for (let row = 0; row < moduleCount; row++) {
-    for (let col = 0; col < moduleCount; col++) {
-      if (qr.isDark(row, col)) {
-        ctx.fillRect(qrInnerX + col * moduleSize, qrInnerY + row * moduleSize, moduleSize + 0.5, moduleSize + 0.5);
-      }
-    }
-  }
-
-  // Scan caption.
-  ctx.fillStyle = "rgba(250,246,238,0.65)";
-  ctx.font = "700 10px 'Space Mono'";
-  ctx.textAlign = "center";
-  ctx.fillText(letterSpaced("SCAN AT ENTRY GATE", 2.5), CARD_W / 2, scanCaptionY);
-  ctx.textAlign = "left";
-
-  // ----- Perforation seam (dashed line + two cream notches cut into the stub/body boundary) -----
-  ctx.fillStyle = CREAM;
-  ctx.beginPath();
-  ctx.arc(0, stubH, 16, 0, Math.PI * 2);
-  ctx.fill();
-  ctx.beginPath();
-  ctx.arc(CARD_W, stubH, 16, 0, Math.PI * 2);
-  ctx.fill();
-  ctx.strokeStyle = "rgba(122,68,48,0.35)";
-  ctx.lineWidth = 2;
-  ctx.setLineDash([6, 5]);
-  ctx.beginPath();
-  ctx.moveTo(0, stubH);
-  ctx.lineTo(CARD_W, stubH);
-  ctx.stroke();
-  ctx.setLineDash([]);
-
-  // ----- Body -----
-  ctx.fillStyle = INK;
-  ctx.font = "600 34px Fraunces";
-  titleLines.slice(0, 2).forEach((line, i) => {
-    ctx.fillText(line, bodyPadSides, titleY + 30 + i * titleLineH);
-  });
-
-  ctx.fillStyle = AMBER;
-  ctx.fillRect(bodyPadSides, ruleY, 52, 3);
-
-  const drawField = (x, y, w, label, value, valueColor = INK) => {
-    ctx.fillStyle = AMBER;
-    ctx.font = "700 10px 'Space Mono'";
-    ctx.fillText(letterSpaced(label, 1.2), x, y);
-    ctx.fillStyle = valueColor;
-    ctx.font = "700 17px Inter";
-    wrapCanvasText(ctx, value || "-", x, y + 22, w, 20, 1);
-  };
-  const colW = (CARD_W - bodyPadSides * 2 - 16) / 2;
-  const col1X = bodyPadSides;
-  const col2X = bodyPadSides + colW + 16;
-
-  drawField(col1X, gridY + 12, colW, "TICKET ID", ticketCode, INK);
-  ctx.font = "700 17px 'Space Mono'";
-  drawField(col2X, gridY + 12, colW, "NAME", registration.participantName);
-
-  const row2Y = gridY + fieldRowH + fieldRowGap + 12;
-  ctx.fillStyle = AMBER;
-  ctx.font = "700 10px 'Space Mono'";
-  ctx.fillText(letterSpaced("DATE", 1.2), col1X, row2Y);
-  ctx.fillStyle = INK;
-  ctx.font = "700 17px Inter";
-  wrapCanvasText(ctx, formatCampusEventDate(event.date) || "-", col1X, row2Y + 22, colW, 20, 1);
-
-  ctx.fillStyle = AMBER;
-  ctx.font = "700 10px 'Space Mono'";
-  ctx.fillText(letterSpaced("STATUS", 1.2), col2X, row2Y);
-  ctx.fillStyle = GREEN;
-  ctx.beginPath();
-  ctx.arc(col2X + 4, row2Y + 26, 3.5, 0, Math.PI * 2);
-  ctx.fill();
-  ctx.fillStyle = GREEN_TEXT;
-  ctx.font = "700 15px Inter";
-  ctx.fillText(registration.paymentStatus || "Registered", col2X + 14, row2Y + 31);
-
-  const row3Y = row2Y + fieldRowH + fieldRowGap;
-  drawField(col1X, row3Y, CARD_W - bodyPadSides * 2, "LOCATION", event.venue || "Venue TBA", INK);
-
-  // Footer bar: fest name left, "ADMIT ONE" right, on a navy rounded pill.
-  fillRoundedRect(ctx, bodyPadSides, footerY, CARD_W - bodyPadSides * 2, footerH, 10, NAVY);
-  ctx.fillStyle = AMBER_SOFT;
-  ctx.font = "700 11px 'Space Mono'";
-  ctx.textAlign = "left";
-  ctx.fillText(letterSpaced(festName, 2.5), bodyPadSides + 18, footerY + footerH / 2 + 4);
-  ctx.fillStyle = CREAM;
-  ctx.textAlign = "right";
-  ctx.fillText(letterSpaced("ADMIT ONE", 2.5), CARD_W - bodyPadSides - 18, footerY + footerH / 2 + 4);
-  ctx.textAlign = "left";
-
-  ctx.restore();
-  return new Promise((resolve) => canvas.toBlob(resolve, "image/png"));
 };
 
 // Builds the ticket image and reveals it as a persistent download link (same pattern as
@@ -18856,6 +20746,7 @@ const recordEventPayment = async (paymentType, paymentReference) => {
   const participantName = eventParticipantName?.value.trim() || "Student";
   const rollNumber = getCurrentStudentId();
   const paymentDate = new Date().toLocaleDateString("en-IN", { day: "2-digit", month: "short", year: "numeric" });
+  const paymentTime = new Date().toLocaleTimeString("en-IN", { hour: "2-digit", minute: "2-digit", hour12: true });
 
   const receiptLines = [
     `Participant Name: ${participantName}`,
@@ -18865,6 +20756,7 @@ const recordEventPayment = async (paymentType, paymentReference) => {
     `Payment Type: ${paymentType}`,
     `Payment Reference: ${paymentReference}`,
     `Payment Date: ${paymentDate}`,
+    `Payment Time: ${paymentTime}`,
     "Payment Status: Paid"
   ];
   const pdf = await makeReceiptPdf("GPREC Event Registration Receipt", receiptLines);
@@ -21954,51 +23846,22 @@ if (facultyDashboardName) {
       const basic = 45000;
       const da = 4500;
       const hra = 9000;
-      const gross = basic + da + hra;
       const pf = 5400;
       const professionalTax = 200;
-      const deductions = pf + professionalTax;
-      const netPay = gross - deductions;
-
-      const identityTable = {
-        columns: [
-          { label: "Field", width: 150 },
-          { label: "Details", width: 300 }
-        ],
-        rows: [
-          ["Employee Name", facultyRecord.name],
-          ["Designation", facultyRecord.designation],
-          ["Department", facultyRecord.department],
-          ["Email", facultyRecord.email],
-          ["Pay Period", month]
-        ]
-      };
-      const payTable = {
-        columns: [
-          { label: "Component", width: 220 },
-          { label: "Type", width: 110 },
-          { label: "Amount (Rs.)", width: 110 }
-        ],
-        rows: [
-          ["Basic Pay", "Earning", basic.toLocaleString("en-IN")],
-          ["Dearness Allowance (DA)", "Earning", da.toLocaleString("en-IN")],
-          ["House Rent Allowance (HRA)", "Earning", hra.toLocaleString("en-IN")],
-          ["Provident Fund (PF)", "Deduction", pf.toLocaleString("en-IN")],
-          ["Professional Tax", "Deduction", professionalTax.toLocaleString("en-IN")]
-        ]
-      };
-      const summaryTable = {
-        columns: [
-          { label: "Pay Summary", width: 220 },
-          { label: "Amount (Rs.)", width: 220 }
-        ],
-        rows: [
-          ["Gross Pay", gross.toLocaleString("en-IN")],
-          ["Total Deductions", deductions.toLocaleString("en-IN")],
-          ["Net Pay", netPay.toLocaleString("en-IN")]
-        ]
-      };
-      const pdf = await makeSimplePdf(`GPREC Payslip - ${month}`, [], [identityTable, payTable, summaryTable]);
+      const bankKey = `faculty-${facultyRecord.email}`;
+      const bankDetails = getBankDetailsFor(bankKey, null);
+      const bankLineParts = buildPaySlipBankLineParts(bankDetails);
+      const pdf = await buildPaySlipImage({
+        slipNo: makeShortPassId("PS", [facultyRecord.email, month]),
+        employeeName: facultyRecord.name,
+        employeeId: makeShortPassId("EMP", [facultyRecord.email]),
+        designation: facultyRecord.designation,
+        department: facultyRecord.department,
+        month,
+        earnings: [["Basic Pay", basic], ["Dearness Allowance", da], ["House Rent Allowance", hra]],
+        deductions: [["Provident Fund", pf], ["Professional Tax", professionalTax]],
+        bankLineParts
+      });
       const link = document.createElement("a");
       link.href = URL.createObjectURL(pdf);
       link.download = `payslip-${month.replace(/\s+/g, "-")}.pdf`;
@@ -22060,38 +23923,18 @@ if (facultyDashboardName) {
       const annualNet = annualGross - annualDeductions;
       const estimatedTax = Math.round(annualGross * 0.05);
 
-      const identityTable = {
-        columns: [
-          { label: "Field", width: 150 },
-          { label: "Details", width: 300 }
-        ],
-        rows: [
-          ["Employee Name", facultyRecord.name],
-          ["Designation", facultyRecord.designation],
-          ["Department", facultyRecord.department],
-          ["Email", facultyRecord.email],
-          ["Financial Year", financialYear]
-        ]
-      };
-      const taxTable = {
-        columns: [
-          { label: "Particulars", width: 260 },
-          { label: "Amount (Rs.)", width: 140 }
-        ],
-        rows: [
-          ["Gross Annual Salary", annualGross.toLocaleString("en-IN")],
-          ["Total Deductions (PF + Professional Tax)", annualDeductions.toLocaleString("en-IN")],
-          ["Estimated Income Tax Deducted (TDS)", estimatedTax.toLocaleString("en-IN")],
-          ["Net Annual Salary", annualNet.toLocaleString("en-IN")]
-        ]
-      };
-      const pdf = await makeSimplePdf(
-        `GPREC Form 16 - ${financialYear}`,
-        [],
-        [identityTable, taxTable],
-        ["This Form 16 summary is generated from portal payroll records."],
-        "Note"
-      );
+      const pdf = await buildForm16Image({
+        certNo: makeShortPassId("FRM16", [facultyRecord.email, financialYear]),
+        employeeName: facultyRecord.name,
+        employeeId: makeShortPassId("EMP", [facultyRecord.email]),
+        designation: facultyRecord.designation,
+        department: facultyRecord.department,
+        financialYear,
+        annualGross,
+        annualDeductions,
+        annualNet,
+        estimatedTax
+      });
       const link = document.createElement("a");
       link.href = URL.createObjectURL(pdf);
       link.download = `form16-${financialYear}.pdf`;

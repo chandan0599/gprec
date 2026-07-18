@@ -62,21 +62,6 @@
               <label>Fest Date<input type="date" id="festDateInput"></label>
               <label>Fest Time (optional)<input type="time" id="festTimeInput"></label>
               <label>Fest Venue<input type="text" id="festVenueInput" placeholder="e.g. GPREC Campus"></label>
-              <label>Visitor Background Theme
-                <select id="festVisitorThemeInput">
-                  <option value="compass">Compass</option>
-                  <option value="festival">Festival doodles</option>
-                  <option value="minimal">Minimal</option>
-                </select>
-              </label>
-              <label>Compass Position
-                <select id="festVisitorCompassPositionInput">
-                  <option value="right">Right</option>
-                  <option value="center">Center</option>
-                  <option value="left">Left</option>
-                  <option value="bottom-right">Bottom right</option>
-                </select>
-              </label>
             </div>
             <label class="spotlight-setting-row">
               <span><strong>Show homepage banner</strong><small>Auto-hides 24 hours after the fest date/time passes.</small></span>
@@ -130,18 +115,22 @@
                 <label>Template<select id="posterTemplateSelect"></select></label>
               </div>
               <p class="eyebrow">Live Preview</p>
-              <a class="spotlight-poster-stage spotlight-poster-stage-artwork poster-builder-preview-stage" id="posterPreviewStage"></a>
+              <div class="event-poster-preview-wrap"><div class="event-poster-preview-scale"><iframe id="posterPreviewFrame" class="event-poster-preview-frame" title="Poster preview"></iframe></div></div>
               <p class="poster-builder-preview-note">Updates as you type - this is exactly how it will appear everywhere.</p>
               <p class="eyebrow">Fill in the text</p>
               <div class="admin-add-grid">
-                <label>Title<input type="text" id="posterTitleInput" placeholder="e.g. Battle of Bands"></label>
-                <label>Subtitle / Info Line<input type="text" id="posterSubtitleInput" placeholder="e.g. Bring your own instruments, all genres welcome"></label>
-                <label id="posterVenueField">Venue<input type="text" id="posterVenueInput" placeholder="e.g. Main Auditorium"></label>
-                <label id="posterDateField">Date<input type="date" id="posterDateInput"></label>
-                <label id="posterTaglineField">Entry / Open To<input type="text" id="posterTaglineInput" placeholder="e.g. Open to All"></label>
-                <label>Button Text (optional)<input type="text" id="posterCtaInput" placeholder="e.g. Register Now"></label>
+                <label>Title (one or two lines)<textarea id="posterTitleInput" rows="2" placeholder="e.g. BATTLE&#10;OF BANDS"></textarea></label>
+                <label>Event Type Line<input type="text" id="posterTypeLineInput" placeholder="e.g. Music Competition"></label>
+                <label>College / Fest Line<input type="text" id="posterSubLineInput" placeholder="e.g. ColFest '25 · Annual Fest"></label>
+                <label>Date<input type="text" id="posterDateInput" placeholder="e.g. 15 March 2025"></label>
+                <label>Venue<input type="text" id="posterVenueInput" placeholder="e.g. Main Auditorium"></label>
+                <label>Time<input type="text" id="posterTimeInput" placeholder="e.g. 10 AM – 4 PM"></label>
+                <label><span id="posterFourthLabelText">Prize / Entry</span><input type="text" id="posterFourthValueInput" placeholder="e.g. ₹10,000"></label>
+                <label><span id="posterInfoLabelText">Info</span><input type="text" id="posterInfoInput" placeholder="e.g. Add event info or rules here"></label>
+                <label>Footer Left<input type="text" id="posterFooterLeftInput"></label>
+                <label>Footer Center<input type="text" id="posterFooterCenterInput"></label>
+                <label>Footer Right<input type="text" id="posterFooterRightInput"></label>
                 <label>Link URL (optional)<input type="text" id="posterLinkInput" placeholder="e.g. pages/event-register.html"></label>
-                <label id="posterFooterEmailField">Contact Email<input type="text" id="posterFooterEmailInput"></label>
                 <label>Type
                   <select id="posterTypeInput">
                     <option>Poster</option>
@@ -205,9 +194,16 @@
               <h3>Assign Volunteers &mdash; <span id="festVolunteerManageTitle"></span></h3>
               <div class="admin-add-grid">
                 <label>Student Roll Number<input type="text" id="festVolunteerRollInput" placeholder="e.g. 20X51A0501"></label>
+                <label>Volunteer ID Card Style
+                  <select id="festVolunteerCardStyleInput">
+                    <option value="vertical">Vertical</option>
+                    <option value="horizontal">Horizontal</option>
+                  </select>
+                </label>
               </div>
               <button type="button" id="festVolunteerAddButton">Assign Volunteer</button>
               <p class="admin-add-feedback" id="festVolunteerAddFeedback" aria-live="polite"></p>
+              <p class="admin-add-feedback" id="festVolunteerStyleFeedback" aria-live="polite"></p>
               <div class="admin-table-card">
                 <table>
                   <thead><tr><th>Roll Number</th><th>Name</th><th></th></tr></thead>
@@ -225,7 +221,7 @@
           </div>
           <div class="admin-table-card" id="festVolunteerDutiesSection">
             <table>
-              <thead><tr><th>Date</th><th>Activity</th><th>Time</th><th>Venue</th><th>Coordinator</th></tr></thead>
+              <thead><tr><th>Date</th><th>Activity</th><th>Time</th><th>Venue</th><th>Coordinator</th><th></th></tr></thead>
               <tbody id="festVolunteerDutyBody"></tbody>
             </table>
             <p class="lookup-empty is-hidden" id="festVolunteerDutyEmpty">No fest duties assigned to you yet.</p>
@@ -338,8 +334,6 @@
           const festTimeInput = document.querySelector("#festTimeInput");
           const festVenueInput = document.querySelector("#festVenueInput");
           const festBannerEnabledInput = document.querySelector("#festBannerEnabledInput");
-          const festVisitorThemeInput = document.querySelector("#festVisitorThemeInput");
-          const festVisitorCompassPositionInput = document.querySelector("#festVisitorCompassPositionInput");
           const festNameSaveButton = document.querySelector("#festNameSaveButton");
           const festNameFeedback = document.querySelector("#festNameFeedback");
           if (festNameInput) festNameInput.value = getFestName();
@@ -347,8 +341,6 @@
           if (festTimeInput) festTimeInput.value = getFestTime();
           if (festVenueInput) festVenueInput.value = getFestVenue();
           if (festBannerEnabledInput) festBannerEnabledInput.checked = getFestBannerEnabled();
-          if (festVisitorThemeInput) festVisitorThemeInput.value = getFestVisitorTheme();
-          if (festVisitorCompassPositionInput) festVisitorCompassPositionInput.value = getFestVisitorCompassPosition();
           festNameSaveButton?.addEventListener("click", () => {
             const name = festNameInput?.value.trim() || "";
             if (!name) {
@@ -361,8 +353,6 @@
             saveFestTime(festTimeInput?.value || "");
             saveFestVenue(festVenueInput?.value.trim() || "");
             saveFestBannerEnabled(Boolean(festBannerEnabledInput?.checked));
-            saveFestVisitorTheme(festVisitorThemeInput?.value || "compass");
-            saveFestVisitorCompassPosition(festVisitorCompassPositionInput?.value || "right");
             festNameFeedback.textContent = "Fest settings saved.";
             festNameFeedback.classList.add("success");
             recordActivity(`Updated fest settings ("${name}")`, "College Fest");
@@ -500,77 +490,145 @@
             recordActivity(`Removed ${email} as a fest coordinator`, "College Fest");
           });
 
-          // ---- Poster & Ad Designer (posterTemplates/buildPosterFromTemplate in script.js) ----
+          // ---- Poster & Ad Designer (EVENT_POSTER_TEMPLATES/buildPosterFromTemplate in script.js) ----
           // Every variable here is poster-prefixed on purpose, even where it wouldn't strictly
           // collide - this block sits in the same scope as the Create Fest Activity and Fest
           // Coordinators forms above, which already claimed shorter names like titleInput/
           // dateInput; redeclaring those with const is a hard SyntaxError that silently kills the
           // whole inline script (nothing on the page renders) rather than just this section.
+          // Same real-HTML templates (file_templates/08_art_exhibition.html etc., via
+          // buildEventPosterHtml) as admin-dashboard.html's internal Poster Design tool - just
+          // fest-activity ones only (getFestActivityPosterTemplates excludes Graduation
+          // Day/Placement Drive/Convocation, which aren't fest activities) and publishing here
+          // saves the rendered PNG into Spotlight Posters instead of just downloading it.
           const posterTemplateSelect = document.querySelector("#posterTemplateSelect");
+          const posterPreviewFrame = document.querySelector("#posterPreviewFrame");
+          const posterPreviewWrap = document.querySelector(".event-poster-preview-wrap");
+          const posterPreviewScale = document.querySelector(".event-poster-preview-scale");
           const posterTitleInput = document.querySelector("#posterTitleInput");
-          const posterSubtitleInput = document.querySelector("#posterSubtitleInput");
-          const posterTaglineInput = document.querySelector("#posterTaglineInput");
-          const posterVenueInput = document.querySelector("#posterVenueInput");
+          const posterTypeLineInput = document.querySelector("#posterTypeLineInput");
+          const posterSubLineInput = document.querySelector("#posterSubLineInput");
           const posterDateInput = document.querySelector("#posterDateInput");
-          const posterCtaInput = document.querySelector("#posterCtaInput");
+          const posterVenueInput = document.querySelector("#posterVenueInput");
+          const posterTimeInput = document.querySelector("#posterTimeInput");
+          const posterFourthLabelText = document.querySelector("#posterFourthLabelText");
+          const posterFourthValueInput = document.querySelector("#posterFourthValueInput");
+          const posterInfoLabelText = document.querySelector("#posterInfoLabelText");
+          const posterInfoInput = document.querySelector("#posterInfoInput");
+          const posterFooterLeftInput = document.querySelector("#posterFooterLeftInput");
+          const posterFooterCenterInput = document.querySelector("#posterFooterCenterInput");
+          const posterFooterRightInput = document.querySelector("#posterFooterRightInput");
           const posterLinkInput = document.querySelector("#posterLinkInput");
-          const posterFooterEmailInput = document.querySelector("#posterFooterEmailInput");
           const posterTypeInput = document.querySelector("#posterTypeInput");
-          const posterPreviewStage = document.querySelector("#posterPreviewStage");
           const posterPublishButton = document.querySelector("#posterPublishButton");
           const posterPublishFeedback = document.querySelector("#posterPublishFeedback");
           const posterDesignedBodyEl = document.querySelector("#posterDesignedBody");
           const posterDesignedEmptyEl = document.querySelector("#posterDesignedEmpty");
 
-          posterTemplateSelect.innerHTML = posterTemplates
+          const festActivityPosterTemplates = getFestActivityPosterTemplates();
+          posterTemplateSelect.innerHTML = festActivityPosterTemplates
             .map((template) => `<option value="${template.id}">${escapeHtml(template.name)}</option>`)
             .join("");
 
-          // Pre-fill from the site-wide Footer Contact settings as a starting point - still fully
-          // editable per poster from here on, not locked to that source.
-          const siteFooterContact = getFooterContactInfo();
-          if (posterFooterEmailInput) posterFooterEmailInput.value = siteFooterContact.email || "";
+          // fourthLabel/infoLabel are NOT free-text inputs - each mockup gives that field a fixed
+          // name (Prize/Entry, Batch, ...) tied to what the value actually means for that activity,
+          // so they're shown as read-only label text next to the value input instead of letting an
+          // admin retype/mismatch them (same convention as admin-dashboard.html's Poster Design).
+          const applyPosterTemplateDefaults = () => {
+            const template = getEventPosterTemplate(posterTemplateSelect.value);
+            if (posterTitleInput) posterTitleInput.value = template.titleLines.join("\n");
+            if (posterTypeLineInput) posterTypeLineInput.value = template.typeLine;
+            if (posterSubLineInput) posterSubLineInput.value = template.subLine;
+            if (posterDateInput) posterDateInput.value = template.date;
+            if (posterVenueInput) posterVenueInput.value = template.venue;
+            if (posterTimeInput) posterTimeInput.value = template.time;
+            if (posterFourthLabelText) posterFourthLabelText.textContent = template.fourthLabel;
+            if (posterFourthValueInput) posterFourthValueInput.value = template.fourthValue;
+            if (posterInfoLabelText) posterInfoLabelText.textContent = template.infoLabel;
+            if (posterInfoInput) posterInfoInput.value = template.info;
+            if (posterFooterLeftInput) posterFooterLeftInput.value = template.footerLeft;
+            if (posterFooterCenterInput) posterFooterCenterInput.value = template.footerCenter;
+            if (posterFooterRightInput) posterFooterRightInput.value = template.footerRight;
+          };
 
-          const currentPosterFields = () => ({
-            title: posterTitleInput?.value.trim() || "",
-            subtitle: posterSubtitleInput?.value.trim() || "",
-            tagline: posterTaglineInput?.value.trim() || "",
-            venue: posterVenueInput?.value.trim() || "",
-            date: posterDateInput?.value || "",
-            ctaText: posterCtaInput?.value.trim() || "",
-            link: posterLinkInput?.value.trim() || "",
-            footerEmail: posterFooterEmailInput?.value.trim() || "",
-            type: posterTypeInput?.value || "Poster"
-          });
+          const currentPosterFields = () => {
+            const template = getEventPosterTemplate(posterTemplateSelect.value);
+            return {
+              title: posterTitleInput?.value.trim() || template.titleLines.join("\n"),
+              subLine: posterSubLineInput?.value.trim() || template.subLine,
+              typeLine: posterTypeLineInput?.value.trim() || template.typeLine,
+              date: posterDateInput?.value.trim() || template.date,
+              venue: posterVenueInput?.value.trim() || template.venue,
+              time: posterTimeInput?.value.trim() || template.time,
+              fourthValue: posterFourthValueInput?.value.trim() || template.fourthValue,
+              info: posterInfoInput?.value.trim() || template.info,
+              footerLeft: posterFooterLeftInput?.value.trim() || template.footerLeft,
+              footerCenter: posterFooterCenterInput?.value.trim() || template.footerCenter,
+              footerRight: posterFooterRightInput?.value.trim() || template.footerRight,
+              link: posterLinkInput?.value.trim() || "",
+              type: posterTypeInput?.value || "Poster"
+            };
+          };
+
+          const currentEventPosterPreviewFields = () => {
+            const fields = currentPosterFields();
+            const template = getEventPosterTemplate(posterTemplateSelect.value);
+            return {
+              art: template.art,
+              logoUrl: gprecLogoUrl,
+              orgLine: "G Pulla Reddy Engineering College",
+              subLine: fields.subLine,
+              titleLines: fields.title.split("\n").map((line) => line.trim()).filter(Boolean),
+              typeLine: fields.typeLine,
+              date: fields.date,
+              venue: fields.venue,
+              time: fields.time,
+              fourthLabel: template.fourthLabel,
+              fourthValue: fields.fourthValue,
+              info: fields.info,
+              infoLabel: template.infoLabel,
+              useCompanyLogos: false,
+              companyLogos: [],
+              footerLeft: fields.footerLeft,
+              footerCenter: fields.footerCenter,
+              footerRight: fields.footerRight
+            };
+          };
 
           const updatePosterPreview = () => {
-            const fields = currentPosterFields();
-            const imageUrl = posterTemplateSvgUrl(getPosterTemplate(posterTemplateSelect.value), fields, "stage");
-            // JSON.stringify (not a hand-wrapped url('...')) so a literal apostrophe anywhere in the
-            // generated SVG - e.g. a template's own font-family="'Courier New',monospace" - can't
-            // prematurely close the CSS string and silently corrupt/no-op this assignment.
-            posterPreviewStage.style.backgroundImage = `url(${JSON.stringify(imageUrl)})`;
+            if (!posterPreviewFrame) return;
+            const html = buildEventPosterHtml(currentEventPosterPreviewFields());
+            posterPreviewFrame.srcdoc = `<!doctype html><html><head><style>body{margin:0;}${EVENT_POSTER_CSS}</style></head><body>${html}</body></html>`;
           };
 
-          // Auto-fills the Title field with the picked template's own catchy default (e.g. "Curtain
-          // Call" for Drama/Theatre) so there's a real starting point instead of a blank input -
-          // only when the field is still empty or still holds a previous template's default, so it
-          // never clobbers a title the admin actually typed themselves.
-          const knownDefaultTitles = new Set(posterTemplates.map((template) => template.defaultTitle));
-          const applyTemplateDefaultTitle = () => {
-            const current = posterTitleInput?.value.trim() || "";
-            if (current && !knownDefaultTitles.has(current)) return;
-            const template = getPosterTemplate(posterTemplateSelect.value);
-            if (posterTitleInput && template.defaultTitle) posterTitleInput.value = template.defaultTitle;
+          // Same reasoning as admin-dashboard.html's Poster Design rescale: #festPosterDesignerSection
+          // isn't necessarily the active admin-panel on first load, so the wrap can have 0 width at
+          // that point - a ResizeObserver (not just a one-time call) recomputes the scale once it
+          // actually has a real width instead of leaving the preview stuck invisible at scale(0).
+          const rescalePosterPreview = () => {
+            if (!posterPreviewWrap || !posterPreviewScale) return;
+            const width = posterPreviewWrap.clientWidth;
+            if (!width) return;
+            posterPreviewScale.style.transform = `scale(${width / 660})`;
           };
+          if (posterPreviewWrap && "ResizeObserver" in window) {
+            new ResizeObserver(rescalePosterPreview).observe(posterPreviewWrap);
+          } else {
+            window.addEventListener("resize", rescalePosterPreview);
+          }
 
-          applyTemplateDefaultTitle();
+          applyPosterTemplateDefaults();
           updatePosterPreview();
+          rescalePosterPreview();
           posterTemplateSelect.addEventListener("change", () => {
-            applyTemplateDefaultTitle();
+            applyPosterTemplateDefaults();
             updatePosterPreview();
           });
-          [posterTitleInput, posterSubtitleInput, posterTaglineInput, posterVenueInput, posterDateInput, posterCtaInput, posterFooterEmailInput, posterTypeInput].forEach((field) => {
+          [
+            posterTitleInput, posterTypeLineInput, posterSubLineInput, posterDateInput, posterVenueInput,
+            posterTimeInput, posterFourthValueInput, posterInfoInput, posterFooterLeftInput,
+            posterFooterCenterInput, posterFooterRightInput
+          ].forEach((field) => {
             field?.addEventListener("input", updatePosterPreview);
             field?.addEventListener("change", updatePosterPreview);
           });
@@ -583,7 +641,7 @@
                 (poster) => `
                   <tr>
                     <td>${escapeHtmlSafe(poster.title)}</td>
-                    <td>${escapeHtmlSafe(getPosterTemplate(poster.templateId).name)}</td>
+                    <td>${escapeHtmlSafe(getPosterTemplateDisplayName(poster.templateId))}</td>
                     <td>${escapeHtmlSafe(poster.type || "Poster")}</td>
                     <td><button type="button" class="icon-btn-delete" data-poster-remove="${escapeHtmlSafe(poster.id)}" aria-label="Remove" title="Remove">${deleteIconSvg}</button></td>
                   </tr>
@@ -601,13 +659,20 @@
               return;
             }
             posterPublishButton.disabled = true;
-            const poster = buildPosterFromTemplate(posterTemplateSelect.value, fields);
-            posterPublishButton.disabled = false;
-            saveSpotlightPosters([...getSpotlightPosters(), poster]);
-            renderDesignedPosters();
-            posterPublishFeedback.textContent = `"${fields.title}" published to every dashboard.`;
-            posterPublishFeedback.classList.add("success");
-            recordActivity(`Published poster "${fields.title}"`, "College Fest");
+            posterPublishFeedback.textContent = "Generating poster...";
+            posterPublishFeedback.classList.remove("success");
+            try {
+              const poster = await buildPosterFromTemplate(posterTemplateSelect.value, fields);
+              saveSpotlightPosters([...getSpotlightPosters(), poster]);
+              renderDesignedPosters();
+              posterPublishFeedback.textContent = `"${poster.title}" published to every dashboard.`;
+              posterPublishFeedback.classList.add("success");
+              recordActivity(`Published poster "${poster.title}"`, "College Fest");
+            } catch (err) {
+              posterPublishFeedback.textContent = "Could not generate poster - try again.";
+            } finally {
+              posterPublishButton.disabled = false;
+            }
           });
 
           posterDesignedBodyEl?.addEventListener("click", (event) => {
@@ -665,6 +730,8 @@
           const manageCard = document.querySelector("#festVolunteerManageCard");
           const manageTitle = document.querySelector("#festVolunteerManageTitle");
           const rollInput = document.querySelector("#festVolunteerRollInput");
+          const cardStyleInput = document.querySelector("#festVolunteerCardStyleInput");
+          const styleFeedback = document.querySelector("#festVolunteerStyleFeedback");
           const addButton = document.querySelector("#festVolunteerAddButton");
           const addFeedback = document.querySelector("#festVolunteerAddFeedback");
           const listBody = document.querySelector("#festVolunteerListBody");
@@ -719,7 +786,24 @@
             manageCard.classList.remove("is-hidden");
             manageTitle.textContent = activity.title;
             addFeedback.textContent = "";
+            styleFeedback.textContent = "";
+            if (cardStyleInput) cardStyleInput.value = activity.idCardStyle === "horizontal" ? "horizontal" : "vertical";
             renderVolunteerList(activity);
+          });
+
+          // Style applies per activity (all its volunteers get the same card layout) rather than
+          // per volunteer - saved immediately on change, same as every other coordinator-editable
+          // field here, instead of needing a separate "Save" button.
+          cardStyleInput?.addEventListener("change", () => {
+            if (!editingActivityId) return;
+            const result = updateFestActivityAsCoordinator(editingActivityId, { idCardStyle: cardStyleInput.value });
+            if (result?.ok) {
+              styleFeedback.textContent = `ID card style set to ${cardStyleInput.value}.`;
+              styleFeedback.classList.add("success");
+            } else {
+              styleFeedback.textContent = (result && result.error) || "Could not save the card style.";
+              styleFeedback.classList.remove("success");
+            }
           });
 
           addButton?.addEventListener("click", () => {
@@ -825,10 +909,36 @@
                   <td>${escapeHtmlSafe(formatCampusEventTime(activity))}</td>
                   <td>${escapeHtmlSafe(activity.venue || "-")}</td>
                   <td>${escapeHtmlSafe(coordinatorName)}</td>
+                  <td><button type="button" class="icon-btn-download" data-fest-volunteer-id-card="${escapeHtmlSafe(activity.id)}" aria-label="Download volunteer ID card" title="Download volunteer ID card">${downloadIconSvg}</button></td>
                 </tr>
               `;
             })
             .join("");
+
+          bodyEl.querySelectorAll("[data-fest-volunteer-id-card]").forEach((button) => {
+            button.addEventListener("click", async () => {
+              const activity = activities.find((item) => item.id === button.dataset.festVolunteerIdCard);
+              if (!activity) return;
+              // Faculty picks the layout per activity (idCardStyle); every volunteer assigned to
+              // that activity downloads their own card in whatever style the coordinator chose.
+              const data = {
+                name: resolveStudentDisplayName(roll, roll),
+                rollNumber: roll,
+                eventTitle: activity.title,
+                shift: formatCampusEventTime(activity),
+                venue: activity.venue,
+                validFrom: formatCampusEventDate(activity.date),
+                validTill: formatCampusEventDate(activity.date),
+                volunteerId: makeShortPassId("VL", [activity.id, roll]),
+                photoUrl: getExplicitProfilePhotoSrc(defaultStudentProfiles[roll])
+              };
+              const blob = await buildFestVolunteerIdCardImage(data, activity.idCardStyle);
+              const link = document.createElement("a");
+              link.href = URL.createObjectURL(blob);
+              link.download = `gprec-volunteer-id-${roll}-${activity.id}.png`;
+              link.click();
+            });
+          });
         }
       })();
     </script>

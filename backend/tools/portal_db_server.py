@@ -3322,7 +3322,7 @@ def update_fest_activity(identity, activity_id, fields):
     is_coordinator = identity["identityType"] == "faculty" and (activity.get("facultyCoordinatorEmail") or "").lower() == (identity["identityId"] or "").lower()
     if not (is_admin or is_coordinator):
         return None
-    editable_fields = ["volunteers", "title", "date", "time", "venue", "description"] + (["facultyCoordinatorEmail"] if is_admin else [])
+    editable_fields = ["volunteers", "title", "date", "time", "venue", "description", "idCardStyle"] + (["facultyCoordinatorEmail"] if is_admin else [])
     for key in editable_fields:
         if key in fields:
             activity[key] = fields[key]
@@ -5219,7 +5219,7 @@ class PortalHandler(SimpleHTTPRequestHandler):
                 if not activity_id:
                     self.send_json(400, {"ok": False, "error": "activityId is required"})
                     return
-                fields = {key: data[key] for key in ("title", "date", "time", "venue", "description", "facultyCoordinatorEmail", "volunteers") if key in data}
+                fields = {key: data[key] for key in ("title", "date", "time", "venue", "description", "facultyCoordinatorEmail", "volunteers", "idCardStyle") if key in data}
                 activity = update_fest_activity(identity, activity_id, fields)
                 if not activity:
                     self.send_json(403, {"ok": False, "error": "Fest activity not found, or you're not authorized to manage it."})
