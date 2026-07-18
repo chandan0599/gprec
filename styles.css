@@ -312,8 +312,13 @@ button:not(:disabled):active {
    this their .admin-nav-static rows inside would sit flush with no space between them, unlike
    every other dashboard's flat (unwrapped) nav list. Excludes .student-menu-title - that direct
    child is also a <div> but needs to stay the flex row .student-menu-title already defines (title
-   text beside the collapse button), not grid rows (which stacked the button under the text). */
-.admin-sidebar > div:not(.student-menu-title) {
+   text beside the collapse button), not grid rows (which stacked the button under the text).
+   Also excludes .admin-nav - on every dashboard whose nav list isn't wrapped (admin-dashboard.html
+   etc.), each row is itself a `.admin-nav` div sitting directly under .admin-sidebar, so without
+   this second exclusion this selector's higher specificity (class + child-combinator + :not(.class))
+   overrode .admin-nav's own `display:flex`, turning every icon+label row into an implicit-grid
+   stack (icon above label) instead of sitting side by side. */
+.admin-sidebar > div:not(.student-menu-title):not(.admin-nav) {
   display: grid;
   gap: 12px;
 }
@@ -335,6 +340,50 @@ button:not(:disabled):active {
   color: var(--muted);
   font-size: 0.78rem;
   font-weight: 700;
+}
+
+/* Event Poster Design (admin-dashboard.html): same full-width rounded/shadowed "stage" feel as
+   festPosterDesignerSection's .spotlight-poster-stage preview, but locked to the file_templates
+   poster mockup's true 660:220 aspect ratio instead of 16:9 (a generated-SVG-specific ratio that
+   doesn't apply to these mockups). The mockup itself is a fixed 660x220 layout, so the inner
+   iframe stays at that native size and .event-poster-preview-scale scales it down to fit the
+   stage's actual rendered width (computed in script.js) - a CSS-only width wouldn't shrink an
+   iframe's own content, only its viewport, which would reflow/clip the fixed-width poster instead
+   of scaling it. */
+.event-poster-preview-wrap {
+  position: relative;
+  width: 100%;
+  aspect-ratio: 660 / 220;
+  /* A fixed px radius here only ever lines up with .epd-poster's own 10px corner (EVENT_POSTER_CSS,
+     script.js) at the one exact width where this wrap happens to render at 660px - at any other
+     width (basically always, since this wrap is fluid) the inner content's rendered corner scales
+     with it (it's inside .event-poster-preview-scale's transform:scale) while a fixed-px radius on
+     this outer clip doesn't, leaving a mismatched sliver of this wrap's own background peeking
+     through. Percentages scale with the box itself, so as long as this wrap keeps its 660:220
+     aspect-ratio (locked above) a horizontal-radius-as-%-of-width / vertical-radius-as-%-of-height
+     pair (10/660 and 10/220) reproduces that same 10px-at-660-wide corner at every rendered size. */
+  border-radius: 1.515% / 4.545%;
+  overflow: hidden;
+  background: linear-gradient(160deg, var(--navy), #0a3d6e);
+  box-shadow: var(--shadow);
+}
+
+.event-poster-preview-scale {
+  width: 660px;
+  height: 220px;
+  transform-origin: top left;
+}
+
+/* Class, not an ID selector - #eventPosterPreviewFrame only matched admin-dashboard.html's own
+   iframe id; event-management-dashboard.html's festPosterDesignerSection reuses this same preview
+   markup but with its own id (posterPreviewFrame) to avoid colliding with admin-dashboard.html's
+   script.js wiring, which left this rule not applying there at all - the iframe silently fell back
+   to the browser's default 300x150 size, so only a corner of the 660x220 poster ever showed. */
+.event-poster-preview-frame {
+  display: block;
+  width: 660px;
+  height: 220px;
+  border: 0;
 }
 
 #adminCreatorCard.is-locked {
@@ -3008,68 +3057,254 @@ a {
 .home-fest-banner {
   position: relative;
   z-index: 4;
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) minmax(360px, auto);
-  gap: 22px;
-  align-items: center;
+  display: block;
   width: min(100% - 48px, 1680px);
-  max-width: none;
-  margin-top: 18px;
-  padding: clamp(20px, 3vw, 30px);
+  aspect-ratio: 900 / 150;
+  margin: 18px auto 0;
+  padding: 0;
   overflow: hidden;
   color: #ffffff;
-  border: 1px solid rgba(255, 255, 255, 0.20);
-  border-radius: 8px;
-  background:
-    radial-gradient(circle at 74% 45%, rgba(232, 93, 4, 0.24), transparent 19%),
-    radial-gradient(circle at 91% 24%, rgba(255, 154, 60, 0.18), transparent 16%),
-    linear-gradient(95deg, rgba(10, 20, 51, 0.98) 0 48%, rgba(15, 32, 96, 0.96) 100%),
-    linear-gradient(135deg, #071027 0%, #0A1433 52%, #111f5a 100%);
-  box-shadow: 0 18px 48px rgba(4, 40, 74, 0.16);
+  border: none;
+  border-radius: 10px;
+  box-shadow: 0 6px 24px rgba(0, 0, 0, 0.2);
 }
 
-.home-fest-banner::before {
-  position: absolute;
-  inset: 0;
-  pointer-events: none;
-  background:
-    linear-gradient(90deg, rgba(10, 20, 51, 0), rgba(10, 20, 51, 0.30)),
-    radial-gradient(circle, rgba(255, 255, 255, 0.08) 0 2px, transparent 3px);
-  background-size: auto, 88px 88px;
-  content: "";
-}
-
-.home-fest-copy,
-.home-fest-side,
-.home-fest-cta {
-  position: relative;
-  z-index: 1;
-}
-
-/* Same bold, vivid treatment as the visitor login page's hero - full saturation behind the text,
-   not dimmed down - relying on the title/copy's own text-shadow below for legibility rather than
-   fading the artwork itself, same as how the login page does it. */
-.home-fest-banner .visitor-compass-art {
-  top: 42%;
-  left: 50%;
-  right: auto;
-  width: min(340px, 42vw);
-  opacity: 0.92;
-  transform: translate(-50%, -50%);
-  filter: none;
-}
-
-.home-fest-doodles {
+.home-fest-bg {
   position: absolute;
   inset: 0;
   z-index: 0;
-  pointer-events: none;
-}
-
-.home-fest-doodles svg {
   display: block;
   width: 100%;
   height: 100%;
+}
+
+.home-fest-overlay {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  height: 100%;
+  padding: 0 30px;
+}
+
+.home-fest-left {
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.home-fest-tag {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin: 0;
+  color: #FF9A3C;
+  font-family: 'Courier New', monospace;
+  font-size: clamp(11px, 1vw, 14px);
+  font-weight: 700;
+  letter-spacing: 3px;
+  text-transform: uppercase;
+}
+
+.home-fest-tag::before {
+  color: #E85D04;
+  font-size: clamp(9px, 0.8vw, 11px);
+  content: "\25C6";
+}
+
+.home-fest-title {
+  margin: 0;
+  color: #ffffff;
+  font-family: Impact, 'Arial Black', sans-serif;
+  font-size: clamp(34px, 3.6vw, 56px);
+  font-weight: 900;
+  line-height: 1;
+  letter-spacing: -0.5px;
+}
+
+.home-fest-subtitle {
+  max-width: 620px;
+  margin: 3px 0 0;
+  color: #c7cce0;
+  font-size: clamp(14px, 1.2vw, 18px);
+  font-style: italic;
+}
+
+.home-fest-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 16px;
+  margin-top: 8px;
+  color: #c7cce0;
+  font-family: 'Courier New', monospace;
+  font-size: clamp(13px, 1.1vw, 16px);
+}
+
+.home-fest-meta span {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  white-space: nowrap;
+}
+
+.home-fest-meta .dir {
+  color: #FF9A3C;
+  font-weight: 700;
+}
+
+.home-fest-right {
+  display: flex;
+  flex-shrink: 0;
+  align-items: center;
+  gap: 18px;
+}
+
+.home-fest-timer {
+  display: flex;
+  /* Center against the CTA using the digits alone (.tlabel is taken out of flow below), not the
+     digit+label stack, so "Register Now" lines up with the numbers instead of sitting low. */
+  align-items: center;
+  gap: 2px;
+}
+
+.home-fest-timer .tunit {
+  position: relative;
+  display: flex;
+  min-width: clamp(34px, 3.4vw, 52px);
+  flex-direction: column;
+  align-items: center;
+}
+
+.home-fest-timer .tval {
+  color: #FF9A3C;
+  font-family: 'Courier New', monospace;
+  font-size: clamp(24px, 2.4vw, 36px);
+  font-weight: 900;
+  line-height: 1;
+  transition: transform 0.15s ease;
+}
+
+.home-fest-timer .tval.tick {
+  animation: homeFestTimerPulse 0.4s ease;
+}
+
+@keyframes homeFestTimerPulse {
+  0% { color: #FFD9AE; transform: scale(1.35); }
+  100% { color: #FF9A3C; transform: scale(1); }
+}
+
+.home-fest-timer .tlabel {
+  position: absolute;
+  top: 100%;
+  left: 50%;
+  margin-top: 2px;
+  color: #9aa1c0;
+  font-family: 'Courier New', monospace;
+  font-size: clamp(8px, 0.75vw, 10px);
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  white-space: nowrap;
+  transform: translateX(-50%);
+}
+
+.home-fest-timer .tsep {
+  width: clamp(10px, 0.9vw, 14px);
+  height: clamp(10px, 0.9vw, 14px);
+  margin: 0 3px;
+}
+
+.home-fest-timer .tsep svg {
+  width: 100%;
+  height: 100%;
+  animation: homeFestTickSpin 2s linear infinite;
+}
+
+@keyframes homeFestTickSpin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+.home-fest-cta {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: clamp(8px, 0.8vw, 12px) clamp(18px, 1.7vw, 26px);
+  color: #ffffff;
+  border-radius: 20px;
+  background: #E85D04;
+  box-shadow: 0 0 0 0 rgba(232, 93, 4, 0.55);
+  font-family: Arial, sans-serif;
+  font-size: clamp(12px, 1vw, 14px);
+  font-weight: 700;
+  white-space: nowrap;
+  animation: homeFestGlow 2.2s ease-in-out infinite;
+}
+
+@keyframes homeFestGlow {
+  0% { box-shadow: 0 0 0 0 rgba(232, 93, 4, 0.55); }
+  70% { box-shadow: 0 0 0 10px rgba(232, 93, 4, 0); }
+  100% { box-shadow: 0 0 0 0 rgba(232, 93, 4, 0); }
+}
+
+.home-fest-cta:hover,
+.home-fest-cta:focus-visible {
+  background: #c94f00;
+  outline: none;
+}
+
+.home-fest-compass-group {
+  animation: homeFestCompassSpin 40s linear infinite;
+  transform-origin: 0 0;
+}
+
+@keyframes homeFestCompassSpin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+.home-fest-needle {
+  animation: homeFestNeedleSway 4s ease-in-out infinite;
+  transform-origin: 0 0;
+}
+
+@keyframes homeFestNeedleSway {
+  0%, 100% { transform: rotate(-6deg); }
+  50% { transform: rotate(6deg); }
+}
+
+.home-fest-ring {
+  animation: homeFestRingPulse 4s ease-in-out infinite;
+  transform-origin: 0 0;
+}
+
+@keyframes homeFestRingPulse {
+  0%, 100% { opacity: 0.25; }
+  50% { opacity: 0.55; }
+}
+
+.home-fest-dashring {
+  animation: homeFestOrbit 60s linear infinite;
+  transform-origin: 0 0;
+}
+
+@keyframes homeFestOrbit {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(-360deg); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .home-fest-timer .tval.tick,
+  .home-fest-timer .tsep svg,
+  .home-fest-cta,
+  .home-fest-compass-group,
+  .home-fest-needle,
+  .home-fest-ring,
+  .home-fest-dashring {
+    animation: none;
+  }
 }
 
 @keyframes homeFestFloat {
@@ -3087,11 +3322,6 @@ a {
   50% { transform: translateX(14px); }
 }
 
-@keyframes homeFestSpin {
-  from { transform: rotate(0deg); }
-  to { transform: rotate(360deg); }
-}
-
 .home-fest-doodle-float {
   transform-origin: center;
   animation: homeFestFloat 3.6s ease-in-out infinite;
@@ -3107,160 +3337,12 @@ a {
   animation: homeFestWiggle 4.2s ease-in-out infinite;
 }
 
-/* Slow, continuous - reads as a shining compass/sun rather than a spinning logo, only on the
-   homepage banner (the visitor login page's own compass stays static behind its form). */
-.home-fest-banner .visitor-compass-art svg {
-  animation: homeFestSpin 90s linear infinite;
-  transform-origin: 52% 54%;
-}
-
 @media (prefers-reduced-motion: reduce) {
   .home-fest-doodle-float,
   .home-fest-doodle-twinkle,
-  .home-fest-doodle-wiggle,
-  .home-fest-banner .visitor-compass-art svg {
+  .home-fest-doodle-wiggle {
     animation: none;
   }
-}
-
-.home-fest-side {
-  display: grid;
-  justify-items: end;
-  gap: 16px;
-}
-
-.home-fest-copy h2 {
-  max-width: 760px;
-  margin: 0;
-  color: #ffffff;
-  font-size: clamp(1.7rem, 3vw, 2.7rem);
-  line-height: 1.02;
-  text-shadow: 0 18px 40px rgba(0, 0, 0, 0.42);
-}
-
-.home-fest-copy p:not(.eyebrow) {
-  max-width: 720px;
-  margin: 10px 0 0;
-  color: rgba(255, 255, 255, 0.82);
-  font-weight: 800;
-  line-height: 1.5;
-}
-
-.home-fest-meta {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 8px;
-  margin-top: 16px;
-}
-
-.home-fest-meta span {
-  min-height: 34px;
-  display: inline-flex;
-  align-items: center;
-  padding: 7px 11px;
-  color: #ffffff;
-  border: 1px solid rgba(255, 255, 255, 0.22);
-  border-radius: 999px;
-  background: rgba(7, 17, 31, 0.48);
-  font-size: 0.78rem;
-  font-weight: 950;
-}
-
-.home-fest-countdown {
-  display: grid;
-  grid-template-columns: repeat(4, minmax(70px, 96px));
-  gap: 10px;
-  margin-top: 0;
-}
-
-/* Same warm hand-drawn line language as the compass artwork (thin orange rings, not a flat white
-   box border) so the countdown itself reads as part of the same doodle/fest illustration set. */
-.home-fest-countdown span {
-  position: relative;
-  display: grid;
-  gap: 5px;
-  min-height: 78px;
-  align-content: center;
-  padding: 12px 14px;
-  overflow: visible;
-  border: 1.5px solid rgba(232, 93, 4, 0.45);
-  border-radius: 12px;
-  background: rgba(7, 17, 31, 0.72);
-  box-shadow:
-    inset 0 0 0 3px rgba(255, 154, 60, 0.10),
-    inset 0 1px 0 rgba(255, 255, 255, 0.08),
-    0 14px 30px rgba(0, 0, 0, 0.20);
-  backdrop-filter: blur(14px);
-}
-
-/* A small sparkle doodle in the corner of each countdown tile, matching the scattered doodles
-   elsewhere in the banner (.home-fest-doodles) so the timer itself feels hand-drawn/festive
-   instead of a plain stopwatch widget. Staggered twinkle timing per tile via nth-child. */
-.home-fest-countdown span::after {
-  position: absolute;
-  top: -7px;
-  right: -6px;
-  width: 14px;
-  height: 14px;
-  background: #FF9A3C;
-  clip-path: polygon(50% 0%, 62% 38%, 100% 50%, 62% 62%, 50% 100%, 38% 62%, 0% 50%, 38% 38%);
-  content: "";
-  animation: homeFestTwinkle 2.2s ease-in-out infinite;
-}
-
-.home-fest-countdown span:nth-child(1)::after { background: #FF9A3C; animation-delay: 0s; }
-.home-fest-countdown span:nth-child(2)::after { background: #E85D04; animation-delay: .5s; }
-.home-fest-countdown span:nth-child(3)::after { background: #FF9A3C; animation-delay: 1s; }
-.home-fest-countdown span:nth-child(4)::after { background: #E85D04; animation-delay: 1.5s; }
-
-@media (prefers-reduced-motion: reduce) {
-  .home-fest-countdown span::after {
-    animation: none;
-  }
-}
-
-/* A hand-placed "sticker" feel for the digits themselves (slight alternating tilt + a warm
-   doodle-marker double shadow) rather than a plain flat stopwatch number, since a real handwritten
-   font isn't available here without adding a new site-wide font dependency. */
-.home-fest-countdown strong {
-  display: inline-block;
-  color: #ffffff;
-  font-size: clamp(1.45rem, 2vw, 2rem);
-  line-height: 1;
-  text-shadow: 2px 2px 0 rgba(232, 93, 4, 0.55);
-}
-
-.home-fest-countdown span:nth-child(1) strong { transform: rotate(-3deg); }
-.home-fest-countdown span:nth-child(2) strong { transform: rotate(2deg); }
-.home-fest-countdown span:nth-child(3) strong { transform: rotate(-2deg); }
-.home-fest-countdown span:nth-child(4) strong { transform: rotate(3deg); }
-
-.home-fest-countdown small {
-  color: #E85D04;
-  font-size: 0.72rem;
-  font-weight: 950;
-  text-transform: uppercase;
-}
-
-.home-fest-cta {
-  display: inline-flex;
-  min-height: 48px;
-  align-items: center;
-  justify-content: center;
-  padding: 12px 18px;
-  color: #07111f;
-  border-radius: 999px;
-  background: linear-gradient(135deg, #E85D04, #E85D04);
-  box-shadow: 0 16px 34px rgba(232, 93, 4, 0.26);
-  font-weight: 950;
-  white-space: nowrap;
-}
-
-.home-fest-cta:hover,
-.home-fest-cta:focus-visible {
-  filter: brightness(1.04);
-  outline: none;
-  transform: translateY(-1px);
 }
 
 .hero-info-grid {
@@ -4290,6 +4372,14 @@ button + .admin-add-feedback {
   display: none;
 }
 
+/* Flat backdrop matching the compass-theme login mock exactly - the richer multi-radial-gradient
+   above is for the post-login fest pages (dashboard, dark hero sections); the sign-in screen
+   itself is just a centered card on a plain dark field. Removed once .login-page comes off the
+   body on successful auth (see the auth-success handler in this page's inline script). */
+.event-visitor-page.login-page {
+  background: #0A1024;
+}
+
 .event-visitor-page .login-header {
   border-bottom: 1px solid rgba(255, 255, 255, 0.14);
   background: rgba(4, 9, 25, 0.66);
@@ -4350,38 +4440,65 @@ button + .admin-add-feedback {
   outline: none;
 }
 
+/* Ported from the compact "ticket card" login mock: a single centered card with a dark brand
+   panel (left) and a dark form panel (right), replacing the old full-bleed split hero. */
 .visitor-fest-login {
-  position: relative;
-  grid-template-columns: minmax(0, 1.05fr) minmax(350px, 460px);
-  min-height: calc(100vh - 96px);
+  display: flex;
   align-items: center;
-  gap: clamp(34px, 5vw, 70px);
-  padding: clamp(22px, 4vw, 46px) 0 58px;
+  justify-content: center;
+  min-height: calc(100vh - 96px);
+  padding: clamp(22px, 4vw, 46px) 20px 58px;
 }
 
 .visitor-fest-login::before {
-  content: "";
-  position: absolute;
-  inset: clamp(28px, 5vw, 64px) auto auto 4%;
-  width: min(520px, 50vw);
-  aspect-ratio: 1;
-  border-radius: 50%;
-  background-image: radial-gradient(circle, rgba(34, 50, 105, 0.7) 3px, transparent 4px);
-  background-size: 78px 78px;
-  opacity: .55;
-  pointer-events: none;
+  display: none;
+}
+
+.visitor-login-card {
+  position: relative;
+  z-index: 2;
+  display: flex;
+  width: 100%;
+  max-width: 980px;
+  /* Fixed, not min-height - Sign Up has far more fields than Sign In/Forgot Password, and a
+     min-height still lets the card (and the compass panel that stretches to match it) grow/shrink
+     every time the view switches. Locking it to Sign Up's own height keeps the card - and the
+     compass background - the same size across all three views; .role-login-card scrolls
+     internally (see below) if a view's content is ever taller than this. */
+  height: 640px;
+  overflow: hidden;
+  border-radius: 14px;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
 }
 
 .visitor-fest-hero {
   position: relative;
-  max-width: 650px;
-  padding: 0 0 clamp(8px, 2vw, 18px);
+  z-index: 1;
+  display: flex;
+  flex: 1.1;
+  flex-direction: column;
+  justify-content: space-between;
+  max-width: none;
+  min-width: 300px;
+  padding: clamp(32px, 4vw, 44px) clamp(28px, 4vw, 40px);
+  overflow: hidden;
   color: #ffffff;
   border: 0;
-  background: transparent;
+  background: radial-gradient(circle at 30% 20%, #1c2650, #0a1226 70%);
   box-shadow: none;
   backdrop-filter: none;
+}
+
+.visitor-login-brand-top,
+.visitor-login-brand-bottom {
+  position: relative;
   z-index: 1;
+}
+
+.visitor-login-brand-top {
+  /* Pulls the tag/title/subtitle block up off the panel's vertical center, where the long
+     subtitle was wrapping down far enough to run into the compass's "N" tick mark. */
+  margin-top: -28px;
 }
 
 .visitor-fest-art,
@@ -4407,6 +4524,95 @@ button + .admin-add-feedback {
 
 .visitor-compass-art {
   animation: visitor-compass-float 7s ease-in-out infinite;
+}
+
+/* Starfield + compass watermark for the login brand panel only, ported directly from the login
+   mock (self-contained classes/keyframes so it never fights the shared .visitor-compass-art
+   system used on the post-login dashboard hero). Centered behind the copy/timer, above the
+   panel's own dark background (z-index:0), below the text (.visitor-login-brand-top/-bottom are
+   z-index:1).
+   Bounded to a fixed size with its own locked 480:560 aspect ratio, rather than covering the
+   whole panel (inset:0 + "slice") - "cover" scales/crops based on the panel's own aspect ratio,
+   which made the N marker unpredictably get scaled/cropped out. A fixed box is a known quantity
+   regardless of panel size, so N always renders at the same relative spot. */
+.visitor-login-compass-art {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  z-index: 0;
+  width: min(420px, 82%);
+  height: auto;
+  aspect-ratio: 480 / 560;
+  transform: translate(-50%, -50%);
+  pointer-events: none;
+}
+
+.visitor-login-compass-art svg {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+
+.visitor-login-star {
+  animation: visitorLoginTwinkle 3s ease-in-out infinite;
+}
+
+.visitor-login-star2 { animation-delay: .7s; }
+.visitor-login-star3 { animation-delay: 1.4s; }
+
+@keyframes visitorLoginTwinkle {
+  0%, 100% { opacity: .15; }
+  50% { opacity: .7; }
+}
+
+.visitor-login-dashring {
+  animation: visitorLoginOrbit 60s linear infinite;
+  transform-origin: 0 0;
+}
+
+@keyframes visitorLoginOrbit {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(-360deg); }
+}
+
+.visitor-login-ring {
+  animation: visitorLoginPulseRing 4s ease-in-out infinite;
+  transform-origin: 0 0;
+}
+
+@keyframes visitorLoginPulseRing {
+  0%, 100% { opacity: .2; }
+  50% { opacity: .45; }
+}
+
+.visitor-login-compass-group {
+  animation: visitorLoginCompassSpin 40s linear infinite;
+  transform-origin: 0 0;
+}
+
+@keyframes visitorLoginCompassSpin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+.visitor-login-needle {
+  animation: visitorLoginSway 4s ease-in-out infinite;
+  transform-origin: 0 0;
+}
+
+@keyframes visitorLoginSway {
+  0%, 100% { transform: rotate(-6deg); }
+  50% { transform: rotate(6deg); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .visitor-login-star,
+  .visitor-login-dashring,
+  .visitor-login-ring,
+  .visitor-login-compass-group,
+  .visitor-login-needle {
+    animation: none;
+  }
 }
 
 .visitor-compass-frame,
@@ -4563,21 +4769,10 @@ button + .admin-add-feedback {
   font-size: 0.78rem;
 }
 
-.event-visitor-page .role-login-copy .eyebrow,
 .event-visitor-page .visitor-dash-hero .eyebrow {
   position: relative;
   z-index: 1;
   color: #FF9A3C;
-}
-
-.event-visitor-page .role-login-copy h1 {
-  position: relative;
-  z-index: 1;
-  max-width: 590px;
-  color: #ffffff;
-  font-size: clamp(2.35rem, 3.8vw, 3.55rem);
-  line-height: 1.02;
-  text-shadow: 0 22px 48px rgba(0, 0, 0, 0.38);
 }
 
 .event-visitor-page .role-login-copy p:not(.eyebrow) {
@@ -4588,102 +4783,19 @@ button + .admin-add-feedback {
 
 .visitor-fest-tagline {
   max-width: 540px;
-  font-size: clamp(0.98rem, 1.15vw, 1.08rem) !important;
-  line-height: 1.65;
+  font-size: clamp(0.8rem, 0.9vw, 0.9rem) !important;
+  line-height: 1.6;
 }
 
-.visitor-fest-meta {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 8px;
-  margin-top: 18px;
+/* Bigger than .home-fest-title's own default (34-56px, tuned for the homepage banner's shorter
+   row) - the login brand panel has much more vertical room for the fest name to be the visual
+   anchor, so scope the bump to this page instead of changing the shared banner size. */
+.event-visitor-page .home-fest-title {
+  font-size: clamp(48px, 5vw, 76px);
 }
 
-.visitor-fest-meta span,
-.event-visitor-page .role-points span {
-  color: #ffffff;
-  border: 1px solid rgba(255, 255, 255, 0.24);
-  background: rgba(7, 17, 31, 0.52);
-  backdrop-filter: blur(14px);
-}
-
-.visitor-fest-meta span {
-  min-height: 36px;
-  padding: 8px 12px;
-  border-radius: 999px;
-  font-size: 0.8rem;
-  font-weight: 950;
-}
-
-.visitor-fest-countdown {
-  display: grid;
-  grid-template-columns: repeat(4, minmax(70px, 1fr));
-  gap: 8px;
-  width: min(390px, 100%);
+.visitor-dash-timer {
   margin-top: 20px;
-}
-
-/* Same doodle/compass-ring treatment as the homepage banner's countdown (.home-fest-countdown) -
-   thin orange ring border + corner sparkle + tilted "sticker" digits - so the timer looks
-   consistent everywhere it appears (login hero, dashboard hero), not just on the homepage. */
-.visitor-fest-countdown span {
-  position: relative;
-  display: grid;
-  gap: 5px;
-  min-width: 0;
-  padding: 10px 11px;
-  overflow: visible;
-  border: 1.5px solid rgba(232, 93, 4, 0.45);
-  border-radius: 10px;
-  background: rgba(7, 17, 31, 0.66);
-  box-shadow:
-    inset 0 0 0 3px rgba(255, 154, 60, 0.10),
-    inset 0 1px 0 rgba(255, 255, 255, 0.08),
-    0 14px 34px rgba(0, 0, 0, 0.20);
-  backdrop-filter: blur(16px);
-}
-
-.visitor-fest-countdown span::after {
-  position: absolute;
-  top: -6px;
-  right: -5px;
-  width: 12px;
-  height: 12px;
-  background: #FF9A3C;
-  clip-path: polygon(50% 0%, 62% 38%, 100% 50%, 62% 62%, 50% 100%, 38% 62%, 0% 50%, 38% 38%);
-  content: "";
-  animation: homeFestTwinkle 2.2s ease-in-out infinite;
-}
-
-.visitor-fest-countdown span:nth-child(1)::after { background: #FF9A3C; animation-delay: 0s; }
-.visitor-fest-countdown span:nth-child(2)::after { background: #E85D04; animation-delay: .5s; }
-.visitor-fest-countdown span:nth-child(3)::after { background: #FF9A3C; animation-delay: 1s; }
-.visitor-fest-countdown span:nth-child(4)::after { background: #E85D04; animation-delay: 1.5s; }
-
-.visitor-fest-countdown strong {
-  display: inline-block;
-  color: #ffffff;
-  font-size: clamp(1.18rem, 2.2vw, 1.55rem);
-  line-height: 1;
-  text-shadow: 2px 2px 0 rgba(232, 93, 4, 0.55);
-}
-
-.visitor-fest-countdown span:nth-child(1) strong { transform: rotate(-3deg); }
-.visitor-fest-countdown span:nth-child(2) strong { transform: rotate(2deg); }
-.visitor-fest-countdown span:nth-child(3) strong { transform: rotate(-2deg); }
-.visitor-fest-countdown span:nth-child(4) strong { transform: rotate(3deg); }
-
-.visitor-fest-countdown small {
-  color: #E85D04;
-  font-size: 0.66rem;
-  font-weight: 950;
-  text-transform: uppercase;
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .visitor-fest-countdown span::after {
-    animation: none;
-  }
 }
 
 .visitor-fest-actions {
@@ -4719,69 +4831,143 @@ button + .admin-add-feedback {
   filter: brightness(1.05);
 }
 
+/* Dark "formside" panel, ported directly from the login mock, replacing the light cream card
+   every other role's login page uses (.event-visitor-page scopes this to visitor login only). */
 .event-visitor-page .role-login-card {
   position: relative;
   z-index: 2;
-  border: 1px solid rgba(255, 255, 255, 0.16);
-  background:
-    linear-gradient(180deg, rgba(255, 255, 255, 0.98), rgba(255, 249, 244, 0.95));
-  box-shadow: 0 34px 90px rgba(0, 0, 0, 0.38);
-  backdrop-filter: blur(24px);
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  min-width: 300px;
+  max-height: 100%;
+  padding: clamp(32px, 4vw, 52px) clamp(28px, 4vw, 48px);
+  overflow-y: auto;
+  border: 0;
+  border-radius: 0;
+  background: #101632;
+  box-shadow: none;
+  backdrop-filter: none;
 }
 
 .event-visitor-page .role-login-card::before {
-  height: 4px;
-  background: linear-gradient(90deg, #FF9A3C, #E85D04, #B44500, #7a3a0a);
+  display: none;
 }
 
 .event-visitor-page .role-login-card .portal-head span {
   color: #E85D04;
-  background: #fdf0e4;
+  background: rgba(232, 93, 4, 0.14);
+}
+
+.event-visitor-page .role-login-card .portal-head h3 {
+  color: #ffffff;
+  font-family: Impact, 'Arial Black', sans-serif;
+  font-size: 1.4rem;
+  letter-spacing: -0.3px;
+}
+
+.event-visitor-page .role-login-card .portal-head p {
+  color: #8a90b0;
 }
 
 .event-visitor-page .role-login-card .portal-form button {
-  color: #07111f;
-  border-radius: 999px;
-  background: linear-gradient(135deg, #FF9A3C, #E85D04);
-  box-shadow: 0 14px 30px rgba(232, 93, 4, 0.24);
+  color: #ffffff;
+  border-radius: 20px;
+  background: #E85D04;
+  box-shadow: 0 0 0 0 rgba(232, 93, 4, 0.5);
+  letter-spacing: 0.5px;
+  animation: homeFestGlow 2.4s ease-in-out infinite;
+}
+
+.event-visitor-page .role-login-card .portal-form button:hover,
+.event-visitor-page .role-login-card .portal-form button:focus-visible {
+  background: #c94f00;
+  outline: none;
 }
 
 /* Same ColFest chip/card language as the poster templates and Poster & Ad Designer (rounded
    fields, warm tinted borders, uppercase letter-spaced labels) instead of the generic site-wide
    .portal-form styling every other role's login page shares. */
 .event-visitor-page .role-login-card .portal-form label {
-  color: #0A1433;
-  font-size: 0.72rem;
-  letter-spacing: 0.05em;
+  color: #9aa1c0;
+  font-family: 'Courier New', monospace;
+  font-size: 0.7rem;
+  letter-spacing: 1.5px;
   text-transform: uppercase;
 }
 
 .event-visitor-page .role-login-card .portal-form input {
   height: 46px;
-  border: 1.5px solid rgba(232, 93, 4, 0.22);
-  border-radius: 10px;
-  background: #fffaf4;
+  border: 1px solid rgba(232, 93, 4, 0.3);
+  border-radius: 6px;
+  background: rgba(255, 255, 255, 0.04);
+  color: #ffffff;
+  font-family: Arial, sans-serif;
   font-size: 0.9rem;
-  font-weight: 700;
+  font-weight: 400;
+}
+
+.event-visitor-page .role-login-card .portal-form input::placeholder {
+  color: #5c6483;
 }
 
 .event-visitor-page .role-login-card .portal-form input:focus {
   border-color: #E85D04;
-  background: #ffffff;
-  box-shadow: 0 0 0 3px rgba(232, 93, 4, 0.16);
+  background: rgba(232, 93, 4, 0.06);
+  box-shadow: none;
+}
+
+/* Chrome (and other Chromium browsers) force their own light "remembered value" background on
+   autofilled inputs - e.g. email/password after a saved login - ignoring the site's own
+   background color entirely. The only way to override it is this inset box-shadow trick, painting
+   over the autofill highlight with the same dark fill the rest of the form uses. */
+.event-visitor-page .role-login-card .portal-form input:-webkit-autofill,
+.event-visitor-page .role-login-card .portal-form input:-webkit-autofill:hover,
+.event-visitor-page .role-login-card .portal-form input:-webkit-autofill:focus {
+  -webkit-text-fill-color: #ffffff;
+  -webkit-box-shadow: 0 0 0 1000px #161b3d inset;
+  box-shadow: 0 0 0 1000px #161b3d inset;
+  caret-color: #ffffff;
+  transition: background-color 5000s ease-in-out 0s;
 }
 
 .event-visitor-page .role-login-card .portal-form label.captcha-offline .captcha-input {
-  background: #f2f4f7;
-  border-color: #d0d5dd;
+  color: #5c6483;
+  background: rgba(255, 255, 255, 0.03);
+  border-color: rgba(255, 255, 255, 0.12);
 }
 
 .event-visitor-page .role-login-card .captcha-question {
-  color: #E85D04;
+  color: #FF9A3C;
+}
+
+.event-visitor-page .role-login-card .auth-switch {
+  color: #8a90b0;
+}
+
+.event-visitor-page .role-login-card .link-button {
+  color: #FF9A3C;
+}
+
+.event-visitor-page .role-login-card .link-button.is-muted {
+  color: #8a90b0;
+}
+
+.event-visitor-page .role-login-card .admin-add-feedback {
+  color: #FF9A3C;
+  border-color: rgba(232, 93, 4, 0.3);
+  background: rgba(232, 93, 4, 0.1);
+}
+
+.event-visitor-page .role-login-card .admin-add-feedback.success {
+  color: #7be7a3;
+  border-color: rgba(21, 153, 71, 0.4);
+  background: rgba(21, 153, 71, 0.14);
 }
 
 .event-visitor-page.visitor-auth-signup .role-login-card {
-  max-width: 520px;
+  max-width: none;
 }
 
 .event-visitor-page.visitor-auth-signup #visitorSignupForm {
@@ -4797,38 +4983,9 @@ button + .admin-add-feedback {
   grid-column: 1 / -1;
 }
 
-.event-visitor-page .role-points {
-  gap: 8px;
-  margin-top: 24px;
-}
-
-.event-visitor-page .role-points span {
-  min-height: 34px;
-  display: inline-flex;
-  align-items: center;
-  padding: 7px 11px;
-  font-size: 0.76rem;
-}
-
 .event-visitor-page.admin-dashboard-page {
   color: #ffffff;
-  background:
-    radial-gradient(circle at 14% 12%, rgba(24, 49, 132, 0.90) 0 25%, transparent 25.3%),
-    radial-gradient(circle at 86% 82%, rgba(72, 47, 82, 0.58) 0 24%, transparent 24.3%),
-    radial-gradient(circle at 52% 48%, rgba(232, 93, 4, 0.14), transparent 30%),
-    linear-gradient(135deg, #111f5a 0%, #0A1433 48%, #071027 100%);
-}
-
-.event-visitor-page .role-login-copy {
-  padding-top: 18px;
-}
-
-.event-visitor-page .role-login-copy h1 {
-  max-width: 620px;
-}
-
-.event-visitor-page .role-login-card {
-  border-top: 1px solid rgba(255, 255, 255, 0.18);
+  background: #0A1024;
 }
 
 /* This now lives nested inside .visitor-dashboard-panel, a grid whose rows (hero, spotlight,
@@ -4840,6 +4997,32 @@ button + .admin-add-feedback {
   gap: 22px;
   width: 100%;
   margin: 32px 0 0;
+}
+
+/* Cinematic scroll-in reveal, driven by revealVisitorSectionsOnScroll() in
+   event-visitor-dashboard.html - each section stays hidden/offset until it enters the viewport,
+   giving the fest page a storytelling, section-by-section unveiling feel instead of everything
+   being visible at once. */
+.visitor-fest-band,
+.visitor-dashboard-grid {
+  opacity: 0;
+  transform: translateY(48px);
+  transition: opacity 0.9s cubic-bezier(0.16, 1, 0.3, 1), transform 0.9s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.visitor-fest-band.is-revealed,
+.visitor-dashboard-grid.is-revealed {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .visitor-fest-band,
+  .visitor-dashboard-grid {
+    opacity: 1;
+    transform: none;
+    transition: none;
+  }
 }
 
 .visitor-fest-band {
@@ -5058,9 +5241,34 @@ button + .admin-add-feedback {
   z-index: 0;
   width: min(300px, 34vw);
   margin: 0;
-  opacity: 0.16;
+  /* Doubles as the fallback compass (#visitorDashCompassFallback) when the 3D scene doesn't load
+     (Three.js CDN blocked/offline) - needs to actually be visible on its own in that case, not
+     the faint 16% watermark this was tuned for when it always sat *behind* the 3D canvas. */
+  opacity: 0.55;
   transform: translate(-50%, -50%);
   filter: none;
+}
+
+/* Cinematic 3D compass (see initVisitorDashCompass3D in event-visitor-dashboard.html) - occupies
+   the same centered slot as the flat SVG fallback above it. Starts transparent and fades in only
+   once the WebGL scene has rendered its first frame, so there's never a flash of a blank/unstyled
+   canvas; #visitorDashCompassFallback gets .is-hidden added once this successfully takes over,
+   and stays visible untouched if WebGL/Three.js isn't available (offline, blocked CDN, etc). */
+.visitor-dash-compass-3d {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  z-index: 0;
+  width: min(360px, 40vw);
+  aspect-ratio: 1;
+  opacity: 0;
+  transform: translate(-50%, -50%);
+  transition: opacity 0.8s ease;
+  pointer-events: none;
+}
+
+.visitor-dash-compass-3d.is-ready {
+  opacity: 1;
 }
 
 .visitor-dash-hero .eyebrow {
@@ -5588,10 +5796,6 @@ button + .admin-add-feedback {
     radial-gradient(circle at 100% 100%, rgba(255, 154, 60, 0.22), transparent 36%),
     linear-gradient(180deg, rgba(255, 255, 255, 0.16), rgba(255, 255, 255, 0.08)),
     rgba(7, 17, 31, 0.82);
-}
-
-.event-visitor-page .visitor-dash-hero .visitor-fest-countdown span {
-  background: rgba(7, 17, 31, 0.84);
 }
 
 .event-visitor-page .visitor-dash-hero::after {
@@ -7356,6 +7560,31 @@ button + .admin-add-feedback {
   box-shadow: 0 16px 42px rgba(0, 0, 0, 0.26);
 }
 
+/* Poster & Ad Designer's file_templates-matched activity posters (buildEventPosterHtml,
+   EVENT_POSTER_TEMPLATES) are a fixed 660:220 (3:1) layout - the shape of the actual mockup card -
+   not 16:9 like the older generated-SVG posters this stage was originally built for. Toggled via
+   .spotlight-poster-stage-3x1 (poster.posterAspect === "3:1", set in buildSpotlightPosterPlayer /
+   selectVisitorPosterTile) wherever that specific poster might render, matching all three existing
+   16:9 override contexts above by selector so it always wins regardless of which one applies -
+   cover then fills the box with nothing left to crop, same principle as the 16:9 case.
+   The rendered PNG is captured with omit_background:true (pdf_render_server.py's /render-png), so
+   its corners outside .epd-poster's own 10px-at-660-wide radius (EVENT_POSTER_CSS, script.js) are
+   transparent - background-size:cover then stretches that raster to fill this box at whatever size
+   it actually renders at (this box's width varies per page/breakpoint), so the image's *effective*
+   on-screen corner radius scales right along with it. A fixed-px radius here (10px, or the base
+   .spotlight-poster-stage's own 8px) only ever matches that at exactly 660px wide; every other
+   width leaves a mismatched sliver of this stage's own background color peeking through. Percentage
+   radii scale with the box itself, so a horizontal-%-of-width / vertical-%-of-height pair
+   (10/660, 10/220) reproduces that same 10px-at-660-wide corner at every rendered size instead. */
+.spotlight-poster-stage-3x1,
+.dashboard-poster-carousel-card .spotlight-poster-stage-3x1,
+.event-visitor-page #visitorPosterPlayer .spotlight-poster-stage-3x1 {
+  aspect-ratio: 660 / 220;
+  min-height: 0;
+  height: auto;
+  border-radius: 1.515% / 4.545%;
+}
+
 /* The festival-ad SVG itself has no badge baked in - it's laid out as a real .visitor-fest-logo
    element instead, so it's pixel-identical to the badge in the hero/countdown section above
    rather than an approximation redrawn in SVG text. Unscoped (not just .event-visitor-page) so the
@@ -7458,9 +7687,9 @@ button + .admin-add-feedback {
 }
 
 .event-visitor-page #visitorPosterPlayer .spotlight-poster-tile {
-  border: 1px solid rgba(10, 20, 51, 0.12);
-  background: rgba(10, 20, 51, 0.08);
-  box-shadow: 0 10px 24px rgba(10, 20, 51, 0.12);
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  background: rgba(255, 255, 255, 0.06);
+  box-shadow: 0 10px 24px rgba(0, 0, 0, 0.24);
 }
 
 .event-visitor-page #visitorPosterPlayer .spotlight-poster-tile span {
@@ -15170,23 +15399,20 @@ img.alumni-post-avatar {
 }
 
 .event-visitor-page.admin-dashboard-page {
-  color: #0A1433;
-  background:
-    radial-gradient(circle at 8% 4%, rgba(255, 154, 60, 0.16), transparent 24%),
-    radial-gradient(circle at 92% 0%, rgba(17, 31, 90, 0.12), transparent 26%),
-    linear-gradient(180deg, #f7f8fc 0%, #eef2f7 100%);
+  color: #ffffff;
+  background: #0A1024;
 }
 
 .event-visitor-page.admin-dashboard-page .portal-topbar {
-  border-bottom: 1px solid rgba(10, 20, 51, 0.10);
-  background: rgba(255, 255, 255, 0.94);
-  box-shadow: 0 14px 36px rgba(10, 20, 51, 0.10);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.14);
+  background: rgba(7, 17, 31, 0.92);
+  box-shadow: 0 14px 36px rgba(0, 0, 0, 0.24);
 }
 
 .event-visitor-page.admin-dashboard-page .visitor-fest-nav a {
-  color: rgba(10, 20, 51, 0.72);
-  border-color: rgba(10, 20, 51, 0.10);
-  background: #ffffff;
+  color: rgba(255, 255, 255, 0.78);
+  border-color: rgba(255, 255, 255, 0.14);
+  background: rgba(255, 255, 255, 0.06);
 }
 
 .event-visitor-page.admin-dashboard-page .visitor-fest-nav a:hover,
@@ -15197,23 +15423,23 @@ img.alumni-post-avatar {
 }
 
 .event-visitor-page.admin-dashboard-page .student-user-toggle {
-  color: #0A1433;
+  color: #ffffff;
 }
 
 .event-visitor-page.admin-dashboard-page .student-user-name-block small {
-  color: rgba(10, 20, 51, 0.58);
+  color: rgba(255, 255, 255, 0.58);
 }
 
 .event-visitor-page.admin-dashboard-page .student-user-dropdown {
-  border-color: rgba(10, 20, 51, 0.10);
-  background: #ffffff;
-  box-shadow: 0 18px 42px rgba(10, 20, 51, 0.16);
+  border-color: rgba(255, 255, 255, 0.14);
+  background: #101632;
+  box-shadow: 0 18px 42px rgba(0, 0, 0, 0.34);
 }
 
 .event-visitor-page.admin-dashboard-page .student-user-dropdown a {
-  color: #0A1433;
-  border-color: rgba(10, 20, 51, 0.10);
-  background: rgba(10, 20, 51, 0.04);
+  color: #ffffff;
+  border-color: rgba(255, 255, 255, 0.10);
+  background: rgba(255, 255, 255, 0.05);
 }
 
 .event-visitor-page.admin-dashboard-page .visitor-dash-hero {
@@ -15259,17 +15485,11 @@ img.alumni-post-avatar {
   box-shadow: 0 14px 34px rgba(0, 0, 0, 0.20);
 }
 
-.event-visitor-page.admin-dashboard-page .visitor-dash-hero .visitor-fest-countdown {
-  position: relative;
-  isolation: isolate;
-}
-
 .event-visitor-page.admin-dashboard-page .visitor-dash-stats article::after {
   display: none;
 }
 
 .event-visitor-page.admin-dashboard-page .visitor-dash-stats span,
-.event-visitor-page.admin-dashboard-page .visitor-fest-countdown small,
 .event-visitor-page.admin-dashboard-page .eyebrow {
   color: #E85D04;
 }
@@ -15282,18 +15502,20 @@ img.alumni-post-avatar {
 .event-visitor-page.admin-dashboard-page .visitor-manager-list,
 .event-visitor-page.admin-dashboard-page .visitor-manager-list strong,
 .event-visitor-page.admin-dashboard-page .visitor-instruction-points {
-  color: #0A1433 !important;
+  color: #ffffff !important;
+  font-family: Impact, 'Arial Black', sans-serif;
+  letter-spacing: -0.3px;
 }
 
 .event-visitor-page.admin-dashboard-page .visitor-fest-band,
 .event-visitor-page.admin-dashboard-page .visitor-instructions-panel,
 .event-visitor-page.admin-dashboard-page .visitor-dashboard-panel .event-card,
 .event-visitor-page.admin-dashboard-page .spotlight-poster-player {
-  color: #0A1433;
-  border: 1px solid rgba(10, 20, 51, 0.10);
-  background: #ffffff;
-  box-shadow: 0 16px 36px rgba(10, 20, 51, 0.09);
-  backdrop-filter: none;
+  color: #ffffff;
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  background: rgba(7, 17, 31, 0.78);
+  box-shadow: 0 16px 36px rgba(0, 0, 0, 0.24);
+  backdrop-filter: blur(14px);
 }
 
 .event-visitor-page.admin-dashboard-page .visitor-fest-band::before,
@@ -15306,7 +15528,7 @@ img.alumni-post-avatar {
 }
 
 .event-visitor-page.admin-dashboard-page .visitor-fest-band > .visitor-section-head {
-  border-bottom: 1px solid rgba(10, 20, 51, 0.08);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.10);
   margin-bottom: 16px;
 }
 
@@ -15315,9 +15537,9 @@ img.alumni-post-avatar {
 .event-visitor-page.admin-dashboard-page .visitor-sponsor-strip span,
 .event-visitor-page.admin-dashboard-page .visitor-media-wall span,
 .event-visitor-page.admin-dashboard-page .visitor-public-event-card {
-  color: #0A1433;
-  border-color: rgba(10, 20, 51, 0.10);
-  background: #f8fafc;
+  color: #ffffff;
+  border-color: rgba(255, 255, 255, 0.12);
+  background: rgba(255, 255, 255, 0.06);
   box-shadow: none;
 }
 
@@ -15330,14 +15552,15 @@ img.alumni-post-avatar {
 .event-visitor-page.admin-dashboard-page .visitor-event-more dd,
 .event-visitor-page.admin-dashboard-page .visitor-event-contact,
 .event-visitor-page.admin-dashboard-page .visitor-dashboard-panel .lookup-empty {
-  color: rgba(10, 20, 51, 0.68);
+  color: rgba(255, 255, 255, 0.72);
 }
 
 .event-visitor-page.admin-dashboard-page .visitor-category-filter button,
 .event-visitor-page.admin-dashboard-page .visitor-event-chip-row span {
-  color: #0A1433;
-  border-color: rgba(10, 20, 51, 0.12);
-  background: #ffffff;
+  color: #ffffff;
+  border-color: rgba(255, 255, 255, 0.16);
+  background: rgba(255, 255, 255, 0.06);
+  font-family: 'Courier New', monospace;
 }
 
 .event-visitor-page.admin-dashboard-page .visitor-category-filter button.active,
@@ -15349,47 +15572,44 @@ img.alumni-post-avatar {
 }
 
 .event-visitor-page.admin-dashboard-page .visitor-dashboard-panel .event-card.is-target-event {
-  border-color: rgba(232, 93, 4, 0.48);
-  box-shadow: 0 0 0 4px rgba(232, 93, 4, 0.10), 0 16px 36px rgba(10, 20, 51, 0.11);
+  border-color: rgba(232, 93, 4, 0.5);
+  box-shadow: 0 0 0 4px rgba(232, 93, 4, 0.14), 0 16px 36px rgba(0, 0, 0, 0.3);
 }
 
 .event-visitor-page.admin-dashboard-page .visitor-dashboard-panel .event-card:hover {
-  border-color: rgba(232, 93, 4, 0.28);
-  box-shadow: 0 20px 44px rgba(10, 20, 51, 0.13);
+  border-color: rgba(232, 93, 4, 0.32);
+  box-shadow: 0 20px 44px rgba(0, 0, 0, 0.28);
 }
 
 .event-visitor-page.admin-dashboard-page .visitor-event-actions {
-  border-top-color: rgba(10, 20, 51, 0.10);
+  border-top-color: rgba(255, 255, 255, 0.12);
 }
 
 .event-visitor-page.admin-dashboard-page .visitor-event-actions button,
 .event-visitor-page.admin-dashboard-page .visitor-event-actions a,
 .event-visitor-page.admin-dashboard-page .visitor-event-actions span {
-  border-color: rgba(10, 20, 51, 0.10);
-  background: rgba(10, 20, 51, 0.05);
+  color: #ffffff;
+  border-color: rgba(255, 255, 255, 0.14);
+  background: rgba(255, 255, 255, 0.06);
 }
 
 .event-visitor-page.admin-dashboard-page .visitor-event-actions button:first-child,
 .event-visitor-page.admin-dashboard-page .visitor-event-actions .visitor-primary-action,
 .event-visitor-page.admin-dashboard-page .visitor-event-actions .event-apply-toggle {
-  background: #FF9A3C;
+  color: #ffffff;
+  background: #E85D04;
 }
 
 .event-visitor-page.admin-dashboard-page .spotlight-poster-player .spotlight-poster-stage {
-  border-color: rgba(10, 20, 51, 0.10);
+  border-color: rgba(255, 255, 255, 0.14);
 }
 
 .event-visitor-page.admin-dashboard-page {
   color: #ffffff;
-  background:
-    linear-gradient(120deg, rgba(255, 154, 60, 0.08), transparent 38%),
-    linear-gradient(300deg, rgba(33, 62, 147, 0.20), transparent 44%),
-    linear-gradient(60deg, rgba(255, 122, 24, 0.08), transparent 42%),
-    linear-gradient(135deg, #111f5a 0%, #0A1433 50%, #071027 100%);
-  background-attachment: fixed, fixed, fixed, fixed;
-  background-position: center, center, center, center;
-  background-repeat: no-repeat, no-repeat, no-repeat, no-repeat;
-  background-size: auto, auto, auto, auto;
+  /* Same flat backdrop as the login screen (.event-visitor-page.login-page in styles.css) so the
+     whole visitor experience - sign in through the dashboard - reads as one consistent dark
+     field, not a patchwork of different navy gradients per page. */
+  background: #0A1024;
 }
 
 .event-visitor-page.admin-dashboard-page::before {
@@ -15505,7 +15725,6 @@ img.alumni-post-avatar {
 
 .event-visitor-page.admin-dashboard-page .visitor-dash-hero .visitor-fest-logo span,
 .event-visitor-page.admin-dashboard-page .visitor-dash-stats span,
-.event-visitor-page.admin-dashboard-page .visitor-fest-countdown small,
 .event-visitor-page.admin-dashboard-page .eyebrow {
   color: #FF9A3C;
 }
@@ -16178,23 +16397,26 @@ img.alumni-post-avatar {
   }
 
   .home-fest-banner {
-    grid-template-columns: 1fr;
-    gap: 16px;
     width: min(100% - 20px, 1180px);
     margin-top: 14px;
   }
 
-  .home-fest-side {
-    justify-items: stretch;
+  .home-fest-overlay {
+    flex-direction: column;
+    align-items: flex-start;
+    min-height: 0;
+    padding: 20px;
   }
 
-  .home-fest-countdown {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
+  .home-fest-right {
     width: 100%;
+    flex-direction: column;
+    align-items: stretch;
+    gap: 14px;
   }
 
-  .home-fest-countdown span {
-    min-height: 72px;
+  .home-fest-timer {
+    justify-content: center;
   }
 
   .home-fest-cta {
@@ -16322,14 +16544,13 @@ img.alumni-post-avatar {
   }
 
   .visitor-fest-login {
-    gap: 22px;
     min-height: auto;
-    padding: 24px 0 44px;
+    padding: 24px 12px 44px;
   }
 
-  .visitor-fest-login::before {
-    width: 92vw;
-    opacity: .34;
+  .visitor-login-card {
+    flex-direction: column;
+    height: auto;
   }
 
   .visitor-fest-art,
@@ -16371,9 +16592,8 @@ img.alumni-post-avatar {
   }
 
 
-  .visitor-fest-countdown {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-    width: 100%;
+  .visitor-dash-timer {
+    justify-content: center;
   }
 
   .visitor-fest-actions {
@@ -18967,28 +19187,19 @@ button.calendar-cell-event {
   content: "";
 }
 
-.event-visitor-page.admin-dashboard-page .visitor-fest-countdown span {
-  border-style: dashed;
-}
-
 /* Match the countdown tiles' dashed, orange-tinted border so the stat tiles read as the same
-   tile family instead of a plain gray box next to a festive timer. */
+   tile family instead of a plain gray box next to the timer. */
 .event-visitor-page.admin-dashboard-page .visitor-dash-stats article {
   border-style: dashed;
   border-color: rgba(232, 93, 4, 0.45);
   background: rgba(7, 17, 31, 0.84);
 }
 
-/* Same tilted "sticker" number treatment as .visitor-fest-countdown strong, so the stat figures
-   match the timer digits instead of sitting flat next to them. */
 .event-visitor-page.admin-dashboard-page .visitor-dash-stats strong {
   display: inline-block;
+  font-family: 'Courier New', monospace;
   text-shadow: 2px 2px 0 rgba(232, 93, 4, 0.55);
 }
-
-.event-visitor-page.admin-dashboard-page .visitor-dash-stats article:nth-child(1) strong { transform: rotate(-3deg); }
-.event-visitor-page.admin-dashboard-page .visitor-dash-stats article:nth-child(2) strong { transform: rotate(2deg); }
-.event-visitor-page.admin-dashboard-page .visitor-dash-stats article:nth-child(3) strong { transform: rotate(-2deg); }
 
 .event-visitor-page.admin-dashboard-page .visitor-fest-band {
   border-style: dashed;
@@ -19387,52 +19598,14 @@ button.calendar-cell-event {
   }
 }
 
-/* Admin-controlled visitor theme/compass placement. Applies to homepage banner, visitor login,
-   visitor dashboard hero, and the visitor help chat. */
-.home-fest-banner[data-visitor-theme="minimal"] .visitor-compass-art,
-.home-fest-banner[data-visitor-theme="festival"] .visitor-compass-art,
+/* Admin-controlled visitor theme/compass placement. Applies to visitor login, visitor dashboard
+   hero, and the visitor help chat - the homepage banner has its own fixed compass-theme layout
+   (.home-fest-bg) and doesn't participate in this toggle. */
 .event-visitor-page[data-visitor-theme="minimal"] .visitor-compass-art,
 .event-visitor-page[data-visitor-theme="festival"] .visitor-compass-art,
 .event-visitor-page.admin-dashboard-page[data-visitor-theme="minimal"] .gprecian-welcome::before,
 .event-visitor-page.admin-dashboard-page[data-visitor-theme="festival"] .gprecian-welcome::before {
   display: none;
-}
-
-.event-visitor-page[data-visitor-theme="festival"] .visitor-fest-login::before,
-.home-fest-banner[data-visitor-theme="festival"] .home-fest-doodles {
-  opacity: .78;
-}
-
-.home-fest-banner[data-compass-position="left"] .visitor-compass-art {
-  right: auto;
-  left: -120px;
-}
-
-.home-fest-banner[data-compass-position="center"] .visitor-compass-art {
-  right: 50%;
-  transform: translateX(50%);
-}
-
-.home-fest-banner[data-compass-position="bottom-right"] .visitor-compass-art {
-  top: auto;
-  right: -96px;
-  bottom: -130px;
-}
-
-.event-visitor-page[data-compass-position="left"] .visitor-fest-hero .visitor-compass-art {
-  right: auto;
-  left: clamp(-160px, -12vw, -70px);
-}
-
-.event-visitor-page[data-compass-position="center"] .visitor-fest-hero .visitor-compass-art {
-  right: 50%;
-  transform: translateX(50%);
-}
-
-.event-visitor-page[data-compass-position="bottom-right"] .visitor-fest-hero .visitor-compass-art {
-  top: auto;
-  right: clamp(-150px, -10vw, -64px);
-  bottom: -80px;
 }
 
 .event-visitor-page.admin-dashboard-page[data-compass-position="left"] .visitor-dash-hero > .visitor-compass-art {
@@ -19461,4 +19634,3007 @@ button.calendar-cell-event {
 .event-visitor-page.admin-dashboard-page[data-compass-position="bottom-right"] .gprecian-welcome::before {
   right: -96px;
   bottom: 48px;
+}
+
+/* Old decorative doodle line-art (fixed compass watermark + scattered festival icon overlays)
+   removed for a clean flat backdrop matching the login screen exactly - kept at the end of the
+   file so it wins over every earlier ::before/::after declaration for these same selectors
+   regardless of source order, without having to hunt down and edit each one individually. */
+.event-visitor-page.admin-dashboard-page::before,
+.event-visitor-page.admin-dashboard-page::after,
+.event-visitor-page.admin-dashboard-page .visitor-fest-band::before,
+.event-visitor-page.admin-dashboard-page .visitor-fest-band::after,
+.event-visitor-page.admin-dashboard-page .visitor-instructions-panel::before,
+.event-visitor-page.admin-dashboard-page .visitor-instructions-panel::after,
+.event-visitor-page.admin-dashboard-page .visitor-dashboard-panel .event-card::after,
+.event-visitor-page.admin-dashboard-page .spotlight-poster-player::after,
+.event-visitor-page.admin-dashboard-page .visitor-dash-hero::before,
+.event-visitor-page.admin-dashboard-page .visitor-dash-hero::after,
+.event-visitor-page.admin-dashboard-page #visitorFestContact::after,
+.event-visitor-page.admin-dashboard-page .gprecian-doodles {
+  display: none !important;
+}
+
+.event-visitor-page.admin-dashboard-page .visitor-dash-hero {
+  grid-template-columns: minmax(430px, 0.94fr) minmax(420px, 0.86fr) !important;
+  grid-template-rows: minmax(360px, auto) auto;
+  align-items: center;
+  min-height: 620px;
+  padding: clamp(30px, 4.6vw, 56px) !important;
+  isolation: isolate;
+  background:
+    radial-gradient(circle at 70% 24%, rgba(232, 93, 4, 0.24), transparent 30%),
+    radial-gradient(circle at 24% 70%, rgba(255, 154, 60, 0.10), transparent 32%),
+    linear-gradient(145deg, #0A1024, #101632 58%, #050914) !important;
+}
+
+.event-visitor-page.admin-dashboard-page .visitor-dash-hero::before {
+  position: absolute;
+  inset: -40% auto -40% -20%;
+  z-index: 0;
+  display: block !important;
+  width: 42%;
+  background: linear-gradient(90deg, transparent, rgba(255, 154, 60, 0.13), transparent);
+  content: "";
+  opacity: .68;
+  pointer-events: none;
+  transform: skewX(-18deg) translateX(-120%);
+  animation: visitorHeroLightSweep 7.5s ease-in-out infinite;
+}
+
+.event-visitor-page.admin-dashboard-page .visitor-dash-copy {
+  position: relative;
+  z-index: 1;
+  grid-column: 1;
+  grid-row: 1;
+  max-width: 620px;
+}
+
+.event-visitor-page.admin-dashboard-page .visitor-fest-band,
+.event-visitor-page.admin-dashboard-page .visitor-instructions-panel,
+.event-visitor-page.admin-dashboard-page .visitor-dashboard-panel .event-card,
+.event-visitor-page.admin-dashboard-page .spotlight-poster-player {
+  border-color: rgba(255, 154, 60, 0.16) !important;
+  background:
+    radial-gradient(circle at 88% 14%, rgba(232, 93, 4, 0.13), transparent 34%),
+    linear-gradient(145deg, rgba(16, 22, 50, 0.86), rgba(10, 16, 36, 0.94) 62%, rgba(5, 9, 20, 0.9)) !important;
+  box-shadow: 0 20px 54px rgba(0, 0, 0, 0.22), inset 0 1px 0 rgba(255, 154, 60, 0.05) !important;
+}
+
+.event-visitor-page.admin-dashboard-page .visitor-fest-feature-grid article,
+.event-visitor-page.admin-dashboard-page .visitor-fest-timeline article,
+.event-visitor-page.admin-dashboard-page .visitor-sponsor-strip span,
+.event-visitor-page.admin-dashboard-page .visitor-media-wall span,
+.event-visitor-page.admin-dashboard-page .visitor-public-event-card,
+.event-visitor-page.admin-dashboard-page .visitor-category-filter,
+.event-visitor-page.admin-dashboard-page .visitor-category-filter button,
+.event-visitor-page.admin-dashboard-page .visitor-event-chip-row span,
+.event-visitor-page.admin-dashboard-page .visitor-event-more dl div,
+.event-visitor-page.admin-dashboard-page .visitor-event-actions button,
+.event-visitor-page.admin-dashboard-page .visitor-event-actions a,
+.event-visitor-page.admin-dashboard-page .visitor-event-actions span {
+  border-color: rgba(255, 154, 60, 0.14) !important;
+  background: rgba(10, 16, 36, 0.58) !important;
+}
+
+.event-visitor-page.admin-dashboard-page .visitor-fest-band > .visitor-section-head,
+.event-visitor-page.admin-dashboard-page .visitor-dashboard-panel .event-card-head,
+.event-visitor-page.admin-dashboard-page .visitor-event-actions {
+  border-color: rgba(255, 154, 60, 0.14) !important;
+}
+
+.event-visitor-page.admin-dashboard-page .visitor-event-actions::before,
+.event-visitor-page.admin-dashboard-page .visitor-event-actions::after {
+  background: #0A1024 !important;
+}
+
+.event-visitor-page.admin-dashboard-page .visitor-category-filter button.active,
+.event-visitor-page.admin-dashboard-page .visitor-category-filter button:hover,
+.event-visitor-page.admin-dashboard-page .visitor-category-filter button:focus-visible,
+.event-visitor-page.admin-dashboard-page .visitor-event-actions button:first-child,
+.event-visitor-page.admin-dashboard-page .visitor-event-actions .visitor-primary-action,
+.event-visitor-page.admin-dashboard-page .visitor-event-actions .event-apply-toggle {
+  border-color: rgba(232, 93, 4, 0.7) !important;
+  background: #E85D04 !important;
+}
+
+.event-visitor-page.admin-dashboard-page .visitor-dash-stats {
+  grid-column: 1 / -1;
+  align-self: end;
+  justify-self: stretch;
+  width: 100%;
+  max-width: none;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 14px;
+  padding-top: 20px;
+}
+
+.event-visitor-page.admin-dashboard-page .visitor-dash-login-compass {
+  position: absolute;
+  top: 38%;
+  right: auto;
+  left: 68%;
+  z-index: 0;
+  width: min(520px, 38vw);
+  opacity: .74;
+  filter: drop-shadow(0 34px 70px rgba(0, 0, 0, 0.34));
+  transform: translate(-50%, -50%);
+  animation: visitorCompassDrift 8s ease-in-out infinite;
+}
+
+.event-visitor-page.admin-dashboard-page .visitor-dash-login-compass .visitor-login-dashring {
+  animation-duration: 34s;
+}
+
+.event-visitor-page.admin-dashboard-page .visitor-dash-login-compass .visitor-login-ring {
+  animation-duration: 3.2s;
+}
+
+.event-visitor-page.admin-dashboard-page .visitor-dash-login-compass .visitor-login-compass-group {
+  animation-duration: 24s;
+}
+
+.event-visitor-page.admin-dashboard-page .visitor-dash-login-compass .visitor-login-needle {
+  animation: visitorNeedleLock 3.6s ease-in-out infinite;
+}
+
+.event-visitor-page.admin-dashboard-page .visitor-dash-stats article {
+  min-height: 118px;
+  padding: 18px 22px !important;
+}
+
+.event-visitor-page.admin-dashboard-page .visitor-dash-stats strong {
+  font-size: clamp(2rem, 3.4vw, 3.4rem);
+}
+
+.event-visitor-page.admin-dashboard-page .visitor-dash-login-compass.is-hidden {
+  display: block !important;
+}
+
+@media (max-width: 760px) {
+  .event-visitor-page.admin-dashboard-page .visitor-dash-hero {
+    grid-template-columns: 1fr !important;
+    grid-template-rows: auto auto;
+    min-height: auto;
+  }
+
+  .event-visitor-page.admin-dashboard-page .visitor-dash-stats {
+    grid-column: auto;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    width: 100%;
+  }
+
+  .event-visitor-page.admin-dashboard-page .visitor-dash-login-compass {
+    left: 50%;
+    width: min(320px, 72vw);
+    opacity: .28;
+  }
+}
+
+.event-visitor-page.admin-dashboard-page #visitorDashTopbar.portal-topbar {
+  position: sticky;
+  top: 0;
+  z-index: 70;
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  gap: 22px;
+  align-items: center;
+  min-height: 86px;
+  padding: 14px clamp(18px, 3vw, 34px);
+  border-bottom: 1px solid rgba(255, 154, 60, 0.18);
+  background:
+    radial-gradient(circle at 70% 0%, rgba(232, 93, 4, 0.12), transparent 34%),
+    rgba(10, 16, 36, 0.92);
+  box-shadow: 0 20px 54px rgba(0, 0, 0, 0.28);
+  backdrop-filter: blur(18px);
+}
+
+.event-visitor-page.admin-dashboard-page #visitorDashTopbar .student-brand {
+  display: inline-flex;
+  align-items: center;
+  min-width: 190px;
+}
+
+.event-visitor-page.admin-dashboard-page #visitorDashTopbar .student-brand img {
+  width: 180px;
+  height: auto;
+  max-height: 54px;
+  object-fit: contain;
+  filter: drop-shadow(0 12px 22px rgba(0, 0, 0, 0.22));
+}
+
+.event-visitor-page.admin-dashboard-page #visitorDashTopbar .visitor-fest-nav {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+  overflow-x: auto;
+  padding: 7px;
+  border: 1px solid rgba(255, 154, 60, 0.12);
+  border-radius: 999px;
+  background: rgba(5, 9, 20, 0.34);
+  scrollbar-width: none;
+  max-width: 100%;
+}
+
+.event-visitor-page.admin-dashboard-page #visitorDashTopbar .visitor-fest-nav::-webkit-scrollbar {
+  display: none;
+}
+
+.event-visitor-page.admin-dashboard-page #visitorDashTopbar .visitor-fest-nav a {
+  flex: 0 0 auto;
+  min-height: 38px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0 16px;
+  border: 1px solid transparent;
+  border-radius: 999px;
+  color: rgba(250, 246, 239, 0.78);
+  background: transparent;
+  font-size: 0.84rem;
+  font-weight: 900;
+  white-space: nowrap;
+  transition: color 160ms ease, border-color 160ms ease, background 160ms ease, transform 160ms ease;
+}
+
+.event-visitor-page.admin-dashboard-page #visitorDashTopbar .visitor-fest-nav a:hover,
+.event-visitor-page.admin-dashboard-page #visitorDashTopbar .visitor-fest-nav a:focus-visible {
+  color: #ffffff;
+  border-color: rgba(255, 154, 60, 0.36);
+  background: rgba(232, 93, 4, 0.14);
+  transform: translateY(-1px);
+}
+
+.event-visitor-page.admin-dashboard-page #visitorDashTopbar .student-user {
+  margin-left: 0;
+}
+
+.event-visitor-page.admin-dashboard-page #visitorDashTopbar .student-user-menu {
+  display: grid;
+  position: relative;
+  grid-template-columns: auto minmax(180px, auto);
+  align-items: center;
+  gap: 10px;
+  padding: 7px 12px 7px 7px;
+  border: 1px solid rgba(255, 154, 60, 0.18);
+  border-radius: 999px;
+  background: rgba(16, 22, 50, 0.62);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.05), 0 14px 34px rgba(0, 0, 0, 0.18);
+}
+
+.event-visitor-page.admin-dashboard-page #visitorDashTopbar .student-user-avatar {
+  width: 42px;
+  height: 42px;
+  color: #07111f;
+  background: linear-gradient(135deg, #FF9A3C, #E85D04);
+  box-shadow: 0 12px 26px rgba(232, 93, 4, 0.24);
+  font-size: 0.9rem;
+}
+
+.event-visitor-page.admin-dashboard-page #visitorDashTopbar .student-user-toggle {
+  position: relative;
+  min-height: 42px;
+  padding: 0 26px 0 0;
+  border: 0;
+  background: transparent;
+  box-shadow: none;
+  text-align: left;
+  cursor: pointer;
+}
+
+.event-visitor-page.admin-dashboard-page #visitorDashTopbar .student-user-toggle::after {
+  position: absolute;
+  top: 50%;
+  right: 2px;
+  width: 8px;
+  height: 8px;
+  border-right: 2px solid rgba(255, 154, 60, 0.9);
+  border-bottom: 2px solid rgba(255, 154, 60, 0.9);
+  content: "";
+  transform: translateY(-65%) rotate(45deg);
+  transition: transform 160ms ease;
+}
+
+.event-visitor-page.admin-dashboard-page #visitorDashTopbar .student-user-menu.open .student-user-toggle::after {
+  transform: translateY(-35%) rotate(225deg);
+}
+
+.event-visitor-page.admin-dashboard-page #visitorDashTopbar .student-user-name-block strong {
+  color: #ffffff;
+  font-size: 0.92rem;
+  line-height: 1.1;
+}
+
+.event-visitor-page.admin-dashboard-page #visitorDashTopbar .student-user-name-block small {
+  color: rgba(199, 204, 224, 0.74);
+  font-size: 0.74rem;
+}
+
+.event-visitor-page.admin-dashboard-page #visitorDashTopbar .student-user-dropdown {
+  position: absolute;
+  top: calc(100% + 10px);
+  right: 0;
+  z-index: 80;
+  display: grid;
+  gap: 6px;
+  width: 210px;
+  padding: 8px;
+  border: 1px solid rgba(255, 154, 60, 0.18);
+  border-radius: 10px;
+  background: rgba(10, 16, 36, 0.96);
+  box-shadow: 0 22px 46px rgba(0, 0, 0, 0.34);
+  opacity: 0;
+  visibility: hidden;
+  transform: translateY(-6px);
+  transition: opacity 160ms ease, visibility 160ms ease, transform 160ms ease;
+}
+
+.event-visitor-page.admin-dashboard-page #visitorDashTopbar .student-user-menu.open .student-user-dropdown {
+  opacity: 1;
+  visibility: visible;
+  transform: translateY(0);
+}
+
+.event-visitor-page.admin-dashboard-page #visitorDashTopbar .student-user-dropdown a {
+  min-height: 38px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: flex-start;
+  padding: 0 12px;
+  border: 1px solid transparent;
+  border-radius: 7px;
+  color: #ffffff;
+  background: transparent;
+  font-size: 0.82rem;
+  font-weight: 900;
+  white-space: nowrap;
+}
+
+.event-visitor-page.admin-dashboard-page #visitorDashTopbar .student-user-dropdown a:hover,
+.event-visitor-page.admin-dashboard-page #visitorDashTopbar .student-user-dropdown a:focus-visible {
+  border-color: rgba(232, 93, 4, 0.6);
+  background: #E85D04;
+}
+
+@media (max-width: 1120px) {
+  .event-visitor-page.admin-dashboard-page #visitorDashTopbar.portal-topbar {
+    grid-template-columns: auto minmax(0, 1fr);
+  }
+
+  .event-visitor-page.admin-dashboard-page #visitorDashTopbar .visitor-fest-nav {
+    grid-column: 1 / -1;
+    order: 3;
+  }
+
+  .event-visitor-page.admin-dashboard-page #visitorDashTopbar .student-user {
+    justify-self: end;
+  }
+}
+
+@media (max-width: 760px) {
+  .event-visitor-page.admin-dashboard-page #visitorDashTopbar.portal-topbar {
+    grid-template-columns: 1fr;
+    gap: 12px;
+    min-height: auto;
+  }
+
+  .event-visitor-page.admin-dashboard-page #visitorDashTopbar .student-brand,
+  .event-visitor-page.admin-dashboard-page #visitorDashTopbar .student-user {
+    justify-self: stretch;
+  }
+
+  .event-visitor-page.admin-dashboard-page #visitorDashTopbar .student-user-menu {
+    grid-template-columns: auto minmax(0, 1fr);
+  }
+
+  .event-visitor-page.admin-dashboard-page #visitorDashTopbar .student-user-dropdown {
+    width: min(210px, calc(100vw - 40px));
+  }
+}
+
+.event-visitor-page.admin-dashboard-page .visitor-fest-sections {
+  display: grid;
+  gap: 28px;
+  margin-top: 34px;
+}
+
+.event-visitor-page.admin-dashboard-page .visitor-fest-band,
+.event-visitor-page.admin-dashboard-page .visitor-dashboard-grid,
+.event-visitor-page.admin-dashboard-page .spotlight-poster-player {
+  position: relative;
+  overflow: hidden;
+  border: 1px solid rgba(255, 154, 60, 0.14) !important;
+  border-radius: 8px;
+  background:
+    linear-gradient(90deg, rgba(255, 154, 60, 0.09), transparent 1px) 0 0 / 52px 52px,
+    radial-gradient(circle at 12% 0%, rgba(255, 154, 60, 0.15), transparent 28%),
+    linear-gradient(145deg, rgba(16, 22, 50, 0.82), rgba(10, 16, 36, 0.96) 58%, rgba(5, 9, 20, 0.96)) !important;
+  box-shadow: 0 22px 58px rgba(0, 0, 0, 0.22) !important;
+}
+
+.event-visitor-page.admin-dashboard-page .visitor-fest-band {
+  display: grid;
+  gap: 22px;
+  padding: clamp(24px, 3vw, 38px) !important;
+}
+
+.event-visitor-page.admin-dashboard-page .visitor-fest-band > .visitor-section-head,
+.event-visitor-page.admin-dashboard-page .visitor-event-head {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 18px;
+  align-items: end;
+  margin: 0 !important;
+  padding: 0 0 18px !important;
+  border-bottom: 1px solid rgba(255, 154, 60, 0.16) !important;
+}
+
+.event-visitor-page.admin-dashboard-page .visitor-section-head h2,
+.event-visitor-page.admin-dashboard-page .visitor-fest-band h2 {
+  max-width: 860px;
+  font-size: clamp(2rem, 4.4vw, 4.2rem) !important;
+  line-height: .96 !important;
+  letter-spacing: 0 !important;
+}
+
+.event-visitor-page.admin-dashboard-page .visitor-fest-feature-grid,
+.event-visitor-page.admin-dashboard-page .visitor-fest-detail-grid {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 0;
+  margin: 0;
+  border: 1px solid rgba(255, 154, 60, 0.14);
+  border-radius: 8px;
+  overflow: hidden;
+  background: rgba(5, 9, 20, 0.34);
+}
+
+.event-visitor-page.admin-dashboard-page .visitor-fest-feature-grid article {
+  position: relative;
+  min-height: 190px;
+  align-content: end;
+  padding: 24px !important;
+  border: 0 !important;
+  border-right: 1px solid rgba(255, 154, 60, 0.13) !important;
+  border-radius: 0 !important;
+  background:
+    radial-gradient(circle at 100% 0%, rgba(232, 93, 4, 0.16), transparent 35%),
+    rgba(10, 16, 36, 0.44) !important;
+}
+
+.event-visitor-page.admin-dashboard-page .visitor-fest-feature-grid article:last-child {
+  border-right: 0 !important;
+}
+
+.event-visitor-page.admin-dashboard-page .visitor-fest-feature-grid article::before {
+  position: absolute;
+  top: 18px;
+  left: 22px;
+  color: rgba(255, 154, 60, 0.72);
+  font-family: "Courier New", monospace;
+  font-size: .76rem;
+  font-weight: 900;
+  letter-spacing: 2px;
+}
+
+.event-visitor-page.admin-dashboard-page .visitor-fest-feature-grid article:nth-child(1)::before { content: "01"; }
+.event-visitor-page.admin-dashboard-page .visitor-fest-feature-grid article:nth-child(2)::before { content: "02"; }
+.event-visitor-page.admin-dashboard-page .visitor-fest-feature-grid article:nth-child(3)::before { content: "03"; }
+
+.event-visitor-page.admin-dashboard-page .visitor-fest-feature-grid strong,
+.event-visitor-page.admin-dashboard-page .visitor-fest-timeline strong {
+  font-size: clamp(1.25rem, 1.8vw, 1.8rem) !important;
+  line-height: 1.05 !important;
+}
+
+.event-visitor-page.admin-dashboard-page .visitor-fest-feature-grid span,
+.event-visitor-page.admin-dashboard-page .visitor-fest-timeline small,
+.event-visitor-page.admin-dashboard-page .visitor-fest-split p,
+.event-visitor-page.admin-dashboard-page .visitor-fest-note {
+  color: rgba(199, 204, 224, 0.8) !important;
+  font-size: .98rem;
+  line-height: 1.65 !important;
+}
+
+.event-visitor-page.admin-dashboard-page .visitor-dashboard-grid {
+  padding: clamp(24px, 3vw, 38px);
+}
+
+.event-visitor-page.admin-dashboard-page .visitor-category-filter {
+  width: fit-content;
+  margin: 0 0 20px !important;
+  padding: 6px !important;
+  border-radius: 999px;
+  background: rgba(5, 9, 20, 0.42) !important;
+}
+
+.event-visitor-page.admin-dashboard-page .visitor-dashboard-panel .event-grid {
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 16px !important;
+}
+
+.event-visitor-page.admin-dashboard-page .visitor-dashboard-panel .event-card {
+  padding: 0 !important;
+  border-color: rgba(255, 154, 60, 0.16) !important;
+  background:
+    linear-gradient(180deg, rgba(16, 22, 50, 0.92), rgba(10, 16, 36, 0.98)) !important;
+}
+
+.event-visitor-page.admin-dashboard-page .visitor-event-details {
+  padding: 20px 20px 16px !important;
+}
+
+.event-visitor-page.admin-dashboard-page .visitor-event-actions {
+  padding: 16px 20px !important;
+  background: rgba(5, 9, 20, 0.34) !important;
+}
+
+.event-visitor-page.admin-dashboard-page .visitor-fest-timeline {
+  position: relative;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 14px;
+  margin: 0;
+}
+
+.event-visitor-page.admin-dashboard-page .visitor-fest-timeline::before {
+  display: none !important;
+}
+
+.event-visitor-page.admin-dashboard-page .visitor-fest-timeline article {
+  min-height: 190px;
+  padding: 24px !important;
+  border-color: rgba(255, 154, 60, 0.14) !important;
+  background:
+    radial-gradient(circle at 18% 18%, rgba(255, 154, 60, 0.18), transparent 26%),
+    rgba(10, 16, 36, 0.62) !important;
+}
+
+.event-visitor-page.admin-dashboard-page .visitor-fest-timeline article > span {
+  width: fit-content;
+  padding: 7px 10px;
+  border: 1px solid rgba(255, 154, 60, 0.28);
+  border-radius: 999px;
+  color: #FF9A3C !important;
+  background: rgba(232, 93, 4, 0.08);
+}
+
+.event-visitor-page.admin-dashboard-page .visitor-fest-split {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 1px;
+  padding: 0 !important;
+  background:
+    linear-gradient(145deg, rgba(16, 22, 50, 0.86), rgba(10, 16, 36, 0.96)) !important;
+}
+
+.event-visitor-page.admin-dashboard-page .visitor-fest-split > div {
+  display: grid;
+  align-content: center;
+  min-height: 300px;
+  padding: clamp(26px, 3vw, 42px);
+  background: rgba(5, 9, 20, 0.22);
+}
+
+.event-visitor-page.admin-dashboard-page .visitor-fest-split > div + div {
+  border-left: 1px solid rgba(255, 154, 60, 0.14);
+}
+
+.event-visitor-page.admin-dashboard-page .visitor-sponsor-strip,
+.event-visitor-page.admin-dashboard-page .visitor-media-wall {
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 10px;
+  margin: 0;
+}
+
+.event-visitor-page.admin-dashboard-page .visitor-sponsor-strip span,
+.event-visitor-page.admin-dashboard-page .visitor-media-wall span {
+  min-height: 82px;
+  place-items: center;
+  text-align: center;
+  border-radius: 8px !important;
+  color: #FF9A3C !important;
+  background:
+    radial-gradient(circle at 50% 0%, rgba(255, 154, 60, 0.14), transparent 42%),
+    rgba(10, 16, 36, 0.58) !important;
+}
+
+.event-visitor-page.admin-dashboard-page #visitorFestFaqs {
+  grid-template-columns: 1.05fr .95fr;
+}
+
+@media (max-width: 980px) {
+  .event-visitor-page.admin-dashboard-page .visitor-fest-feature-grid,
+  .event-visitor-page.admin-dashboard-page .visitor-fest-detail-grid,
+  .event-visitor-page.admin-dashboard-page .visitor-fest-timeline,
+  .event-visitor-page.admin-dashboard-page .visitor-sponsor-strip,
+  .event-visitor-page.admin-dashboard-page .visitor-media-wall {
+    grid-template-columns: 1fr;
+  }
+
+  .event-visitor-page.admin-dashboard-page .visitor-fest-feature-grid article {
+    border-right: 0 !important;
+    border-bottom: 1px solid rgba(255, 154, 60, 0.13) !important;
+  }
+
+  .event-visitor-page.admin-dashboard-page .visitor-fest-feature-grid article:last-child {
+    border-bottom: 0 !important;
+  }
+
+  .event-visitor-page.admin-dashboard-page .visitor-fest-split,
+  .event-visitor-page.admin-dashboard-page #visitorFestFaqs {
+    grid-template-columns: 1fr;
+  }
+
+  .event-visitor-page.admin-dashboard-page .visitor-fest-split > div + div {
+    border-left: 0;
+    border-top: 1px solid rgba(255, 154, 60, 0.14);
+  }
+}
+
+.event-visitor-page.admin-dashboard-page .visitor-dash-hero .visitor-fest-logo {
+  display: inline-grid;
+  grid-template-columns: auto auto;
+  align-items: baseline;
+  gap: 10px;
+  min-height: 0;
+  margin: 0 0 22px;
+  padding: 0 0 12px;
+  border: 0;
+  border-bottom: 2px solid rgba(255, 154, 60, 0.52);
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+  backdrop-filter: none;
+}
+
+.event-visitor-page.admin-dashboard-page .visitor-dash-hero .visitor-fest-logo span {
+  color: #FF9A3C;
+  font-family: "Courier New", monospace;
+  font-size: .82rem;
+  font-weight: 900;
+  letter-spacing: 2px;
+}
+
+.event-visitor-page.admin-dashboard-page .visitor-dash-hero .visitor-fest-logo strong {
+  padding: 0;
+  color: #ffffff;
+  border-radius: 0;
+  background: transparent;
+  font-family: Impact, "Arial Black", sans-serif;
+  font-size: clamp(1.28rem, 2vw, 2rem);
+  font-weight: 900;
+  letter-spacing: 0;
+  line-height: 1;
+}
+
+.event-visitor-page.admin-dashboard-page .visitor-dash-hero .eyebrow,
+.event-visitor-page.admin-dashboard-page .visitor-section-head .eyebrow {
+  display: inline-flex;
+  gap: 11px;
+  align-items: center;
+  width: fit-content;
+  margin: 0 0 16px;
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  color: #FF9A3C !important;
+  font-family: "Courier New", monospace;
+  font-size: .78rem;
+  font-weight: 900;
+  letter-spacing: 2px;
+  line-height: 1.25;
+  text-transform: uppercase;
+}
+
+.event-visitor-page.admin-dashboard-page .visitor-dash-hero .eyebrow::before,
+.event-visitor-page.admin-dashboard-page .visitor-section-head .eyebrow::before {
+  width: 34px;
+  height: 2px;
+  border-radius: 0;
+  background: linear-gradient(90deg, #E85D04, #FF9A3C);
+  box-shadow: 0 0 18px rgba(232, 93, 4, 0.42);
+  content: "";
+}
+
+.event-visitor-page.admin-dashboard-page .visitor-fest-band,
+.event-visitor-page.admin-dashboard-page .visitor-dashboard-grid,
+.event-visitor-page.admin-dashboard-page .spotlight-poster-player {
+  background:
+    radial-gradient(circle at 86% 0%, rgba(232, 93, 4, 0.10), transparent 30%),
+    linear-gradient(145deg, rgba(16, 22, 50, 0.72), rgba(10, 16, 36, 0.94)) !important;
+  transition: transform .35s ease, border-color .35s ease, box-shadow .35s ease;
+}
+
+.event-visitor-page.admin-dashboard-page .visitor-fest-band:hover,
+.event-visitor-page.admin-dashboard-page .visitor-dashboard-grid:hover,
+.event-visitor-page.admin-dashboard-page .spotlight-poster-player:hover {
+  transform: translateY(-3px);
+  border-color: rgba(255, 154, 60, 0.24) !important;
+  box-shadow: 0 26px 70px rgba(0, 0, 0, 0.30) !important;
+}
+
+.event-visitor-page.admin-dashboard-page .visitor-section-head h2,
+.event-visitor-page.admin-dashboard-page .visitor-fest-band h2 {
+  font-size: clamp(1.65rem, 3vw, 3rem) !important;
+  line-height: 1.04 !important;
+}
+
+.event-visitor-page.admin-dashboard-page .visitor-fest-feature-grid article,
+.event-visitor-page.admin-dashboard-page .visitor-fest-timeline article {
+  min-height: 132px;
+  align-content: start;
+  padding: 22px !important;
+  background: rgba(10, 16, 36, 0.48) !important;
+}
+
+.event-visitor-page.admin-dashboard-page .visitor-fest-feature-grid article::before {
+  top: auto;
+  right: 18px;
+  bottom: 16px;
+  left: auto;
+  opacity: .28;
+  font-size: 1.6rem;
+  letter-spacing: 0;
+}
+
+.event-visitor-page.admin-dashboard-page .visitor-fest-timeline {
+  gap: 12px;
+}
+
+.event-visitor-page.admin-dashboard-page .visitor-fest-timeline article {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  column-gap: 18px;
+  align-items: start;
+}
+
+.event-visitor-page.admin-dashboard-page .visitor-fest-timeline article > span {
+  min-width: 76px;
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  color: #FF9A3C !important;
+  font-family: "Courier New", monospace;
+  font-size: .82rem;
+  letter-spacing: 1.4px;
+}
+
+.event-visitor-page.admin-dashboard-page .visitor-fest-timeline strong,
+.event-visitor-page.admin-dashboard-page .visitor-fest-feature-grid strong {
+  font-family: Arial, sans-serif !important;
+  font-size: clamp(1rem, 1.35vw, 1.28rem) !important;
+  font-weight: 900;
+  line-height: 1.2 !important;
+  letter-spacing: 0 !important;
+}
+
+.event-visitor-page.admin-dashboard-page .visitor-fest-timeline small {
+  grid-column: 2;
+}
+
+.event-visitor-page.admin-dashboard-page .visitor-fest-split > div {
+  min-height: 220px;
+}
+
+.event-visitor-page.admin-dashboard-page .gprecian-panel,
+.event-visitor-page.admin-dashboard-page .gprecian-welcome,
+.event-visitor-page.admin-dashboard-page .gprecian-messages {
+  background:
+    radial-gradient(circle at 78% 18%, rgba(232, 93, 4, 0.16), transparent 30%),
+    linear-gradient(145deg, rgba(16, 22, 50, 0.96), rgba(10, 16, 36, 0.98) 60%, rgba(5, 9, 20, 0.98)) !important;
+}
+
+.event-visitor-page.admin-dashboard-page .gprecian-panel {
+  border-color: rgba(255, 154, 60, 0.2);
+  box-shadow: 0 24px 70px rgba(0, 0, 0, 0.36);
+}
+
+.event-visitor-page.admin-dashboard-page .gprecian-panel::before {
+  position: absolute;
+  right: -92px;
+  bottom: 104px;
+  z-index: 0;
+  display: block !important;
+  width: 260px;
+  aspect-ratio: 1;
+  background: url("data:image/svg+xml,%3Csvg width='520' height='520' viewBox='0 0 520 520' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' stroke='%23FF9A3C' stroke-linecap='round' stroke-linejoin='round'%3E%3Ccircle cx='260' cy='260' r='212' stroke-width='7' opacity='.58'/%3E%3Ccircle cx='260' cy='260' r='132' stroke-width='5' opacity='.44'/%3E%3Ccircle cx='260' cy='260' r='72' stroke='%23E85D04' stroke-width='5' opacity='.72'/%3E%3Cpath d='M260 64 304 260 260 456 216 260z' fill='%23E85D04' stroke='none' opacity='.72'/%3E%3Cpath d='M64 260 260 216 456 260 260 304z' fill='%23FF9A3C' stroke='none' opacity='.48'/%3E%3Cpath d='M150 150 260 224 370 150 296 260 370 370 260 296 150 370 224 260z' stroke-width='5' opacity='.38'/%3E%3C/g%3E%3C/svg%3E") center / contain no-repeat;
+  content: "";
+  opacity: .16;
+  pointer-events: none;
+}
+
+.event-visitor-page.admin-dashboard-page .gprecian-welcome,
+.event-visitor-page.admin-dashboard-page .gprecian-messages {
+  position: relative;
+  isolation: isolate;
+  overflow: hidden;
+}
+
+.event-visitor-page.admin-dashboard-page .gprecian-welcome::after,
+.event-visitor-page.admin-dashboard-page .gprecian-messages::after {
+  position: absolute;
+  right: -72px;
+  bottom: 18px;
+  z-index: 0;
+  display: block;
+  width: 230px;
+  aspect-ratio: 1;
+  background: url("data:image/svg+xml,%3Csvg width='520' height='520' viewBox='0 0 520 520' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' stroke='%23FF9A3C' stroke-linecap='round' stroke-linejoin='round'%3E%3Ccircle cx='260' cy='260' r='218' stroke-width='8' opacity='.72'/%3E%3Ccircle cx='260' cy='260' r='134' stroke-width='6' opacity='.56'/%3E%3Ccircle cx='260' cy='260' r='72' stroke='%23E85D04' stroke-width='6' opacity='.84'/%3E%3Cpath d='M260 46 306 260 260 474 214 260z' fill='%23E85D04' stroke='none' opacity='.82'/%3E%3Cpath d='M46 260 260 214 474 260 260 306z' fill='%23FF9A3C' stroke='none' opacity='.58'/%3E%3Cpath d='M142 142 260 220 378 142 300 260 378 378 260 300 142 378 220 260z' stroke-width='6' opacity='.48'/%3E%3Cpath d='M260 18v74M260 428v74M18 260h74M428 260h74' stroke-width='7' opacity='.34'/%3E%3C/g%3E%3C/svg%3E") center / contain no-repeat;
+  content: "";
+  opacity: .2;
+  pointer-events: none;
+  transform: rotate(-8deg);
+}
+
+.event-visitor-page.admin-dashboard-page .gprecian-welcome > *,
+.event-visitor-page.admin-dashboard-page .gprecian-messages > * {
+  position: relative;
+  z-index: 1;
+}
+
+.event-visitor-page.admin-dashboard-page .gprecian-head,
+.event-visitor-page.admin-dashboard-page .gprecian-form {
+  border-color: rgba(255, 154, 60, 0.16);
+  background: rgba(5, 9, 20, 0.56) !important;
+}
+
+.event-visitor-page.admin-dashboard-page .bot-message {
+  color: #ffffff;
+  border-color: rgba(255, 154, 60, 0.14);
+  background: rgba(10, 16, 36, 0.72);
+}
+
+.event-visitor-page.admin-dashboard-page .user-message {
+  color: #07111f;
+  background: #FF9A3C;
+}
+
+.event-visitor-page.admin-dashboard-page .gprecian-form input {
+  color: #ffffff;
+  border-color: rgba(255, 154, 60, 0.18);
+  background: rgba(10, 16, 36, 0.68) !important;
+}
+
+.event-visitor-page.admin-dashboard-page .gprecian-toggle {
+  background: linear-gradient(135deg, #E85D04, #FF9A3C) !important;
+}
+
+.event-visitor-page.admin-dashboard-page .visitor-login-footer {
+  position: relative;
+  z-index: 5;
+  width: min(1380px, calc(100% - 32px));
+  margin: 72px auto 28px;
+  overflow: hidden;
+  border: 1px solid rgba(255, 154, 60, 0.18);
+  border-radius: 8px;
+  color: rgba(250, 246, 239, 0.78);
+  background:
+    radial-gradient(circle at 78% 0%, rgba(232, 93, 4, 0.14), transparent 34%),
+    linear-gradient(145deg, rgba(16, 22, 50, 0.86), rgba(10, 16, 36, 0.96) 62%, rgba(5, 9, 20, 0.94)) !important;
+  box-shadow: 0 24px 70px rgba(0, 0, 0, 0.32), inset 0 1px 0 rgba(255, 255, 255, 0.05);
+  backdrop-filter: blur(18px);
+}
+
+.event-visitor-page.admin-dashboard-page .visitor-login-footer::before {
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  display: block;
+  background:
+    linear-gradient(rgba(255, 154, 60, 0.045) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255, 154, 60, 0.045) 1px, transparent 1px);
+  background-size: 54px 54px;
+  content: "";
+}
+
+.event-visitor-page.admin-dashboard-page .visitor-login-footer .footer-grid {
+  width: auto;
+  padding: clamp(30px, 4vw, 46px);
+}
+
+.event-visitor-page.admin-dashboard-page .visitor-login-footer img {
+  width: 220px;
+  filter: drop-shadow(0 12px 22px rgba(0, 0, 0, 0.24));
+}
+
+.event-visitor-page.admin-dashboard-page .visitor-login-footer h3 {
+  color: #ffffff;
+  font-family: Impact, "Arial Black", sans-serif;
+  font-size: 1.45rem;
+  letter-spacing: 0;
+}
+
+.event-visitor-page.admin-dashboard-page .visitor-login-footer p {
+  color: rgba(199, 204, 224, 0.78);
+  font-weight: 800;
+  line-height: 1.55;
+}
+
+.event-visitor-page.admin-dashboard-page .visitor-login-footer a {
+  width: fit-content;
+  color: #FF9A3C;
+  font-weight: 900;
+}
+
+.event-visitor-page.admin-dashboard-page .visitor-login-footer .social-links a {
+  width: 38px;
+  height: 38px;
+  color: #ffffff;
+  background: rgba(232, 93, 4, 0.86);
+  box-shadow: 0 10px 22px rgba(232, 93, 4, 0.18);
+}
+
+.event-visitor-page.admin-dashboard-page .visitor-login-footer .copyright {
+  border-top: 1px solid rgba(255, 154, 60, 0.14);
+  color: rgba(199, 204, 224, 0.72);
+  background: rgba(5, 9, 20, 0.46);
+}
+
+.event-visitor-page.admin-dashboard-page .visitor-fest-pulse {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-top: 18px;
+}
+
+.event-visitor-page.admin-dashboard-page .visitor-fest-pulse span {
+  min-height: 34px;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 0 13px;
+  border: 1px solid rgba(255, 154, 60, 0.2);
+  border-radius: 999px;
+  color: rgba(250, 246, 239, 0.86);
+  background: rgba(10, 16, 36, 0.56);
+  font-size: .78rem;
+  font-weight: 900;
+  animation: visitorPulseChip 4.2s ease-in-out infinite;
+}
+
+.event-visitor-page.admin-dashboard-page .visitor-fest-pulse span:nth-child(2) {
+  animation-delay: .35s;
+}
+
+.event-visitor-page.admin-dashboard-page .visitor-fest-pulse span:nth-child(3) {
+  animation-delay: .7s;
+}
+
+.event-visitor-page.admin-dashboard-page .visitor-fest-pulse span::before {
+  width: 7px;
+  height: 7px;
+  border-radius: 999px;
+  background: #FF9A3C;
+  box-shadow: 0 0 14px rgba(255, 154, 60, 0.7);
+  content: "";
+}
+
+.event-visitor-page.admin-dashboard-page .visitor-compass-story {
+  display: grid;
+  grid-template-columns: minmax(240px, .8fr) minmax(0, 1fr);
+  gap: 22px;
+  align-items: center;
+  padding: clamp(20px, 2.5vw, 30px);
+  border: 1px solid rgba(255, 154, 60, 0.16);
+  border-radius: 8px;
+  background:
+    radial-gradient(circle at 100% 50%, rgba(232, 93, 4, 0.16), transparent 34%),
+    rgba(5, 9, 20, 0.36);
+}
+
+.event-visitor-page.admin-dashboard-page .visitor-compass-story h3 {
+  margin: 0;
+  color: #ffffff;
+  font-family: Impact, "Arial Black", sans-serif;
+  font-size: clamp(1.8rem, 3vw, 3rem);
+  line-height: 1;
+}
+
+.event-visitor-page.admin-dashboard-page .visitor-compass-story > p {
+  margin: 0;
+  color: rgba(199, 204, 224, 0.82);
+  font-weight: 850;
+  line-height: 1.65;
+}
+
+.event-visitor-page.admin-dashboard-page .visitor-compass-directions {
+  grid-column: 1 / -1;
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.event-visitor-page.admin-dashboard-page .visitor-compass-directions span {
+  min-height: 56px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 12px;
+  border: 1px solid rgba(255, 154, 60, 0.14);
+  border-radius: 8px;
+  color: rgba(250, 246, 239, 0.84);
+  background: rgba(10, 16, 36, 0.54);
+  font-weight: 900;
+  transition: transform .25s ease, border-color .25s ease, background .25s ease;
+}
+
+.event-visitor-page.admin-dashboard-page .visitor-compass-directions span:hover {
+  transform: translateY(-2px);
+  border-color: rgba(255, 154, 60, 0.34);
+  background: rgba(232, 93, 4, 0.10);
+}
+
+.event-visitor-page.admin-dashboard-page .visitor-compass-directions b {
+  display: grid;
+  width: 30px;
+  height: 30px;
+  place-items: center;
+  flex: 0 0 auto;
+  color: #07111f;
+  border-radius: 7px;
+  background: #FF9A3C;
+  font-family: Impact, "Arial Black", sans-serif;
+}
+
+@media (max-width: 820px) {
+  .event-visitor-page.admin-dashboard-page .visitor-compass-story,
+  .event-visitor-page.admin-dashboard-page .visitor-compass-directions {
+    grid-template-columns: 1fr;
+  }
+}
+
+@keyframes visitorHeroLightSweep {
+  0%, 42% { transform: skewX(-18deg) translateX(-120%); opacity: 0; }
+  52% { opacity: .68; }
+  72%, 100% { transform: skewX(-18deg) translateX(360%); opacity: 0; }
+}
+
+@keyframes visitorCompassDrift {
+  0%, 100% { transform: translate(-50%, -50%) rotate(-2deg) scale(1); }
+  50% { transform: translate(-50%, -54%) rotate(3deg) scale(1.035); }
+}
+
+@keyframes visitorNeedleLock {
+  0%, 100% { transform: rotate(-8deg) scale(.98); }
+  45% { transform: rotate(14deg) scale(1.06); }
+  70% { transform: rotate(6deg) scale(1.02); }
+}
+
+@keyframes visitorPulseChip {
+  0%, 100% { transform: translateY(0); border-color: rgba(255, 154, 60, 0.20); }
+  50% { transform: translateY(-2px); border-color: rgba(255, 154, 60, 0.38); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .event-visitor-page.admin-dashboard-page .visitor-dash-hero::before,
+  .event-visitor-page.admin-dashboard-page .visitor-dash-login-compass,
+  .event-visitor-page.admin-dashboard-page .visitor-dash-login-compass .visitor-login-dashring,
+  .event-visitor-page.admin-dashboard-page .visitor-dash-login-compass .visitor-login-ring,
+  .event-visitor-page.admin-dashboard-page .visitor-dash-login-compass .visitor-login-compass-group,
+  .event-visitor-page.admin-dashboard-page .visitor-dash-login-compass .visitor-login-needle,
+  .event-visitor-page.admin-dashboard-page .visitor-fest-pulse span {
+    animation: none !important;
+  }
+}
+
+.event-visitor-page.admin-dashboard-page .visitor-dashboard-panel .event-card.is-sample-registration {
+  border-color: rgba(255, 154, 60, 0.46) !important;
+  background:
+    radial-gradient(circle at 92% 18%, rgba(255, 154, 60, 0.18), transparent 25%),
+    linear-gradient(135deg, rgba(12, 18, 40, 0.92), rgba(22, 29, 58, 0.9)) !important;
+  box-shadow: 0 22px 54px rgba(0, 0, 0, 0.34), inset 0 1px 0 rgba(255, 255, 255, 0.08);
+}
+
+.event-visitor-page.admin-dashboard-page .visitor-dashboard-panel .event-card.is-sample-registration::before {
+  content: "Sample registration";
+  position: absolute;
+  top: 18px;
+  right: 18px;
+  z-index: 2;
+  padding: 7px 12px;
+  border: 1px solid rgba(255, 154, 60, 0.38);
+  border-radius: 999px;
+  background: rgba(255, 154, 60, 0.12);
+  color: #FFB15C;
+  font: 800 0.72rem/1 "Courier New", monospace;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.event-visitor-page.admin-dashboard-page .visitor-dashboard-panel .event-card.is-sample-registration .visitor-event-chip-row span:last-child {
+  border-color: rgba(255, 154, 60, 0.4);
+  color: #FFB15C;
+}
+
+.event-visitor-page.admin-dashboard-page .visitor-dashboard-panel .event-card.is-sample-registration .event-card-head {
+  padding-right: 170px;
+}
+
+.event-visitor-page.admin-dashboard-page .visitor-registrations-preview {
+  margin-top: 28px;
+  margin-bottom: 28px;
+  padding: 26px;
+  border: 1px solid rgba(255, 154, 60, 0.20);
+  border-radius: 22px;
+  background:
+    radial-gradient(circle at 88% 12%, rgba(255, 154, 60, 0.14), transparent 24%),
+    linear-gradient(135deg, rgba(9, 15, 34, 0.9), rgba(17, 25, 52, 0.86));
+  box-shadow: 0 22px 58px rgba(0, 0, 0, 0.26), inset 0 1px 0 rgba(255, 255, 255, 0.07);
+}
+
+.event-visitor-page.admin-dashboard-page .visitor-registration-strip {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 16px;
+}
+
+.event-visitor-page.admin-dashboard-page .visitor-registration-card {
+  position: relative;
+  display: grid;
+  gap: 10px;
+  min-height: 220px;
+  padding: 22px;
+  overflow: hidden;
+  border: 1px solid rgba(255, 154, 60, 0.18);
+  border-radius: 18px;
+  background:
+    linear-gradient(160deg, rgba(255, 154, 60, 0.10), transparent 42%),
+    rgba(7, 12, 28, 0.76);
+}
+
+.event-visitor-page.admin-dashboard-page .visitor-registration-card::after {
+  content: "";
+  position: absolute;
+  right: -46px;
+  bottom: -54px;
+  width: 150px;
+  height: 150px;
+  border: 1px dashed rgba(255, 154, 60, 0.30);
+  border-radius: 50%;
+  box-shadow: inset 0 0 0 28px rgba(255, 154, 60, 0.04);
+  animation: visitorCompassSpin 18s linear infinite;
+}
+
+.event-visitor-page.admin-dashboard-page .visitor-registration-card > * {
+  position: relative;
+  z-index: 1;
+}
+
+.event-visitor-page.admin-dashboard-page .visitor-registration-card > span {
+  width: max-content;
+  padding: 7px 10px;
+  border: 1px solid rgba(255, 154, 60, 0.34);
+  border-radius: 999px;
+  color: #FFB15C;
+  font: 800 0.72rem/1 "Courier New", monospace;
+  text-transform: uppercase;
+}
+
+.event-visitor-page.admin-dashboard-page .visitor-registration-card strong {
+  color: #fff;
+  font: 900 clamp(1.35rem, 2vw, 2rem)/0.95 Impact, "Arial Black", sans-serif;
+}
+
+.event-visitor-page.admin-dashboard-page .visitor-registration-card small,
+.event-visitor-page.admin-dashboard-page .visitor-registration-card p {
+  color: rgba(236, 240, 255, 0.72);
+  font-weight: 800;
+}
+
+.event-visitor-page.admin-dashboard-page .visitor-registration-card div {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  align-self: end;
+}
+
+.event-visitor-page.admin-dashboard-page .visitor-registration-card button {
+  min-height: 42px;
+  padding: 0 16px;
+  border: 1px solid rgba(255, 154, 60, 0.30);
+  border-radius: 999px;
+  background: rgba(255, 154, 60, 0.11);
+  color: #fff;
+  font-weight: 900;
+  cursor: pointer;
+}
+
+.event-visitor-page.admin-dashboard-page .visitor-registration-card button:first-child {
+  border-color: transparent;
+  background: #FF8A1D;
+  color: #07111f;
+}
+
+@keyframes visitorCompassSpin {
+  to { transform: rotate(360deg); }
+}
+
+.event-visitor-page.admin-dashboard-page .visitor-fest-band,
+.event-visitor-page.admin-dashboard-page .visitor-dashboard-grid,
+.event-visitor-page.admin-dashboard-page .visitor-registrations-preview {
+  opacity: 1 !important;
+  transform: none !important;
+}
+
+.event-visitor-page.admin-dashboard-page .visitor-dash-hero {
+  min-height: 520px !important;
+}
+
+.event-visitor-page.admin-dashboard-page .visitor-fest-sections {
+  margin-top: 24px !important;
+}
+
+/* Cleaner event registration cards: compact pass-style layout, no badge/title collisions. */
+.event-visitor-page.admin-dashboard-page .visitor-dashboard-panel .event-card {
+  display: grid !important;
+  grid-template-rows: 1fr auto;
+  min-height: 0 !important;
+  overflow: hidden !important;
+  border: 1px solid rgba(255, 154, 60, 0.26) !important;
+  border-radius: 18px !important;
+  background:
+    radial-gradient(circle at 100% 0%, rgba(255, 154, 60, 0.14), transparent 30%),
+    linear-gradient(145deg, rgba(15, 22, 48, 0.96), rgba(6, 11, 27, 0.98)) !important;
+  box-shadow: 0 22px 52px rgba(0, 0, 0, 0.24) !important;
+}
+
+.event-visitor-page.admin-dashboard-page .visitor-dashboard-panel .event-card.is-sample-registration::before {
+  display: none !important;
+}
+
+.event-visitor-page.admin-dashboard-page .visitor-dashboard-panel .event-card.is-sample-registration .event-card-head {
+  padding-right: 0 !important;
+}
+
+.event-visitor-page.admin-dashboard-page .visitor-dashboard-panel .event-card-head {
+  display: grid !important;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 14px !important;
+  align-items: start !important;
+  padding-bottom: 14px;
+  border-bottom: 1px solid rgba(255, 154, 60, 0.14);
+}
+
+.event-visitor-page.admin-dashboard-page .visitor-dashboard-panel .event-card-head > div {
+  display: grid;
+  gap: 9px;
+  min-width: 0;
+}
+
+.event-visitor-page.admin-dashboard-page .visitor-dashboard-panel .event-card-head strong {
+  color: #fff !important;
+  font-family: Impact, "Arial Black", sans-serif !important;
+  font-size: clamp(1.55rem, 2vw, 2.15rem) !important;
+  line-height: 0.96 !important;
+  letter-spacing: 0 !important;
+  overflow-wrap: anywhere;
+}
+
+.event-visitor-page.admin-dashboard-page .visitor-dashboard-panel .event-fee-badge {
+  align-self: start;
+  max-width: 160px;
+  min-height: 36px;
+  padding: 0 14px !important;
+  border: 0 !important;
+  border-radius: 999px !important;
+  color: #07111f !important;
+  background: #FF9A3C !important;
+  box-shadow: 0 10px 22px rgba(232, 93, 4, 0.22);
+  font-size: 0.82rem !important;
+  line-height: 1.05 !important;
+  text-align: center;
+  white-space: normal;
+}
+
+.event-visitor-page.admin-dashboard-page .visitor-event-date {
+  width: fit-content;
+  min-height: 34px;
+  margin: 0 !important;
+  padding: 0 13px !important;
+  border: 1px solid rgba(255, 154, 60, 0.28) !important;
+  border-radius: 999px !important;
+  color: #FF8A1D !important;
+  background: rgba(255, 154, 60, 0.09) !important;
+  font-size: 0.78rem !important;
+}
+
+.event-visitor-page.admin-dashboard-page .visitor-event-details {
+  gap: 16px !important;
+  padding: 24px !important;
+}
+
+.event-visitor-page.admin-dashboard-page .visitor-dashboard-panel .event-card p {
+  display: -webkit-box;
+  margin: 0 !important;
+  overflow: hidden;
+  color: rgba(239, 243, 255, 0.82) !important;
+  font-size: 1rem !important;
+  font-weight: 850 !important;
+  line-height: 1.45 !important;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 3;
+}
+
+.event-visitor-page.admin-dashboard-page .visitor-event-chip-row {
+  gap: 8px !important;
+}
+
+.event-visitor-page.admin-dashboard-page .visitor-event-chip-row span {
+  min-height: 34px;
+  padding: 0 12px !important;
+  border-color: rgba(255, 154, 60, 0.18) !important;
+  border-radius: 999px !important;
+  color: rgba(255, 255, 255, 0.88) !important;
+  background: rgba(5, 9, 20, 0.44) !important;
+  font-size: 0.78rem !important;
+  line-height: 34px;
+}
+
+.event-visitor-page.admin-dashboard-page .visitor-dashboard-panel .event-card small,
+.event-visitor-page.admin-dashboard-page .visitor-event-contact {
+  color: rgba(238, 242, 255, 0.72) !important;
+  font-size: 0.9rem !important;
+  line-height: 1.4 !important;
+}
+
+.event-visitor-page.admin-dashboard-page .visitor-dashboard-panel .event-card small {
+  color: #FF9A3C !important;
+  font-size: 1.02rem !important;
+}
+
+.event-visitor-page.admin-dashboard-page .visitor-event-more {
+  margin-top: 0 !important;
+}
+
+.event-visitor-page.admin-dashboard-page .visitor-event-more summary {
+  width: fit-content;
+  color: #FF7A18 !important;
+  font-size: 0.9rem !important;
+}
+
+.event-visitor-page.admin-dashboard-page .visitor-event-actions {
+  display: grid !important;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px !important;
+  margin: 0 !important;
+  padding: 18px 24px 24px !important;
+  border-top: 1px solid rgba(255, 154, 60, 0.16) !important;
+  background: rgba(4, 8, 20, 0.48) !important;
+}
+
+.event-visitor-page.admin-dashboard-page .visitor-event-actions button,
+.event-visitor-page.admin-dashboard-page .visitor-event-actions a,
+.event-visitor-page.admin-dashboard-page .visitor-event-actions span {
+  min-height: 46px !important;
+  padding: 0 15px !important;
+  border: 1px solid rgba(255, 154, 60, 0.18) !important;
+  border-radius: 999px !important;
+  color: #fff !important;
+  background: rgba(10, 16, 36, 0.74) !important;
+  font-size: 0.88rem !important;
+  font-weight: 900 !important;
+  white-space: normal !important;
+}
+
+.event-visitor-page.admin-dashboard-page .visitor-event-actions button:first-child,
+.event-visitor-page.admin-dashboard-page .visitor-event-actions .visitor-primary-action,
+.event-visitor-page.admin-dashboard-page .visitor-event-actions .event-apply-toggle {
+  color: #08101f !important;
+  border-color: transparent !important;
+  background: linear-gradient(135deg, #FF9A3C, #E85D04) !important;
+}
+
+.event-visitor-page.admin-dashboard-page .visitor-event-actions span {
+  opacity: 0.72;
+}
+
+/* Full redesign: open event cards as cinematic festival tickets. */
+.event-visitor-page.admin-dashboard-page .visitor-dashboard-panel .event-grid {
+  grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
+  gap: 18px !important;
+}
+
+.event-visitor-page.admin-dashboard-page .visitor-dashboard-panel .visitor-ticket-card {
+  position: relative;
+  display: grid !important;
+  grid-template-rows: minmax(0, 1fr) auto;
+  min-height: 540px !important;
+  border: 0 !important;
+  border-radius: 26px !important;
+  overflow: hidden !important;
+  background:
+    linear-gradient(90deg, #FF8A1D 0 10px, transparent 10px),
+    radial-gradient(circle at 12% 10%, rgba(255, 154, 60, 0.18), transparent 28%),
+    linear-gradient(160deg, rgba(22, 30, 62, 0.98), rgba(5, 10, 26, 0.98) 62%) !important;
+  box-shadow:
+    0 26px 60px rgba(0, 0, 0, 0.34),
+    inset 0 0 0 1px rgba(255, 154, 60, 0.22) !important;
+}
+
+.event-visitor-page.admin-dashboard-page .visitor-dashboard-panel .visitor-ticket-card::after {
+  content: "";
+  position: absolute;
+  right: -48px;
+  top: 50%;
+  width: 92px;
+  height: 92px;
+  border-radius: 50%;
+  background: #071024;
+  box-shadow: -100vw 0 0 0 transparent;
+  transform: translateY(-50%);
+  z-index: 3;
+}
+
+.event-visitor-page.admin-dashboard-page .visitor-dashboard-panel .visitor-ticket-card .visitor-event-details {
+  display: grid;
+  align-content: start;
+  gap: 18px !important;
+  padding: 28px 30px 22px 34px !important;
+}
+
+.event-visitor-page.admin-dashboard-page .visitor-dashboard-panel .visitor-ticket-card .event-card-head {
+  display: grid !important;
+  grid-template-columns: 1fr;
+  gap: 16px !important;
+  padding: 0 0 18px !important;
+  border: 0 !important;
+}
+
+.event-visitor-page.admin-dashboard-page .visitor-ticket-kicker {
+  width: fit-content;
+  padding: 7px 11px;
+  border: 1px solid rgba(255, 154, 60, 0.24);
+  border-radius: 999px;
+  color: #FF9A3C;
+  background: rgba(255, 154, 60, 0.08);
+  font: 900 0.72rem/1 "Courier New", monospace;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.event-visitor-page.admin-dashboard-page .visitor-dashboard-panel .visitor-ticket-card .event-card-head strong {
+  max-width: calc(100% - 142px);
+  color: #fff !important;
+  font-family: Impact, "Arial Black", sans-serif !important;
+  font-size: clamp(2rem, 3vw, 3.5rem) !important;
+  line-height: 0.9 !important;
+}
+
+@media (max-width: 1180px) {
+  .event-visitor-page.admin-dashboard-page .visitor-dashboard-panel .event-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+  }
+}
+
+@media (max-width: 780px) {
+  .event-visitor-page.admin-dashboard-page .visitor-dashboard-panel .event-grid {
+    grid-template-columns: 1fr !important;
+  }
+
+  .event-visitor-page.admin-dashboard-page .visitor-dashboard-panel .visitor-ticket-card .event-card-head strong {
+    max-width: 100%;
+  }
+
+  .event-visitor-page.admin-dashboard-page .visitor-dashboard-panel .visitor-ticket-card .event-fee-badge {
+    position: static;
+    justify-self: start;
+  }
+}
+
+.event-visitor-page.admin-dashboard-page .visitor-dashboard-panel .visitor-ticket-card .event-fee-badge {
+  position: absolute;
+  top: 26px;
+  right: 24px;
+  z-index: 4;
+  max-width: 130px;
+  min-height: 40px;
+  padding: 0 13px !important;
+  color: #071024 !important;
+  background: #FF9A3C !important;
+  font-size: 0.76rem !important;
+}
+
+.event-visitor-page.admin-dashboard-page .visitor-dashboard-panel .visitor-ticket-card .visitor-event-date {
+  min-height: 40px;
+  padding: 0 15px !important;
+  border: 0 !important;
+  color: #071024 !important;
+  background: #FF8A1D !important;
+  font: 950 0.86rem/40px Arial, sans-serif !important;
+}
+
+.event-visitor-page.admin-dashboard-page .visitor-dashboard-panel .visitor-ticket-card p {
+  padding-top: 18px;
+  border-top: 1px dashed rgba(255, 154, 60, 0.22);
+  color: rgba(239, 243, 255, 0.82) !important;
+  font-size: 1.04rem !important;
+  line-height: 1.5 !important;
+  -webkit-line-clamp: 4;
+}
+
+.event-visitor-page.admin-dashboard-page .visitor-dashboard-panel .visitor-ticket-card .visitor-event-chip-row {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 9px !important;
+}
+
+.event-visitor-page.admin-dashboard-page .visitor-dashboard-panel .visitor-ticket-card .visitor-event-chip-row span {
+  display: flex;
+  min-height: 38px;
+  align-items: center;
+  width: fit-content;
+  max-width: 100%;
+  padding: 0 13px !important;
+  border: 1px dashed rgba(255, 154, 60, 0.24) !important;
+  color: rgba(255, 255, 255, 0.88) !important;
+  background: rgba(2, 7, 18, 0.34) !important;
+  line-height: 1.2;
+}
+
+.event-visitor-page.admin-dashboard-page .visitor-ticket-meta {
+  display: grid;
+  gap: 8px;
+  margin-top: 2px;
+  padding: 16px;
+  border-radius: 16px;
+  background: rgba(255, 154, 60, 0.07);
+}
+
+.event-visitor-page.admin-dashboard-page .visitor-dashboard-panel .visitor-ticket-card small {
+  color: #FF9A3C !important;
+  font-size: 1rem !important;
+}
+
+.event-visitor-page.admin-dashboard-page .visitor-dashboard-panel .visitor-ticket-card .visitor-event-contact {
+  font-size: 0.88rem !important;
+}
+
+.event-visitor-page.admin-dashboard-page .visitor-dashboard-panel .visitor-ticket-card .visitor-event-more {
+  padding-top: 4px;
+}
+
+.event-visitor-page.admin-dashboard-page .visitor-dashboard-panel .visitor-ticket-card .visitor-event-actions {
+  grid-template-columns: 1fr 1fr;
+  padding: 20px 24px 24px 34px !important;
+  border-top: 1px dashed rgba(255, 154, 60, 0.28) !important;
+  background:
+    linear-gradient(90deg, rgba(255, 154, 60, 0.12), transparent),
+    rgba(3, 7, 18, 0.64) !important;
+}
+
+.event-visitor-page.admin-dashboard-page .visitor-dashboard-panel .visitor-ticket-card .visitor-event-actions button,
+.event-visitor-page.admin-dashboard-page .visitor-dashboard-panel .visitor-ticket-card .visitor-event-actions a,
+.event-visitor-page.admin-dashboard-page .visitor-dashboard-panel .visitor-ticket-card .visitor-event-actions span {
+  min-height: 42px !important;
+  border-radius: 12px !important;
+  font-size: 0.82rem !important;
+}
+
+.event-visitor-page.admin-dashboard-page .visitor-dashboard-panel .visitor-ticket-card .visitor-event-actions span {
+  justify-self: start;
+  width: fit-content;
+  padding-inline: 18px !important;
+}
+
+/* Visible My Registrations cards use the same ticket/pass language. */
+.event-visitor-page.admin-dashboard-page .visitor-registrations-preview {
+  border-radius: 24px !important;
+  background:
+    radial-gradient(circle at 82% 8%, rgba(255, 154, 60, 0.16), transparent 28%),
+    linear-gradient(145deg, rgba(13, 20, 44, 0.94), rgba(6, 11, 27, 0.98)) !important;
+}
+
+.event-visitor-page.admin-dashboard-page .visitor-registration-strip {
+  grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
+  gap: 18px !important;
+}
+
+.event-visitor-page.admin-dashboard-page .visitor-registration-card {
+  position: relative;
+  display: grid !important;
+  grid-template-rows: minmax(0, 1fr) auto;
+  gap: 0 !important;
+  min-height: 360px !important;
+  padding: 0 !important;
+  overflow: hidden !important;
+  border: 0 !important;
+  border-radius: 24px !important;
+  background:
+    linear-gradient(90deg, #FF8A1D 0 10px, transparent 10px),
+    radial-gradient(circle at 100% 0%, rgba(255, 154, 60, 0.16), transparent 34%),
+    linear-gradient(160deg, rgba(21, 29, 60, 0.98), rgba(5, 10, 25, 0.99)) !important;
+  box-shadow: 0 24px 54px rgba(0, 0, 0, 0.30), inset 0 0 0 1px rgba(255, 154, 60, 0.24);
+}
+
+.event-visitor-page.admin-dashboard-page .visitor-registration-card::before {
+  content: "";
+  position: absolute;
+  right: -42px;
+  top: 50%;
+  z-index: 2;
+  width: 84px;
+  height: 84px;
+  border-radius: 50%;
+  background: #071024;
+  transform: translateY(-50%);
+}
+
+.event-visitor-page.admin-dashboard-page .visitor-registration-card::after {
+  right: 22px !important;
+  bottom: 86px !important;
+  width: 118px !important;
+  height: 118px !important;
+  opacity: 0.42;
+}
+
+.event-visitor-page.admin-dashboard-page .visitor-registration-card-main {
+  position: relative;
+  z-index: 1;
+  display: grid;
+  align-content: start;
+  gap: 14px;
+  padding: 28px 28px 24px 36px;
+}
+
+.event-visitor-page.admin-dashboard-page .visitor-registration-card-main > span {
+  width: fit-content;
+  padding: 8px 11px;
+  border: 1px solid rgba(255, 154, 60, 0.28);
+  border-radius: 999px;
+  color: #FF9A3C;
+  background: rgba(255, 154, 60, 0.08);
+  font: 900 0.72rem/1 "Courier New", monospace;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.event-visitor-page.admin-dashboard-page .visitor-registration-card-main strong {
+  max-width: calc(100% - 36px);
+  color: #fff;
+  font: 900 clamp(2rem, 3vw, 3.35rem)/0.9 Impact, "Arial Black", sans-serif;
+}
+
+.event-visitor-page.admin-dashboard-page .visitor-registration-card-main small {
+  width: fit-content;
+  min-height: 38px;
+  padding: 0 14px;
+  border-radius: 999px;
+  color: #071024;
+  background: #FF8A1D;
+  font: 950 0.86rem/38px Arial, sans-serif;
+}
+
+.event-visitor-page.admin-dashboard-page .visitor-registration-card-main p {
+  margin: 4px 0 0;
+  color: #FF9A3C;
+  font-size: 1rem;
+  font-weight: 950;
+}
+
+.event-visitor-page.admin-dashboard-page .visitor-registration-card-main em {
+  width: fit-content;
+  max-width: 100%;
+  padding: 10px 12px;
+  border: 1px dashed rgba(255, 154, 60, 0.24);
+  border-radius: 999px;
+  color: rgba(255, 255, 255, 0.86);
+  background: rgba(2, 7, 18, 0.34);
+  font-style: normal;
+  font-weight: 900;
+}
+
+.event-visitor-page.admin-dashboard-page .visitor-registration-card-actions {
+  position: relative;
+  z-index: 1;
+  display: grid !important;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px !important;
+  padding: 20px 24px 24px 36px;
+  border-top: 1px dashed rgba(255, 154, 60, 0.28);
+  background: rgba(3, 7, 18, 0.64);
+}
+
+.event-visitor-page.admin-dashboard-page .visitor-registration-card-actions button {
+  min-height: 44px;
+  border-radius: 12px;
+}
+
+@media (max-width: 1180px) {
+  .event-visitor-page.admin-dashboard-page .visitor-registration-strip {
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+  }
+}
+
+@media (max-width: 780px) {
+  .event-visitor-page.admin-dashboard-page .visitor-registration-strip {
+    grid-template-columns: 1fr !important;
+  }
+}
+
+/* Final calmer website-matched card system: navy glass with restrained amber accents. */
+.event-visitor-page.admin-dashboard-page .visitor-dashboard-panel .event-grid,
+.event-visitor-page.admin-dashboard-page .visitor-registration-strip {
+  grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
+  gap: 20px !important;
+}
+
+.event-visitor-page.admin-dashboard-page .visitor-dashboard-panel .visitor-ticket-card,
+.event-visitor-page.admin-dashboard-page .visitor-registration-card {
+  min-height: 0 !important;
+  border: 1px solid rgba(255, 154, 60, 0.18) !important;
+  border-radius: 16px !important;
+  background:
+    radial-gradient(circle at 82% 0%, rgba(255, 154, 60, 0.08), transparent 30%),
+    linear-gradient(145deg, rgba(15, 22, 48, 0.96), rgba(8, 13, 31, 0.98)) !important;
+  box-shadow: 0 18px 44px rgba(0, 0, 0, 0.24), inset 0 1px 0 rgba(255, 255, 255, 0.05) !important;
+}
+
+.event-visitor-page.admin-dashboard-page .visitor-dashboard-panel .visitor-ticket-card::after,
+.event-visitor-page.admin-dashboard-page .visitor-registration-card::before,
+.event-visitor-page.admin-dashboard-page .visitor-registration-card::after {
+  display: none !important;
+}
+
+.event-visitor-page.admin-dashboard-page .visitor-dashboard-panel .visitor-ticket-card .visitor-event-details,
+.event-visitor-page.admin-dashboard-page .visitor-registration-card-main {
+  padding: 24px !important;
+  gap: 14px !important;
+}
+
+.event-visitor-page.admin-dashboard-page .visitor-ticket-kicker,
+.event-visitor-page.admin-dashboard-page .visitor-registration-card-main > span {
+  padding: 7px 10px !important;
+  border: 1px solid rgba(255, 154, 60, 0.30) !important;
+  border-radius: 8px !important;
+  color: #FF9A3C !important;
+  background: rgba(255, 154, 60, 0.07) !important;
+  font: 900 0.72rem/1 "Courier New", monospace !important;
+}
+
+.event-visitor-page.admin-dashboard-page .visitor-dashboard-panel .visitor-ticket-card .event-card-head strong,
+.event-visitor-page.admin-dashboard-page .visitor-registration-card-main strong {
+  max-width: 100% !important;
+  color: #F8FAFF !important;
+  font-size: clamp(1.75rem, 2.3vw, 2.55rem) !important;
+  line-height: 0.95 !important;
+}
+
+.event-visitor-page.admin-dashboard-page .visitor-dashboard-panel .visitor-ticket-card .event-fee-badge {
+  position: static !important;
+  justify-self: start;
+  max-width: 100%;
+  min-height: 32px;
+  padding: 0 11px !important;
+  border: 1px solid rgba(255, 154, 60, 0.28) !important;
+  color: #FFB15C !important;
+  background: rgba(255, 154, 60, 0.10) !important;
+  box-shadow: none !important;
+  font-size: 0.72rem !important;
+}
+
+.event-visitor-page.admin-dashboard-page .visitor-dashboard-panel .visitor-ticket-card .event-card-head {
+  gap: 10px !important;
+  padding-bottom: 12px !important;
+}
+
+.event-visitor-page.admin-dashboard-page .visitor-dashboard-panel .visitor-ticket-card .visitor-event-date,
+.event-visitor-page.admin-dashboard-page .visitor-registration-card-main small {
+  min-height: 34px !important;
+  padding: 0 12px !important;
+  border: 1px solid rgba(255, 154, 60, 0.24) !important;
+  border-radius: 8px !important;
+  color: #FF9A3C !important;
+  background: rgba(255, 154, 60, 0.08) !important;
+  font: 900 0.78rem/34px Arial, sans-serif !important;
+}
+
+.event-visitor-page.admin-dashboard-page .visitor-dashboard-panel .visitor-ticket-card p,
+.event-visitor-page.admin-dashboard-page .visitor-registration-card-main em {
+  color: rgba(229, 234, 250, 0.78) !important;
+  font-size: 0.98rem !important;
+  line-height: 1.45 !important;
+}
+
+.event-visitor-page.admin-dashboard-page .visitor-dashboard-panel .visitor-ticket-card p {
+  padding-top: 14px !important;
+  border-top: 1px solid rgba(255, 154, 60, 0.12) !important;
+}
+
+.event-visitor-page.admin-dashboard-page .visitor-dashboard-panel .visitor-ticket-card .visitor-event-chip-row {
+  grid-template-columns: 1fr !important;
+  gap: 8px !important;
+}
+
+.event-visitor-page.admin-dashboard-page .visitor-dashboard-panel .visitor-ticket-card .visitor-event-chip-row span,
+.event-visitor-page.admin-dashboard-page .visitor-registration-card-main em {
+  min-height: 34px !important;
+  padding: 8px 11px !important;
+  border: 1px solid rgba(255, 154, 60, 0.16) !important;
+  border-radius: 8px !important;
+  background: rgba(7, 12, 28, 0.56) !important;
+}
+
+.event-visitor-page.admin-dashboard-page .visitor-ticket-meta {
+  padding: 13px !important;
+  border: 1px solid rgba(255, 154, 60, 0.10);
+  border-radius: 12px !important;
+  background: rgba(7, 12, 28, 0.42) !important;
+}
+
+.event-visitor-page.admin-dashboard-page .visitor-registration-card-main p,
+.event-visitor-page.admin-dashboard-page .visitor-dashboard-panel .visitor-ticket-card small {
+  color: #FF9A3C !important;
+}
+
+.event-visitor-page.admin-dashboard-page .visitor-dashboard-panel .visitor-ticket-card .visitor-event-actions,
+.event-visitor-page.admin-dashboard-page .visitor-registration-card-actions {
+  grid-template-columns: 1fr 1fr !important;
+  gap: 10px !important;
+  padding: 16px 24px 22px !important;
+  border-top: 1px solid rgba(255, 154, 60, 0.12) !important;
+  background: rgba(3, 7, 18, 0.38) !important;
+}
+
+.event-visitor-page.admin-dashboard-page .visitor-dashboard-panel .visitor-ticket-card .visitor-event-actions button,
+.event-visitor-page.admin-dashboard-page .visitor-dashboard-panel .visitor-ticket-card .visitor-event-actions a,
+.event-visitor-page.admin-dashboard-page .visitor-dashboard-panel .visitor-ticket-card .visitor-event-actions span,
+.event-visitor-page.admin-dashboard-page .visitor-registration-card-actions button {
+  min-height: 40px !important;
+  border: 1px solid rgba(255, 154, 60, 0.18) !important;
+  border-radius: 10px !important;
+  color: #F8FAFF !important;
+  background: rgba(12, 18, 40, 0.72) !important;
+  font-size: 0.82rem !important;
+}
+
+.event-visitor-page.admin-dashboard-page .visitor-dashboard-panel .visitor-ticket-card .visitor-event-actions button:first-child,
+.event-visitor-page.admin-dashboard-page .visitor-dashboard-panel .visitor-ticket-card .visitor-event-actions .visitor-primary-action,
+.event-visitor-page.admin-dashboard-page .visitor-registration-card-actions button:first-child {
+  color: #071024 !important;
+  border-color: transparent !important;
+  background: #FF9A3C !important;
+}
+
+@media (max-width: 1180px) {
+  .event-visitor-page.admin-dashboard-page .visitor-dashboard-panel .event-grid,
+  .event-visitor-page.admin-dashboard-page .visitor-registration-strip {
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+  }
+}
+
+@media (max-width: 780px) {
+  .event-visitor-page.admin-dashboard-page .visitor-dashboard-panel .event-grid,
+  .event-visitor-page.admin-dashboard-page .visitor-registration-strip {
+    grid-template-columns: 1fr !important;
+  }
+}
+
+/* Refined card header: less pill-heavy, closer to the website's clean navy/orange language. */
+.event-visitor-page.admin-dashboard-page .visitor-ticket-kicker,
+.event-visitor-page.admin-dashboard-page .visitor-registration-card-main > span {
+  padding: 0 !important;
+  border: 0 !important;
+  border-radius: 0 !important;
+  background: transparent !important;
+  color: #FF9A3C !important;
+  font: 900 0.76rem/1 "Courier New", monospace !important;
+  letter-spacing: 0.18em !important;
+}
+
+.event-visitor-page.admin-dashboard-page .visitor-ticket-kicker::before,
+.event-visitor-page.admin-dashboard-page .visitor-registration-card-main > span::before {
+  content: "";
+  display: inline-block;
+  width: 28px;
+  height: 2px;
+  margin-right: 10px;
+  vertical-align: middle;
+  background: linear-gradient(90deg, #E85D04, #FF9A3C);
+}
+
+.event-visitor-page.admin-dashboard-page .visitor-dashboard-panel .visitor-ticket-card .event-card-head strong,
+.event-visitor-page.admin-dashboard-page .visitor-registration-card-main strong {
+  margin-top: 2px;
+  font-size: clamp(1.9rem, 2.6vw, 3rem) !important;
+}
+
+.event-visitor-page.admin-dashboard-page .visitor-dashboard-panel .visitor-ticket-card .visitor-event-date,
+.event-visitor-page.admin-dashboard-page .visitor-registration-card-main small,
+.event-visitor-page.admin-dashboard-page .visitor-dashboard-panel .visitor-ticket-card .event-fee-badge {
+  min-height: 0 !important;
+  padding: 0 !important;
+  border: 0 !important;
+  border-radius: 0 !important;
+  background: transparent !important;
+  box-shadow: none !important;
+  color: rgba(239, 243, 255, 0.74) !important;
+  font: 900 0.88rem/1.35 Arial, sans-serif !important;
+}
+
+.event-visitor-page.admin-dashboard-page .visitor-dashboard-panel .visitor-ticket-card .event-fee-badge,
+.event-visitor-page.admin-dashboard-page .visitor-registration-card-main small {
+  color: #FF9A3C !important;
+}
+
+.event-visitor-page.admin-dashboard-page .visitor-dashboard-panel .visitor-ticket-card .event-card-head > div {
+  gap: 11px !important;
+}
+
+/* Consistent registration card header layout. */
+.event-visitor-page.admin-dashboard-page .visitor-registration-card-main {
+  grid-template-rows: auto minmax(92px, auto) auto auto !important;
+  align-content: start !important;
+}
+
+.event-visitor-page.admin-dashboard-page .visitor-registration-card-main > span {
+  display: block !important;
+  min-height: 18px;
+  white-space: nowrap;
+}
+
+.event-visitor-page.admin-dashboard-page .visitor-registration-card-main strong {
+  display: block !important;
+  min-height: 92px;
+  max-width: 100% !important;
+}
+
+.event-visitor-page.admin-dashboard-page .visitor-registration-meta-row {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  gap: 14px;
+  align-items: baseline;
+  min-height: 30px;
+}
+
+.event-visitor-page.admin-dashboard-page .visitor-registration-card-main small,
+.event-visitor-page.admin-dashboard-page .visitor-registration-card-main p {
+  margin: 0 !important;
+  line-height: 1.25 !important;
+}
+
+.event-visitor-page.admin-dashboard-page .visitor-registration-card-main p {
+  color: #FF9A3C !important;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.event-visitor-page.admin-dashboard-page .visitor-registration-card-main em {
+  justify-self: start;
+  margin-top: 2px;
+}
+
+/* Reset the registration card top into a simple vertical stack. */
+.event-visitor-page.admin-dashboard-page .visitor-registration-card {
+  min-height: 330px !important;
+}
+
+.event-visitor-page.admin-dashboard-page .visitor-registration-card-main {
+  display: flex !important;
+  flex-direction: column;
+  align-items: flex-start;
+  justify-content: flex-start;
+  gap: 16px !important;
+  padding: 26px 26px 22px !important;
+}
+
+.event-visitor-page.admin-dashboard-page .visitor-registration-card-main > span {
+  display: inline-flex !important;
+  align-items: center;
+  min-height: 0 !important;
+  color: #FF9A3C !important;
+}
+
+.event-visitor-page.admin-dashboard-page .visitor-registration-card-main > span::before {
+  width: 22px !important;
+  margin-right: 9px !important;
+}
+
+.event-visitor-page.admin-dashboard-page .visitor-registration-card-main strong {
+  min-height: 0 !important;
+  max-width: 100% !important;
+  font-size: clamp(2rem, 2.6vw, 3rem) !important;
+  line-height: 0.94 !important;
+}
+
+.event-visitor-page.admin-dashboard-page .visitor-registration-meta-row {
+  display: flex !important;
+  flex-wrap: wrap;
+  gap: 10px 16px;
+  align-items: center;
+}
+
+.event-visitor-page.admin-dashboard-page .visitor-registration-card-main small,
+.event-visitor-page.admin-dashboard-page .visitor-registration-card-main p {
+  color: #FF9A3C !important;
+  font: 900 0.92rem/1.25 Arial, sans-serif !important;
+  white-space: normal !important;
+}
+
+.event-visitor-page.admin-dashboard-page .visitor-registration-card-main em {
+  width: 100%;
+  border-radius: 12px !important;
+}
+
+/* Compass palette unification: make the visitor fest dashboard read as one system. */
+.event-visitor-page.admin-dashboard-page {
+  --compass-bg: #070D1F;
+  --compass-panel: #0C1430;
+  --compass-panel-2: #101A3A;
+  --compass-line: rgba(255, 154, 60, 0.22);
+  --compass-line-soft: rgba(255, 154, 60, 0.12);
+  --compass-orange: #FF8A1D;
+  --compass-amber: #FFB15C;
+  --compass-rust: #E85D04;
+  --compass-text: #F7F8FF;
+  --compass-muted: rgba(224, 230, 248, 0.72);
+  color: var(--compass-text);
+  background:
+    radial-gradient(circle at 72% 4%, rgba(255, 138, 29, 0.13), transparent 28%),
+    radial-gradient(circle at 20% 78%, rgba(232, 93, 4, 0.08), transparent 30%),
+    linear-gradient(180deg, #070D1F 0%, #091127 46%, #050A18 100%) !important;
+}
+
+.event-visitor-page.admin-dashboard-page #visitorDashTopbar.portal-topbar,
+.event-visitor-page.admin-dashboard-page .visitor-dash-hero,
+.event-visitor-page.admin-dashboard-page .visitor-fest-band,
+.event-visitor-page.admin-dashboard-page .visitor-dashboard-grid,
+.event-visitor-page.admin-dashboard-page .visitor-registrations-preview,
+.event-visitor-page.admin-dashboard-page .gprecian-panel,
+.event-visitor-page.admin-dashboard-page .visitor-login-footer {
+  border-color: var(--compass-line) !important;
+  background:
+    radial-gradient(circle at 86% 0%, rgba(255, 138, 29, 0.10), transparent 32%),
+    linear-gradient(145deg, rgba(16, 26, 58, 0.92), rgba(7, 13, 31, 0.98)) !important;
+}
+
+.event-visitor-page.admin-dashboard-page .visitor-dashboard-panel .visitor-ticket-card,
+.event-visitor-page.admin-dashboard-page .visitor-registration-card,
+.event-visitor-page.admin-dashboard-page .visitor-fest-feature-grid article,
+.event-visitor-page.admin-dashboard-page .visitor-fest-timeline article,
+.event-visitor-page.admin-dashboard-page .visitor-compass-story,
+.event-visitor-page.admin-dashboard-page .visitor-ticket-meta,
+.event-visitor-page.admin-dashboard-page .visitor-registration-card-main em {
+  border-color: var(--compass-line-soft) !important;
+  background:
+    radial-gradient(circle at 88% 0%, rgba(255, 138, 29, 0.09), transparent 34%),
+    linear-gradient(145deg, rgba(12, 20, 48, 0.92), rgba(6, 11, 28, 0.96)) !important;
+}
+
+.event-visitor-page.admin-dashboard-page h1,
+.event-visitor-page.admin-dashboard-page h2,
+.event-visitor-page.admin-dashboard-page h3,
+.event-visitor-page.admin-dashboard-page .visitor-dashboard-panel .event-card-head strong,
+.event-visitor-page.admin-dashboard-page .visitor-registration-card-main strong,
+.event-visitor-page.admin-dashboard-page .visitor-fest-feature-grid strong,
+.event-visitor-page.admin-dashboard-page .visitor-fest-timeline strong {
+  color: var(--compass-text) !important;
+}
+
+.event-visitor-page.admin-dashboard-page p,
+.event-visitor-page.admin-dashboard-page small,
+.event-visitor-page.admin-dashboard-page .visitor-event-contact,
+.event-visitor-page.admin-dashboard-page .visitor-fest-feature-grid span,
+.event-visitor-page.admin-dashboard-page .visitor-fest-timeline small,
+.event-visitor-page.admin-dashboard-page .visitor-registration-card-main em {
+  color: var(--compass-muted) !important;
+}
+
+.event-visitor-page.admin-dashboard-page .eyebrow,
+.event-visitor-page.admin-dashboard-page .visitor-ticket-kicker,
+.event-visitor-page.admin-dashboard-page .visitor-registration-card-main > span,
+.event-visitor-page.admin-dashboard-page .visitor-registration-card-main p,
+.event-visitor-page.admin-dashboard-page .visitor-dashboard-panel .visitor-ticket-card small,
+.event-visitor-page.admin-dashboard-page .visitor-event-more summary,
+.event-visitor-page.admin-dashboard-page .visitor-fest-logo span,
+.event-visitor-page.admin-dashboard-page .visitor-compass-directions span b {
+  color: var(--compass-amber) !important;
+}
+
+.event-visitor-page.admin-dashboard-page .visitor-dash-hero .eyebrow::before,
+.event-visitor-page.admin-dashboard-page .visitor-section-head .eyebrow::before,
+.event-visitor-page.admin-dashboard-page .visitor-ticket-kicker::before,
+.event-visitor-page.admin-dashboard-page .visitor-registration-card-main > span::before {
+  background: linear-gradient(90deg, var(--compass-rust), var(--compass-orange), var(--compass-amber)) !important;
+}
+
+.event-visitor-page.admin-dashboard-page .visitor-dashboard-panel .visitor-ticket-card .visitor-event-date,
+.event-visitor-page.admin-dashboard-page .visitor-registration-card-main small,
+.event-visitor-page.admin-dashboard-page .visitor-dashboard-panel .visitor-ticket-card .event-fee-badge,
+.event-visitor-page.admin-dashboard-page .visitor-event-chip-row span,
+.event-visitor-page.admin-dashboard-page .visitor-fest-pulse span,
+.event-visitor-page.admin-dashboard-page .visitor-compass-directions span {
+  border-color: var(--compass-line) !important;
+  color: var(--compass-amber) !important;
+  background: rgba(255, 138, 29, 0.075) !important;
+}
+
+.event-visitor-page.admin-dashboard-page .visitor-event-actions button,
+.event-visitor-page.admin-dashboard-page .visitor-event-actions a,
+.event-visitor-page.admin-dashboard-page .visitor-event-actions span,
+.event-visitor-page.admin-dashboard-page .visitor-registration-card-actions button,
+.event-visitor-page.admin-dashboard-page .visitor-category-filter button,
+.event-visitor-page.admin-dashboard-page #visitorDashTopbar .visitor-fest-nav a {
+  border-color: var(--compass-line-soft) !important;
+  color: var(--compass-text) !important;
+  background: rgba(12, 20, 48, 0.78) !important;
+}
+
+.event-visitor-page.admin-dashboard-page .visitor-event-actions button:first-child,
+.event-visitor-page.admin-dashboard-page .visitor-event-actions .visitor-primary-action,
+.event-visitor-page.admin-dashboard-page .visitor-event-actions .event-apply-toggle,
+.event-visitor-page.admin-dashboard-page .visitor-registration-card-actions button:first-child,
+.event-visitor-page.admin-dashboard-page .visitor-category-filter button.active,
+.event-visitor-page.admin-dashboard-page #visitorDashTopbar .visitor-fest-nav a:hover,
+.event-visitor-page.admin-dashboard-page #visitorDashTopbar .visitor-fest-nav a:focus-visible {
+  border-color: transparent !important;
+  color: #071024 !important;
+  background: linear-gradient(135deg, var(--compass-amber), var(--compass-orange)) !important;
+}
+
+.event-visitor-page.admin-dashboard-page .visitor-dash-login-compass svg,
+.event-visitor-page.admin-dashboard-page .gprecian-panel::before,
+.event-visitor-page.admin-dashboard-page .gprecian-welcome::after,
+.event-visitor-page.admin-dashboard-page .gprecian-messages::after {
+  filter: drop-shadow(0 22px 42px rgba(255, 138, 29, 0.10));
+}
+
+/* Compass directions: slim wayfinder style instead of chunky cards. */
+.event-visitor-page.admin-dashboard-page .visitor-compass-directions {
+  grid-template-columns: repeat(4, minmax(0, 1fr)) !important;
+  gap: 10px !important;
+  padding-top: 8px;
+}
+
+.event-visitor-page.admin-dashboard-page .visitor-compass-directions span {
+  display: flex !important;
+  min-height: 64px !important;
+  align-items: center !important;
+  gap: 12px !important;
+  padding: 14px 16px !important;
+  border: 1px solid rgba(255, 154, 60, 0.14) !important;
+  border-radius: 12px !important;
+  color: rgba(242, 246, 255, 0.86) !important;
+  background:
+    linear-gradient(90deg, rgba(255, 138, 29, 0.06), transparent),
+    rgba(7, 13, 31, 0.54) !important;
+  box-shadow: none !important;
+}
+
+.event-visitor-page.admin-dashboard-page .visitor-compass-directions b {
+  display: inline-grid !important;
+  width: 34px !important;
+  height: 34px !important;
+  place-items: center;
+  flex: 0 0 34px !important;
+  border: 1px solid rgba(255, 154, 60, 0.28) !important;
+  border-radius: 50% !important;
+  color: #FFB15C !important;
+  background: rgba(255, 138, 29, 0.08) !important;
+  font-family: "Courier New", monospace !important;
+  font-size: 0.9rem !important;
+  font-weight: 900 !important;
+}
+
+.event-visitor-page.admin-dashboard-page .visitor-compass-directions i {
+  display: inline-grid;
+  width: 34px;
+  height: 34px;
+  place-items: center;
+  flex: 0 0 34px;
+  border-radius: 10px;
+  color: #FFB15C;
+  background: rgba(255, 138, 29, 0.06);
+}
+
+.event-visitor-page.admin-dashboard-page .visitor-compass-directions i svg {
+  width: 20px;
+  height: 20px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.8;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.event-visitor-page.admin-dashboard-page .visitor-compass-directions span:hover {
+  transform: translateY(-2px);
+  border-color: rgba(255, 154, 60, 0.28) !important;
+  background:
+    linear-gradient(90deg, rgba(255, 138, 29, 0.10), transparent),
+    rgba(10, 18, 42, 0.74) !important;
+}
+
+/* Cinematic moving background layers for the compass theme. */
+.event-visitor-page.admin-dashboard-page {
+  position: relative;
+  overflow-x: hidden;
+}
+
+.event-visitor-page.admin-dashboard-page::before,
+.event-visitor-page.admin-dashboard-page::after {
+  display: block !important;
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  content: "";
+}
+
+.event-visitor-page.admin-dashboard-page::before {
+  background:
+    radial-gradient(circle at 18% 24%, rgba(255, 177, 92, 0.10), transparent 26%),
+    radial-gradient(circle at 78% 18%, rgba(232, 93, 4, 0.12), transparent 30%),
+    radial-gradient(circle at 54% 82%, rgba(255, 138, 29, 0.08), transparent 34%);
+  filter: blur(18px);
+  opacity: 0.86;
+  animation: visitorCinematicAurora 18s ease-in-out infinite alternate;
+}
+
+.event-visitor-page.admin-dashboard-page::after {
+  background-image:
+    radial-gradient(circle, rgba(255, 177, 92, 0.76) 0 1.4px, transparent 2.4px),
+    radial-gradient(circle, rgba(238, 242, 255, 0.44) 0 1px, transparent 2px),
+    linear-gradient(115deg, transparent 0 42%, rgba(255, 177, 92, 0.08) 48%, transparent 56%);
+  background-position: 0 0, 54px 82px, -120vw 0;
+  background-size: 118px 118px, 174px 174px, 80vw 100vh;
+  opacity: 0.46;
+  animation: visitorCinematicStars 34s linear infinite, visitorCinematicSweep 12s ease-in-out infinite;
+}
+
+.event-visitor-page.admin-dashboard-page #visitorDashTopbar,
+.event-visitor-page.admin-dashboard-page .visitor-dash-shell,
+.event-visitor-page.admin-dashboard-page .gprecian,
+.event-visitor-page.admin-dashboard-page .visitor-login-footer {
+  position: relative;
+  z-index: 1;
+}
+
+.event-visitor-page.admin-dashboard-page .visitor-dash-hero::after {
+  display: block !important;
+  position: absolute;
+  inset: auto -18% -38% 18%;
+  z-index: 0;
+  height: 52%;
+  border: 1px solid rgba(255, 154, 60, 0.13);
+  border-radius: 50%;
+  background:
+    radial-gradient(ellipse at center, rgba(255, 138, 29, 0.12), transparent 58%);
+  opacity: 0.8;
+  transform-origin: center;
+  animation: visitorHeroOrbitGlow 16s ease-in-out infinite;
+  pointer-events: none;
+  content: "";
+}
+
+.event-visitor-page.admin-dashboard-page .visitor-fest-band::before,
+.event-visitor-page.admin-dashboard-page .visitor-registrations-preview::before,
+.event-visitor-page.admin-dashboard-page .visitor-dashboard-grid::before {
+  display: none !important;
+}
+
+.event-visitor-page.admin-dashboard-page .visitor-fest-band > *,
+.event-visitor-page.admin-dashboard-page .visitor-registrations-preview > *,
+.event-visitor-page.admin-dashboard-page .visitor-dashboard-grid > * {
+  position: relative;
+  z-index: 1;
+}
+
+@keyframes visitorCinematicAurora {
+  0% { transform: translate3d(-2%, -1%, 0) scale(1); opacity: 0.72; }
+  50% { transform: translate3d(2%, 1.5%, 0) scale(1.04); opacity: 0.92; }
+  100% { transform: translate3d(-1%, 2%, 0) scale(1.02); opacity: 0.78; }
+}
+
+@keyframes visitorCinematicStars {
+  to { background-position: 180px 260px, -120vw 0; }
+}
+
+@keyframes visitorCinematicSweep {
+  0%, 34% { background-position: 0 0, -120vw 0; }
+  58%, 100% { background-position: 0 0, 140vw 0; }
+}
+
+@keyframes visitorHeroOrbitGlow {
+  0%, 100% { transform: rotate(-2deg) scale(1); opacity: 0.54; }
+  50% { transform: rotate(3deg) scale(1.05); opacity: 0.86; }
+}
+
+@keyframes visitorPanelLightPass {
+  0%, 46% { transform: skewX(-16deg) translateX(-130%); opacity: 0; }
+  58% { opacity: 1; }
+  78%, 100% { transform: skewX(-16deg) translateX(420%); opacity: 0; }
+}
+
+.event-visitor-page.admin-dashboard-page .visitor-fest-band,
+.event-visitor-page.admin-dashboard-page .visitor-registrations-preview,
+.event-visitor-page.admin-dashboard-page .visitor-dashboard-grid {
+  animation: visitorSectionBreath 12s ease-in-out infinite;
+  transition: transform .28s ease, border-color .28s ease, box-shadow .28s ease;
+}
+
+.event-visitor-page.admin-dashboard-page .visitor-fest-band:nth-of-type(2n),
+.event-visitor-page.admin-dashboard-page .visitor-dashboard-grid {
+  animation-delay: -4s;
+}
+
+.event-visitor-page.admin-dashboard-page .visitor-fest-band:nth-of-type(3n),
+.event-visitor-page.admin-dashboard-page .visitor-registrations-preview {
+  animation-delay: -8s;
+}
+
+.event-visitor-page.admin-dashboard-page .visitor-fest-band:hover,
+.event-visitor-page.admin-dashboard-page .visitor-registrations-preview:hover,
+.event-visitor-page.admin-dashboard-page .visitor-dashboard-grid:hover {
+  transform: translateY(-2px) !important;
+  border-color: rgba(255, 154, 60, 0.28) !important;
+  box-shadow: 0 22px 62px rgba(0, 0, 0, 0.32), inset 0 1px 0 rgba(255, 255, 255, 0.06) !important;
+}
+
+@keyframes visitorSectionBreath {
+  0%, 100% {
+    box-shadow: 0 18px 44px rgba(0, 0, 0, 0.22), inset 0 1px 0 rgba(255, 255, 255, 0.04);
+    border-color: rgba(255, 154, 60, 0.16);
+  }
+  50% {
+    box-shadow: 0 22px 56px rgba(0, 0, 0, 0.28), inset 0 1px 0 rgba(255, 255, 255, 0.06);
+    border-color: rgba(255, 154, 60, 0.24);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .event-visitor-page.admin-dashboard-page::before,
+  .event-visitor-page.admin-dashboard-page::after,
+  .event-visitor-page.admin-dashboard-page .visitor-dash-hero::after,
+  .event-visitor-page.admin-dashboard-page .visitor-fest-band::before,
+  .event-visitor-page.admin-dashboard-page .visitor-registrations-preview::before,
+  .event-visitor-page.admin-dashboard-page .visitor-dashboard-grid::before {
+    animation: none !important;
+  }
+
+  .event-visitor-page.admin-dashboard-page .visitor-fest-band,
+  .event-visitor-page.admin-dashboard-page .visitor-registrations-preview,
+  .event-visitor-page.admin-dashboard-page .visitor-dashboard-grid {
+    animation: none !important;
+  }
+}
+
+/* Keep the GPRECian bot always visible on the visitor dashboard. */
+.event-visitor-page.admin-dashboard-page .gprecian,
+.event-visitor-page.admin-dashboard-page .gprecian.is-hidden {
+  display: grid !important;
+  position: fixed !important;
+  right: 22px !important;
+  bottom: 22px !important;
+  z-index: 120 !important;
+}
+
+.event-visitor-page.admin-dashboard-page .gprecian-panel {
+  display: block !important;
+  width: min(390px, calc(100vw - 32px)) !important;
+  max-height: min(720px, calc(100vh - 42px));
+}
+
+.event-visitor-page.admin-dashboard-page .gprecian-toggle,
+.event-visitor-page.admin-dashboard-page .gprecian-close {
+  display: none !important;
+}
+
+.event-visitor-page.admin-dashboard-page .gprecian-welcome {
+  max-height: 270px;
+  overflow: auto;
+}
+
+/* Clarification: keep the bot launcher icon always visible, but don't force the full chat open. */
+.event-visitor-page.admin-dashboard-page .gprecian,
+.event-visitor-page.admin-dashboard-page .gprecian.is-hidden {
+  display: grid !important;
+  position: fixed !important;
+  right: 22px !important;
+  bottom: 22px !important;
+  z-index: 140 !important;
+}
+
+.event-visitor-page.admin-dashboard-page .gprecian-panel {
+  display: none !important;
+  width: min(390px, calc(100vw - 32px)) !important;
+}
+
+.event-visitor-page.admin-dashboard-page .gprecian.open .gprecian-panel {
+  display: block !important;
+}
+
+.event-visitor-page.admin-dashboard-page .gprecian-toggle {
+  display: inline-flex !important;
+  position: relative;
+  z-index: 2;
+  min-width: 58px;
+  min-height: 58px;
+  border: 2px solid rgba(255, 177, 92, 0.50) !important;
+  box-shadow: 0 18px 42px rgba(0, 0, 0, 0.34), 0 0 0 6px rgba(255, 138, 29, 0.10);
+}
+
+.event-visitor-page.admin-dashboard-page .gprecian-toggle span {
+  display: inline-grid !important;
+}
+
+.event-visitor-page.admin-dashboard-page .gprecian-close {
+  display: inline-grid !important;
+}
+
+/* Restore the visitor chatbot launcher to the darker compass-theme style. */
+.event-visitor-page.admin-dashboard-page .gprecian-toggle {
+  display: inline-grid !important;
+  width: 58px !important;
+  height: 58px !important;
+  min-width: 58px !important;
+  min-height: 58px !important;
+  place-items: center !important;
+  padding: 0 !important;
+  border: 1px solid rgba(255, 154, 60, 0.32) !important;
+  border-radius: 16px !important;
+  color: #FFB15C !important;
+  background:
+    radial-gradient(circle at 72% 18%, rgba(255, 154, 60, 0.18), transparent 42%),
+    linear-gradient(145deg, rgba(16, 26, 58, 0.96), rgba(6, 11, 28, 0.98)) !important;
+  box-shadow: 0 16px 38px rgba(0, 0, 0, 0.34), inset 0 1px 0 rgba(255, 255, 255, 0.06) !important;
+}
+
+.event-visitor-page.admin-dashboard-page .gprecian-toggle span {
+  display: grid !important;
+  width: 40px !important;
+  height: 40px !important;
+  place-items: center !important;
+  border: 1px solid rgba(255, 154, 60, 0.28) !important;
+  border-radius: 12px !important;
+  color: #FFB15C !important;
+  background: rgba(255, 138, 29, 0.08) !important;
+  box-shadow: none !important;
+}
+
+.event-visitor-page.admin-dashboard-page .gprecian-toggle svg {
+  width: 24px !important;
+  height: 24px !important;
+  stroke: currentColor !important;
+}
+
+.event-visitor-page.admin-dashboard-page .gprecian-toggle::before {
+  right: -2px !important;
+  bottom: -2px !important;
+  width: 13px !important;
+  height: 13px !important;
+  background: #21B26B !important;
+}
+
+.event-visitor-page.admin-dashboard-page .gprecian-toggle::after {
+  right: -2px !important;
+  bottom: -2px !important;
+  width: 13px !important;
+  height: 13px !important;
+  border: 2px solid #071024 !important;
+  background: #21B26B !important;
+}
+
+.event-visitor-page.admin-dashboard-page .gprecian-toggle strong {
+  color: #F8FAFF !important;
+  border: 1px solid rgba(255, 154, 60, 0.18);
+  background: rgba(7, 13, 31, 0.96) !important;
+}
+
+/* Make expand work again after the always-visible launcher overrides. */
+.event-visitor-page.admin-dashboard-page .gprecian.open {
+  right: 22px !important;
+  bottom: 22px !important;
+}
+
+.event-visitor-page.admin-dashboard-page .gprecian.open .gprecian-panel {
+  display: flex !important;
+  flex-direction: column;
+  width: min(390px, calc(100vw - 32px)) !important;
+  max-height: min(720px, calc(100vh - 42px)) !important;
+}
+
+.event-visitor-page.admin-dashboard-page .gprecian.open .gprecian-panel.expanded {
+  width: min(680px, calc(100vw - 44px)) !important;
+  max-height: min(82vh, 760px) !important;
+}
+
+.event-visitor-page.admin-dashboard-page .gprecian.open .gprecian-panel.expanded .gprecian-messages,
+.event-visitor-page.admin-dashboard-page .gprecian.open .gprecian-panel.expanded .gprecian-welcome {
+  max-height: min(520px, calc(100vh - 230px)) !important;
+}
+
+/* Use the shared dashboard chatbot launcher style on this page too. */
+.event-visitor-page.admin-dashboard-page .gprecian-toggle {
+  display: grid !important;
+  width: 70px !important;
+  height: 70px !important;
+  min-width: 70px !important;
+  min-height: 70px !important;
+  place-items: center !important;
+  padding: 0 !important;
+  border: 3px solid #ffffff !important;
+  border-radius: 999px !important;
+  color: var(--navy) !important;
+  background: linear-gradient(145deg, #ffffff 0%, #eef6ff 100%) !important;
+  box-shadow: 0 18px 38px rgba(4, 40, 74, 0.22), inset 0 0 0 1px rgba(255, 129, 0, 0.18) !important;
+}
+
+.event-visitor-page.admin-dashboard-page .gprecian-toggle span {
+  display: grid !important;
+  width: 56px !important;
+  height: 56px !important;
+  place-items: center !important;
+  color: var(--navy) !important;
+  border: 0 !important;
+  border-radius: 999px !important;
+  background: #fff4e5 !important;
+  box-shadow: inset 0 0 0 2px rgba(255, 129, 0, 0.22) !important;
+}
+
+.event-visitor-page.admin-dashboard-page .gprecian-toggle svg {
+  width: 34px !important;
+  height: 34px !important;
+  fill: rgba(255, 154, 60, 0.10) !important;
+  stroke: #FF9A3C !important;
+  stroke-width: 1.9 !important;
+}
+
+.event-visitor-page.admin-dashboard-page .gprecian-toggle::before {
+  inset: -9px !important;
+  width: auto !important;
+  height: auto !important;
+  border: 1px dashed rgba(255, 177, 92, 0.48) !important;
+  border-radius: 999px !important;
+  background: transparent !important;
+  box-shadow:
+    inset 0 0 0 8px rgba(255, 138, 29, 0.035),
+    0 0 28px rgba(255, 138, 29, 0.12) !important;
+  animation: gprecChatCompassRing 16s linear infinite !important;
+}
+
+.event-visitor-page.admin-dashboard-page .gprecian-toggle::after {
+  right: 5px !important;
+  bottom: 7px !important;
+  width: 12px !important;
+  height: 12px !important;
+  border: 2px solid #070D1F !important;
+  border-radius: 999px !important;
+  background: #21B26B !important;
+  box-shadow: 0 0 0 4px rgba(33, 178, 107, 0.14) !important;
+}
+
+.event-visitor-page.admin-dashboard-page .gprecian-toggle strong {
+  right: 82px !important;
+  color: #ffffff !important;
+  border: 0 !important;
+  background: var(--navy) !important;
+}
+
+/* Match the shared dashboard expand behavior. */
+.event-visitor-page.admin-dashboard-page .gprecian.open .gprecian-panel {
+  display: block !important;
+  width: min(360px, calc(100vw - 30px)) !important;
+  max-height: none !important;
+}
+
+.event-visitor-page.admin-dashboard-page .gprecian.open .gprecian-panel.expanded {
+  width: min(480px, calc(100vw - 30px)) !important;
+  max-height: none !important;
+}
+
+.event-visitor-page.admin-dashboard-page .gprecian.open .gprecian-panel.expanded .gprecian-messages {
+  max-height: 480px !important;
+}
+
+/* Same old launcher shape, recolored for the compass dashboard theme. */
+.event-visitor-page.admin-dashboard-page .gprecian-toggle {
+  border-color: rgba(255, 154, 60, 0.34) !important;
+  color: #FF9A3C !important;
+  background:
+    radial-gradient(circle at 50% 35%, rgba(255, 154, 60, 0.20), transparent 46%),
+    linear-gradient(145deg, #14225A, #071024) !important;
+  box-shadow: 0 18px 42px rgba(0, 0, 0, 0.34), inset 0 0 0 1px rgba(255, 154, 60, 0.16) !important;
+}
+
+.event-visitor-page.admin-dashboard-page .gprecian-toggle span {
+  color: #FF9A3C !important;
+  background: linear-gradient(145deg, #1B2B66, #0A1435) !important;
+  box-shadow: inset 0 0 0 2px rgba(255, 154, 60, 0.26), 0 0 18px rgba(255, 138, 29, 0.10) !important;
+}
+
+.event-visitor-page.admin-dashboard-page .gprecian-toggle strong {
+  color: #F8FAFF !important;
+  border: 1px solid rgba(255, 154, 60, 0.18) !important;
+  background: rgba(7, 13, 31, 0.96) !important;
+}
+
+@keyframes gprecChatCompassRing {
+  to { transform: rotate(360deg); }
+}
+
+.event-visitor-page.admin-dashboard-page .gprecian-compass-directions {
+  display: none !important;
+}
+
+.event-visitor-page.admin-dashboard-page .gprecian-compass-directions i {
+  position: absolute;
+  color: #FFB15C;
+  font: 900 0.56rem/1 "Courier New", monospace;
+  letter-spacing: 0;
+  text-shadow: 0 0 10px rgba(255, 138, 29, 0.34);
+}
+
+.event-visitor-page.admin-dashboard-page .gprecian-compass-directions i:nth-child(1) {
+  top: 0;
+  left: 50%;
+  transform: translateX(-50%);
+}
+
+.event-visitor-page.admin-dashboard-page .gprecian-compass-directions i:nth-child(2) {
+  top: 50%;
+  right: 0;
+  transform: translateY(-50%);
+}
+
+.event-visitor-page.admin-dashboard-page .gprecian-compass-directions i:nth-child(3) {
+  bottom: 0;
+  left: 50%;
+  transform: translateX(-50%);
+}
+
+.event-visitor-page.admin-dashboard-page .gprecian-compass-directions i:nth-child(4) {
+  top: 50%;
+  left: 0;
+  transform: translateY(-50%);
+}
+
+/* Live fest ticker and subtle compass route paths. */
+.event-visitor-page.admin-dashboard-page .visitor-live-ticker {
+  position: relative;
+  z-index: 1;
+  width: 100%;
+  margin: 18px 0 0;
+  overflow: hidden;
+  border: 1px solid rgba(255, 154, 60, 0.18);
+  border-radius: 14px;
+  background:
+    linear-gradient(90deg, rgba(255, 138, 29, 0.08), transparent 28%, rgba(255, 138, 29, 0.06)),
+    rgba(7, 13, 31, 0.76);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.05);
+}
+
+.event-visitor-page.admin-dashboard-page .visitor-live-ticker::before,
+.event-visitor-page.admin-dashboard-page .visitor-live-ticker::after {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  z-index: 2;
+  width: 80px;
+  content: "";
+  pointer-events: none;
+}
+
+.event-visitor-page.admin-dashboard-page .visitor-live-ticker::before {
+  left: 0;
+  background: linear-gradient(90deg, #070D1F, transparent);
+}
+
+.event-visitor-page.admin-dashboard-page .visitor-live-ticker::after {
+  right: 0;
+  background: linear-gradient(270deg, #070D1F, transparent);
+}
+
+.event-visitor-page.admin-dashboard-page .visitor-live-ticker-track {
+  display: flex;
+  width: max-content;
+  gap: 0;
+  animation: visitorTickerRun 30s linear infinite;
+}
+
+.event-visitor-page.admin-dashboard-page .visitor-live-ticker-track span {
+  display: inline-flex;
+  min-height: 46px;
+  align-items: center;
+  gap: 10px;
+  padding: 0 24px;
+  color: rgba(246, 248, 255, 0.86);
+  font: 900 0.82rem/1 "Courier New", monospace;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+.event-visitor-page.admin-dashboard-page .visitor-live-ticker-track span::before {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: #FF9A3C;
+  box-shadow: 0 0 18px rgba(255, 138, 29, 0.65);
+  content: "";
+}
+
+.event-visitor-page.admin-dashboard-page .visitor-dash-hero,
+.event-visitor-page.admin-dashboard-page .visitor-fest-sections,
+.event-visitor-page.admin-dashboard-page .visitor-registrations-preview {
+  position: relative;
+}
+
+.event-visitor-page.admin-dashboard-page .visitor-dash-hero > *,
+.event-visitor-page.admin-dashboard-page .visitor-fest-sections > *,
+.event-visitor-page.admin-dashboard-page .visitor-registrations-preview > * {
+  position: relative;
+  z-index: 1;
+}
+
+.event-visitor-page.admin-dashboard-page .visitor-dash-hero::selection {
+  background: rgba(255, 154, 60, 0.28);
+}
+
+.event-visitor-page.admin-dashboard-page .visitor-dash-hero .visitor-route-map,
+.event-visitor-page.admin-dashboard-page .visitor-fest-sections::before,
+.event-visitor-page.admin-dashboard-page .visitor-registrations-preview::after {
+  pointer-events: none;
+}
+
+.event-visitor-page.admin-dashboard-page .visitor-fest-sections::before,
+.event-visitor-page.admin-dashboard-page .visitor-registrations-preview::after {
+  display: block !important;
+  position: absolute;
+  inset: -20px 4% auto;
+  z-index: 0;
+  height: 180px;
+  opacity: 0.28;
+  background:
+    radial-gradient(circle at 12% 70%, rgba(255, 154, 60, 0.44) 0 2px, transparent 3px),
+    radial-gradient(circle at 48% 34%, rgba(255, 177, 92, 0.42) 0 2px, transparent 3px),
+    radial-gradient(circle at 84% 62%, rgba(255, 154, 60, 0.44) 0 2px, transparent 3px),
+    linear-gradient(110deg, transparent 0 11%, rgba(255, 154, 60, 0.16) 11.3% 12%, transparent 12.4% 47%, rgba(255, 154, 60, 0.14) 47.4% 48%, transparent 48.4% 83%, rgba(255, 154, 60, 0.14) 83.4% 84%, transparent 84.4%);
+  content: "";
+  animation: visitorRouteGlow 7s ease-in-out infinite;
+}
+
+.event-visitor-page.admin-dashboard-page .visitor-registrations-preview::after {
+  inset: auto 8% -52px;
+  height: 120px;
+  opacity: 0.22;
+}
+
+@keyframes visitorTickerRun {
+  to { transform: translateX(-50%); }
+}
+
+@keyframes visitorRouteGlow {
+  0%, 100% { opacity: 0.18; filter: drop-shadow(0 0 0 rgba(255, 138, 29, 0)); }
+  50% { opacity: 0.34; filter: drop-shadow(0 0 12px rgba(255, 138, 29, 0.28)); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .event-visitor-page.admin-dashboard-page .visitor-live-ticker-track,
+  .event-visitor-page.admin-dashboard-page .visitor-fest-sections::before,
+  .event-visitor-page.admin-dashboard-page .visitor-registrations-preview::after {
+    animation: none !important;
+  }
+}
+
+/* Added festival utility features: next up, zones, announcements, QR, and scroll compass. */
+.event-visitor-page.admin-dashboard-page .visitor-next-up-card {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 18px;
+  align-items: center;
+  padding: 22px;
+  border: 1px solid rgba(255, 154, 60, 0.16);
+  border-radius: 16px;
+  background:
+    radial-gradient(circle at 86% 0%, rgba(255, 154, 60, 0.12), transparent 34%),
+    rgba(7, 13, 31, 0.58);
+}
+
+.event-visitor-page.admin-dashboard-page .visitor-next-up-card div {
+  display: grid;
+  gap: 9px;
+}
+
+.event-visitor-page.admin-dashboard-page .visitor-next-up-card span,
+.event-visitor-page.admin-dashboard-page .visitor-announcement-list span {
+  width: fit-content;
+  color: #FFB15C;
+  font: 900 0.76rem/1 "Courier New", monospace;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+.event-visitor-page.admin-dashboard-page .visitor-next-up-card strong {
+  color: #fff;
+  font: 900 clamp(1.8rem, 3vw, 3.2rem)/0.94 Impact, "Arial Black", sans-serif;
+}
+
+.event-visitor-page.admin-dashboard-page .visitor-next-up-card small {
+  color: rgba(229, 234, 250, 0.74);
+  font-weight: 900;
+}
+
+.event-visitor-page.admin-dashboard-page .visitor-next-up-card a {
+  display: inline-flex;
+  min-height: 42px;
+  align-items: center;
+  justify-content: center;
+  padding: 0 18px;
+  border-radius: 10px;
+  color: #071024;
+  background: #FF9A3C;
+  font-weight: 950;
+  text-decoration: none;
+}
+
+.event-visitor-page.admin-dashboard-page .visitor-zone-map {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.event-visitor-page.admin-dashboard-page .visitor-zone-map article,
+.event-visitor-page.admin-dashboard-page .visitor-announcement-list article {
+  display: grid;
+  gap: 10px;
+  padding: 18px;
+  border: 1px solid rgba(255, 154, 60, 0.14);
+  border-radius: 14px;
+  background: rgba(7, 13, 31, 0.54);
+}
+
+.event-visitor-page.admin-dashboard-page .visitor-zone-map article span {
+  display: grid;
+  width: 38px;
+  height: 38px;
+  place-items: center;
+  border: 1px solid rgba(255, 154, 60, 0.28);
+  border-radius: 50%;
+  color: #FFB15C;
+  background: rgba(255, 138, 29, 0.08);
+  font: 900 1rem/1 "Courier New", monospace;
+}
+
+.event-visitor-page.admin-dashboard-page .visitor-zone-map strong,
+.event-visitor-page.admin-dashboard-page .visitor-announcement-list strong {
+  color: #fff;
+  font-size: 1.05rem;
+  font-weight: 950;
+}
+
+.event-visitor-page.admin-dashboard-page .visitor-zone-map small,
+.event-visitor-page.admin-dashboard-page .visitor-announcement-list small {
+  color: rgba(229, 234, 250, 0.72);
+  font-weight: 800;
+  line-height: 1.45;
+}
+
+.event-visitor-page.admin-dashboard-page .visitor-announcement-list {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.event-visitor-page.admin-dashboard-page .visitor-pass-qr {
+  display: none !important;
+  grid-template-columns: auto minmax(0, 1fr);
+  gap: 12px;
+  align-items: center;
+  width: 100%;
+  padding: 12px;
+  border: 1px solid rgba(255, 154, 60, 0.14);
+  border-radius: 12px;
+  background: rgba(3, 7, 18, 0.34);
+}
+
+.event-visitor-page.admin-dashboard-page .visitor-pass-qr i {
+  display: block;
+  width: 54px;
+  height: 54px;
+  border: 5px solid #F8FAFF;
+  border-radius: 6px;
+  background:
+    linear-gradient(90deg, #F8FAFF 8px, transparent 8px 14px, #F8FAFF 14px 20px, transparent 20px 30px, #F8FAFF 30px 38px, transparent 38px),
+    linear-gradient(#F8FAFF 7px, transparent 7px 13px, #F8FAFF 13px 20px, transparent 20px 32px, #F8FAFF 32px 40px, transparent 40px),
+    #071024;
+}
+
+.event-visitor-page.admin-dashboard-page .visitor-pass-qr span {
+  color: rgba(229, 234, 250, 0.74);
+  font: 900 0.72rem/1.35 "Courier New", monospace;
+}
+
+.event-visitor-page.admin-dashboard-page .visitor-event-actions a[href*="maps"]:first-of-type {
+  border-color: transparent !important;
+  color: #071024 !important;
+  background: linear-gradient(135deg, #FFB15C, #FF8A1D) !important;
+}
+
+.event-visitor-page.admin-dashboard-page .visitor-scroll-compass {
+  position: fixed;
+  top: 50%;
+  right: 18px;
+  z-index: 90;
+  display: grid;
+  gap: 8px;
+  place-items: center;
+  opacity: 0.54;
+  transform: translateY(-50%);
+  pointer-events: none;
+  transition: opacity .25s ease;
+}
+
+.event-visitor-page.admin-dashboard-page .visitor-scroll-compass.is-active {
+  opacity: 0.86;
+}
+
+.event-visitor-page.admin-dashboard-page .visitor-scroll-compass > span,
+.event-visitor-page.admin-dashboard-page .visitor-scroll-compass small {
+  color: #FFB15C;
+  font: 900 0.68rem/1 "Courier New", monospace;
+}
+
+.event-visitor-page.admin-dashboard-page .visitor-scroll-compass i {
+  position: relative;
+  display: grid;
+  width: 46px;
+  height: 46px;
+  place-items: center;
+  border: 1px solid rgba(255, 154, 60, 0.24);
+  border-radius: 50%;
+  background:
+    radial-gradient(circle, rgba(255, 154, 60, 0.10), transparent 52%),
+    rgba(7, 13, 31, 0.72);
+  box-shadow: inset 0 0 0 7px rgba(255, 154, 60, 0.04);
+}
+
+.event-visitor-page.admin-dashboard-page .visitor-scroll-compass b {
+  display: block;
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: #FFB15C;
+  box-shadow:
+    0 -17px 0 -1px #FF9A3C,
+    0 0 16px rgba(255, 138, 29, 0.55);
+  transform-origin: 50% 50%;
+  transition: transform .12s linear;
+}
+
+.event-visitor-page.admin-dashboard-page .visitor-scroll-compass i::before,
+.event-visitor-page.admin-dashboard-page .visitor-scroll-compass i::after {
+  position: absolute;
+  content: "";
+  background: rgba(255, 154, 60, 0.32);
+}
+
+.event-visitor-page.admin-dashboard-page .visitor-scroll-compass i::before {
+  width: 1px;
+  height: 100%;
+}
+
+.event-visitor-page.admin-dashboard-page .visitor-scroll-compass i::after {
+  width: 100%;
+  height: 1px;
+}
+
+@media (max-width: 1180px) {
+  .event-visitor-page.admin-dashboard-page .visitor-zone-map,
+  .event-visitor-page.admin-dashboard-page .visitor-announcement-list {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 780px) {
+  .event-visitor-page.admin-dashboard-page .visitor-next-up-card,
+  .event-visitor-page.admin-dashboard-page .visitor-zone-map,
+  .event-visitor-page.admin-dashboard-page .visitor-announcement-list {
+    grid-template-columns: 1fr;
+  }
+
+  .event-visitor-page.admin-dashboard-page .visitor-scroll-compass {
+    display: none;
+  }
 }
