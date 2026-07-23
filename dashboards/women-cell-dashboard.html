@@ -1,0 +1,162 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Women's Cell Dashboard | GPREC</title>
+    <meta name="description" content="GPREC Women's Cell dashboard - committee, reports, and resources.">
+    <link rel="icon" href="https://www.gprec.ac.in/wp-content/uploads/2017/08/fav.png" sizes="32x32">
+    <link rel="stylesheet" href="../styles.css?v=20260722-31">
+  </head>
+  <body class="admin-dashboard-page women-cell-dashboard-page">
+    <header class="student-topbar admin-topbar">
+      <a class="student-brand" href="../index.html">
+        <img src="../gprec-logo-enhanced.png" alt="G Pulla Reddy Engineering College">
+      </a>
+      <div class="student-user">
+        <div class="notification-bell-wrap">
+          <button type="button" class="notification-bell" id="notificationBellButton" aria-label="Notifications">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 8a6 6 0 1 1 12 0c0 4 1.5 5.5 2 6H4c.5-.5 2-2 2-6Z"/><path d="M10 20a2 2 0 0 0 4 0"/></svg>
+            <span class="notification-badge is-hidden" id="notificationBadge">0</span>
+          </button>
+          <div class="notification-dropdown is-hidden" id="notificationDropdown">
+            <div class="notification-dropdown-head">Notifications</div>
+            <div id="notificationList"></div>
+          </div>
+        </div>
+        <div class="student-user-menu">
+          <span class="student-user-avatar">WC</span>
+          <button type="button" class="student-user-toggle" aria-label="Account menu" aria-expanded="false">
+            <span class="student-user-name-block">
+              <strong id="adminRoleName">Women's Cell</strong>
+              <small>GPREC Administration</small>
+            </span>
+          </button>
+          <div class="student-user-dropdown">
+            <a href="../pages/admin-login.html">Logout</a>
+          </div>
+        </div>
+      </div>
+    </header>
+
+    <main class="admin-shell">
+      <aside class="admin-sidebar">
+        <div class="student-menu-title">
+          <strong>Women's Cell Console</strong>
+          <button type="button" class="menu-collapse-toggle" id="menuCollapseToggle" aria-label="Collapse menu">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M15 5 9 12l6 7"/></svg>
+          </button>
+        </div>
+        <div class="admin-nav active" data-admin-target="#women-cell-overview" title="Overview" role="button" tabindex="0"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="3" width="8" height="8" rx="1"/><rect x="13" y="3" width="8" height="8" rx="1"/><rect x="3" y="13" width="8" height="8" rx="1"/><rect x="13" y="13" width="8" height="8" rx="1"/></svg><span class="admin-nav-text">Overview</span></div>
+        <div class="admin-nav" data-admin-target="#women-cell-committee" title="Committee" role="button" tabindex="0"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="9" cy="8" r="3"/><path d="M3 21c.7-3.2 3-5 6-5s5.3 1.8 6 5"/><circle cx="17" cy="8" r="2.4"/><path d="M15.5 13.2c2.2.4 3.8 1.9 4.5 4.8"/></svg><span class="admin-nav-text">Committee</span></div>
+        <div class="admin-nav" data-admin-target="#women-cell-reports" title="Reports" role="button" tabindex="0"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 2h9l5 5v15H6Z"/><path d="M15 2v5h5M9 13h6M9 17h4"/></svg><span class="admin-nav-text">Reports</span></div>
+        <div class="admin-nav" data-admin-target="#women-cell-resources" title="Rights &amp; Resources" role="button" tabindex="0"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 5.5A2.5 2.5 0 0 1 6.5 3H20v16H6.5A2.5 2.5 0 0 0 4 21.5zM4 5.5v16M8 7h8"/></svg><span class="admin-nav-text">Rights &amp; Resources</span></div>
+        <div class="admin-nav" data-admin-target="#women-cell-notices" title="Notices" role="button" tabindex="0"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M18 8a6 6 0 0 0-12 0c0 7-3 7-3 9h18c0-2-3-2-3-9ZM10 21h4"/></svg><span class="admin-nav-text">Notices</span></div>
+      </aside>
+
+      <section class="admin-workspace">
+        <section class="admin-panel is-active" id="women-cell-overview">
+          <div class="women-cell-dashboard-banner">
+            <h2>Women's Cell</h2>
+            <p>A safe, supportive environment for every woman at GPREC - students, faculty, and staff.</p>
+          </div>
+          <div class="admin-section-head">
+            <div><p class="eyebrow">Overview</p><h2>Women's Cell activity at a glance.</h2></div>
+          </div>
+          <div class="admin-metric-grid">
+            <article><strong id="womenCellCommitteeCount">10</strong><span>Committee members</span></article>
+            <article><strong id="womenCellReportCount">2</strong><span>Annual reports on file</span></article>
+            <article><strong id="womenCellResourceCount">4</strong><span>Rights &amp; resource documents</span></article>
+            <article><strong id="womenCellNewsletterCount">3</strong><span>"She Voice" newsletters</span></article>
+          </div>
+          <p class="about-justify">Established 6th January 2007, pursuant to the directives of the Supreme Court of India, to ensure a safe and secure environment for women at G. Pulla Reddy Engineering College. All female faculty, staff, and students are members of the Women's Cell.</p>
+        </section>
+
+        <section class="admin-panel" id="women-cell-committee">
+          <div class="admin-section-head">
+            <div><p class="eyebrow">Committee</p><h2>Women's Cell committee roster.</h2></div>
+          </div>
+          <div class="admin-table-card">
+            <table>
+              <thead><tr><th>Name</th><th>Role</th></tr></thead>
+              <tbody>
+                <tr><td>Dr. K. Devaki Devi</td><td>Convener (Associate Professor, ME)</td></tr>
+                <tr><td>Smt. K. Gayathri</td><td>Member (Assistant Professor, CSE)</td></tr>
+                <tr><td>Dr. K. Subhashini</td><td>Member (Associate Professor, Mathematics)</td></tr>
+                <tr><td>Dr. K.V.S. Gopala Krishna Sastry</td><td>Member (Professor, CE)</td></tr>
+                <tr><td>Dr. S. Naga Raja Rao</td><td>Member (Professor and Head, ECE)</td></tr>
+                <tr><td>Dr. V. Anantha Lakshmi</td><td>Member (Associate Professor, EEE)</td></tr>
+                <tr><td>Smt. Sowjanya</td><td>Member (Assistant Professor, CE)</td></tr>
+                <tr><td>Smt. T. Swathi</td><td>Member (Assistant Professor, ECE)</td></tr>
+                <tr><td>Smt. K. Asha Rani</td><td>Member (Assistant Professor, CSE)</td></tr>
+                <tr><td>Dr. S. Sailaja</td><td>Member (Assistant Professor, HBS)</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </section>
+
+        <section class="admin-panel" id="women-cell-reports">
+          <div class="admin-section-head">
+            <div><p class="eyebrow">Reports</p><h2>Annual event reports.</h2></div>
+          </div>
+          <div class="admin-table-card">
+            <table>
+              <thead><tr><th>Year</th><th></th></tr></thead>
+              <tbody>
+                <tr><td>2023-24</td><td><a class="notice-download" href="http://womencell.gprec.ac.in/documents/report23.docx" target="_blank" rel="noreferrer">Download</a></td></tr>
+                <tr><td>2024-25</td><td><a class="notice-download" href="http://womencell.gprec.ac.in/documents/report24.docx" target="_blank" rel="noreferrer">Download</a></td></tr>
+                <tr><td>2025-26</td><td>Update soon</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </section>
+
+        <section class="admin-panel" id="women-cell-resources">
+          <div class="admin-section-head">
+            <div><p class="eyebrow">Rights &amp; Resources</p><h2>Reference documents and newsletters.</h2></div>
+          </div>
+          <div class="admin-table-card">
+            <h3>Rights &amp; Resources</h3>
+            <table>
+              <thead><tr><th>Document</th><th></th></tr></thead>
+              <tbody>
+                <tr><td>Handbook on Sexual Harassment of Women at Workplace</td><td><a class="notice-download" href="http://womencell.gprec.ac.in/documents/handbook.pdf" target="_blank" rel="noreferrer">Download</a></td></tr>
+                <tr><td>Women Constitution &amp; Legal Rights</td><td><a class="notice-download" href="http://womencell.gprec.ac.in/documents/ConstitutionalLegalRights.pdf" target="_blank" rel="noreferrer">Download</a></td></tr>
+                <tr><td>Women Acts</td><td><a class="notice-download" href="http://womencell.gprec.ac.in/documents/WomenActs.pdf" target="_blank" rel="noreferrer">Download</a></td></tr>
+                <tr><td>Women's Cell Process Document</td><td><a class="notice-download" href="http://womencell.gprec.ac.in/documents/WomenCellProcess.pdf" target="_blank" rel="noreferrer">Download</a></td></tr>
+              </tbody>
+            </table>
+          </div>
+          <div class="admin-table-card">
+            <h3>"She Voice" Newsletters</h3>
+            <table>
+              <thead><tr><th>Edition</th><th></th></tr></thead>
+              <tbody>
+                <tr><td>She Voice 2017</td><td><a class="notice-download" href="http://womencell.gprec.ac.in/documents/she-voice2017.pdf" target="_blank" rel="noreferrer">Download</a></td></tr>
+                <tr><td>She Voice 2018</td><td><a class="notice-download" href="http://womencell.gprec.ac.in/documents/she-voice2018.pdf" target="_blank" rel="noreferrer">Download</a></td></tr>
+                <tr><td>She Voice 2019</td><td><a class="notice-download" href="http://womencell.gprec.ac.in/documents/she-voice2019.pdf" target="_blank" rel="noreferrer">Download</a></td></tr>
+              </tbody>
+            </table>
+          </div>
+        </section>
+
+        <section class="admin-panel" id="women-cell-notices">
+          <div class="admin-section-head">
+            <div><p class="eyebrow">Notices</p><h2>Events and announcements.</h2></div>
+          </div>
+          <div class="admin-table-card">
+            <table>
+              <thead><tr><th>Event</th><th>Details</th></tr></thead>
+              <tbody>
+                <tr><td>Swashakthi 2024</td><td>The Swashakthi 2024 Women Congress concluded on a high note at GPREC on December 7th, 2024.</td></tr>
+              </tbody>
+            </table>
+            <p class="lookup-empty">More events are posted on the public Women's Cell page.</p>
+          </div>
+        </section>
+      </section>
+    </main>
+
+    <script src="../script.js?v=20260722-31"></script>
+  </body>
+</html>
