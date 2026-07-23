@@ -11156,67 +11156,50 @@ img.student-user-avatar {
    graphic, matching the reference design the user provided. */
 .women-cell-hero-banner {
   position: relative;
-  min-height: 190px;
+  min-height: 230px;
   overflow: hidden;
   background: linear-gradient(160deg, #050a14, #0c1526 60%, #10182b);
   animation: gprec-fade-slide-up 480ms cubic-bezier(0.16, 1, 0.3, 1);
+  perspective: 1000px;
 }
 
-.women-cell-hero-banner-sun {
+/* Fixed 3D tilt (perspective + rotateX/Y + translateZ) instead of a flat 2D image, so it reads
+   as a card floating in depth against the dark background - layered drop-shadows sell the same
+   depth illusion at the pixel level (a tight near shadow + a soft far one). */
+.women-cell-hero-banner-illustration {
   position: absolute;
   top: 50%;
-  right: -80px;
-  display: grid;
-  width: 240px;
-  height: 240px;
-  place-items: center;
-  border-radius: 999px;
-  background: radial-gradient(circle at 35% 35%, #ffb02e, var(--orange) 55%, #c2410c 100%);
-  box-shadow: 0 0 80px rgba(255, 135, 2, 0.45);
-  transform: translateY(-50%);
-  animation: women-cell-sun-pulse 3.2s ease-in-out infinite;
+  right: 8px;
+  z-index: 1;
+  width: 340px;
+  height: auto;
+  transform: translateY(-50%) rotateY(-10deg) rotateX(4deg) translateZ(20px);
+  transform-style: preserve-3d;
+  filter: drop-shadow(0 30px 24px rgba(0, 0, 0, 0.45)) drop-shadow(0 10px 10px rgba(0, 0, 0, 0.35));
 }
 
-.women-cell-hero-banner-sun::before {
+/* Ambient glow pulsing behind the illustration. */
+.women-cell-hero-banner::after {
   content: "";
   position: absolute;
-  inset: 0;
+  top: 50%;
+  right: 60px;
+  width: 320px;
+  height: 320px;
   border-radius: 999px;
-  border: 1px dashed rgba(255, 255, 255, 0.2);
-  transform: scale(1.28);
-  animation: women-cell-sun-ring-spin 18s linear infinite;
+  background: radial-gradient(circle, rgba(255, 135, 2, 0.4), transparent 70%);
+  transform: translateY(-50%);
+  animation: women-cell-glow-pulse 3.6s ease-in-out infinite;
 }
 
-.women-cell-hero-banner-icon {
-  position: relative;
-  z-index: 1;
-  width: 46px;
-  height: 46px;
-  stroke: rgba(255, 255, 255, 0.92);
-  stroke-width: 1.6;
-  fill: none;
-  stroke-linecap: round;
-  stroke-linejoin: round;
-  filter: drop-shadow(0 2px 6px rgba(0, 0, 0, 0.25));
-}
-
-@keyframes women-cell-sun-pulse {
+@keyframes women-cell-glow-pulse {
   0%, 100% {
-    box-shadow: 0 0 80px rgba(255, 135, 2, 0.45);
-    transform: translateY(-50%) scale(1);
+    opacity: 0.5;
+    transform: translateY(-50%) scale(0.92);
   }
   50% {
-    box-shadow: 0 0 120px rgba(255, 135, 2, 0.7);
-    transform: translateY(-50%) scale(1.04);
-  }
-}
-
-@keyframes women-cell-sun-ring-spin {
-  from {
-    transform: scale(1.28) rotate(0deg);
-  }
-  to {
-    transform: scale(1.28) rotate(360deg);
+    opacity: 0.9;
+    transform: translateY(-50%) scale(1.08);
   }
 }
 
@@ -11303,9 +11286,10 @@ img.student-user-avatar {
 }
 
 @media (max-width: 760px) {
-  .women-cell-hero-banner-sun {
-    right: -110px;
-    opacity: 0.6;
+  .women-cell-hero-banner-illustration {
+    right: -60px;
+    width: 220px;
+    opacity: 0.55;
   }
 
   .women-cell-hero-banner-content {
