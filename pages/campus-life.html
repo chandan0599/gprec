@@ -576,6 +576,124 @@
                 </table>
               </div>
             </article>
+
+            <article class="about-panel" id="grievance-cell">
+              <h2 class="about-subheading">Grievance Cell</h2>
+              <p class="about-justify">GPREC maintains two committees to receive grievances, carry out fact-finding, and suggest remedial and preventive measures.</p>
+
+              <h3 class="about-subheading-sm">Student Grievance Redressal Committee (SGRC)</h3>
+              <div class="disclosure-table-wrap">
+                <table class="disclosure-table">
+                  <thead><tr><th>Name</th><th>Role</th></tr></thead>
+                  <tbody>
+                    <tr><td>Dr. B. Sreenivasa Reddy</td><td>Chair (Principal)</td></tr>
+                    <tr><td>Dr. K.V.S. Gopala Krishna Sastry</td><td>Member Convener (Professor, CE)</td></tr>
+                    <tr><td>Dr. K. Devaki Devi</td><td>Member (Dean, Student Affairs)</td></tr>
+                    <tr><td>Mr. M. Murali Mohan</td><td>Member (Assistant Professor, ME)</td></tr>
+                    <tr><td>M. Chenna Kesava Reddy</td><td>Student Nominee (B.Tech IV Year, CSBS)</td></tr>
+                  </tbody>
+                </table>
+              </div>
+              <p class="about-justify">Functions: receive grievances from students, carry out fact-finding, and suggest remedial and preventive measures.</p>
+
+              <h3 class="about-subheading-sm">Grievance Redressal Committee (GRC)</h3>
+              <p class="about-justify">Chaired by Dr. B. Sreenivasa Reddy (Principal), with Dr. K.V.S. Gopala Krishna Sastry (Professor, CE) as Member Convener and six additional faculty members (professors and heads of departments).</p>
+              <p class="about-justify">Functions: receive grievances from faculty, parents, and alumni; carry out fact-finding; suggest remedial measures; review suggestions during counselling; and review outgoing student feedback.</p>
+
+              <h3 class="about-subheading-sm">Submit a Grievance</h3>
+              <p class="about-justify">Use the form below, or submit directly through the <a href="https://examcell.gprec.ac.in/Grievance.aspx" target="_blank" rel="noreferrer">Exam Cell grievance portal</a> or the <a href="http://server.jntua.org.in/grievance/" target="_blank" rel="noreferrer">JNTUA University grievance portal</a>.</p>
+              <form class="contact-form" id="grievanceForm">
+                <label>Complainant
+                  <select id="grievanceComplainantType">
+                    <option value="">Specify</option>
+                    <option value="Student">Student</option>
+                    <option value="Parent">Parent</option>
+                    <option value="Faculty">Faculty</option>
+                    <option value="Alumni">Alumni</option>
+                  </select>
+                </label>
+
+                <div data-grievance-fields="Student" class="is-hidden">
+                  <label>Student Name<input type="text" id="grievanceStudentName"></label>
+                  <label>Phone<input type="tel" id="grievanceStudentPhone"></label>
+                  <label>Roll No.<input type="text" id="grievanceStudentRollNo"></label>
+                  <label>Email<input type="email" id="grievanceStudentEmail"></label>
+                  <label>Year of Study
+                    <select id="grievanceStudentYear">
+                      <option value="I-Sem">I-Sem</option>
+                      <option value="II-Sem">II-Sem</option>
+                      <option value="III-Sem">III-Sem</option>
+                      <option value="IV-Sem">IV-Sem</option>
+                      <option value="V-Sem">V-Sem</option>
+                      <option value="VI-Sem">VI-Sem</option>
+                      <option value="VII-Sem">VII-Sem</option>
+                      <option value="VIII-Sem">VIII-Sem</option>
+                    </select>
+                  </label>
+                </div>
+
+                <div data-grievance-fields="Parent" class="is-hidden">
+                  <label>Parent Name<input type="text" id="grievanceParentName"></label>
+                  <label>Parent Phone<input type="tel" id="grievanceParentPhone"></label>
+                  <label>Student Name<input type="text" id="grievanceParentStudentName"></label>
+                  <label>Student Phone<input type="tel" id="grievanceParentStudentPhone"></label>
+                  <label>Roll No.<input type="text" id="grievanceParentRollNo"></label>
+                  <label>Email<input type="email" id="grievanceParentEmail"></label>
+                  <label>Year of Study
+                    <select id="grievanceParentYear">
+                      <option value="I-Sem">I-Sem</option>
+                      <option value="II-Sem">II-Sem</option>
+                      <option value="III-Sem">III-Sem</option>
+                      <option value="IV-Sem">IV-Sem</option>
+                      <option value="V-Sem">V-Sem</option>
+                      <option value="VI-Sem">VI-Sem</option>
+                      <option value="VII-Sem">VII-Sem</option>
+                      <option value="VIII-Sem">VIII-Sem</option>
+                    </select>
+                  </label>
+                </div>
+
+                <div data-grievance-fields="Faculty" class="is-hidden">
+                  <label>Name<input type="text" id="grievanceFacultyName"></label>
+                  <label>Phone<input type="tel" id="grievanceFacultyPhone"></label>
+                  <label>ID<input type="text" id="grievanceFacultyId"></label>
+                  <label>Email<input type="email" id="grievanceFacultyEmail"></label>
+                  <label>Designation
+                    <select id="grievanceFacultyDesignation">
+                      <option value="Principal">Principal</option>
+                      <option value="Professor">Professor</option>
+                      <option value="Assoc Prof">Assoc Prof</option>
+                      <option value="Asst Prof">Asst Prof</option>
+                      <option value="Lecturer">Lecturer</option>
+                    </select>
+                  </label>
+                  <label>Department
+                    <select id="grievanceFacultyDepartment">
+                      <option value="CSE">CSE</option>
+                      <option value="CE">CE</option>
+                      <option value="ECE">ECE</option>
+                      <option value="ME">ME</option>
+                      <option value="EEE">EEE</option>
+                    </select>
+                  </label>
+                </div>
+
+                <div data-grievance-fields="Alumni" class="is-hidden">
+                  <label>Name<input type="text" id="grievanceAlumniName"></label>
+                  <label>Phone<input type="tel" id="grievanceAlumniPhone"></label>
+                  <label>ID<input type="text" id="grievanceAlumniId"></label>
+                  <label>Email<input type="email" id="grievanceAlumniEmail"></label>
+                  <label>Year of Passing<input type="text" id="grievanceAlumniYear"></label>
+                </div>
+
+                <div data-grievance-fields-common class="is-hidden">
+                  <label>Grievance<textarea id="grievanceBody" rows="5"></textarea></label>
+                </div>
+
+                <button type="submit" class="contact-form-submit">Submit Grievance</button>
+                <p class="admin-add-feedback" id="grievanceFeedback" aria-live="polite"></p>
+              </form>
+            </article>
           </div>
         </div>
       </section>
