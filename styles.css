@@ -11782,7 +11782,9 @@ img.student-user-avatar {
 }
 
 .contact-form [data-grievance-fields],
-.contact-form [data-grievance-fields-common] {
+.contact-form [data-grievance-fields-common],
+.contact-form [data-scst-grievance-fields],
+.contact-form [data-scst-grievance-fields-common] {
   display: flex;
   flex-direction: column;
   gap: 14px;

@@ -696,6 +696,119 @@
 
               <p class="about-justify">For grievances directed at JNTUA (the affiliating university) rather than the college, use the <a href="http://server.jntua.org.in/grievance/" target="_blank" rel="noreferrer" style="color:var(--orange);font-weight:800;">JNTUA University Grievance Portal</a> instead.</p>
             </article>
+
+            <article class="about-panel" id="sc-st-grievance-cell">
+              <h2 class="about-subheading">SC/ST Grievance Redressal Committee</h2>
+              <p class="about-justify">The committee aims to receive grievances from students, faculty, parents, and alumni regarding SC/ST-related academic and administrative matters, and to suggest remedial approaches - including remedial coaching in life skills, personality development, writing support, presentation skills, and interactive sessions for personal, social, and academic concerns.</p>
+
+              <h3 class="about-subheading-sm">Committee</h3>
+              <div class="disclosure-table-wrap">
+                <table class="disclosure-table">
+                  <thead><tr><th>Name</th><th>Role</th></tr></thead>
+                  <tbody>
+                    <tr><td>Dr. B. Sreenivasa Reddy</td><td>Chair (Principal)</td></tr>
+                    <tr><td>Dr. P. Abdul Khayum</td><td>Member Convener (Professor, ECE)</td></tr>
+                    <tr><td>Dr. G. Kishor</td><td>Member (Professor, EEE)</td></tr>
+                    <tr><td>Dr. L. Lakshmi Prasanna Kumar</td><td>Member (Assistant Professor, ECE)</td></tr>
+                    <tr><td>Sri. J. Swami Naik</td><td>Member (Associate Professor, CSE)</td></tr>
+                    <tr><td>Sri. M. Murali Mohan</td><td>Member (Assistant Professor, ME)</td></tr>
+                  </tbody>
+                </table>
+              </div>
+
+              <h3 class="about-subheading-sm">Submit an SC/ST Grievance</h3>
+              <form class="contact-form" id="scstGrievanceForm">
+                <label>Complainant
+                  <select id="scstGrievanceComplainantType">
+                    <option value="">Specify</option>
+                    <option value="Student">Student</option>
+                    <option value="Parent">Parent</option>
+                    <option value="Faculty">Faculty</option>
+                    <option value="Alumni">Alumni</option>
+                  </select>
+                </label>
+
+                <div data-scst-grievance-fields="Student" class="is-hidden">
+                  <label>Student Name<input type="text" id="scstGrievanceStudentName"></label>
+                  <label>Phone<input type="tel" id="scstGrievanceStudentPhone"></label>
+                  <label>Roll No.<input type="text" id="scstGrievanceStudentRollNo"></label>
+                  <label>Email<input type="email" id="scstGrievanceStudentEmail"></label>
+                  <label>Year of Study
+                    <select id="scstGrievanceStudentYear">
+                      <option value="I-Sem">I-Sem</option>
+                      <option value="II-Sem">II-Sem</option>
+                      <option value="III-Sem">III-Sem</option>
+                      <option value="IV-Sem">IV-Sem</option>
+                      <option value="V-Sem">V-Sem</option>
+                      <option value="VI-Sem">VI-Sem</option>
+                      <option value="VII-Sem">VII-Sem</option>
+                      <option value="VIII-Sem">VIII-Sem</option>
+                    </select>
+                  </label>
+                </div>
+
+                <div data-scst-grievance-fields="Parent" class="is-hidden">
+                  <label>Parent Name<input type="text" id="scstGrievanceParentName"></label>
+                  <label>Parent Phone<input type="tel" id="scstGrievanceParentPhone"></label>
+                  <label>Student Name<input type="text" id="scstGrievanceParentStudentName"></label>
+                  <label>Student Phone<input type="tel" id="scstGrievanceParentStudentPhone"></label>
+                  <label>Roll No.<input type="text" id="scstGrievanceParentRollNo"></label>
+                  <label>Email<input type="email" id="scstGrievanceParentEmail"></label>
+                  <label>Year of Study
+                    <select id="scstGrievanceParentYear">
+                      <option value="I-Sem">I-Sem</option>
+                      <option value="II-Sem">II-Sem</option>
+                      <option value="III-Sem">III-Sem</option>
+                      <option value="IV-Sem">IV-Sem</option>
+                      <option value="V-Sem">V-Sem</option>
+                      <option value="VI-Sem">VI-Sem</option>
+                      <option value="VII-Sem">VII-Sem</option>
+                      <option value="VIII-Sem">VIII-Sem</option>
+                    </select>
+                  </label>
+                </div>
+
+                <div data-scst-grievance-fields="Faculty" class="is-hidden">
+                  <label>Name<input type="text" id="scstGrievanceFacultyName"></label>
+                  <label>Phone<input type="tel" id="scstGrievanceFacultyPhone"></label>
+                  <label>ID<input type="text" id="scstGrievanceFacultyId"></label>
+                  <label>Email<input type="email" id="scstGrievanceFacultyEmail"></label>
+                  <label>Designation
+                    <select id="scstGrievanceFacultyDesignation">
+                      <option value="Principal">Principal</option>
+                      <option value="Professor">Professor</option>
+                      <option value="Assoc Prof">Assoc Prof</option>
+                      <option value="Asst Prof">Asst Prof</option>
+                      <option value="Lecturer">Lecturer</option>
+                    </select>
+                  </label>
+                  <label>Department
+                    <select id="scstGrievanceFacultyDepartment">
+                      <option value="CSE">CSE</option>
+                      <option value="CE">CE</option>
+                      <option value="ECE">ECE</option>
+                      <option value="ME">ME</option>
+                      <option value="EEE">EEE</option>
+                    </select>
+                  </label>
+                </div>
+
+                <div data-scst-grievance-fields="Alumni" class="is-hidden">
+                  <label>Name<input type="text" id="scstGrievanceAlumniName"></label>
+                  <label>Phone<input type="tel" id="scstGrievanceAlumniPhone"></label>
+                  <label>ID<input type="text" id="scstGrievanceAlumniId"></label>
+                  <label>Email<input type="email" id="scstGrievanceAlumniEmail"></label>
+                  <label>Year of Passing<input type="text" id="scstGrievanceAlumniYear"></label>
+                </div>
+
+                <div data-scst-grievance-fields-common class="is-hidden">
+                  <label>Grievance<textarea id="scstGrievanceBody" rows="5"></textarea></label>
+                </div>
+
+                <button type="submit" class="contact-form-submit">Submit Grievance</button>
+                <p class="admin-add-feedback" id="scstGrievanceFeedback" aria-live="polite"></p>
+              </form>
+            </article>
           </div>
         </div>
       </section>
