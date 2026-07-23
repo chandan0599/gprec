@@ -1,9 +1,6 @@
-// This site's pages live one level deep under dashboards/ or pages/
-// (index.html, styles.css, script.js, admin-config.json stay at the repo root). Since script.js
-// is shared and loaded from every page regardless of folder, any hardcoded bare filename like
-// "student-dashboard.html" would resolve relative to whatever page is currently open, not to
-// where script.js or the target file actually live. gprecPageUrl() below is the single place
-// that turns a bare filename into the correct path for wherever the current page happens to be.
+// Pages live one level deep under dashboards/ or pages/, but script.js is shared across all of
+// them - a hardcoded bare filename would resolve relative to whichever page is currently open.
+// gprecPageUrl() below turns a bare filename into the correct path from wherever the current page is.
 const GPREC_PAGE_FOLDERS = {
   "admin-dashboard.html": "dashboards",
   "alumni-dashboard.html": "dashboards",
@@ -75,27 +72,23 @@ const GPREC_CURRENT_FILE = window.location.pathname.split("/").pop() || "index.h
 const GPREC_CURRENT_ROUTE_FILE = GPREC_CURRENT_FILE.endsWith(".html") ? GPREC_CURRENT_FILE : `${GPREC_CURRENT_FILE}.html`;
 const gprecIsAlumniDashboardPreviewRoute = window.location.pathname.includes("/dashboards/alumni-dashboard");
 const getCurrentStudentId = () => (localStorage.getItem("gprecStudentId") || "").trim().toUpperCase();
-const normalizeDobDigits = (value) => String(value || "").replace(/\D/g, "");
-const hasStudentLogin = () => Boolean(getCurrentStudentId());
+
 
 // Every dashboard's topbar reuses the same ".student-user-dropdown a" Logout link, pointed at
-// that role's login page. Keyed by login filename so each role clears exactly its own identity -
-// previously only the student-login.html link was wired up here, so logging "out" of every other
-// role just navigated to the login page without actually clearing localStorage, leaving the old
-// session (and chat history) intact for whoever logged in next.
+// that role's login page. Keyed by login filename so each role clears exactly its own identity,
+// instead of leaving the old session (and chat history) intact for whoever logs in next.
 const gprecLogoutKeysByLoginPage = {
-  "student-login.html": ["gprecStudentId", "gprecDemoMode"],
-  "admin-login.html": ["gprecAdminRole", "gprecAdminEmail", "gprecAdminDepartment", "gprecDemoMode"],
-  "faculty-login.html": ["gprecFacultyEmail", "gprecDemoMode"],
-  "non-teaching-login.html": ["gprecNonTeachingEmail", "gprecDemoMode"],
-  "parent-login.html": ["gprecParentStudentId", "gprecDemoMode"],
-  "alumni-login.html": ["gprecAlumniEmail", "gprecAlumniName", "gprecAlumniBatch", "gprecDemoMode"]
+  "student-login.html": ["gprecStudentId"],
+  "admin-login.html": ["gprecAdminRole", "gprecAdminEmail", "gprecAdminDepartment"],
+  "faculty-login.html": ["gprecFacultyEmail"],
+  "non-teaching-login.html": ["gprecNonTeachingEmail"],
+  "parent-login.html": ["gprecParentStudentId"],
+  "alumni-login.html": ["gprecAlumniEmail", "gprecAlumniName", "gprecAlumniBatch"]
 };
 
-// The chat widget is shared across public pages and dashboards. Keep one per role + signed-in
-// identity + app area so a chatbot-suggested link opened in a new tab can still return Home with
-// the same conversation, without leaking an event visitor's messages into an admin dashboard (or
-// one user's dashboard chat into the next login on the same browser).
+// The chat widget is shared across public pages and dashboards. Keyed per role + signed-in
+// identity + app area so conversations don't leak between users, or between an event visitor
+// and an admin dashboard on the same browser.
 const gprecChatScopeKey = () => {
   if (GPREC_CURRENT_ROUTE_FILE === "event-visitor-dashboard.html") return "event-visitor";
   return localStorage.getItem("gprecActiveRole") || GPREC_CURRENT_FOLDER || "public";
@@ -147,16 +140,6 @@ const clearGprecianChatHistory = () => {
   });
 };
 
-const clearAllGprecianChatHistoryForCurrentBrowser = () => {
-  const prefixes = ["gprecianChatHistory:", "gprecianChatHistory:v2:"];
-  [localStorage, sessionStorage].forEach((storage) => {
-    for (let index = storage.length - 1; index >= 0; index -= 1) {
-      const key = storage.key(index);
-      if (key && prefixes.some((prefix) => key.startsWith(prefix))) storage.removeItem(key);
-    }
-  });
-};
-
 const resetGprecianChatWindowForCurrentIdentity = () => {
   const messages = document.querySelector(".gprecian-messages");
   if (!messages) return;
@@ -166,10 +149,9 @@ const resetGprecianChatWindowForCurrentIdentity = () => {
 };
 
 // Maps a dashboard file to the session role it requires, and (the reverse) each role to its login
-// page - one shared pair of lookups used by the entry guard below, gprecHandleSessionExpired, and
-// every login flow's token-store step. Every admin sub-role (department/hostel-warden/exam-cell/
-// placement) is really just an "admin" session with a different role_label, per how the backend
-// issues these tokens.
+// page - shared by the entry guard below, gprecHandleSessionExpired, and every login flow. Every
+// admin sub-role (department/hostel-warden/exam-cell/placement) is just an "admin" session with a
+// different role_label, per how the backend issues these tokens.
 const GPREC_DASHBOARD_ROLE = {
   "student-dashboard.html": "student",
   "parent-dashboard.html": "parent",
@@ -308,13 +290,9 @@ if (gprecDemoSession) {
   }
 }
 
-// Runs before any dashboard content renders. Previously only student-dashboard.html had this
-// check at all (line 67 in the old version of this file) - admin-dashboard.html and every one of
-// its sub-role variants, plus non-teaching-dashboard.html, had no guard whatsoever and silently
-// rendered as "College Admin" with empty localStorage. alumni/faculty/parent guarded late,
-// partway through their own dashboard's script, after some content had already run. This is
-// UX-only (avoids a flash of a dashboard that's about to redirect away) - the real boundary is
-// the backend rejecting unauthenticated/mismatched requests with 401, not this check.
+// Runs before any dashboard content renders, on every dashboard page. This is UX-only (avoids a
+// flash of a dashboard that's about to redirect away) - the real boundary is the backend
+// rejecting unauthenticated/mismatched requests with 401, not this check.
 const gprecRequiredDashboardRole = GPREC_DASHBOARD_ROLE[GPREC_CURRENT_ROUTE_FILE];
 const gprecAllowAlumniDashboardPreview = gprecIsAlumniDashboardPreviewRoute;
 if (gprecRequiredDashboardRole && !gprecAllowAlumniDashboardPreview) {
@@ -322,10 +300,9 @@ if (gprecRequiredDashboardRole && !gprecAllowAlumniDashboardPreview) {
   const preferredLoginRole = requiredRoles[0];
   const hasValidSession = Boolean(localStorage.getItem("gprecSessionToken")) && requiredRoles.includes(localStorage.getItem("gprecActiveRole"));
   if (!hasValidSession) {
-    // Preserves where the visitor was actually trying to go (e.g. a hostel-gate-scan.html link
-    // from a QR code, with its ?type/id/t params) across the login detour - without this, scanning
-    // a pass QR on a device that isn't already logged in bounces to login, then dumps the warden on
-    // the generic dashboard after signing in, silently losing which specific pass they scanned.
+    // Preserves where the visitor was trying to go (e.g. a hostel-gate-scan.html QR link with its
+    // ?type/id/t params) across the login detour, so signing in returns them to that exact page
+    // instead of the generic dashboard.
     const returnTo = window.location.pathname.replace(/^.*\//, "") + window.location.search;
     const loginUrl = gprecPageUrl(GPREC_ROLE_LOGIN_PAGE[preferredLoginRole]);
     const separator = loginUrl.includes("?") ? "&" : "?";
@@ -339,12 +316,10 @@ if (gprecRequiredDashboardRole && !gprecAllowAlumniDashboardPreview) {
 const gprecHandleSessionExpired = () => {
   if (gprecIsAlumniDashboardPreviewRoute) return;
   const role = localStorage.getItem("gprecActiveRole");
-  // Falls back to *this page's own* required role (not a hardcoded page) when there's no active
-  // role to key off of - location.replace() doesn't halt script execution, so on an unauthenticated
-  // dashboard load the rest of this file keeps running after the guard above already queued a
-  // redirect; if some later unauthenticated call 401s too, this used to always send everyone to
-  // student-login.html regardless of which dashboard they were actually on, racing with (and
-  // sometimes winning over) the correct one.
+  // Falls back to *this page's own* required role when there's no active role to key off of -
+  // location.replace() doesn't halt script execution, so the rest of this file can still run (and
+  // hit a second 401) after the guard above already queued a redirect. Without this fallback that
+  // second redirect could race a hardcoded student-login.html ahead of the correct login page.
   const requiredRoles = Array.isArray(gprecRequiredDashboardRole) ? gprecRequiredDashboardRole : [gprecRequiredDashboardRole];
   const loginPage = GPREC_ROLE_LOGIN_PAGE[role] || GPREC_ROLE_LOGIN_PAGE[requiredRoles[0]] || "student-login.html";
   clearGprecianChatHistory();
@@ -380,12 +355,9 @@ document.querySelectorAll(".student-user-dropdown a").forEach((link) => {
   });
 });
 
-// Local dev servers (VS Code Live Server, python -m http.server, etc.) serve exact filenames
-// only - there's no rewrite rule to resolve the cleaned URL back to a .html file. Rewriting the
-// address bar there means any reload (including Live Server's own auto-reload-on-save) requests
-// the extensionless path and gets a "Cannot GET" 404, since the page never actually left the
-// browser at that URL to begin with. Only clean it up on a real host, where the deployed server
-// is expected to have that rewrite configured.
+// Local dev servers (VS Code Live Server, python -m http.server, etc.) serve exact filenames only,
+// with no rewrite rule to resolve a cleaned URL back to a .html file - any reload there would 404.
+// Only clean the address bar on a real host, where the deployed server has that rewrite configured.
 const gprecIsLocalDevHost = ["localhost", "127.0.0.1", ""].includes(window.location.hostname);
 const cleanHtmlFromAddressBar = () => {
   if (gprecIsLocalDevHost) return;
@@ -627,7 +599,6 @@ const utilityInner = document.querySelector(".utility-inner");
 const heroSlides = document.querySelectorAll(".hero-slide");
 const heroDots = document.querySelectorAll(".hero-dots span");
 const voiceTrack = document.querySelector(".voice-grid");
-const voiceCards = document.querySelectorAll(".voice-grid article");
 const voicePrev = document.querySelector(".voice-prev");
 const voiceNext = document.querySelector(".voice-next");
 const gprecian = document.querySelector(".gprecian");
@@ -667,7 +638,6 @@ const attendanceApplyButton = document.querySelector("#attendanceApplyButton");
 const attendanceTableBody = document.querySelector("#attendanceTableBody");
 const attendanceOverall = document.querySelector("#attendanceOverall");
 const paymentHistoryEmpty = document.querySelector("#paymentHistoryEmpty");
-const eventApplyToggles = document.querySelectorAll(".event-apply-toggle");
 const eventApplyForm = document.querySelector("#eventApplyForm");
 const eventApplyTitle = document.querySelector("#eventApplyTitle");
 const eventParticipantName = document.querySelector("#eventParticipantName");
@@ -848,13 +818,11 @@ const saveStudentPendingFeeOverrides = (overrides) => {
 };
 
 // Department admin bulk-upload data (CSV), keyed by department code (CSE/ECE/...), backed by the
-// real curriculum/class_timetable tables (previously localStorage-only, so an upload on one
-// browser never reached students on any other device). Saving upserts by natural key (subject
-// code / day+time+section) on the backend, so re-uploading a CSV updates matching rows in place
-// instead of a full department wipe-and-replace - see upsert_curriculum/upsert_class_timetable
-// in tools/portal_db_server.py. Timetable slots carry a facultyEmail so the SAME upload drives
-// both the student's Class Timetable (grouped by day) and each faculty's My Timetable (filtered
-// by their own email) - one master schedule, two views.
+// real curriculum/class_timetable tables. Saving upserts by natural key (subject code / day+time+
+// section) on the backend, so re-uploading a CSV updates matching rows in place instead of a full
+// wipe-and-replace - see upsert_curriculum/upsert_class_timetable in tools/portal_db_server.py.
+// Timetable slots carry a facultyEmail so the same upload drives both the student's Class
+// Timetable (grouped by day) and each faculty's My Timetable (filtered by their own email).
 const getDepartmentCurriculum = () => getGprecDbBootstrap()?.curriculum || {};
 const saveDepartmentCurriculum = (departmentCode, subjects) => gprecDbPost("/curriculum", { departmentCode, subjects });
 
@@ -873,14 +841,13 @@ const getStudentSection = (rollNumber) =>
   "CSE III-A";
 
 const LIBRARY_FINE_PER_DAY = 2;
-const LIBRARY_LOAN_DAYS = 14;
 
 // --- Library backend integration point -------------------------------------------------
-// Every part of the app that reads/writes library data (catalog + issued-book records) goes
-// through these four functions - nothing else in the codebase touches localStorage or fetch
-// directly for library data. The admin sets an API Base URL in the Library panel, and real
-// network calls are made to that system; if it's not configured (or unreachable), calls fall
-// back to reading/writing localStorage as a harmless no-op safety net.
+// Every part of the app that reads library data (issued-book records) goes through this
+// function - nothing else in the codebase touches localStorage or fetch directly for library
+// data. The admin sets an API Base URL in the Library panel, and real network calls are made
+// to that system; if it's not configured (or unreachable), calls fall back to reading
+// localStorage as a harmless no-op safety net.
 const getLibraryApiConfig = () => {
   if (adminConfigFieldsLoaded.libraryApiConfig) return defaultAdminConfig.libraryApiConfig;
   try {
@@ -980,11 +947,12 @@ const gprecApiBaseUrl = () => {
   // itself was loaded from - a hardcoded 127.0.0.1 only works when browsing from the same machine
   // the server runs on, which breaks phone/LAN testing (the phone's own 127.0.0.1 isn't the Mac).
   // Still avoid using the current page's PORT because static preview servers such as Live Server
-  // on 127.0.0.1:5500 do not host the API routes.
-  return `http://${window.location.hostname}:8766/api`;
+  // on 127.0.0.1:5500 do not host the API routes. Protocol matches the current page so this isn't
+  // blocked as mixed content if the site ends up served over https without databaseApiConfig.baseUrl
+  // being set - see PRODUCTION.md.
+  return `${window.location.protocol}//${window.location.hostname}:8766/api`;
 };
 const gprecDbRequest = (path, options = {}) => {
-  if (localStorage.getItem("gprecDemoMode")) return null;
   const baseUrl = gprecApiBaseUrl();
   if (!baseUrl) return null;
   const xhr = new XMLHttpRequest();
@@ -1052,30 +1020,6 @@ const recordActivity = (action, module) =>
 const getSiteContent = (key, fallback) => getGprecDbBootstrap()?.siteContent?.[key] ?? fallback;
 const saveSiteContent = (key, value) => gprecDbPost("/site-content", { key, value });
 
-const getLibraryCatalog = async () => {
-  const databaseCatalog = getGprecDbBootstrap()?.libraryCatalog;
-  if (databaseCatalog && Object.keys(databaseCatalog).length) return databaseCatalog;
-  const apiConfig = getLibraryApiConfig();
-  if (apiConfig?.baseUrl) {
-    try {
-      const response = await fetch(`${apiConfig.baseUrl}/catalog`, { headers: libraryApiHeaders(apiConfig, false) });
-      if (response.ok) return response.json(); // expected shape: { [barcode]: { title, author } }
-    } catch {
-      // Real API unreachable - fall through to the local catalog below.
-    }
-  }
-  try {
-    return JSON.parse(localStorage.getItem("gprecLibraryCatalog") || "{}");
-  } catch {
-    return {};
-  }
-};
-// The real catalog is owned by the external library system once one is connected, so this
-// never calls the API; it just stores the CSV-uploaded data used as a local fallback.
-const saveLibraryCatalog = async (catalog) => {
-  localStorage.setItem("gprecLibraryCatalog", JSON.stringify(catalog));
-};
-
 const getLibraryRecords = async () => {
   const databaseRecords = getGprecDbBootstrap()?.libraryRecords;
   if (Array.isArray(databaseRecords)) return databaseRecords;
@@ -1093,24 +1037,6 @@ const getLibraryRecords = async () => {
   } catch {
     return [];
   }
-};
-const saveLibraryRecords = async (records) => {
-  const saved = gprecDbPost("/issued-books", records);
-  if (saved) return;
-  const apiConfig = getLibraryApiConfig();
-  if (apiConfig?.baseUrl) {
-    try {
-      const response = await fetch(`${apiConfig.baseUrl}/issued-books`, {
-        method: "PUT",
-        headers: libraryApiHeaders(apiConfig, true),
-        body: JSON.stringify(records)
-      });
-      if (response.ok) return;
-    } catch {
-      // Real API unreachable - fall through and save locally so the action isn't lost.
-    }
-  }
-  localStorage.setItem("gprecLibraryRecords", JSON.stringify(records));
 };
 // --- End library backend integration point ----------------------------------------------
 const libraryStatusFor = (record) => {
@@ -1218,13 +1144,30 @@ const isQrScanAdminLogin = () => {
   const next = new URLSearchParams(window.location.search).get("next") || "";
   return /^(hostel-gate-scan\.html|event-pass-scan\.html)\b/.test(next);
 };
+// The hostel gate scan is warden-only (see the "Hostel Warden login required" gate on
+// hostel-gate-scan.html) - this page needs its own stricter copy/check for that one QR-login
+// path instead of the generic "any admin role, auto-detected" wording used for event-pass-scan.
+const isHostelWardenScanLogin = () => {
+  const next = new URLSearchParams(window.location.search).get("next") || "";
+  return /^hostel-gate-scan\.html\b/.test(next);
+};
+const HOSTEL_WARDEN_SCAN_LOGIN_COPY = "Hostel Warden login: enter your official Hostel Warden email and password.";
 
 if (adminLoginEmail && adminRolePreview) {
   const adminLoginRoleSelect = document.querySelector("#adminLoginRole");
   if (isQrScanAdminLogin() && adminLoginRoleSelect) {
     adminLoginRoleSelect.closest("label")?.classList.add("is-hidden");
-    adminRolePreview.textContent = "QR scan login: enter your official email and password. Your configured role will be used automatically.";
+    adminRolePreview.textContent = isHostelWardenScanLogin()
+      ? HOSTEL_WARDEN_SCAN_LOGIN_COPY
+      : "QR scan login: enter your official email and password. Your configured role will be used automatically.";
     adminRolePreview.classList.remove("is-found", "is-missing");
+    if (isHostelWardenScanLogin()) {
+      const portalHead = adminLoginEmail.closest(".portal-card")?.querySelector(".portal-head");
+      const heading = portalHead?.querySelector("h3");
+      const subtitle = portalHead?.querySelector("p");
+      if (heading) heading.textContent = "Hostel Warden Login";
+      if (subtitle) subtitle.textContent = "Only Boys/Girls Hostel Warden accounts can verify gate passes here.";
+    }
   }
   const updateAdminRolePreview = () => {
     const email = adminLoginEmail.value.trim();
@@ -1235,14 +1178,23 @@ if (adminLoginEmail && adminRolePreview) {
       return;
     }
     if (!email) {
-      adminRolePreview.textContent = isQrScanAdminLogin()
-        ? "QR scan login: enter your official email and password. Your configured role will be used automatically."
-        : "Enter your admin email to see your role.";
+      adminRolePreview.textContent = isHostelWardenScanLogin()
+        ? HOSTEL_WARDEN_SCAN_LOGIN_COPY
+        : isQrScanAdminLogin()
+          ? "QR scan login: enter your official email and password. Your configured role will be used automatically."
+          : "Enter your admin email to see your role.";
       adminRolePreview.classList.remove("is-found", "is-missing");
       return;
     }
     const adminUser = findAdminByEmail(email);
     if (adminUser) {
+      const isWarden = adminUser.role === "Boys Hostel Warden" || adminUser.role === "Girls Hostel Warden";
+      if (isHostelWardenScanLogin() && !isWarden) {
+        adminRolePreview.textContent = `This email is registered as ${adminUser.role}, not a Hostel Warden. Only Hostel Warden accounts can verify gate passes.`;
+        adminRolePreview.classList.add("is-missing");
+        adminRolePreview.classList.remove("is-found");
+        return;
+      }
       adminRolePreview.textContent = `Detected role: ${adminUser.role} (${adminUser.department || "All"})`;
       adminRolePreview.classList.add("is-found");
       adminRolePreview.classList.remove("is-missing");
@@ -1256,18 +1208,14 @@ if (adminLoginEmail && adminRolePreview) {
   adminLoginRoleSelect?.addEventListener("change", updateAdminRolePreview);
 }
 
-// Bootstrap problem: an admin's password can only be set from the "Manage Login Credentials"
-// panel inside admin-dashboard.html, which itself requires already being logged in as an admin.
-// The very first admin has no one to log in as to reach that panel. So on admin-login.html, if
-// no admin anywhere has a password on file yet, surface a one-time "First-Time Setup" card right
-// on the login page - it disappears again the moment any admin has a password, same
-// generate-and-share flow as the real admin panel, just reachable before anyone can log in.
+// Bootstrap problem: setting an admin password requires the "Manage Login Credentials" panel
+// inside admin-dashboard.html, which itself requires being logged in as an admin - so the very
+// first admin has no one to log in as. If no admin anywhere has a password yet, surface a
+// one-time "First-Time Setup" card on admin-login.html instead; it disappears once any admin has one.
 const adminFirstSetupCard = document.querySelector("#adminFirstSetupCard");
 if (adminFirstSetupCard) {
-  // Narrow, public boolean check (see /api/auth/has-admin-credentials) - the full credentials
-  // listing this used to call is real staff-roster data and now requires an admin session, which
-  // obviously doesn't exist yet on this exact page for this exact "no admin has ever logged in"
-  // case.
+  // Narrow, public boolean check (/api/auth/has-admin-credentials) - the full credentials listing
+  // is real staff-roster data and requires an admin session, which doesn't exist yet at this point.
   if (!gprecAuthGet("/has-admin-credentials")?.hasAdmin) {
     adminFirstSetupCard.classList.remove("is-hidden");
   }
@@ -1348,6 +1296,146 @@ document.addEventListener("click", (event) => {
   }
 });
 
+// Personal app-drawer shortcuts - each signed-in identity (see gprecChatIdentityKey, same
+// per-account keying the chat history uses) gets their own list, stored client-side since
+// these are just personal bookmarks, not data other users or devices need to see.
+const gprecAppDrawerLinksKey = () => `gprecAppDrawerLinks:${gprecChatScopeKey()}:${gprecChatIdentityKey()}`;
+const getAppDrawerLinks = () => {
+  try {
+    return JSON.parse(localStorage.getItem(gprecAppDrawerLinksKey()) || "[]");
+  } catch {
+    return [];
+  }
+};
+const saveAppDrawerLinks = (links) => localStorage.setItem(gprecAppDrawerLinksKey(), JSON.stringify(links));
+
+const appDrawerCustomLinksList = document.querySelector("#appDrawerCustomLinks");
+const appDrawerAddToggle = document.querySelector("#appDrawerAddToggle");
+const appDrawerAddLinkForm = document.querySelector("#appDrawerAddLinkForm");
+
+// Generic "link" glyph, used only if a link's real favicon fails to load.
+const appDrawerFallbackIconSvg = `<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M10 14 21 3M21 3h-6M21 3v6M12 5H7a2 2 0 0 0-2 2v10a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-5"/></svg>`;
+
+const renderAppDrawerCustomLinks = () => {
+  if (!appDrawerCustomLinksList) return;
+  appDrawerCustomLinksList.innerHTML = "";
+  getAppDrawerLinks().forEach((link, index) => {
+    const tile = document.createElement("a");
+    tile.className = "app-drawer-tile";
+    tile.href = link.url;
+    tile.target = "_blank";
+    tile.rel = "noopener";
+
+    // Real site favicon (same idea as a browser's "Add to Home Screen") instead of a generic
+    // glyph, so each personal link looks like its actual app/site rather than a stand-in icon.
+    const iconWrap = document.createElement("span");
+    iconWrap.className = "app-drawer-tile-icon app-drawer-tile-icon-favicon";
+    let hostname = "";
+    try { hostname = new URL(link.url).hostname; } catch {}
+    if (hostname) {
+      const favicon = document.createElement("img");
+      favicon.alt = "";
+      favicon.loading = "lazy";
+      favicon.src = `https://www.google.com/s2/favicons?sz=64&domain=${encodeURIComponent(hostname)}`;
+      favicon.addEventListener("error", () => {
+        iconWrap.classList.remove("app-drawer-tile-icon-favicon");
+        iconWrap.innerHTML = appDrawerFallbackIconSvg;
+      });
+      iconWrap.appendChild(favicon);
+    } else {
+      iconWrap.innerHTML = appDrawerFallbackIconSvg;
+    }
+    tile.appendChild(iconWrap);
+
+    const label = document.createElement("span");
+    label.className = "app-drawer-tile-label";
+    // textContent (not innerHTML) for the user-supplied name - safe against a pasted name
+    // like "<img onerror=...>" ending up interpreted as markup.
+    label.textContent = link.name;
+    tile.appendChild(label);
+
+    const editButton = document.createElement("button");
+    editButton.type = "button";
+    editButton.className = "app-drawer-tile-edit";
+    editButton.setAttribute("aria-label", `Edit ${link.name}`);
+    editButton.innerHTML = `<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 20h9M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4Z"/></svg>`;
+    editButton.addEventListener("click", (event) => {
+      event.preventDefault();
+      event.stopPropagation();
+      openAppDrawerAddForm(index, link);
+    });
+    tile.appendChild(editButton);
+
+    const removeButton = document.createElement("button");
+    removeButton.type = "button";
+    removeButton.className = "app-drawer-tile-remove";
+    removeButton.setAttribute("aria-label", `Remove ${link.name}`);
+    removeButton.textContent = "×";
+    removeButton.addEventListener("click", (event) => {
+      event.preventDefault();
+      event.stopPropagation();
+      saveAppDrawerLinks(getAppDrawerLinks().filter((_, i) => i !== index));
+      renderAppDrawerCustomLinks();
+    });
+    tile.appendChild(removeButton);
+
+    appDrawerCustomLinksList.appendChild(tile);
+  });
+};
+
+// null while adding a brand-new link; the link's index while editing an existing one, so the
+// form's submit handler below knows whether to push a new entry or overwrite one in place.
+let appDrawerEditingIndex = null;
+
+const openAppDrawerAddForm = (editingIndex = null, existingLink = null) => {
+  if (!appDrawerAddLinkForm) return;
+  appDrawerEditingIndex = editingIndex;
+  const nameInput = document.querySelector("#appDrawerLinkName");
+  const urlInput = document.querySelector("#appDrawerLinkUrl");
+  if (nameInput) nameInput.value = existingLink?.name || "";
+  if (urlInput) urlInput.value = existingLink?.url || "";
+  const submitButton = appDrawerAddLinkForm.querySelector("button[type=submit]");
+  if (submitButton) submitButton.textContent = editingIndex === null ? "Save" : "Save changes";
+  appDrawerAddLinkForm.classList.remove("is-hidden");
+  appDrawerAddToggle?.setAttribute("aria-expanded", "true");
+  nameInput?.focus();
+};
+
+appDrawerAddToggle?.addEventListener("click", (event) => {
+  event.stopPropagation();
+  if (appDrawerAddLinkForm?.classList.contains("is-hidden")) {
+    openAppDrawerAddForm();
+  } else {
+    appDrawerAddLinkForm?.classList.add("is-hidden");
+    appDrawerAddToggle.setAttribute("aria-expanded", "false");
+  }
+});
+
+appDrawerAddLinkForm?.addEventListener("submit", (event) => {
+  event.preventDefault();
+  const nameInput = document.querySelector("#appDrawerLinkName");
+  const urlInput = document.querySelector("#appDrawerLinkUrl");
+  const name = nameInput.value.trim();
+  let url = urlInput.value.trim();
+  if (!name || !url) return;
+  if (!/^https?:\/\//i.test(url)) url = `https://${url}`;
+  const links = getAppDrawerLinks();
+  if (appDrawerEditingIndex !== null && links[appDrawerEditingIndex]) {
+    links[appDrawerEditingIndex] = { name, url };
+  } else {
+    links.push({ name, url });
+  }
+  saveAppDrawerLinks(links);
+  appDrawerEditingIndex = null;
+  nameInput.value = "";
+  urlInput.value = "";
+  appDrawerAddLinkForm.classList.add("is-hidden");
+  appDrawerAddToggle?.setAttribute("aria-expanded", "false");
+  renderAppDrawerCustomLinks();
+});
+
+renderAppDrawerCustomLinks();
+
 const bindGprecTap = (element, handler) => {
   if (!element) return;
   let handledPointer = false;
@@ -1413,11 +1501,8 @@ if (notificationDropdownHead && !notificationDropdownHead.querySelector("#notifi
 // it via create_notification()/create_notifications_bulk() in portal_db_server.py) so both show
 // up in the one bell dropdown every dashboard already has, instead of building a second widget.
 // Two unrelated nav systems exist on this site: student/faculty/parent-style dashboards use
-// <a data-dashboard-link>, admin-family dashboards (admin/department/exam-cell/placement/hostel)
-// use <div class="admin-nav" data-admin-target> instead - a notification click used to only ever
-// check the first, so on any admin-family dashboard it fell through to just setting
-// location.hash, which nothing listens for (only read once on page load), so nothing actually
-// happened. Try both nav styles before giving up and just setting the hash.
+// <a data-dashboard-link>, admin-family dashboards use <div class="admin-nav" data-admin-target>
+// instead - try both before falling back to just setting location.hash.
 const gprecNavigateToNotificationTarget = (targetLink) => {
   if (!targetLink) return;
   const targetNavLink = document.querySelector(`[data-dashboard-link][href="${targetLink}"]`)
@@ -1568,11 +1653,9 @@ if (menuCollapseToggle && dashboardShellEl && studentMenuEl) {
   });
 }
 
-// On narrow screens the student menu collapses behind its own title bar, like the hero nav's
-// mobile dropdown - tap the title to reveal the menu groups instead of them always taking up
-// space above the dashboard content. .admin-sidebar (admin/department/exam-cell/hostel/placement)
-// reuses the same .student-menu-title header but is a different container class, so it needs to
-// be matched here too or this never attaches on those pages at all.
+// On narrow screens the student menu collapses behind its own title bar - tap the title to reveal
+// the menu groups. .admin-sidebar reuses the same .student-menu-title header with a different
+// container class, so it must be matched here too or this never attaches on admin-family pages.
 const studentMenuTitle = document.querySelector(".student-menu-title");
 const studentMenuNav = document.querySelector(".student-menu, .admin-sidebar");
 if (studentMenuTitle && studentMenuNav) {
@@ -1633,13 +1716,10 @@ if (timetableDayButtons.length > 0 && timetableDayPanels.length > 0) {
 
 const applicationCards = document.querySelectorAll(".application-card");
 
-// Certificate-style forms have several stacked, mutually-exclusive field groups (service type ->
-// application type -> shared fields), each with their own `required` inputs. `.is-hidden`/the
-// inactive-state CSS makes them display:none, but a plain `required` attribute keeps blocking
-// form submission even while hidden - a student who switches from "Transfer Certificate" to
-// "Bonafide Certificate" would still get blocked by the old "Reason for Transfer" field. Mark
-// every field that started out required, then re-sync `required` to actual visibility
-// (offsetParent is null for anything under a display:none ancestor) after every toggle.
+// Certificate-style forms have several stacked, mutually-exclusive field groups, each with their
+// own `required` inputs. The inactive-state CSS sets display:none, but a plain `required`
+// attribute still blocks submission even while hidden. Mark every field that started out required,
+// then re-sync `required` to actual visibility (offsetParent is null under display:none) on toggle.
 document.querySelectorAll(".service-request-card [required]").forEach((field) => {
   field.dataset.wasRequired = "true";
 });
@@ -1929,6 +2009,30 @@ utilityMenus.forEach((menu) => {
 
 document.addEventListener("click", () => {
   utilityMenus.forEach((menu) => menu.classList.remove("open"));
+});
+
+// These dropdowns are position: fixed (see .nav-links .utility-dropdown in styles.css), so they
+// need real viewport coordinates - compute those here right before the dropdown opens.
+const navLinksUtilityMenus = document.querySelectorAll(".nav-links .utility-menu");
+const positionNavDropdown = (menu) => {
+  const button = menu.querySelector("button");
+  const dropdown = menu.querySelector(".utility-dropdown");
+  if (!button || !dropdown) return;
+  const rect = button.getBoundingClientRect();
+  const dropdownWidth = dropdown.offsetWidth || 300;
+  const left = Math.min(rect.left, window.innerWidth - dropdownWidth - 12);
+  menu.style.setProperty("--dropdown-top", `${Math.round(rect.bottom)}px`);
+  menu.style.setProperty("--dropdown-left", `${Math.round(Math.max(12, left))}px`);
+};
+navLinksUtilityMenus.forEach((menu) => {
+  menu.addEventListener("pointerenter", () => positionNavDropdown(menu));
+  menu.addEventListener("focusin", () => positionNavDropdown(menu));
+  menu.querySelector("button")?.addEventListener("click", () => positionNavDropdown(menu));
+});
+window.addEventListener("resize", () => {
+  navLinksUtilityMenus.forEach((menu) => {
+    if (menu.classList.contains("open") || menu.matches(":hover")) positionNavDropdown(menu);
+  });
 });
 
 resultToggle?.addEventListener("click", () => {
@@ -2408,11 +2512,9 @@ const getStudentPlacementProfile = (studentId) => {
 
 const getPlacementDrives = () => getGprecDbBootstrap()?.placementDrives || [];
 
-// Targeted single-row create/remove, not a full-array replace - a prior version of this endpoint
-// did a TRUNCATE+reinsert on every add/remove, which silently wiped every student's applications
-// (and would now also wipe interview_schedules) each time, since TRUNCATE CASCADE empties the
-// whole child table regardless of which drive changed. gprecDbPost already refreshes the bootstrap
-// cache after either call, same as notices' createNotice/removeNotice.
+// Targeted single-row create/remove, not a full-array replace - a TRUNCATE+reinsert approach would
+// wipe every student's applications (and interview_schedules) on every add/remove, since TRUNCATE
+// CASCADE empties the whole child table regardless of which drive changed.
 const createPlacementDrive = (fields) => gprecDbPost("/placement-drives/create", fields);
 const removePlacementDriveById = (id) => gprecDbPost("/placement-drives/remove", { id });
 
@@ -2537,13 +2639,11 @@ const saveSpotlightPosterSettings = (settings) => saveSiteContent("spotlightPost
   ...getSpotlightPosterSettings(),
   ...settings
 });
-// A poster/ad whose title reads as a fest registration announcement ("... Registration Open",
-// "Final Test Fest", "Campus Event ...") gets a generated branded countdown-style banner instead
-// of showing its raw uploaded image as-is. Applied inside getVisibleSpotlightPosters (not at each
-// call site) so every consumer - the internal dashboards' Spotlight grid (buildSpotlightPosterPlayer)
-// and the visitor login/dashboard carousel (event-visitor-dashboard.html) - renders identically
-// from the one admin-managed poster list, instead of the visitor page having its own separate
-// rewrite that the dashboards never saw.
+// A poster/ad whose title reads as a fest registration announcement (e.g. "... Registration Open")
+// gets a generated branded countdown-style banner instead of showing its raw uploaded image as-is.
+// Applied inside getVisibleSpotlightPosters (not at each call site) so every consumer - the
+// internal dashboards' Spotlight grid and the visitor login/dashboard carousel - renders identically
+// from the one admin-managed poster list.
 const festivalPosterSvgUrl = (poster, variant = "stage") => {
   const title = poster.title || getFestName();
   const cleanTitle = escapeHtml(title.replace(/\s+Registration Open$/i, ""));
@@ -2627,19 +2727,14 @@ const festivalizePoster = (poster) => {
 };
 // Poster & Ad Designer (Event Management Dashboard > admin view): 10 selectable color/theme
 // templates for generating a poster/ad graphic from typed-in text, rather than requiring an
-// uploaded image. Reuses the exact same stage(1600x900)/tile(960x540) true-16:9 canvas shape as
-// festivalPosterSvgUrl above - proven not to crop or letterbox in either the internal dashboards'
-// Spotlight grid or the visitor login/dashboard carousel - so a designed poster fits everywhere
-// automatically through the same getVisibleSpotlightPosters()/buildSpotlightPosterPlayer pipeline,
-// no per-dashboard sizing work needed.
+// uploaded image. Reuses the same stage(1600x900)/tile(960x540) true-16:9 canvas shape as
+// festivalPosterSvgUrl above, so a designed poster fits everywhere with no per-dashboard sizing work.
 // Two standard generated templates - a real uploaded background image (Poster & Ad Designer's
 // "Upload Background" mode, buildPosterFromImage below) is still the way to get an
 // illustrated/photo-based poster; these are the no-image-available fallbacks.
 // Hand-drawn art panels for the "colfest" layout below - one per activity category, lifted
-// verbatim from the admin's own ready-made poster templates (each a real 260x220 SVG illustration
-// on its own navy/orange ColFest-branded card) rather than anything generated here. Nested inside
-// a <svg viewBox="0 0 260 220"> in posterLayoutBody so none of the original coordinates need
-// touching - the nested viewport scales/crops it to fit automatically.
+// verbatim from the admin's ready-made poster templates. Nested inside a
+// <svg viewBox="0 0 260 220"> so the nested viewport scales/crops it to fit automatically.
 const colfestArt = {
   artExpo: `<rect width="260" height="220" fill="#0A1433"/><ellipse cx="60" cy="60" rx="90" ry="90" fill="#0F2060" opacity=".8"/><polygon points="30,38 40,22 50,38" fill="#E85D04" opacity=".7"/><polygon points="210,38 220,22 230,38" fill="#FF9A3C" opacity=".6"/><ellipse cx="200" cy="160" rx="80" ry="80" fill="#E85D04" opacity=".1"/>
     <ellipse cx="80" cy="155" rx="52" ry="42" fill="#0F2060" stroke="#E85D04" stroke-width="1.5"/>
@@ -2915,15 +3010,10 @@ const colfestArt = {
     <text x="130" y="181" font-size="9" fill="#fff" font-family="Courier New, monospace" font-weight="700" text-anchor="middle" letter-spacing="1.4">HONORING GRADUATES</text>`
 };
 const posterTemplates = [
-  // College fest activity templates - same "colfest" layout body (real navy/orange branded card
-  // design), just a different hand-drawn art panel + title per activity category. defaultTitle is
-  // the catchy headline that template originally shipped with - auto-filled into the Title field
-  // on selection (see event-management-dashboard.html) so admins have a real starting point
-  // instead of a blank input, still fully editable from there. subLine/fourthLabel come straight
-  // from that same activity's file_templates mockup (e.g. "23_bus_pass.html" sibling
-  // "19_placement_drive.html" labels its 4th chip "Package", not "Entry") - posterLayoutBody used
-  // to hardcode a single "COLLEGE FEST · PRESENTS" eyebrow and "ENTRY" label for every template
-  // regardless of which one was picked, losing that per-activity distinction.
+  // College fest activity templates - same "colfest" layout body, just a different hand-drawn art
+  // panel + title per activity category. defaultTitle auto-fills the Title field on selection
+  // (still fully editable). subLine/fourthLabel vary per activity (e.g. Placement's 4th chip is
+  // "Package", not "Entry") rather than one hardcoded label for every template.
   { id: "artexpo", name: "Art Exhibition", layout: "colfest", art: colfestArt.artExpo, defaultTitle: "Art Expo", subLine: "COLFEST '25 · ANNUAL FEST", fourthLabel: "PRIZE / ENTRY" },
   { id: "dance", name: "Dance Competition", layout: "colfest", art: colfestArt.dance, defaultTitle: "Groove Off", subLine: "COLFEST '25 · ANNUAL FEST", fourthLabel: "PRIZE / ENTRY" },
   { id: "music", name: "Music / Battle of Bands", layout: "colfest", art: colfestArt.music, defaultTitle: "Battle of Bands", subLine: "COLFEST '25 · ANNUAL FEST", fourthLabel: "PRIZE / ENTRY" },
@@ -2943,14 +3033,10 @@ const getPosterTemplate = (templateId) => posterTemplates.find((item) => item.id
 const posterMonths = ["JAN", "FEB", "MAR", "APR", "MAY", "JUN", "JUL", "AUG", "SEP", "OCT", "NOV", "DEC"];
 const posterFont = "Inter, Arial, Helvetica, sans-serif";
 
-// Each layout below is a genuinely different composition (not just a recolor of the same one) -
-// where the title/decoration/CTA sit, and what shape carries the accent color, all differ. All
-// still respect the same safe margins within the true-16:9 canvas established for the fest
-// artwork above, so nothing runs off the edge regardless of variant/scale.
-// SVG has no native text-wrapping - approximates it the same way the ID-card/ticket canvas text
-// does (wrapCanvasText/drawWrappedPosterText), just character-count based instead of measured,
-// since there's no canvas context available while building an SVG string. Good enough for the
-// short headline/subheading fields this template asks for.
+// Each layout below is a genuinely different composition (not just a recolor of the same one), but
+// all respect the same safe margins within the true-16:9 canvas so nothing runs off the edge.
+// SVG has no native text-wrapping - approximates it character-count based instead of measured,
+// since there's no canvas context available while building an SVG string.
 const wrapSvgLines = (text, maxChars, maxLines) => {
   const words = String(text || "").split(" ");
   const lines = [];
@@ -3055,14 +3141,11 @@ const posterTemplateSvgUrl = (template, fields, variant = "stage") => {
 };
 
 // getPosterTemplate/posterTemplateSvgUrl (above) stay in place purely for backward compatibility -
-// posters published before this migration still carry their old templateId (e.g. "artexpo") and
-// their imageUrl/tileImageUrl were already baked at publish time, so they keep displaying fine;
-// getPosterTemplate is also still used by renderDesignedPosters' "Template" column name lookup for
-// those legacy rows via getPosterTemplateDisplayName below. New publishes go through
-// buildPosterFromTemplate, which now targets the exact same file_templates-matched real-HTML
-// engine (buildEventPosterHtml/EVENT_POSTER_TEMPLATES, renderEventPosterCard) as
-// admin-dashboard.html's internal Poster Design tool - real HTML/CSS rendered by
-// renderA4DocViaNativePng (with an html2canvas fallback), not a hand-built SVG string.
+// posters published before this migration carry their old templateId (e.g. "artexpo") with an
+// already-baked imageUrl/tileImageUrl, so they keep displaying fine, and getPosterTemplateDisplayName
+// below still needs the name lookup for those legacy rows. New publishes go through
+// buildPosterFromTemplate instead, which renders real HTML/CSS (EVENT_POSTER_TEMPLATES via
+// renderA4DocViaNativePng) rather than a hand-built SVG string.
 const FEST_POSTER_EXCLUDED_TEMPLATE_IDS = new Set(["placement-drive", "graduation-day", "convocation"]);
 // Graduation Day/Placement Drive/Convocation are institutional events, not activities a College
 // Fest would run, so the fest dashboard's own designer only offers the other 11 - still available
@@ -3261,7 +3344,28 @@ const getVisibleSpotlightPosters = (placement = "dashboard") => {
 const buildSpotlightPosterPlayer = (container, posters) => {
   if (!container) return;
   container.querySelectorAll("[data-spotlight-poster-carousel]").forEach((el) => el.remove());
-  if (!posters.length) return;
+  if (!posters.length) {
+    // Same card shell/footprint as the real carousel (no layout jump once a poster is added)
+    // instead of the widget just silently disappearing when there's nothing to show yet.
+    const emptyCard = document.createElement("article");
+    emptyCard.className = "dashboard-poster-carousel-card";
+    emptyCard.setAttribute("data-spotlight-poster-carousel", "true");
+    emptyCard.innerHTML = `
+      <div class="dashboard-poster-carousel-head">
+        <strong>Posters &amp; Ads</strong>
+      </div>
+      <div class="spotlight-poster-player">
+        <div class="spotlight-poster-stage spotlight-poster-stage-empty spotlight-poster-stage-noads">
+          <span class="spotlight-poster-noads-logo-wrap">
+            <img class="spotlight-poster-noads-logo" src="${gprecRootPrefix}gprec-logo-enhanced.png" alt="">
+          </span>
+          <span class="spotlight-poster-noads-text">No ads to show</span>
+        </div>
+      </div>
+    `;
+    container.prepend(emptyCard);
+    return;
+  }
   const card = document.createElement("article");
   card.className = "dashboard-poster-carousel-card";
   card.setAttribute("data-spotlight-poster-carousel", "true");
@@ -3426,18 +3530,6 @@ const renderDefaultRegistrationNotice = () => {
   `;
   spotlightGrid.prepend(article);
   spotlightGrid.scrollTop = 0;
-};
-
-const createSpotlightPosterArticle = (poster) => {
-  const article = document.createElement("article");
-  article.className = "spotlight-card spotlight-card-poster";
-  article.setAttribute("data-spotlight-poster", poster.id);
-    const thumbHtml = poster.imageUrl ? `<img src="${poster.imageUrl}" alt="${escapeHtml(poster.title)}" class="spotlight-card-media">` : `<span class="spotlight-card-placeholder">Poster</span>`;
-    const textHtml = `<div class="spotlight-card-body"><strong>${escapeHtml(poster.type || "Poster")}</strong><span>${escapeHtml(poster.title)}</span></div>`;
-    article.innerHTML = poster.link
-      ? `<a class="spotlight-card-link" href="${escapeHtml(poster.link)}">${thumbHtml}${textHtml}</a>`
-      : `${thumbHtml}${textHtml}`;
-    return article;
 };
 
 // Same csvField/downloadCsv helpers already used by the Academic/Financial report exports and
@@ -4308,13 +4400,10 @@ if (adminNavButtons.length > 0 && adminPanels.length > 0) {
   }
 }
 
-// Portrait CR80-style card matching "30_volunteer_id_card_vertical.html": navy gradient top
-// panel (logo badge, ID TAG label, fest eyebrow) with a square photo overlapping the seam, cream
-// bottom panel with name + a sparse 2-row info list, footer tag. `admin.studentRoll` (optional -
-// only set when a student account holds the Event Volunteer role) resolves a real roll number;
-// "Event Name" has no per-volunteer assignment in this app's data model, so it shows the current
-// fest name (the same real value the Event Pass/homepage banner already use for "which event"),
-// not a fabricated per-volunteer assignment.
+// Portrait CR80-style card matching "30_volunteer_id_card_vertical.html". `admin.studentRoll`
+// (optional - only set when a student account holds the Event Volunteer role) resolves a real
+// roll number; "Event Name" has no per-volunteer assignment in this app's data model, so it shows
+// the current fest name instead of a fabricated per-volunteer assignment.
 const buildVolunteerIdCardImage = async (admin) => {
   await ensureBrandFontsLoaded();
   const CARD_W = 272;
@@ -4481,11 +4570,10 @@ const buildVolunteerIdCardImage = async (admin) => {
   return new Promise((resolve) => canvas.toBlob(resolve, "image/png"));
 };
 
-// Fest-activity volunteer ID cards - a distinct feature from the Admin Directory's "Event
-// Volunteer" admin-role badge above (buildVolunteerIdCardImage/admin object): these are generated
-// per fest-activity assignment (event-management-dashboard.html's "Assign Volunteers" flow), one
-// real record per {activity, student roll}, with the faculty coordinator choosing vertical or
-// horizontal per activity (activity.idCardStyle) and the assigned student downloading their own.
+// Fest-activity volunteer ID cards - distinct from the Admin Directory's "Event Volunteer"
+// admin-role badge above (buildVolunteerIdCardImage): these are generated per fest-activity
+// assignment, one real record per {activity, student roll}, with the faculty coordinator choosing
+// vertical or horizontal per activity (activity.idCardStyle).
 // `data`: { name, rollNumber, eventTitle, shift, validFrom, validTill, photoUrl, volunteerId }.
 const buildFestVolunteerIdCardVertical = (data) =>
   renderPortraitIdCard({
@@ -4509,13 +4597,11 @@ const buildFestVolunteerIdCardVertical = (data) =>
     footerRightValue: data.validTill
   });
 
-// Fixed CR80 card size (432x272, real ID-card proportions - unlike the other documents in this
-// file, this one doesn't grow with content since it's meant to match a physical card format), two
-// panels: navy left (logo, photo, "VOLUNTEER" tag) + cream right (name, role, info rows, validity
-// bar). Real-HTML + native-PNG, matching "38_volunteer_id_card_horizontal.html" exactly
-// (VOLUNTEER_ID_HORIZ_CSS/buildVolunteerIdHorizontalHtml defined near TICKET_WATERMARKS further
-// down - safe to reference here since that only happens inside this function's own body, deferred
-// until called, unlike a top-level template-literal interpolation).
+// Fixed CR80 card size (432x272, real ID-card proportions) - unlike other documents in this file,
+// this doesn't grow with content since it's meant to match a physical card format. Two panels:
+// navy left (logo, photo, "VOLUNTEER" tag) + cream right (name, role, info rows, validity bar).
+// buildVolunteerIdHorizontalHtml is defined further down but is safe to call here since it only
+// runs inside this function's own body, deferred until called.
 const buildFestVolunteerIdCardHorizontal = async (data) => {
   await ensureBrandFontsLoaded();
   const html = buildVolunteerIdHorizontalHtml({
@@ -6023,17 +6109,12 @@ const getInitialsFromName = (name, fallback = "Student") => {
     .slice(0, 2);
 };
 
-// Used for the greeting line only, not for initials - so unlike getInitialsFromName, this keeps
-// titles (Dr./Prof./etc.) intact and only splits on whitespace, otherwise an initial-style name
-// like "N.Kasiviswanath" would get chopped down to just "N" instead of staying whole. Drops a
-// trailing "(HOD)"-style parenthetical, but keeps the rest of the name intact rather than
-// guessing at a single "first" word, since names in this app are stored in different orders
-// (surname-first, initial-dot-surname, etc.) with no reliable way to tell which token is "first".
-// Despite the name, this no longer shortens to a first/casual name - it previously capped
-// 3+ word names to the last 2 words, but that made the dashboard/chatbot greeting show a
-// different name than the topbar (e.g. topbar "Lakkavaram Sai Chandan" vs greeting "Sai
-// Chandan"), which read as a bug. Now it only strips parenthetical annotations (e.g. "(HOD)")
-// so every greeting matches the full name shown in the topbar.
+// Used for the greeting line only, not for initials - unlike getInitialsFromName, this keeps
+// titles (Dr./Prof./etc.) intact rather than splitting on periods too (which would chop an
+// initial-style name like "N.Kasiviswanath" down to just "N"). Despite the name, this doesn't
+// shorten to a casual first name - it only strips a trailing "(HOD)"-style parenthetical, so the
+// greeting always matches the full name shown in the topbar (names are stored in inconsistent
+// orders with no reliable way to pick out a single "first" word).
 const getFirstName = (name, fallback = "") => {
   const cleaned = String(name || fallback)
     .replace(/\([^)]*\)/g, "")
@@ -6115,8 +6196,6 @@ const resolveStudentRoomHostel = (studentId, fallbackRoom, fallbackHostel) => {
   const student = hostelStudentData[studentId];
   return { room: student?.room || fallbackRoom || "-", hostel: student?.hostel || fallbackHostel || "-" };
 };
-const resolveStudentMobile = (studentId, fallbackMobile) =>
-  defaultStudentProfiles[studentId]?.mobile || fallbackMobile || "-";
 const resolveParentMobile = (studentId, fallbackMobile) =>
   defaultStudentProfiles[studentId]?.parentMobile || hostelStudentData[studentId]?.parentMobile || fallbackMobile || "-";
 
@@ -6227,11 +6306,9 @@ const renderStudentProfileInto = (container, studentId) => {
   });
 };
 
-// The Hostel panel's markup used to be a static "Boys Hostel, B Block, Room B-204, Bed 1"
-// placeholder with no wiring at all - it showed the same hardcoded hosteler info to every
-// student, day scholars included. hostelStudentData only has an entry for actual hostel
-// residents (see BOOTSTRAP_SQL's hostel_rows, joined from hostel_allocations), so its absence
-// is exactly how a day scholar is identified here.
+// hostelStudentData only has an entry for actual hostel residents (see BOOTSTRAP_SQL's
+// hostel_rows, joined from hostel_allocations), so its absence is exactly how a day scholar is
+// identified here.
 const renderHostelSectionInfo = (studentId) => {
   const subtitle = document.querySelector("#hostelSectionSubtitle");
   const grid = document.querySelector("#hostelInfoGrid");
@@ -6530,13 +6607,10 @@ document.querySelector("#downloadStudentPassButton")?.addEventListener("click", 
   link.click();
 });
 
-// Hall ticket: real exam-cell data, not a placeholder link. A student's room/seat for each exam
-// is worked out from which uploaded roll-number range (rollFrom-rollTo) they fall into - the same
-// data the exam cell already publishes for the whole department, just filtered to this student's
-// row band. No hall ticket exists until the exam cell has actually uploaded a schedule that
-// covers this roll number - that's an honest "not released yet" state, not an error.
-// Opens the hall ticket in the browser's own PDF viewer, which already has its own save/print
-// controls - no separate download button/flow needed.
+// Hall ticket: a student's room/seat for each exam is worked out from which uploaded
+// roll-number range (rollFrom-rollTo) they fall into. No hall ticket exists until the exam cell
+// has uploaded a schedule covering this roll number - that's an honest "not released yet" state,
+// not an error. Opens in the browser's own PDF viewer, which already has save/print controls.
 const viewHallTicketButton = document.querySelector("#viewHallTicketButton");
 const hallTicketStatus = document.querySelector("#hallTicketStatus");
 let hallTicketAvailabilityTimer = null;
@@ -6882,8 +6956,7 @@ const defaultDepartmentFacultyByDept = {
 
 // The rosters above are placeholder content for departments the real `faculty` table hasn't been
 // populated for yet. For every department the database DOES have real faculty on file for,
-// replace the ENTIRE placeholder roster (HOD and regular faculty) with the real one - so
-// students, faculty login, and guide-selection all see actual people, never a made-up name.
+// replace the ENTIRE placeholder roster (HOD and regular faculty) with the real one.
 // The database has no "subject taught" column, so real entries get subject: "" / classes: []
 // instead of fabricating one - resolveFacultySubject()/resolveFacultyClasses() below are the
 // single place every subject/timetable-dependent feature reads through, so they degrade to a
@@ -7031,8 +7104,6 @@ const rebuildNonTeachingStaffFromDatabase = () => {
   })));
 };
 rebuildNonTeachingStaffFromDatabase();
-
-const facultyPlaceholderPhoto = "";
 
 applyFacultyPhotosFromDatabase();
 
@@ -7947,17 +8018,12 @@ const timelineSummaryBadge = (milestones) => {
   return `<span class="project-card-progress">${percent}% complete</span>`;
 };
 
-// Shared by the Projects and Research "Suggest Topics" buttons - asks the configured AI
-// provider (Data Integrations > AI Provider, e.g. the free local Ollama setup) for a handful of
-// topic ideas scoped to the student's department/category/interests, then lets them one-click
-// fill the title/description fields with whichever suggestion they like. Reuses the same
-// fetchAiReply/extractJsonFromAi plumbing as Improve with AI and the Feature Idea assistant - no
-// separate AI provider or admin card needed.
-// Small local models (e.g. a 1B-parameter Ollama model, the free option this feature is built
-// around) frequently return almost-valid JSON for a 5-item list - a stray trailing quote, an
-// extra unrequested field, a missing closing bracket - that a strict JSON.parse rejects outright
-// even though every individual topic in it is perfectly readable. Try strict parsing first (works
-// fine against capable providers like Gemini/OpenAI/Claude), then fall back to pulling out
+// Shared by the Projects and Research "Suggest Topics" buttons - asks the configured AI provider
+// for a handful of topic ideas scoped to the student's department/category/interests. Reuses the
+// same fetchAiReply/extractJsonFromAi plumbing as Improve with AI and the Feature Idea assistant.
+// Small local models (e.g. a free Ollama setup) often return almost-valid JSON - a stray trailing
+// quote, an extra field, a missing bracket - that a strict JSON.parse rejects outright even though
+// every topic in it is readable. Try strict parsing first, then fall back to pulling out
 // title/description/guidance fields directly wherever they appear in the raw text.
 const parseTopicSuggestions = (raw) => {
   if (!raw) return [];
@@ -8805,10 +8871,9 @@ if (hostelAdminOutingQueueBody) {
   }
 }
 
-// Hostel Allocation panel: real room/bed/branch rows from hostel_allocations, replacing a static
-// 3-row table. Assign/Update writes through /api/hostel-allocations/assign (an upsert, since
-// student_roll_no is UNIQUE) and Remove through /api/hostel-allocations/remove - previously this
-// table was read-only with no way to actually allocate a student to a room from the UI.
+// Hostel Allocation panel: real room/bed/branch rows from hostel_allocations. Assign/Update
+// writes through /api/hostel-allocations/assign (an upsert, since student_roll_no is UNIQUE) and
+// Remove through /api/hostel-allocations/remove.
 const hostelAllocationBody = document.querySelector("#hostelAllocationBody");
 if (hostelAllocationBody) {
   const storedAdminRole = localStorage.getItem("gprecAdminRole") || "";
@@ -8888,12 +8953,10 @@ if (hostelAllocationBody) {
   });
 }
 
-// Assigns (once, then reuses) a random opaque gate-scan token on a hostel pass record, persisted
-// via the same read-all/mutate-one/save-all round trip these hostel_*_requests tables already use
-// everywhere else - no dedicated token table needed. Re-downloading the same approved pass keeps
-// returning the same token/QR rather than minting a new one each time, so multiple printouts of
-// the same pass all stay valid and log to the same gate history. The token itself is never the
-// request's own id - a printed pass reveals nothing that could be used to look up a different one.
+// Assigns (once, then reuses) a random opaque gate-scan token on a hostel pass record. Re-
+// downloading the same approved pass keeps returning the same token/QR rather than minting a new
+// one, so multiple printouts stay valid and log to the same gate history. The token is never the
+// request's own id, so a printed pass can't be used to look up a different one.
 const ensureHostelGateToken = (getAll, saveAll, requestId) => {
   const all = getAll();
   const index = all.findIndex((item) => item.id === requestId);
@@ -9858,15 +9921,15 @@ if (document.querySelector("#notificationList")) {
 }
 
 {
-  // Slides/dots are re-queried on every tick (not once, and not the stale top-level
-  // heroSlides/heroDots consts) since some pages re-render this content dynamically
-  // from admin-managed data after those consts were captured, or at any later point.
-  let activeSlide = 0;
+  // Slides/dots are re-queried every tick, and the active index is read straight off the DOM
+  // rather than tracked in a separate counter - renderHomeHeroSlides() can re-render #homeHeroSlides
+  // at any time (e.g. once the bootstrap fetch lands), which would desync a separate counter.
   setInterval(() => {
     const currentHeroSlides = document.querySelectorAll(".hero-slide");
     const currentHeroDots = document.querySelectorAll(".hero-dots span");
     if (currentHeroSlides.length <= 1) return;
-    activeSlide = activeSlide % currentHeroSlides.length;
+    let activeSlide = Array.prototype.findIndex.call(currentHeroSlides, (slide) => slide.classList.contains("active"));
+    if (activeSlide === -1) activeSlide = 0;
     currentHeroSlides[activeSlide]?.classList.remove("active");
     currentHeroDots[activeSlide]?.classList.remove("active");
     activeSlide = (activeSlide + 1) % currentHeroSlides.length;
@@ -10062,14 +10125,10 @@ const saveGprecianHistory = () => {
 };
 
 // Bot answers are plain text with markdown-ish conventions (blank line = new paragraph, "- " =
-// list item, "Label: value" = a labelled fact) rather than real markdown, since that's what the
-// keyword-answer metadata and AI provider both produce. This turns that into real structured
-// HTML (headings-free paragraphs, bulleted lists, bolded labels) instead of dumping it into one
-// pre-line-wrapped blob of dashes and line breaks. Every fragment is escaped through a local
-// escapeHtml duplicate rather than the shared one (declared much later in this file) - restoring
-// saved chat history calls into this synchronously while the page first loads (see
-// restoreGprecianHistory below), and reaching for the shared const that early would be a TDZ
-// ReferenceError, silently swallowed by that function's own catch block.
+// list item, "Label: value" = a labelled fact) rather than real markdown. This turns that into
+// real structured HTML (paragraphs, bulleted lists, bolded labels). Uses a local escapeHtml
+// duplicate rather than the shared one (declared much later in this file) since restoring saved
+// chat history calls into this synchronously on page load, before the shared const exists (TDZ).
 const formatBotMessageEscapeHtml = (value) =>
   String(value)
     .replace(/&/g, "&amp;")
@@ -10297,6 +10356,21 @@ const parentGprecianAnswers = [
   { keywords: ["fee", "fees", "payment"], answer: "Your child's fee payment status is shown in the Fees section of this dashboard." }
 ];
 
+// Sourced from README.md / the Read Me sidebar panel, so the bot can answer "how do I run this
+// locally", "what's in uploads/", "which module does X" the same way it answers any other admin
+// question - keeping these in sync with README.md and the Read Me panel content is a manual step
+// (there's no shared source of truth between the three) done by whoever edits one of them.
+const readmeGprecianAnswers = [
+  { keywords: ["run locally", "start server", "start servers", "local server", "localhost"], answer: "Run ./backend/tools/start_servers.sh to start the static site (127.0.0.1:8080), the Postgres API (127.0.0.1:8766), and the optional PDF render server (127.0.0.1:8767). Stop them with ./backend/tools/stop_servers.sh. See the Read Me panel for details." },
+  { keywords: ["project structure", "folder structure", "file structure", "where is", "codebase"], answer: "pages/ holds public pages and logins, dashboards/ holds every role dashboard, file_templates/ holds printable templates, backend/tools/ holds the local servers, and script.js/styles.css drive every page. Full breakdown is in the Read Me panel." },
+  { keywords: ["readme", "read me", "documentation", "docs"], answer: "There's a full Read Me at the bottom of this sidebar, and the same content lives in README.md in the project root." },
+  { keywords: ["postgres", "postgresql", "gprec_erp", "schema.sql"], answer: "Portal records live in PostgreSQL under the gprec_erp schema - schema.sql and seed.sql are in backend/database/postgres/, with its own README there." },
+  { keywords: ["uploads folder", "uploaded file", "where are uploads"], answer: "Uploaded files (profile pictures, assignments, notices, media, etc.) are written under uploads/ by the admin config server." },
+  { keywords: ["admin-config", "admin config", "integration key", "integration keys"], answer: "Runtime config - the main admin contact, integration keys, and the admin directory - lives in admin-config.json, managed from Data Integrations and Users & Access." },
+  { keywords: ["which role", "who can login", "who can log in", "login page", "roles and login"], answer: "Each role signs in on its own login page: admin-login, student-login, faculty-login, parent-login, alumni-login, non-teaching-login. The admin login form's role dropdown covers College Admin plus department/hostel/exam/placement admins. Full table is in the Read Me panel." },
+  { keywords: ["first admin", "first time setup", "first-time setup", "initial password", "bootstrap admin", "no admin has a password"], answer: "If zero admins anywhere have a password yet, the Admin Login page shows a one-time First-Time Setup card: enter an already-registered admin email plus a recovery mobile, generate the initial password (shown once), then log in and you'll be forced to change it. Once any admin has a password, that card is gone for good - see First-Time Admin Setup in the Read Me panel for the full steps." }
+];
+
 const adminGprecianAnswers = [
   { keywords: ["publish notice", "create notice", "notice"], answer: "Go to Notices in the sidebar to create and publish a notice to a specific audience." },
   { keywords: ["media", "manage media", "media update", "photo", "video", "gallery", "gallary"], answer: "Use the Media section to manage homepage sliders, galleries, courses, student voices, placements, and affiliations without editing code." },
@@ -10304,7 +10378,8 @@ const adminGprecianAnswers = [
   { keywords: ["approval", "approvals", "leave request"], answer: "Pending leave and adhoc class requests are under Approvals and HOD Leave Requests." },
   { keywords: ["report", "reports", "audit"], answer: "Operational reports and the activity trail are under Reports & Audit." },
   { keywords: ["ai setting", "ai settings", "chatbot", "gpt", "gemini", "claude"], answer: "Configure a chatbot AI provider (OpenAI, Claude, or Gemini) under General Settings." },
-  { keywords: ["admin account", "add admin", "users & access", "users and access"], answer: "Manage admin accounts and roles under Users & Access." }
+  { keywords: ["admin account", "add admin", "users & access", "users and access"], answer: "Manage admin accounts and roles under Users & Access." },
+  ...readmeGprecianAnswers
 ];
 
 const alumniGprecianAnswers = [
@@ -10494,12 +10569,10 @@ const withGprecianFollowUpContext = (question) => {
 const gprecianOutOfScopeSentinel = "OUT_OF_SCOPE";
 
 // This prompt is the one place that defines what GPRECian Bot is allowed to do and where its
-// facts are allowed to come from - see retrieveRelevantChunksSemantic/retrieveRelevantChunks
-// (real DB-backed RAG, with a local-keyword fallback) for how the "Relevant GPREC website
-// information" context block referenced below actually gets built and attached to a question
-// before this prompt ever runs, and the role-specific getLiveDataAnswer()-family functions
-// earlier in the call chain for how real per-user dashboard data (attendance, marks, fees, etc.)
-// gets resolved and handed over BEFORE the live-AI path (this prompt) is ever reached at all.
+// facts come from. See retrieveRelevantChunksSemantic/retrieveRelevantChunks for how the
+// "Relevant GPREC website information" context block gets built and attached to a question before
+// this prompt runs, and the role-specific getLiveDataAnswer()-family functions for how real
+// per-user dashboard data (attendance, marks, fees, etc.) is resolved before the live-AI path is reached.
 const gprecianSystemPrompt =
   `You are GPRECian Bot, the AI assistant for G Pulla Reddy Engineering College (GPREC), Kurnool - built ` +
   `into this website and student portal. Talk like a helpful, friendly person, not a formal FAQ page - ` +
@@ -10931,10 +11004,8 @@ const retrieveRelevantChunks = (question, chunks, topN = 4) => {
 // overlap retrieveRelevantChunks() above, since a null here means "couldn't ask", not "no matches".
 // A low-relevance chunk is worse than no chunk at all - stuffing weakly-related content into the
 // prompt as "relevant GPREC information" reads to the model as permission to engage with it, which
-// can override the out-of-scope refusal (seen in testing: an off-topic "write me a poem" request
-// pulled back a handful of ~0.45-score notice/circular chunks that had nothing to do with poems,
-// and the model wrote the poem anyway instead of refusing). Calibrated from real query scores -
-// genuinely relevant matches scored 0.6+ in testing, unrelated ones capped around 0.45-0.46.
+// can override the out-of-scope refusal. Calibrated from real query scores - genuinely relevant
+// matches scored 0.6+ in testing, unrelated ones capped around 0.45-0.46.
 const GPRECIAN_RAG_MIN_SCORE = 0.5;
 
 const retrieveRelevantChunksSemantic = (question, topN = 4) => {
@@ -10951,16 +11022,13 @@ const retrieveRelevantChunksSemantic = (question, topN = 4) => {
 };
 
 // --- Tool-calling agent -------------------------------------------------------------------
-// Instead of the hardcoded keyword cascades above (getStudentLiveDataAnswer, getFacultyLiveData
-// Answer, etc.) deciding which live-data lookup applies, the model itself picks a tool based on
-// the question's meaning - handles paraphrasing ("what are my pending backlogs" vs "cgpa") that a
-// literal .includes(keyword) check misses. Each tool is a THIN ADAPTER around those same existing
-// functions, not a reimplementation - the model only ever picks which one applies; the actual
-// numbers and wording still come from that already-correct, already-tested logic, so the model
-// never sees or has to format raw data itself. Scoped per role (gprecianDashboardRole) so a
-// student session is never even offered a faculty-only tool. Tool-calling is only wired up for
-// the Ollama provider today (its /api/chat "tools" format is what's implemented below) - Gemini/
-// OpenAI/Claude fall back to fetchAiReply()'s plain RAG-context-stuffed single-shot call.
+// Instead of the hardcoded keyword cascades above deciding which live-data lookup applies, the
+// model itself picks a tool based on the question's meaning - handles paraphrasing ("what are my
+// pending backlogs" vs "cgpa") that a literal .includes(keyword) check misses. Each tool is a thin
+// adapter around those same existing functions, not a reimplementation, so the model never sees
+// or formats raw data itself. Scoped per role so a student session is never offered a faculty-only
+// tool. Only wired up for the Ollama provider (its /api/chat "tools" format) - Gemini/OpenAI/Claude
+// fall back to fetchAiReply()'s plain RAG-context-stuffed single-shot call.
 const gprecianToolsByRole = {
   student: [
     { name: "get_attendance", description: "The logged-in student's current attendance percentage, overall and subject-wise.", run: () => getLiveAttendanceAnswer("student") },
@@ -12133,6 +12201,11 @@ portalForms.forEach((form) => {
         feedback.classList.remove("success");
         return;
       }
+      if (isHostelWardenScanLogin() && adminRole !== "Boys Hostel Warden" && adminRole !== "Girls Hostel Warden") {
+        feedback.textContent = `This login is for Hostel Wardens only. ${adminRole} accounts can't verify hostel gate passes.`;
+        feedback.classList.remove("success");
+        return;
+      }
       const dashboardByAdminRole = {
         "CSE Department Admin": "department-dashboard.html",
         "ECE Department Admin": "department-dashboard.html",
@@ -12366,14 +12439,12 @@ window.initAlumniGoogleSignIn = async () => {
 
 let pendingGoogleAlumniProfile = null;
 
-// Real Google Identity Services callback for Alumni Login (see the comment in
-// alumni-login.html for the Client ID / hosting requirements). Assigned on `window`
-// because google.accounts.id.initialize() invokes it as a global by reference.
+// Real Google Identity Services callback for Alumni Login. Assigned on `window` because
+// google.accounts.id.initialize() invokes it as a global by reference.
 // response.credential is the signed JWT - decoded here only to prefill the name field and decide
 // which UI step to show next, never trusted as real identity. The backend independently verifies
 // the same raw JWT's signature with Google before creating a session (see
-// verify_google_id_token/alumniGoogleComplete) - every sign-in goes through that real check now,
-// including returning alumni, which previously skipped the backend entirely on this path.
+// verify_google_id_token/alumniGoogleComplete).
 window.handleGoogleAlumniSignIn = (response) => {
   try {
     const base64Url = response.credential.split(".")[1];
@@ -12718,12 +12789,10 @@ assignmentForm?.addEventListener("submit", (event) => {
 });
 
 // Predicts the page height makePdfWithPhoto's layout will actually need for given content, using
-// the exact same per-element spacing constants that function's own layout code uses (title/lines
-// area, per-table row height + inter-table gap, footer line height, photo footprint) - so short
-// documents (passes, receipts, ID cards) can use a "challan size" compact page instead of full A4
-// WITHOUT risking clipped content, while documents whose content genuinely needs more room (a long
-// exam subject table, a long receipt) naturally fall through to something taller. Always clamped
-// to at most 842 (A4) - this only ever shrinks the page, never grows it past the original size.
+// the same per-element spacing constants that function's own layout code uses. This lets short
+// documents (passes, receipts, ID cards) use a compact page instead of full A4 without risking
+// clipped content, while documents that need more room naturally fall through to something taller.
+// Always clamped to at most 842 (A4) - this only ever shrinks the page, never grows it.
 const estimatePdfHeight = ({ lines = [], table = null, footerLines = [], hasPhoto = false, hasQr = false }) => {
   const headerHeight = 70;
   const tables = table ? (Array.isArray(table) ? table : [table]) : [];
@@ -12793,12 +12862,9 @@ const numberToWordsInr = (amount) => {
 
 // Minimal single-page, single-image PDF - much smaller than buildSinglePagePdf (which also
 // carries table/stamp/seal machinery this doesn't need) since these are flattened canvas/
-// html2canvas images, not real PDF text (used by canvasCardToPdf below, the shared html2canvas
-// fallback for every real-HTML document in this file - Pay Slip, Form 16, Fee Challan, Hall
-// Ticket, Payment Receipt - plus the ID card/ticket-stub family's own canvas renders). One
-// full-bleed JPEG XObject, page-sized to match the image's own aspect ratio (in points, 1:1 with
-// the canvas's template-pixel units - same "compact page, not A4" approach buildSinglePagePdf
-// already uses for challan-sized documents).
+// html2canvas images, not real PDF text. Used by canvasCardToPdf below, the shared html2canvas
+// fallback for every real-HTML document in this file. One full-bleed JPEG XObject, page-sized to
+// match the image's own aspect ratio, in points 1:1 with the canvas's template-pixel units.
 // `title`, if given, becomes the PDF's /Info /Title metadata - without it, viewers show a blank
 // or ugly default document name in their tab/window title, Preview.app's title bar, Finder's Get
 // Info, etc. (the same gap the native pdf_render_server.py path fixes via a real <title> tag).
@@ -12860,21 +12926,10 @@ const buildImageOnlyPdf = (jpegBytes, pixelWidth, pixelHeight, pageWidth, pageHe
   return new Blob(chunks, { type: "application/pdf" });
 };
 
-const SEMESTER_YEAR_LABELS = {
-  "I Semester": "1st Yr", "II Semester": "1st Yr",
-  "III Semester": "2nd Yr", "IV Semester": "2nd Yr",
-  "V Semester": "3rd Yr", "VI Semester": "3rd Yr",
-  "VII Semester": "4th Yr", "VIII Semester": "4th Yr"
-};
-
-// Real-HTML + native-PNG portrait ID-card scaffold (navy header with compass watermark +
-// logo/chip, rectangular photo overlapping the seam, name+role, dashed-underline info rows, amber
-// notice box, two-column navy footer) - the shape behind both "28_temp_id_card.html" and
-// "29_volunteer_id_card.html", which are pixel-identical in structure/CSS, differing only in
-// copy. Same real-HTML/native-render approach as the ticket-stub family (PORTRAIT_ID_CSS/
-// buildPortraitIdHtml defined near TICKET_WATERMARKS further down, referenced here only inside
-// this function's body - safe regardless of file order since that reference is deferred until
-// this function is actually called, unlike a top-level template-literal interpolation).
+// Real-HTML + native-PNG portrait ID-card scaffold - the shape behind both "28_temp_id_card.html"
+// and "29_volunteer_id_card.html", which are pixel-identical in structure/CSS, differing only in
+// copy. PORTRAIT_ID_CSS/buildPortraitIdHtml are defined further down but are safe to reference
+// here since that only happens inside this function's own body, deferred until called.
 const renderPortraitIdCard = async ({
   chipText, orgText, cardTitle, cardName, roleText, photoUrl, infoFields,
   noticeHeading, noticeText, footerLeftLabel, footerLeftValue, footerRightLabel, footerRightValue
@@ -13024,13 +13079,11 @@ const buildQrPdfOps = (text, x, yTop, size) => {
   return ops;
 };
 
-// Single-page raw PDF assembler - same branded header band (navy bar + GPREC logo), faint college
-// seal watermark, and diagonal "OFFICIAL DOCUMENT" stamp every other official document in this app
-// (Hostel Leave Pass, Vehicle Pass, Hall Ticket, ...) gets via makePdfWithPhoto, but built
-// independently so this document's custom per-line positioning (centered headers, left/right
-// paired fields, fixed-width blanks) can't affect any other PDF in this app. `images` are the
-// already-loaded logo/seal/stamp byte buffers (loaded once by the caller and reused across all
-// three copies, not re-fetched per page).
+// Single-page raw PDF assembler - same branded header band, seal watermark, and diagonal
+// "OFFICIAL DOCUMENT" stamp other documents get via makePdfWithPhoto, but built independently so
+// this document's custom per-line positioning can't affect any other PDF in this app. `images`
+// are the already-loaded logo/seal/stamp byte buffers (loaded once by the caller and reused
+// across all three copies, not re-fetched per page).
 const buildSinglePagePdf = (contentBytes, images = {}, pageWidth = 595, pageHeight = 842) => {
   const { logoBytes, logoPixelWidth, logoPixelHeight, sealBytes, sealPixelWidth, sealPixelHeight, stampBytes, stampSize } = images;
   const chunks = [];
@@ -13123,20 +13176,14 @@ const buildSinglePagePdf = (contentBytes, images = {}, pageWidth = 595, pageHeig
 
 // Matches the real Andhra Bank/GPREC challan's exact layout - centered headers, left/right paired
 // fields, and underlined fill-in-the-blank style for the Rs./towards lines (their own PDF leaves
-// these two blank; ours fills them in) - under the same branded header/watermark/stamp treatment
-// as every other official document in this app (see buildSinglePagePdf above). Returns THREE
-// separate single-page PDFs (College/Student/Bank Copy), matching how the real system issues them
-// as three distinct documents rather than one combined file.
+// these two blank; ours fills them in). Returns THREE separate single-page PDFs (College/Student/
+// Bank Copy), matching how the real system issues them as three distinct documents.
 //
 // No barcode bars are drawn - Code 128/39 need an exact standard bit-for-bit symbol table, and
 // getting even one character subtly wrong produces bars that LOOK like a barcode but decode to
-// garbage (or nothing), which is worse than not having one. Instead each copy shows a generated
-// reference number as plain text (same YYMMDDHHMMSS shape as the real SNO) - it is NOT looked up
-// in the college's own system, since it was never submitted there.
-// Generates the same 3 staggered copies (College/Student/Bank) as before - only the drawing
-// (now buildFeeChallanImage, matching "33_gprec_fee_challan.html") changed. refNumber/today are
-// still our own generated reference number (not looked up in any real bank system), same as
-// the original comment on this function already noted.
+// garbage, which is worse than not having one. Instead each copy shows a generated reference
+// number as plain text (same YYMMDDHHMMSS shape as the real SNO) - it is NOT looked up in the
+// college's own system, since it was never submitted there.
 const makeChallanPdfs = async (name, rollNo, purposeLabel, amountNumber, amountWords) => {
   const pad2 = (n) => String(n).padStart(2, "0");
   const now = new Date();
@@ -13167,7 +13214,7 @@ const buildVehiclePassImage = async (name, photoUrl, pass, requester) => {
     tagIconPath: TICKET_ICON_PATHS.car,
     // Plain identifying text, not a verification-page URL - there's no gate-scan backend for
     // vehicle passes (unlike hostel passes), so scanning this just shows the pass details.
-    qrText: `GPREC Vehicle Pass ${passId} | ${pass.vehicleNumber} | Valid till ${pass.validUntil || "-"}`,
+    qrText: `GPREC Vehicle Pass\nPass ID: ${passId}\nName: ${name}\n${idLabel}: ${requester?.id || "-"}\nVehicle Type: ${pass.vehicleType || "-"}\nVehicle No.: ${pass.vehicleNumber}\nParking Zone: ${pass.parkingZone || "Not Assigned"}\nValid Till: ${pass.validUntil || "-"}\nStatus: Active`,
     title: "Vehicle Pass",
     subtitle: "GPREC · Campus Security",
     fields: [
@@ -13200,8 +13247,8 @@ const buildBusPassImage = async (name, photoUrl, request, requester) => {
     tag: "BUS PASS",
     tagIconPath: TICKET_ICON_PATHS.bus,
     // Plain identifying text (see buildVehiclePassImage's qrText comment) - no gate-scan backend
-    // for bus passes yet.
-    qrText: `GPREC Bus Pass ${passId} | Route ${request.routeName || "-"} | Valid till ${request.validUntil || "-"}`,
+    // for bus passes yet, so scanning this just shows the pass details.
+    qrText: `GPREC Bus Pass\nPass ID: ${passId}\nName: ${name}\n${idLabel}: ${requester?.id || "-"}\nRoute No.: ${request.routeName || "-"}\nBoarding Point: ${request.pickupPoint || "-"}\nBus No.: ${request.busNumber}\nValid Till: ${request.validUntil || "-"}\nStatus: Active`,
     title: "Bus Pass",
     subtitle: "GPREC · Transport Department",
     fields: [
@@ -13432,12 +13479,10 @@ if (nonTeachingDashboardName) {
 const pdfTextEncoder = new TextEncoder();
 
 // Same-origin URLs must NOT get crossOrigin="anonymous" here. The student's photo is already
-// rendered elsewhere on the same page (profile section, topbar avatar) via a plain <img src>
-// with no crossOrigin attribute - if this later requests the exact same URL WITH crossOrigin set,
-// some browsers serve the earlier plain (non-CORS-validated) cached response for the CORS-mode
-// request too, so onload still fires but the canvas ends up tainted and toBlob() silently fails
-// (or never calls back at all), producing a PDF with no photo even though nothing threw where
-// you'd expect. crossOrigin is only actually needed for genuinely cross-origin URLs (the
+// rendered elsewhere on the page via a plain <img src> with no crossOrigin attribute - if this
+// later requests the same URL WITH crossOrigin set, some browsers serve the earlier cached
+// non-CORS response, so onload fires but the canvas ends up tainted and toBlob() silently fails,
+// producing a PDF with no photo. crossOrigin is only needed for genuinely cross-origin URLs (the
 // dicebear.com initials fallback) - same-origin resources never taint the canvas regardless.
 const isCrossOriginUrl = (url) => {
   if (!url || url.startsWith("data:")) return false;
@@ -14029,10 +14074,9 @@ const resolvePayuPaymentLink = async () => {
 };
 
 // Opens the college's real PayU hosted checkout link in a new tab and records the payment
-// locally right away. Payment confirmation should be backed by a webhook or return URL to
-// confirm the payment actually completed on PayU's side - the payer is trusted to finish
-// paying in the tab that opens. A production deployment should add a backend that listens
-// for PayU's payment confirmation webhook before treating the payment as real.
+// locally right away - the payer is trusted to finish paying in the tab that opens. A production
+// deployment should add a backend that listens for PayU's payment confirmation webhook before
+// treating the payment as real.
 const openPayuCheckoutAndRecord = (payuLink, amount, onRecord) => {
   window.open(payuLink, "_blank", "noopener");
   onRecord(`PAYU-${Date.now()}`);
@@ -14791,9 +14835,6 @@ if (timetableDayPanels.length > 0) {
   });
 }
 
-// Called once the PayU checkout tab has been opened - builds the same downloadable PDF
-// receipt and payment-history record the old simulated "Confirm Payment"
-// button used to, just triggered by a real payment instead of a self-reported reference.
 // Which office a paid receipt actually needs to be shown to, so the receipt (and the on-page
 // confirmation) tells the payer what to physically do next, not just "payment successful".
 // Keyed by the specific application first (most precise), falling back to the top-level
@@ -14824,6 +14865,9 @@ const serviceTypeSubmitOffice = {
 const resolveSubmitOffice = (applicationType, serviceType) =>
   applicationSubmitOffice[applicationType] || serviceTypeSubmitOffice[serviceType] || "Student Section";
 
+// Called once the PayU checkout tab has been opened - builds the same downloadable PDF receipt
+// and payment-history record the old simulated "Confirm Payment" button used to, just triggered
+// by a real payment instead of a self-reported reference.
 const recordCertificatePayment = async (paymentType, paymentReference) => {
   let feedback = certificateForm?.querySelector(".portal-feedback");
   if (!feedback && certificateForm) {
@@ -15057,14 +15101,12 @@ const getLiveAttendanceAnswer = (perspective) => {
   return `${who} current overall attendance is ${overallPercent}% (${totalAttended}/${totalHeld} classes held so far this semester). Subject-wise: ${subjectLines.join(", ")}. ${statusNote}`;
 };
 
-// Role-specific live-data lookups for the bot, mirroring the real get*() data each
-// dashboard already renders, so answers reflect actual current numbers, not placeholders.
-// Answers "about me" questions with the visitor's OWN record only - every field read here comes
-// from the current logged-in session's own ID/email (getCurrentStudentId(), the faculty/staff
-// email in localStorage, etc.), never from a name or ID typed in the question, so there is no
-// code path here that can look up someone else's personal data. Directory info about OTHER
-// people (e.g. "who teaches DBMS") is handled separately by getFacultyDirectoryAnswer, which
-// only ever returns institutional contact info (name/email/phone/department), never personal data.
+// Role-specific live-data lookups for the bot, mirroring the real get*() data each dashboard
+// already renders. Answers "about me" questions with the visitor's OWN record only - every field
+// read here comes from the current logged-in session's own ID/email, never from a name or ID
+// typed in the question, so there is no code path here that can look up someone else's personal
+// data. Directory info about OTHER people (e.g. "who teaches DBMS") is handled separately by
+// getFacultyDirectoryAnswer, which only returns institutional contact info, never personal data.
 const getIdentityAndDateAnswer = (normalized, name, idLabel, idValue) => {
   if (["today", "current date", "todays date", "today's date", "what date", "what's the date", "what day is it"].some((keyword) => normalized.includes(keyword))) {
     return `Today's date is ${new Date().toLocaleDateString("en-IN", { day: "numeric", month: "long", year: "numeric" })}.`;
@@ -15256,7 +15298,12 @@ const getStudentDocuments = (studentId) => getGprecDbBootstrap()?.studentDocumen
 const createStudentDocument = (doc) => gprecDbPost("/student-documents", doc);
 const removeStudentDocument = (id) => gprecDbPost("/student-documents/remove", { id });
 
-const GPREC_UPLOAD_ENDPOINT = "http://127.0.0.1:8765/upload";
+// Same reasoning as gprecApiBaseUrl() above: a hardcoded 127.0.0.1 only resolves on the machine
+// admin_config_server.py itself runs on - every other visitor's browser (LAN testing, or any real
+// deployment) would try to reach their own loopback interface and silently fail every upload.
+// Protocol matches the current page (not hardcoded http:) so this doesn't get blocked as mixed
+// content once the site is actually served over https - see PRODUCTION.md for exposing this port.
+const GPREC_UPLOAD_ENDPOINT = `${window.location.protocol}//${window.location.hostname}:8765/upload`;
 
 const uploadDataUrlToServerStorage = async (file, dataUrl, section = "general") => {
   try {
@@ -15586,9 +15633,8 @@ const stopWebinarPing = () => {
 };
 
 // watchRefreshFn, if given, is called immediately and every 20s while the modal stays open; it
-// should ping presence server-side and return fresh watching-row HTML (via
-// renderWebinarWatchingRow) - used by both Webinars and Online Classes, kept generic here so
-// this modal doesn't need to know which feature it's showing.
+// should ping presence server-side and return fresh watching-row HTML - used by both Webinars
+// and Online Classes, kept generic here so this modal doesn't need to know which feature it's showing.
 const openResourceModal = (url, title, watchRefreshFn) => {
   let overlay = document.querySelector("#resourceViewerOverlay");
   if (!overlay) {
@@ -15639,8 +15685,8 @@ const openResourceModal = (url, title, watchRefreshFn) => {
 // Webinars - shared between student and faculty dashboards, both of which have a
 // #webinarsListBody element; admin-created, visible to everyone, no enrollment step.
 // Shared by Webinars and Online Classes - both have the same scheduledAtRaw/watchingCount shape.
-// No explicit end time is stored for either, so "Live" is treated as within a couple of hours of
-// the scheduled start, generous enough for any real session without needing a duration field.
+// No explicit end time is stored, so "Live" is treated as within a couple of hours of the
+// scheduled start, generous enough for any real session without needing a duration field.
 const LIVE_WINDOW_MS = 2 * 60 * 60 * 1000;
 const getLiveStatusBadge = (item) => {
   const now = Date.now();
@@ -16010,8 +16056,13 @@ if (vehiclePassForm) {
 // on an <img> (hydrated via .src) or a container element (hydrated via background-image) on
 // the target page. The admin's Notices & Content > Website Photo Manager panel lists every
 // entry here automatically, so no other admin-side change is needed.
+// defaultUrl is whatever's hardcoded as that <img>'s own src on the public page - shown as the
+// current photo until an admin uploads a custom one, instead of the table just saying "No custom
+// photo uploaded" while the page itself is clearly showing something.
 const sitePhotoSlots = [
-  { key: "about-founder", page: "About Us", section: "Founder Portrait", recommendedSize: "220 x 260px, portrait, JPG/PNG" }
+  { key: "about-founder", page: "About Us", section: "Founder Portrait", recommendedSize: "220 x 260px, portrait, JPG/PNG", defaultUrl: "https://www.gprec.ac.in/wp-content/uploads/2019/04/G.-Pulla-Reddy-Garu.jpg", orientation: "portrait" },
+  { key: "admin-principal", page: "About Us", section: "Principal Photo", recommendedSize: "200 x 300px, portrait, JPG/PNG", defaultUrl: "https://www.gprec.ac.in/wp-content/uploads/2019/04/principal-01-201x300.png", orientation: "portrait" },
+  { key: "admin-vice-principal", page: "About Us", section: "Vice Principal Photo", recommendedSize: "200 x 300px, portrait, JPG/PNG", defaultUrl: "https://www.gprec.ac.in/wp-content/uploads/2026/03/VBR-240x300.jpeg", orientation: "portrait" }
 ];
 
 const getSitePhotos = () => getSiteContent("sitePhotos", {});
@@ -16025,13 +16076,18 @@ const renderSitePhotoManager = () => {
   sitePhotoManagerBody.innerHTML = sitePhotoSlots
     .map((slot) => {
       const photo = photos[slot.key];
+      const thumbSrc = photo?.dataUrl || slot.defaultUrl;
+      const thumbClass = slot.orientation === "portrait" ? "site-photo-thumb-portrait" : "site-photo-thumb";
       return `
         <tr>
-          <td>${slot.page} - ${slot.section}</td>
-          <td>${slot.recommendedSize}</td>
-          <td>${photo ? `<img src="${photo.dataUrl}" alt="" class="site-photo-thumb">` : "No custom photo uploaded"}</td>
-          <td><input type="file" accept="image/*" data-photo-upload="${slot.key}"></td>
-          <td>${photo ? `<button type="button" class="icon-btn-delete" data-photo-remove="${slot.key}" aria-label="Remove photo">${deleteIconSvg}</button>` : ""}</td>
+          <td>
+            <label class="site-photo-thumb-upload" title="Click to change photo">
+              ${thumbSrc ? `<img src="${thumbSrc}" alt="" class="${thumbClass}">` : ""}
+              <input type="file" accept="image/*" data-photo-upload="${slot.key}" hidden>
+            </label>
+          </td>
+          <td>${slot.page} - ${slot.section}<br><small class="field-hint">${slot.recommendedSize}${photo ? "" : " &middot; Default photo"}</small></td>
+          <td><button type="button" class="btn-choose-photo" data-photo-choose="${slot.key}">Choose Photo</button></td>
         </tr>
       `;
     })
@@ -16055,12 +16111,9 @@ sitePhotoManagerBody?.addEventListener("change", async (event) => {
 });
 
 sitePhotoManagerBody?.addEventListener("click", (event) => {
-  const removeButton = event.target.closest("[data-photo-remove]");
-  if (!removeButton) return;
-  const photos = getSitePhotos();
-  delete photos[removeButton.dataset.photoRemove];
-  saveSitePhotos(photos);
-  renderSitePhotoManager();
+  const chooseButton = event.target.closest("[data-photo-choose]");
+  if (!chooseButton) return;
+  sitePhotoManagerBody.querySelector(`[data-photo-upload="${chooseButton.dataset.photoChoose}"]`)?.click();
 });
 
 // Public-page hydration: fills in any admin-uploaded photo for slots present on the current page.
@@ -16081,14 +16134,8 @@ document.querySelectorAll("[data-photo-slot]").forEach((el) => {
   }
 });
 
-const defaultHomeHeroSlides = [
-  { id: "demo-hero-campus", alt: "GPREC campus entrance", photoDataUrl: "https://www.gprec.ac.in/wp-content/uploads/2019/07/gprec-banner4.jpg" },
-  { id: "demo-hero-library", alt: "GPREC library", photoDataUrl: "https://www.gprec.ac.in/wp-content/uploads/2019/04/library.jpg" },
-  { id: "demo-hero-sports", alt: "GPREC sports facilities", photoDataUrl: "https://www.gprec.ac.in/wp-content/uploads/2019/07/sports.jpg" }
-];
-
 // Home page hero slider: fully admin-managed slide list (add/remove).
-const getHomeHeroSlides = () => getSiteContent("homeHeroSlides", defaultHomeHeroSlides);
+const getHomeHeroSlides = () => getSiteContent("homeHeroSlides", []);
 const saveHomeHeroSlides = (slides) => saveSiteContent("homeHeroSlides", slides);
 
 const regenerateHeroDots = () => {
@@ -16104,7 +16151,7 @@ const renderHomeHeroSlides = () => {
   if (!homeHeroSlidesContainer) return;
   homeHeroSlidesContainer.innerHTML = getHomeHeroSlides()
     .map(
-      (slide, index) => `<img class="hero-slide${index === 0 ? " active" : ""}" src="${slide.photoDataUrl}" alt="${slide.alt || "GPREC campus photo"}">`
+      (slide, index) => `<img class="hero-slide${slide.poster ? " poster-slide" : ""}${index === 0 ? " active" : ""}" src="${slide.photoDataUrl}" alt="${slide.alt || "GPREC campus photo"}">`
     )
     .join("");
   regenerateHeroDots();
@@ -16220,6 +16267,339 @@ const renderAboutHistoryGallery = () => {
 };
 
 renderAboutHistoryGallery();
+
+// About Us page Management section: admin-editable trust/board content - falls back to the copy
+// the page shipped with (see pages/about-us.html), so nothing changes visually until an admin
+// actually saves something here.
+const getAboutManagementContent = () => getSiteContent("aboutManagementContent", {
+  paragraph1: "The college is managed by G.P.R. Charities Trust which was instituted by Sri G.Pulla Reddy in 1977 with the motto of rendering service to society. Sri G.Pulla Reddy is the epitome of a self made man. Born into a lower middle class agricultural family, he imbibed all the virtues of an Indian farmer. After trying out a few jobs, he found his true vocation in which he is at his best, making delicious sweets and there was no looking back. His hard work and uncompromising adherence to quality soon made him the sweets legend and G.Pulla Reddy Sweets have become a household name and a status symbol. The popularity of Pulla Reddy sweets is evident in the fact that he was appointed by His Excellency, the Governor of Andhra State as the official sweets supplier to the Government. Sri Pulla Reddy is reckoned great not because he made it big in business but because he did not forget his moorings. Deprived of educational opportunities as a child, he made it a mission of his life to provide educational opportunities to the people of this backward region of Rayalaseema from which he hailed. The success of the institutions founded by him may be attributed to his uncanny ability to find the right person for a job. Once he finds the right person, he entrusts the work to that person with all the authority and responsibility and will never interfere in that work.",
+  paragraph2: "After the demise of the founder Chairman Sri G.Pulla Reddy in 2007 Sri P.Subba Reddy, the Secretary of the college, has taken up the responsibilities of both Chairman and Secretary. Sri P.Subba Reddy is one of the Trustees of G.Pulla Reddy Charities Trust right from its inception. He is given the onerous responsibility of looking after all the educational institutions sponsored by the Trust. Thus he has vast experience of administration of educational organizations in the capacity of the secretary. Nurtured and guided by the founder chairman of the Trust, Late Sri G.Pulla Reddy, he has a great vision and is dedicated to the cause of education. Ever cheerful and with enormous patience and pragmatic outlook, he has been the live wire in the administration set up of the Trust and all the institutions of the Trust have made phenomenal progress under his supervision.",
+  founderTrustees: [
+    { name: "Late Sri G.Pulla Reddy", role: "Managing Trustee" },
+    { name: "Sri G.Raghava Reddy", role: "Trustee" },
+    { name: "Late Sri G.Narayanamma", role: "Trustee" },
+    { name: "Sri P.Subba Reddy", role: "Trustee" },
+    { name: "Late Sri R.V.Seshacharlu", role: "Trustee" }
+  ],
+  currentTrust: [
+    { name: "Sri G.Raghava Reddy", role: "Managing Trustee" },
+    { name: "Sri P.Subba Reddy", role: "Trustee" },
+    { name: "Sri G.Ekamber Reddy", role: "Trustee" }
+  ],
+  professionalColleges: [
+    { name: "G.Pulla Reddy Engineering College", role: "Kurnool" },
+    { name: "G.Pulla Reddy Pharmacy College", role: "Hyderabad" },
+    { name: "G.Narayanamma Institute of Technology & Sciences", role: "Hyderabad" },
+    { name: "G.Pulla Reddy Dental College", role: "Kurnool" }
+  ],
+  otherInstitutes: [
+    { name: "G.Pulla Reddy Degree & P.G. College", role: "Hyderabad" },
+    { name: "G.Pulla Reddy Junior College", role: "Hyderabad" },
+    { name: "G.Pulla Reddy High School", role: "Hyderabad" },
+    { name: "G.Narayanamma High School", role: "Hyderabad" }
+  ],
+  serviceOrgs: [
+    { name: "G.Narayanamma Hospital", role: "Atmakur, Kurnool Dt." },
+    { name: "Vignana Peetham (Orphanage)", role: "Kurnool" },
+    { name: "Sanskrita Basha Prachara Samithi", role: "Hyderabad" },
+    { name: "G.Narayanamma Pulla Reddy Respite Home for Mentally Challenged Adult Woman", role: "Kurnool" }
+  ]
+});
+const saveAboutManagementContent = (content) => saveSiteContent("aboutManagementContent", content);
+
+const renderAboutManagementGroup = (listEl, items) => {
+  if (!listEl) return;
+  listEl.innerHTML = (items || [])
+    .map((item) => `<li><strong>${escapeHtml(item.name)}</strong><span>${escapeHtml(item.role)}</span></li>`)
+    .join("");
+};
+
+const renderAboutManagementContent = () => {
+  const para1El = document.querySelector("#aboutManagementPara1");
+  if (!para1El) return;
+  const content = getAboutManagementContent();
+  para1El.textContent = content.paragraph1;
+  const para2El = document.querySelector("#aboutManagementPara2");
+  if (para2El) para2El.textContent = content.paragraph2;
+  renderAboutManagementGroup(document.querySelector("#aboutManagementFounderTrustees"), content.founderTrustees);
+  renderAboutManagementGroup(document.querySelector("#aboutManagementCurrentTrust"), content.currentTrust);
+  renderAboutManagementGroup(document.querySelector("#aboutManagementProfessionalColleges"), content.professionalColleges);
+  renderAboutManagementGroup(document.querySelector("#aboutManagementOtherInstitutes"), content.otherInstitutes);
+  renderAboutManagementGroup(document.querySelector("#aboutManagementServiceOrgs"), content.serviceOrgs);
+};
+
+renderAboutManagementContent();
+
+// About Us page Governing Body: same admin-editable/falls-back-to-shipped-copy convention, same
+// name+role card-group layout (renderAboutManagementGroup) as the Management section above.
+const getAboutGoverningBodyContent = () => getSiteContent("aboutGoverningBodyContent", {
+  management: [
+    { name: "Sri. P. Subba Reddy", role: "Chairman, GPREC & Trustee, GPRCT", position: "Chairman" },
+    { name: "Sri. G. Raghava Reddy", role: "Managing Trustee, GPRCT", position: "Member" },
+    { name: "Sri. G. Ekambar Reddy", role: "Trustee, GPRCT", position: "Member" },
+    { name: "Sri. K. Skanda Kumar", role: "Income Tax Practitioner, Kurnool", position: "Member" },
+    { name: "Dr. P. Raghunatha Reddy", role: "Managing Director, Sellcraft Global Solutions, Bengaluru", position: "Member" }
+  ],
+  faculty: [
+    { name: "Dr. T. Bramhananda Reddy", role: "Professor of EEE, GPREC, Kurnool (nominated by Principal)", position: "Member" },
+    { name: "Dr. K. Devaki Devi", role: "Associate Professor of ME, GPREC, Kurnool (nominated by Principal)", position: "Member" }
+  ],
+  external: [
+    { name: "Dr. K. Hemachandra Reddy", role: "Former Chairman, APSCHE & Professor of ME, JNTUA (management-nominated)", position: "Member" }
+  ],
+  nominees: [
+    { name: "Dr. V. Sumalatha", role: "Professor, Dept. of ECE, JNTUA, Anantapuramu (state government nominee)", position: "Member" },
+    { name: "Prof. B. Durga Prasad", role: "Professor of ME, JNTUA, Anantapuramu (JNTU Anantapur nominee)", position: "Member" }
+  ],
+  leadership: [
+    { name: "Prof. B. Sreenivasa Reddy", role: "Principal, GPREC, Kurnool", position: "Member" }
+  ]
+});
+const saveAboutGoverningBodyContent = (content) => saveSiteContent("aboutGoverningBodyContent", content);
+
+// Governing Body members carry a Position (Chairman/Member) alongside name+role, unlike the plain
+// name+role groups in Management, so this renders its own <li> markup instead of reusing
+// renderAboutManagementGroup.
+const renderGoverningBodyGroup = (listEl, members) => {
+  if (!listEl) return;
+  listEl.innerHTML = (members || [])
+    .map((member) => `
+      <li>
+        <strong>${escapeHtml(member.name)}</strong>
+        <span>${escapeHtml(member.role)}</span>
+        <em class="governing-body-position${member.position === "Chairman" ? " is-chairman" : ""}">${escapeHtml(member.position || "Member")}</em>
+      </li>
+    `)
+    .join("");
+};
+
+const renderAboutGoverningBodyContent = () => {
+  const el = document.querySelector("#governingBodyManagement");
+  if (!el) return;
+  const content = getAboutGoverningBodyContent();
+  renderGoverningBodyGroup(el, content.management);
+  renderGoverningBodyGroup(document.querySelector("#governingBodyFaculty"), content.faculty);
+  renderGoverningBodyGroup(document.querySelector("#governingBodyExternal"), content.external);
+  renderGoverningBodyGroup(document.querySelector("#governingBodyNominees"), content.nominees);
+  renderGoverningBodyGroup(document.querySelector("#governingBodyLeadership"), content.leadership);
+};
+
+renderAboutGoverningBodyContent();
+
+// About Us page Academic Council: same admin-editable/falls-back-to-shipped-copy convention and
+// plain name+role card-group layout (renderAboutManagementGroup) as Management above - no
+// Position field needed here, unlike Governing Body.
+const getAboutAcademicCouncilContent = () => getSiteContent("aboutAcademicCouncilContent", {
+  chairman: [
+    { name: "Dr. B. Sreenivasa Reddy", role: "Principal" }
+  ],
+  secretary: [
+    { name: "Dr. V. Satish Kumar", role: "Controller of Examinations" }
+  ],
+  deansHeads: [
+    { name: "Dr. B. Veerabhadra Reddy", role: "Vice-Principal" },
+    { name: "Dr. Y. Venkata Mohan Reddy", role: "Dean – Academics" },
+    { name: "Dr. Y. Rajasekhara Gowd", role: "Dean – Hostels" },
+    { name: "Dr. T. Bramhananda Reddy", role: "Dean – Research Planning & Consultancy" },
+    { name: "Dr. Y. V. Siva Reddy", role: "Dean – Internships & Industrial Training" },
+    { name: "Dr. K. Govardhan Reddy", role: "Dean – Alumni Relations & Higher Studies" },
+    { name: "Dr. K. Devaki Devi", role: "Dean – Student Affairs" },
+    { name: "Dr. N. Kasiviswanath", role: "HoD CSE" },
+    { name: "Dr. K. Madhava Reddy", role: "HoD ME" },
+    { name: "Dr. G. Kishor", role: "HoD EEE" },
+    { name: "Dr. K. Chinnapa Reddy", role: "HoD CE" },
+    { name: "Dr. K. Suresh Reddy", role: "HoD ECE" },
+    { name: "Dr. R. Praveen Sam", role: "HoD CSM" },
+    { name: "Dr. K.V.S.G.K. Sastry", role: "HoD HBS" }
+  ],
+  facultyCadres: [
+    { name: "Dr. B.J.S. Vara Prasad", role: "Prof of Civil Engg" },
+    { name: "Dr. C. Harinatha Reddy", role: "Asso Prof of EEE" },
+    { name: "Dr. M. Madhusudhan Reddy", role: "Asst Prof of ECE" }
+  ],
+  womanFaculty: [
+    { name: "Dr. V. Anantha Lakshmi", role: "Asso Prof of EEE" }
+  ],
+  experts: [
+    { name: "Dr. G. Giridhara", role: "Prof of ME, BMS College of Engg, Bangalore" },
+    { name: "Sri. P. Sankara Reddy", role: "EE, Highways, Kurnool" },
+    { name: "Sri. B. Manohar Raju", role: "Advocate, Kurnool" },
+    { name: "Dr. Y. Muralidhar Reddy", role: "Director, GPRDCH, Kurnool" }
+  ],
+  jntuaNominees: [
+    { name: "Prof. S.V. Satyanaryana", role: "Professor of Chemical Engg" },
+    { name: "Prof. Vaishali G. Ghorpade", role: "Professor of Civil Engg." },
+    { name: "Prof. V. Sumalatha", role: "Professor of ECE" }
+  ]
+});
+const saveAboutAcademicCouncilContent = (content) => saveSiteContent("aboutAcademicCouncilContent", content);
+
+const renderAboutAcademicCouncilContent = () => {
+  const el = document.querySelector("#academicCouncilChairman");
+  if (!el) return;
+  const content = getAboutAcademicCouncilContent();
+  renderAboutManagementGroup(el, content.chairman);
+  renderAboutManagementGroup(document.querySelector("#academicCouncilSecretary"), content.secretary);
+  renderAboutManagementGroup(document.querySelector("#academicCouncilDeansHeads"), content.deansHeads);
+  renderAboutManagementGroup(document.querySelector("#academicCouncilFacultyCadres"), content.facultyCadres);
+  renderAboutManagementGroup(document.querySelector("#academicCouncilWomanFaculty"), content.womanFaculty);
+  renderAboutManagementGroup(document.querySelector("#academicCouncilExperts"), content.experts);
+  renderAboutManagementGroup(document.querySelector("#academicCouncilJntuaNominees"), content.jntuaNominees);
+};
+
+renderAboutAcademicCouncilContent();
+
+// About Us page intro text (the top "About Us" panel, above Management) - same admin-editable/
+// falls-back-to-shipped-copy convention as everything else on this page.
+const getAboutUsIntroContent = () => getSiteContent("aboutUsIntroContent", {
+  paragraph1: "G.Pulla Reddy Engineering College is the brainchild of Late Sri G.Pulla Reddy, (popularly known as Sweets Pulla Reddy in A.P.) the renowned philanthropist and a great humanist. Established in 1984-85, it is one of the earliest private engineering colleges in Andhra Pradesh state. GPREC has been functioning as an autonomous institution since 2006.",
+  paragraph2: "The college is being managed by G. Pulla Reddy Charities trust, Hyderabad. The trust was instituted by late Sri G.Pulla Reddy Garu in 1977 with the motto of rendering service to the society. The trust has established many educational institutions, hospitals, orphanages, respite homes and other social welfare organizations in various parts of Andhra Pradesh State. G.Narayanamma Institute of Technology & Science (GNITS) – Hyderabad, G.Pulla Reddy College of Pharmacy – Hyderabad, G.Pulla Reddy Dental College – Kurnool are some of the other institutions being managed by this trust."
+});
+const saveAboutUsIntroContent = (content) => saveSiteContent("aboutUsIntroContent", content);
+
+const renderAboutUsIntroContent = () => {
+  const para1El = document.querySelector("#aboutUsPara1");
+  if (!para1El) return;
+  const content = getAboutUsIntroContent();
+  para1El.textContent = content.paragraph1;
+  const para2El = document.querySelector("#aboutUsPara2");
+  if (para2El) para2El.textContent = content.paragraph2;
+};
+
+renderAboutUsIntroContent();
+
+// About Us page History section text (the prose paragraphs, not the photo gallery - see
+// getAboutHistorySlides/renderAboutHistoryGallery above for that).
+const getAboutHistoryTextContent = () => getSiteContent("aboutHistoryTextContent", {
+  paragraph1: "G.Pulla Reddy Engineering College (Autonomous), the pride of Kurnool town is the brain child of late Sri G. Pulla Reddy (10-01-1921 to 09-05-2007), the renowned philanthropist and humanist. His love for education and care for his native district manifested themselves in the form of this college.",
+  paragraph2: "The college was inaugurated by the world famous ophthalmologist, Padma Bhushan, Dr. P. Siva Reddy on 22nd February, 1985. Though started after the capitation fee era, the college had no teething troubles. With the munificent grants and pragmatic guidance of Sri. G.Pulla Reddy, the college has made a steady progress and has become a premier institute of technical education. Though the college is second to none in physical infrastructure and human resources, it is primarily known for its discipline and value system. Sri G.Pulla Reddy belonged to the school of thought and practice that believes that \"virtue is its own reward\" and this ideal formed the basis for all activities on the campus. If his uncompromising insistence on quality in his pure ghee sweets business has made him the Sweets Legend and quality consultant to TTD in making the world famous Tirupati Laddu, his insistence on quality in education made GPREC the benchmark for technical education.",
+  paragraph3: "Though Sri. G.Pulla Reddy subsequently established several educational institutions of repute, GPREC has remained his \"first love\" and is the flagship organization of all of them."
+});
+const saveAboutHistoryTextContent = (content) => saveSiteContent("aboutHistoryTextContent", content);
+
+const renderAboutHistoryTextContent = () => {
+  const para1El = document.querySelector("#historyPara1");
+  if (!para1El) return;
+  const content = getAboutHistoryTextContent();
+  para1El.textContent = content.paragraph1;
+  const para2El = document.querySelector("#historyPara2");
+  if (para2El) para2El.textContent = content.paragraph2;
+  const para3El = document.querySelector("#historyPara3");
+  if (para3El) para3El.textContent = content.paragraph3;
+};
+
+renderAboutHistoryTextContent();
+
+// About Us page Vision / Mission / Quality Policy cards.
+const getAboutVmqContent = () => getSiteContent("aboutVmqContent", {
+  vision: "The vision of GPREC is to become the choicest institute of technology and a hub of academic and industrial research and development.",
+  mission: "To provide conducive academic ambience, excellent infrastructure, continually updated lab equipment and committed and scholarly faculty to realize the vision of the college.",
+  quality: "GPREC is engaged in imparting \"quality education and training\" in the field of engineering and technology. It aims to be an institute of excellence through continual improvement."
+});
+const saveAboutVmqContent = (content) => saveSiteContent("aboutVmqContent", content);
+
+const renderAboutVmqContent = () => {
+  const visionEl = document.querySelector("#aboutVisionText");
+  if (!visionEl) return;
+  const content = getAboutVmqContent();
+  visionEl.textContent = content.vision;
+  const missionEl = document.querySelector("#aboutMissionText");
+  if (missionEl) missionEl.textContent = content.mission;
+  const qualityEl = document.querySelector("#aboutQualityPolicyText");
+  if (qualityEl) qualityEl.textContent = content.quality;
+};
+
+renderAboutVmqContent();
+
+// About Us page Service Rules panel (last section on the page) - a short description plus a
+// link to the official PDF, same admin-editable/falls-back-to-shipped-copy convention.
+const getAboutServiceRulesContent = () => getSiteContent("aboutServiceRulesContent", {
+  description: "The Service Rules govern the terms of employment, conduct, and administrative procedures applicable to the faculty and staff of G.Pulla Reddy Engineering College.",
+  pdfUrl: "https://www.gprec.ac.in/academicplanner/GPREC-%20Service%20Rules.pdf"
+});
+const saveAboutServiceRulesContent = (content) => saveSiteContent("aboutServiceRulesContent", content);
+
+const renderAboutServiceRulesContent = () => {
+  const textEl = document.querySelector("#aboutServiceRulesText");
+  if (!textEl) return;
+  const content = getAboutServiceRulesContent();
+  textEl.textContent = content.description;
+  const linkEl = document.querySelector("#aboutServiceRulesLink");
+  if (linkEl) linkEl.href = content.pdfUrl;
+};
+
+renderAboutServiceRulesContent();
+
+// About Us page Administration section: Principal + Vice Principal (with photos) and the Deans
+// table. Same admin-editable/falls-back-to-shipped-copy convention as the rest of this page.
+const getAboutAdministrationContent = () => getSiteContent("aboutAdministrationContent", {
+  principal: {
+    name: "Dr. B. Sreenivasa Reddy",
+    designation: "Principal",
+    bio: "Dr.B.Sreenivasa Reddy received his Ph.D in Mechanical Engineering from Jawaharlal Nehru Technological University, Hyderabad in 1998. After obtaining masters degree from Birla Institute of Technology and Science, Pilani, he joined the faculty of Mechanical Engineering of GPREC 1989 and has been serving the institute since then. He headed the department of Mechanical Engineering as a professor from 2000 and 2007. He served the institute as Dean, Academics and Administration from 2006 to 2007. He took over as the Principal of the college after Dr.Jaya Rami Reddy became the Director of the college in 2007.\n\nDr.Sreenivas Reddy is known to be a hard task master and represents the youthful exuberance of the institution. Groomed and nurtured by Dr. Jaya Rami Reddy, he has been working hard to take the institute to new heights.\n\nDr. Sreenivasa Reddy's teaching and research interests lie in the areas of thermodynamics, energy power and heat transfer. He has published more than 30 research papers in several national and international journals and conferences and has guided 4 M.Tech and 3 Ph.Ds.",
+    photoDataUrl: "https://www.gprec.ac.in/wp-content/uploads/2019/04/principal-01-201x300.png"
+  },
+  vicePrincipal: {
+    name: "Dr. Veerabhadra Reddy Basam",
+    designation: "Vice Principal",
+    bio: "Dr. Veerabhadra Reddy Basam received his M.Tech and Ph.D. degrees in Mechanical Engineering from Jawaharlal Nehru Technological University, Hyderabad, in 2000 and 2009 respectively. He is currently serving as a Professor of Mechanical Engineering at G. Pulla Reddy Engineering College (Autonomous), Kurnool, and has over 26 years of experience spanning teaching, research, and industry.\n\nDr. Reddy has published more than 40 research papers in national and international journals and conferences. He has guided numerous student projects at the undergraduate, postgraduate, and doctoral levels, and has also filed two patents. He is a member of professional bodies including the Indian Society for Technical Education (ISTE), the Society for Sciences, and the Combustion Institute (India).\n\nHe has served as a member of the Governing Council, Academic Council, and Board of Studies at G. Pulla Reddy Engineering College. Over the past 15 years, he has led several key institutional initiatives related to Alumni Affairs, Corporate Relations, Placements, Internships, Industrial Training, and Innovation & Entrepreneurship development. He currently holds the position of Vice-Principal at the institution.\n\nIn addition to his academic and administrative responsibilities, Dr. Reddy has actively contributed to student training and development, with a strong focus on enhancing employability, promoting higher education, and encouraging entrepreneurship among students. His efforts in student development have been recognized and appreciated by organizations such as Infosys.\n\nDr. Reddy also served as the President of the Andhra Pradesh Placement Officers' Consortium for two years. He is actively involved in several non-profit organizations engaged in community and social service.",
+    photoDataUrl: "https://www.gprec.ac.in/wp-content/uploads/2026/03/VBR-240x300.jpeg"
+  },
+  deans: [
+    { position: "Dean–Academics", name: "Dr. Y. Venkata Mohan Reddy", department: "ME", email: "dean.academics@gprec.ac.in", phone: "9848366453" },
+    { position: "Dean–Student Affairs", name: "Dr. K. Devaki Devi", department: "ME", email: "dean.studentaffairs@gprec.ac.in", phone: "9177017334" },
+    { position: "Dean–Research, Planning & Consultancy", name: "Dr. T. Bramhananda Reddy", department: "EEE", email: "dean.research@gprec.ac.in", phone: "9966655504" },
+    { position: "Dean–Innovation & Entrepreneurship", name: "Dr. R.S. Chalapathi", department: "ME", email: "dean.entrepreneurship@gprec.ac.in", phone: "9246204471" },
+    { position: "Dean–Placements & Corporate Relations", name: "Dr. K. Govardhan Reddy", department: "CSE(AI&ML)", email: "dean.placements@gprec.ac.in", phone: "9490197740" },
+    { position: "Dean–Internships & Industrial Training", name: "Dr. Y.V. Siva Reddy", department: "EEE", email: "dean.internships@gprec.ac.in", phone: "7095667776" },
+    { position: "Dean–Alumni Relations & Higher Studies", name: "Dr. K. Govardhan Reddy", department: "CSE(AI&ML)", email: "dean.higherstudies@gprec.ac.in", phone: "9490197740" },
+    { position: "Dean–Hostels", name: "Dr. Y. Rajasekhara Gowd", department: "HBS", email: "dean.hostels@gprec.ac.in", phone: "9441587635" }
+  ]
+});
+const saveAboutAdministrationContent = (content) => saveSiteContent("aboutAdministrationContent", content);
+
+const renderAboutLeaderBio = (containerEl, bio) => {
+  if (!containerEl) return;
+  containerEl.innerHTML = (bio || "")
+    .split("\n\n")
+    .filter((para) => para.trim())
+    .map((para) => `<p>${escapeHtml(para.trim())}</p>`)
+    .join("");
+};
+
+const renderAboutAdministrationContent = () => {
+  const principalNameEl = document.querySelector("#adminPrincipalName");
+  if (!principalNameEl) return;
+  const content = getAboutAdministrationContent();
+
+  principalNameEl.textContent = content.principal.name;
+  document.querySelector("#adminPrincipalDesignation").textContent = content.principal.designation;
+  renderAboutLeaderBio(document.querySelector("#adminPrincipalBio"), content.principal.bio);
+  document.querySelector("#adminPrincipalPhoto").src = content.principal.photoDataUrl;
+
+  document.querySelector("#adminVicePrincipalName").textContent = content.vicePrincipal.name;
+  document.querySelector("#adminVicePrincipalDesignation").textContent = content.vicePrincipal.designation;
+  renderAboutLeaderBio(document.querySelector("#adminVicePrincipalBio"), content.vicePrincipal.bio);
+  document.querySelector("#adminVicePrincipalPhoto").src = content.vicePrincipal.photoDataUrl;
+
+  const deansBody = document.querySelector("#adminDeansTableBody");
+  if (deansBody) {
+    deansBody.innerHTML = (content.deans || [])
+      .map((dean) => `<tr><td>${escapeHtml(dean.position)}</td><td>${escapeHtml(dean.name)}</td><td>${escapeHtml(dean.department)}</td><td>${escapeHtml(dean.email)}</td><td>${escapeHtml(dean.phone)}</td></tr>`)
+      .join("");
+  }
+};
+
+renderAboutAdministrationContent();
+
+document.querySelectorAll("[data-bio-toggle]").forEach((button) => {
+  button.addEventListener("click", () => {
+    const bioEl = document.querySelector(`#${button.dataset.bioToggle}`);
+    if (!bioEl) return;
+    const expanded = bioEl.classList.toggle("is-expanded");
+    button.textContent = expanded ? "Read less" : "Read more";
+  });
+});
 
 const aboutHistoryManagerBody = document.querySelector("#aboutHistoryManagerBody");
 const aboutHistoryCaptionInput = document.querySelector("#aboutHistoryCaptionInput");
@@ -17126,6 +17506,33 @@ const renderAffiliations = () => {
 
 renderAffiliations();
 
+// These all render from getSiteContent(), which reads the in-memory bootstrap - still null on this
+// first synchronous pass, so they'd render empty on a fresh load. Re-render once the real bootstrap
+// data lands, same fix as hydratePortalDataFromDatabaseAsync above. Each function here no-ops on
+// pages without its target element, so calling all of them unconditionally is harmless.
+(async () => {
+  await fetchGprecDbBootstrap();
+  renderHomeVideoGrid();
+  renderStudentVoices();
+  renderPlacementLogos();
+  renderAcademicCourses();
+  renderAffiliations();
+  renderDepartmentsDropdowns();
+  renderHomeHeroSlides();
+  renderSitePhotoManager();
+  renderHomeHeroManager();
+  renderAboutHistoryManager();
+  renderCampusSlideManager();
+  renderVideoManager();
+  renderPhotoGalleryManager();
+  renderCourseManager();
+  renderVoiceManager();
+  renderPlacementManager();
+  renderAffiliationManager();
+  renderCampusEventManager();
+  renderNoticeManager();
+})();
+
 const affiliationManagerBody = document.querySelector("#affiliationManagerBody");
 const affiliationNameInput = document.querySelector("#affiliationNameInput");
 const affiliationLogoInput = document.querySelector("#affiliationLogoInput");
@@ -17348,13 +17755,11 @@ saveCampus360NoteButton?.addEventListener("click", async () => {
   }
 });
 
-// Real 360° cube photography, originally extracted from the legacy site's QuickTime VR cubic
-// panoramas (each location has 6 real face photos: front/right/back/left/up/down) and now fully
-// admin-managed - see the admin dashboard's Media > 360° Campus View section. Both the category
-// tab list itself and each tab's location list are admin-editable independently - e.g. replacing a
-// photo under Central Facilities never touches Campus View's copy, even if they started out as the
-// same real place, because there's no dedicated photography for the 4 original non-Campus-View
-// tabs and they need to be free to diverge once an admin starts editing them.
+// Real 360° cube photography (each location has 6 real face photos: front/right/back/left/up/
+// down), fully admin-managed - see the admin dashboard's Media > 360° Campus View section. Both
+// the category tab list and each tab's location list are admin-editable independently - e.g.
+// replacing a photo under Central Facilities never touches Campus View's copy, even if they
+// started out as the same real place, so each tab is free to diverge once an admin edits it.
 const campus360RealLocationFaces = (slug) =>
   Object.fromEntries(["front", "right", "back", "left", "up", "down"].map((face) => [face, `../uploads/media/campus-360/${slug}/${face}.jpg`]));
 const campus360RealLocationEntry = (slug, title) => ({ slug, title, faces: campus360RealLocationFaces(slug) });
@@ -18102,6 +18507,14 @@ const getCampusEvents = () => {
   return Array.isArray(saved) ? saved : defaultCampusEvents;
 };
 const saveCampusEvents = (events) => saveSiteContent("campusEvents", events);
+// Only these students can sign in to scan/check in tickets for a given event (see the
+// volunteer-only gate on event-pass-scan.html and the server-side check in portal_db_server.py's
+// campus-event/gate-lookup, gate-log, and manual-checkin routes).
+const isAssignedEventVolunteer = (eventId, rollNumber) => {
+  const event = getCampusEvents().find((item) => item.id === eventId);
+  const roll = (rollNumber || "").trim().toUpperCase();
+  return Boolean(event && Array.isArray(event.volunteerRollNumbers) && event.volunteerRollNumbers.includes(roll));
+};
 // Lets a faculty Event Head edit their own assigned event's details without needing admin access -
 // a purpose-built endpoint with its own server-side permission check (see update_campus_event_as_
 // head in portal_db_server.py), not the generic admin-only /api/site-content saveCampusEvents uses.
@@ -18149,10 +18562,7 @@ const saveFestVenue = (venue) => saveSiteContent("festVenue", venue);
 // leave it on and let the automatic expiry handle hiding it once the fest is over.
 const getFestBannerEnabled = () => getSiteContent("festBannerEnabled", true);
 const saveFestBannerEnabled = (enabled) => saveSiteContent("festBannerEnabled", enabled);
-const getFestVisitorTheme = () => getSiteContent("festVisitorTheme", "minimal");
-const saveFestVisitorTheme = (theme) => saveSiteContent("festVisitorTheme", theme || "minimal");
 const getFestVisitorCompassPosition = () => getSiteContent("festVisitorCompassPosition", "right");
-const saveFestVisitorCompassPosition = (position) => saveSiteContent("festVisitorCompassPosition", position || "right");
 
 // The app drawer's Event Management Dashboard shortcut always shows on admin/faculty/student
 // dashboards (the markup itself starts is-hidden only as a no-flash-of-unstyled-content guard -
@@ -18441,13 +18851,10 @@ document.querySelector("#campusEventGrid")?.addEventListener("click", (event) =>
 });
 
 // Spotlight grid's own "Register Now" shortcuts (a public campus event's card, or the Fest's own
-// promo card from renderDefaultRegistrationNotice) used to always link out to the external Fest
-// visitor portal - a separate signed-out account system meant for outside guests, not someone
-// already signed in here. On a page with its own #eventApplyForm (student dashboard), route
-// through the exact same in-account flow #campusEventGrid's "Apply Now" uses instead, so
-// registering doesn't require creating a second, unrelated account. Pages without that form
-// (faculty/non-teaching/alumni/parent dashboards, which have no student-style apply flow) fall
-// through to the link's own href unchanged.
+// promo card) should not require signing into the external Fest visitor portal, a separate
+// signed-out account system meant for outside guests. On a page with its own #eventApplyForm
+// (student dashboard), route through the exact same in-account flow #campusEventGrid's "Apply Now"
+// uses instead. Pages without that form fall through to the link's own href unchanged.
 spotlightGrid?.addEventListener("click", (event) => {
   const link = event.target.closest("[data-spotlight-apply-event], [data-spotlight-apply-fest]");
   if (!link || !eventApplyForm) return;
@@ -18552,41 +18959,6 @@ const wrapCanvasText = (ctx, text, x, y, maxWidth, lineHeight, maxLines = 2) => 
   lines.forEach((lineText, lineIndex) => ctx.fillText(lineText, x, y + lineIndex * lineHeight));
 };
 
-const canvasTextLines = (ctx, text, maxWidth) => {
-  const words = String(text || "").split(/\s+/).filter(Boolean);
-  if (!words.length) return ["-"];
-  const lines = [];
-  let line = "";
-  words.forEach((word) => {
-    const test = line ? `${line} ${word}` : word;
-    if (ctx.measureText(test).width > maxWidth && line) {
-      lines.push(line);
-      line = word;
-    } else {
-      line = test;
-    }
-  });
-  if (line) lines.push(line);
-  return lines;
-};
-
-const drawFittedCanvasText = (ctx, text, x, y, maxWidth, { maxLines = 2, maxFontSize = 20, minFontSize = 12, weight = 800, color = "#04284a" } = {}) => {
-  let fontSize = maxFontSize;
-  let lines = [];
-  while (fontSize >= minFontSize) {
-    ctx.font = `${weight} ${fontSize}px Arial, sans-serif`;
-    lines = canvasTextLines(ctx, text || "-", maxWidth);
-    if (lines.length <= maxLines && lines.every((line) => ctx.measureText(line).width <= maxWidth)) break;
-    fontSize -= 1;
-  }
-  ctx.font = `${weight} ${fontSize}px Arial, sans-serif`;
-  ctx.fillStyle = color;
-  const lineHeight = Math.max(16, Math.round(fontSize * 1.18));
-  const visibleLines = lines.slice(0, maxLines);
-  visibleLines.forEach((lineText, lineIndex) => ctx.fillText(lineText, x, y + lineIndex * lineHeight));
-  return { lines: visibleLines.length, lineHeight, height: visibleLines.length * lineHeight };
-};
-
 // Each ticket-stub mockup's own eticket-tag icon (24x24 viewBox path data, transcribed verbatim
 // from the mockup HTML) - ticket for Event Pass, bus for Bus Pass, car for Vehicle Pass, gate
 // for both Hostel passes (their mockup reuses the same gate glyph as the Event Pass' ticket icon).
@@ -18599,21 +18971,16 @@ const TICKET_ICON_PATHS = {
 // Shared "festival ticket" card shape (navy stub with QR + dashed perforation + cream body with a
 // field grid + navy footer bar) used by the Event Pass, Bus Pass, Vehicle Pass, and Hostel
 // Outing/Leave Pass - they're all the same template family, differing only in watermark art,
-// eyebrow/tag/title copy, which fields show, and whether the perforation has cut notches (Event
-// Pass's mockup markup includes those two semicircle divs; the pass mockups share the same CSS
-// class but never actually include them, so `showNotches` defaults off).
+// eyebrow/tag/title copy, which fields show, and whether the perforation has cut notches (only
+// Event Pass's mockup includes the cut-notch semicircle divs, so `showNotches` defaults off).
 // `fields`: [{ label, value, mono, status, fullWidth }] - non-fullWidth fields pair up two per
 // row in reading order; a fullWidth field always starts its own row. `status: true` draws a
 // green dot + green text instead of the normal ink value (for a "STATUS: Active/Approved" field).
-// Shared @font-face declarations for every real-HTML document in this file (the ticket-stub
-// family below, and Pay Slip/Form 16/Hall Ticket/Fee Challan further down) - html2canvas only
+// Shared @font-face declarations for every real-HTML document in this file - html2canvas only
 // gets correct space-glyph metrics for a custom font if it can find a real @font-face rule for it
-// in a stylesheet; fonts registered purely via the FontFace API (ensureBrandFontsLoaded's
-// approach, used by every canvas-fillText doc in this file) render with the right glyphs but
-// collapse word spacing under html2canvas specifically. Same URLs, just also declared as
-// @font-face here so html2canvas's own font-metrics lookup finds them. Defined here (before its
-// first user) rather than down near Pay Slip, since TDZ means a `const` can't be referenced by
-// anything defined earlier in the file even via a template-literal interpolation.
+// in a stylesheet; fonts registered purely via the FontFace API render with the right glyphs but
+// collapse word spacing under html2canvas specifically. Same URLs, also declared as @font-face
+// here so html2canvas's own font-metrics lookup finds them.
 const A4_DOC_FONT_FACES = `
 @font-face{ font-family:'Fraunces'; font-weight:500; src:url('https://fonts.gstatic.com/s/fraunces/v38/6NUh8FyLNQOQZAnv9bYEvDiIdE9Ea92uemAk_WBq8U_9v0c2Wa0K7iN7hzFUPJH58nib1603gg7S2nfgRYIchRuTCf7W.ttf'); }
 @font-face{ font-family:'Fraunces'; font-weight:600; src:url('https://fonts.gstatic.com/s/fraunces/v38/6NUh8FyLNQOQZAnv9bYEvDiIdE9Ea92uemAk_WBq8U_9v0c2Wa0K7iN7hzFUPJH58nib1603gg7S2nfgRYIcaRyTCf7W.ttf'); }
@@ -18789,14 +19156,10 @@ const makeReceiptPdf = async (title, receiptLines) => {
   }
 };
 
-// Real-HTML + native-PNG version of the shared "festival ticket" card (navy stub with QR +
-// dashed perforation + cream body with a field grid + navy footer bar) used by the Event Pass,
-// Bus Pass, Vehicle Pass, and Hostel Outing/Leave Pass - they're all the same template family,
-// differing only in watermark art, eyebrow/tag/title copy, which fields show, and whether the
-// perforation has cut notches (only the Event Pass sets showNotches). Matches "22_event_pass.html"
-// (CSS identical to 23_bus_pass.html/24_vehicle_pass.html for these shared elements) exactly -
-// same real-HTML/native-render approach as buildPaySlipImage etc., replacing the previous
-// hand-measured canvas port whose pixel constants could silently drift from the actual CSS.
+// Real-HTML + native-PNG version of the shared "festival ticket" card used by the Event Pass, Bus
+// Pass, Vehicle Pass, and Hostel Outing/Leave Pass (see the shared card shape note further up).
+// Matches "22_event_pass.html" (CSS identical to 23_bus_pass.html/24_vehicle_pass.html for these
+// shared elements) exactly - same real-HTML/native-render approach as buildPaySlipImage etc.
 const TICKET_STUB_CSS = `
 ${A4_DOC_FONT_FACES}
 .ts-card{
@@ -19172,10 +19535,7 @@ const buildTicketStubHtml = ({
 // `fields`: [{ label, value, mono, status, fullWidth }] - non-fullWidth fields pair up two per
 // row via CSS Grid; `fullWidth` spans the full row width (`grid-column:1/-1`). `status: true`
 // draws a green dot + green text instead of the normal ink value. `watermarkSvg` is one of
-// TICKET_WATERMARKS (or omitted for none, e.g. the two Hostel passes... no, those use `shield`);
-// `showWatermark`/`drawBackgroundArt` (the pre-redesign params) are gone - every real caller
-// already set showWatermark:false (the seal-JPEG anti-fraud overlay never actually applied to any
-// of these PNG-output ticket-stub docs), so there was nothing left for that flag to do.
+// TICKET_WATERMARKS, or omitted for none.
 const renderTicketStubCard = async ({
   eyebrow, scanCaption, tag, tagIconPath, qrText, logoUrl = gprecLogoUrl,
   title, subtitle, fields, footerLeft, footerRight, showNotches = false,
@@ -19231,86 +19591,6 @@ const makeShortPassId = (prefix, parts) => {
   return `${prefix}-${hash.toString(36).toUpperCase().padStart(6, "0").slice(-6)}`;
 };
 
-const A4_DOC_COLORS = {
-  NAVY_DEEP: "#0a1730",
-  NAVY: "#0f1f3d",
-  AMBER: "#e8821a",
-  AMBER_SOFT: "#f0a34d",
-  CREAM: "#faf6ee",
-  INK: "#0f1f3d",
-  MUTED: "#6b7180",
-  LINE: "#e3ddd0"
-};
-const a4DocRoundedRectPath = (ctx, x, y, w, h, r) => {
-  const rr = Math.min(r, w / 2, h / 2);
-  ctx.beginPath();
-  ctx.moveTo(x + rr, y);
-  ctx.arcTo(x + w, y, x + w, y + h, rr);
-  ctx.arcTo(x + w, y + h, x, y + h, rr);
-  ctx.arcTo(x, y + h, x, y, rr);
-  ctx.arcTo(x, y, x + w, y, rr);
-  ctx.closePath();
-};
-
-// Shared header band (logo + org name + doc number, top right) for the A4-sheet document family
-// (Pay Slip, Form 16) - matches "34_pay_slip.html"/"35_form_16.html"'s identical header chrome.
-const drawA4DocHeader = async (ctx, cardW, docNoLabel, docNo, sizes = {}) => {
-  const { orgNameSize = 15, orgSubSize = 9.5, docNoLabelSize = 10, docNoSize = 14, padX = 32 } = sizes;
-  const { NAVY, NAVY_DEEP, AMBER_SOFT, CREAM } = A4_DOC_COLORS;
-  const headH = 78;
-  const headGrad = ctx.createLinearGradient(0, 0, cardW * 0.5, headH);
-  headGrad.addColorStop(0, NAVY);
-  headGrad.addColorStop(1, NAVY_DEEP);
-  ctx.fillStyle = headGrad;
-  ctx.fillRect(0, 0, cardW, headH);
-
-  const logoImg = new Image();
-  await new Promise((resolve) => {
-    logoImg.onload = resolve;
-    logoImg.onerror = resolve;
-    logoImg.src = gprecLogoUrl;
-  });
-  // Logo beside a two-line org name + department (matching the mockup's `.org-name`/`.org-sub`
-  // hierarchy - a single plain line loses the bold-college-name/muted-subtitle distinction).
-  let textX = padX;
-  if (logoImg.naturalWidth) {
-    const logoH = 26;
-    const logoW = (logoH * logoImg.naturalWidth) / logoImg.naturalHeight;
-    ctx.drawImage(logoImg, padX, (headH - logoH) / 2, logoW, logoH);
-    textX = padX + logoW + 14;
-  }
-  ctx.fillStyle = CREAM;
-  ctx.font = `700 ${orgNameSize}px Fraunces`;
-  ctx.fillText("G Pulla Reddy Engineering College", textX, 38);
-  ctx.fillStyle = "rgba(250,246,238,0.65)";
-  ctx.font = `400 ${orgSubSize}px Inter`;
-  ctx.fillText("Human Resources Department", textX, 56);
-
-  ctx.textAlign = "right";
-  ctx.fillStyle = AMBER_SOFT;
-  ctx.font = `700 ${docNoLabelSize}px 'Space Mono'`;
-  ctx.fillText(docNoLabel, cardW - padX, 32);
-  ctx.font = `700 ${docNoSize}px 'Space Mono'`;
-  ctx.fillStyle = CREAM;
-  ctx.fillText(docNo, cardW - padX, 52);
-  ctx.textAlign = "left";
-  return headH;
-};
-
-// Shared footer bar for the A4-sheet document family.
-const drawA4DocFooter = (ctx, cardW, y, text, fontSize = 10) => {
-  const { NAVY } = A4_DOC_COLORS;
-  const h = 32;
-  ctx.fillStyle = NAVY;
-  ctx.fillRect(0, y, cardW, h);
-  ctx.fillStyle = "rgba(250,246,238,0.6)";
-  ctx.textAlign = "center";
-  ctx.font = `400 ${fontSize}px 'Space Mono'`;
-  ctx.fillText(text, cardW / 2, y + h / 2 + 3);
-  ctx.textAlign = "left";
-  return h;
-};
-
 // Builds the muted-label/bold-value segments for the pay slip's bank line, matching
 // "34_pay_slip.html"'s `.bank-line b` styling (plain muted text with bold ink values) - shared
 // by both the staff and faculty pay slip forms so the mask/date formatting stays identical.
@@ -19328,15 +19608,11 @@ const buildPaySlipBankLineParts = (bankDetails) => {
 };
 
 // Renders real markup (not a hand-drawn canvas reimplementation) through html2canvas so pay-slip
-// output can never drift from its HTML/CSS source of truth - every earlier canvas port of
-// "34_pay_slip.html" quietly missed some property (a color, a font-weight, a border-radius) that
-// only showed up on side-by-side comparison. All class names are "ps-" prefixed and the design
-// tokens live on .ps-sheet itself (not :root) so this can't leak into or collide with styles.css,
-// which already defines --navy/--ink/--muted/--line/--green at the document root with different
-// values. The container renders off-screen (position:fixed, far off left) so html2canvas can lay
-// it out at full size without it ever being visible in the live page. (A4_DOC_FONT_FACES, shared
-// by every one of these real-HTML documents including the ticket-stub family, is defined earlier
-// in the file, above TICKET_STUB_CSS, since that's the first one that needs it.)
+// output can never drift from its HTML/CSS source of truth. All class names are "ps-" prefixed and
+// the design tokens live on .ps-sheet itself (not :root) so this can't leak into or collide with
+// styles.css, which already defines --navy/--ink/--muted/--line/--green at the document root with
+// different values. The container renders off-screen (position:fixed, far off left) so html2canvas
+// can lay it out at full size without it ever being visible in the live page.
 const PAY_SLIP_CSS = `
 ${A4_DOC_FONT_FACES}
 .ps-sheet{
@@ -19407,7 +19683,7 @@ const renderA4DocViaNativePdf = async (html, css, rootSelector, title, backgroun
   try {
     const controller = new AbortController();
     const timeout = setTimeout(() => controller.abort(), 5000);
-    const response = await fetch("http://localhost:8767/render-pdf", {
+    const response = await fetch(`${window.location.protocol}//${window.location.hostname}:8767/render-pdf`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ html, css, width: 793, rootSelector, title, background }),
@@ -19429,7 +19705,7 @@ const renderA4DocViaNativePng = async (html, css, rootSelector, width, scale) =>
   try {
     const controller = new AbortController();
     const timeout = setTimeout(() => controller.abort(), 5000);
-    const response = await fetch("http://localhost:8767/render-png", {
+    const response = await fetch(`${window.location.protocol}//${window.location.hostname}:8767/render-png`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ html, css, width, scale, rootSelector }),
@@ -19445,13 +19721,11 @@ const renderA4DocViaNativePng = async (html, css, rootSelector, width, scale) =>
 
 
 // Poster Design (admin-dashboard.html only): internal-only tool that fills in and downloads the
-// fest-poster mockups in file_templates/ (08_art_exhibition.html .. 21_convocation.html - all
-// share identical CSS/layout, differing only in the .art SVG illustration and default copy).
-// Same real-HTML + native-PNG pipeline as buildBusPassImage/renderTicketStubCard above (build an
-// HTML string matching the mockup, hit renderA4DocViaNativePng, fall back to html2canvas) -
-// deliberately does NOT publish anywhere, unlike festPosterDesignerSection's SVG posters
-// (event-management-dashboard.html, posterTemplates/buildPosterFromTemplate above) which publish
-// to every dashboard via getSpotlightPosters(). This is just a download-and-print tool.
+// fest-poster mockups in file_templates/ (all share identical CSS/layout, differing only in the
+// .art SVG illustration and default copy). Same real-HTML + native-PNG pipeline as
+// buildBusPassImage/renderTicketStubCard above - deliberately does NOT publish anywhere, unlike
+// festPosterDesignerSection's SVG posters which publish to every dashboard via
+// getSpotlightPosters(). This is just a download-and-print tool.
 const EVENT_POSTER_CSS = `
 /* Square corners, not rounded - rounded corners here meant the rendered PNG (captured with
    omit_background:true by pdf_render_server.py's /render-png, so anything outside this element's
@@ -20384,11 +20658,10 @@ const canvasCardToPdf = async (cardResult, title) => {
 
 // Same real-HTML + native-PDF approach as buildPaySlipImage/buildForm16Image, matching
 // "32_hall_ticket_certificate_style.html" (gold/maroon "certificate" palette, double gold frame -
-// distinct from every other doc in this app, which uses the cream/navy/amber set). Per prior
-// explicit direction, the mockup's decorative shield/crest SVG is replaced with the real GPREC
-// logo, and its curved rotating-text stamp is omitted entirely since the logo already carries
-// that "official" cue - reintroducing it would be a step backwards. Also reuses the already-loaded
-// Fraunces instead of fetching the mockup's Playfair Display for just one title.
+// distinct from every other doc in this app, which uses the cream/navy/amber set). The mockup's
+// decorative shield/crest SVG is replaced with the real GPREC logo, and its curved rotating-text
+// stamp is omitted since the logo already carries that "official" cue. Also reuses the
+// already-loaded Fraunces instead of fetching the mockup's Playfair Display for just one title.
 const HALL_TICKET_CSS = `
 ${A4_DOC_FONT_FACES}
 .ht-sheet{
@@ -20523,14 +20796,12 @@ const buildHallTicketImage = async ({ ticketNo, name, rollNumber, branch, classN
 
 // Same real-HTML + native-PDF approach as buildPaySlipImage/buildForm16Image/buildHallTicketImage,
 // matching "33_gprec_fee_challan.html" (bank-form palette distinct from every other document -
-// dark gray page margin around off-white paper, Inter + Space Mono only, no Fraunces - matching
-// the mockup dropping the serif font entirely). Two deliberate departures from the mockup, both
-// already established in the prior canvas version and preserved here: a real Code 128 (Set C)
-// barcode built from encodeCode128C's bar/space bit string instead of the mockup's fake repeating-
+// dark gray page margin around off-white paper, Inter + Space Mono only, no Fraunces, matching the
+// mockup dropping the serif font entirely). Two deliberate departures from the mockup: a real Code
+// 128 (Set C) barcode built from encodeCode128C's bar/space bit string instead of a fake repeating-
 // gradient strip, and the same faint seal + diagonal "OFFICIAL DOCUMENT" watermark every other
-// official document in this app carries (the mockup itself doesn't show one). `copyLabel` is
-// "COLLEGE COPY"/"STUDENT COPY"/"BANK COPY" - the only difference between the 3 copies
-// makeChallanPdfs produces.
+// official document in this app carries. `copyLabel` is "COLLEGE COPY"/"STUDENT COPY"/"BANK COPY" -
+// the only difference between the 3 copies makeChallanPdfs produces.
 const FEE_CHALLAN_CSS = `
 ${A4_DOC_FONT_FACES}
 .fc-sheet{
@@ -20858,6 +21129,7 @@ const campusEventBannerStartInput = document.querySelector("#campusEventBannerSt
 const campusEventBannerEndInput = document.querySelector("#campusEventBannerEndInput");
 const campusEventPublicInput = document.querySelector("#campusEventPublicInput");
 const campusEventDescriptionInput = document.querySelector("#campusEventDescriptionInput");
+const campusEventVolunteersInput = document.querySelector("#campusEventVolunteersInput");
 const campusEventAddButton = document.querySelector("#campusEventAddButton");
 const campusEventExportAllButton = document.querySelector("#campusEventExportAllButton");
 const campusEventAddFeedback = document.querySelector("#campusEventAddFeedback");
@@ -24074,25 +24346,19 @@ if (facultyDashboardName) {
       }
     }
 
-    const facultyRoster = [
-      { studentId: "20X51A0501", name: "Sai Chandan" },
-      { studentId: "20X51A0502", name: "B. Naveen Kumar" },
-      { studentId: "20X51A0503", name: "CH. Ramya" },
-      { studentId: "20X51A0504", name: "D. Sai Teja" },
-      { studentId: "20X51A0505", name: "K. Praveena" },
-      { studentId: "20X51A0506", name: "M. Vamsi Krishna" }
-    ];
-
-    const rosterBySection = {
-      "CSE III-A": facultyRoster,
-      "CSE III-B": [
-        { studentId: "20X51A0551", name: "A. Rohit Reddy" },
-        { studentId: "20X51A0552", name: "B. Divya Sri" },
-        { studentId: "20X51A0553", name: "CH. Manoj Kumar" },
-        { studentId: "20X51A0554", name: "D. Lakshmi Priya" },
-        { studentId: "20X51A0555", name: "K. Sandeep" },
-        { studentId: "20X51A0556", name: "M. Nikhitha" }
-      ]
+    // Real studentDirectory/sectionAssignments-backed roster for a given section, replacing the
+    // old hardcoded 6-name sample roster (facultyRoster/rosterBySection) - same pattern Internal
+    // Marks already uses (see buildInternalMarksRoster further down).
+    const buildDepartmentSectionRoster = (section) => {
+      const bootstrap = getGprecDbBootstrap();
+      const directory = bootstrap?.studentDirectory || [];
+      const sectionAssignments = bootstrap?.sectionAssignments || {};
+      const profiles = bootstrap?.studentProfiles || {};
+      const targetSection = normalizeSectionLabel(section);
+      return directory
+        .filter((student) => student.branch === facultyRecord.department)
+        .filter((student) => normalizeSectionLabel(sectionAssignments[student.studentId] || profiles[student.studentId]?.className) === targetSection)
+        .sort((a, b) => a.studentId.localeCompare(b.studentId));
     };
 
     // Real attendance_records/attendance_entries tables now back this (see save_attendance_record
@@ -24153,7 +24419,23 @@ if (facultyDashboardName) {
     }
 
     const currentAttendanceClass = () => facultyClasses[Number(attendanceMarkingClassSelect?.value || 0)] || facultyClasses[0];
-    const currentAttendanceRoster = () => rosterBySection[currentAttendanceClass().section] || facultyRoster;
+    const currentAttendanceRoster = () => buildDepartmentSectionRoster(currentAttendanceClass().section);
+
+    // Union of real rosters across every section this faculty teaches - the actual audience for
+    // an assignment on facultySubjectCode (assignments aren't scoped to a single section).
+    const buildFacultySubjectRoster = () => {
+      const sections = [...new Set(facultyClasses.map((cls) => cls.section).filter((section) => section && section !== "Not assigned"))];
+      const seen = new Set();
+      const roster = [];
+      sections.forEach((section) => {
+        buildDepartmentSectionRoster(section).forEach((student) => {
+          if (seen.has(student.studentId)) return;
+          seen.add(student.studentId);
+          roster.push(student);
+        });
+      });
+      return roster;
+    };
 
     const renderAttendanceMarkingHead = () => {
       const cls = currentAttendanceClass();
@@ -24376,9 +24658,7 @@ if (facultyDashboardName) {
       const internalMarksAcademicYear = `${academicYearStart}-${String(academicYearStart + 1).slice(-2)}`;
 
       // Real sections this faculty actually teaches this subject in, sourced from the same
-      // department-uploaded class_timetable data Today's Schedule/My Timetable already use - not
-      // the stale hardcoded roster (facultyRoster/rosterBySection) Attendance Marking still falls
-      // back to. Marks are higher-stakes than demo attendance, so this uses real data throughout.
+      // department-uploaded class_timetable data Today's Schedule/My Timetable already use.
       const internalMarksSections = [...new Set(facultyTimetableSlots.map((slot) => slot.section).filter(Boolean))];
       if (!internalMarksSections.length) internalMarksSections.push("-");
       if (internalMarksClassSelect) {
@@ -24949,7 +25229,7 @@ if (facultyDashboardName) {
       if (submissionsPanelTitle) submissionsPanelTitle.textContent = `Submissions - ${assignment.title}`;
       const submissions = getAssignmentSubmissions().filter((submission) => submission.assignmentId === assignment.id);
       const submittedIds = new Set(submissions.map((submission) => submission.studentId));
-      const pendingStudents = facultyRoster.filter((student) => !submittedIds.has(student.studentId));
+      const pendingStudents = buildFacultySubjectRoster().filter((student) => !submittedIds.has(student.studentId));
 
       const submittedRows = submissions
         .map(
@@ -25056,6 +25336,7 @@ if (facultyDashboardName) {
       const assignments = getAssignments().filter((assignment) => assignment.subjectCode === facultySubjectCode);
       assignmentListEmpty?.classList.toggle("is-hidden", assignments.length > 0);
       const submissions = getAssignmentSubmissions();
+      const subjectRosterSize = buildFacultySubjectRoster().length;
 
       assignmentListBody.innerHTML = assignments
         .map((assignment) => {
@@ -25069,7 +25350,7 @@ if (facultyDashboardName) {
                   ? `<button type="button" class="notice-download" title="${assignment.document.name}" data-download-assignment-doc="${assignment.id}">View Document</button>`
                   : "-"
               }</td>
-              <td>${submissionCount} / ${facultyRoster.length}</td>
+              <td>${submissionCount} / ${subjectRosterSize}</td>
               <td>
                 <div class="action-cell">
                   <button type="button" class="uniform-btn" data-view-submissions="${assignment.id}">View Submissions</button>
@@ -26231,10 +26512,9 @@ if (parentDashboardName) {
   }
 }
 
-// Admin Notices panel: create/list/remove notices with an optional attachment.
-// Real notices table (previously localStorage-only, seeded with the same 5 fixed announcements
-// shown to every visitor regardless of what was actually published). createNotice/removeNotice
-// hit the backend directly per-row instead of read-modify-write-the-whole-array like before.
+// Admin Notices panel: create/list/remove notices with an optional attachment. Real notices
+// table - createNotice/removeNotice hit the backend directly per-row instead of a
+// read-modify-write-the-whole-array approach.
 const getNotices = () => getGprecDbBootstrap()?.notices || [];
 
 const createNotice = (notice) => gprecDbPost("/notices", notice);
@@ -26651,7 +26931,8 @@ const saveAiSettings = (settings) => {
   adminConfigFieldsLoaded.aiSettings = true;
 };
 
-const GPREC_CONFIG_SAVE_ENDPOINT = "http://127.0.0.1:8765/admin-config";
+// See GPREC_UPLOAD_ENDPOINT's comment above - same hostname-relative, protocol-matching fix.
+const GPREC_CONFIG_SAVE_ENDPOINT = `${window.location.protocol}//${window.location.hostname}:8765/admin-config`;
 
 const getCurrentIntegrationConfig = () => ({
   googleClientId: document.querySelector("#googleClientIdInput")?.value.trim() || defaultAdminConfig.googleClientId || "",
@@ -27257,11 +27538,9 @@ featureIdeaAskButton?.addEventListener("click", async () => {
 // Calendar & Reminders: one shared month-view calendar reused on the student, faculty, admin,
 // and department dashboards. Reminders added on the admin/department/faculty dashboards are
 // "shared" (everyone sees them, only staff can delete them). Reminders added on the student
-// dashboard are "personal" (scope: "personal" + owner: the student's own id) - only visible to
-// and deletable by that same student, filtered with gprecStudentId. On top of manual reminders,
-// exam dates, placement drives, and alumni events are merged in live and shown read-only, so the
-// calendar always reflects the current exam/placement/event data without needing to be kept in
-// sync by hand.
+// dashboard are "personal" (scope: "personal" + owner: the student's own id), filtered with
+// gprecStudentId. Exam dates, placement drives, and alumni events are also merged in live and
+// shown read-only, so the calendar reflects current data without needing manual syncing.
 const getCalendarReminders = () => getGprecDbBootstrap()?.calendarReminders || [];
 const saveCalendarReminders = (reminders) => gprecDbPost("/calendar-reminders", reminders);
 
@@ -29465,6 +29744,344 @@ if (webPageSelect) {
     });
   }
 
+  const aboutUsPara1Input = document.querySelector("#aboutUsPara1Input");
+  if (aboutUsPara1Input) {
+    const aboutUsPara2Input = document.querySelector("#aboutUsPara2Input");
+    const introContent = getAboutUsIntroContent();
+    aboutUsPara1Input.value = introContent.paragraph1;
+    if (aboutUsPara2Input) aboutUsPara2Input.value = introContent.paragraph2;
+
+    const saveAboutUsIntroFields = () => {
+      saveAboutUsIntroContent({
+        paragraph1: aboutUsPara1Input.value.trim(),
+        paragraph2: aboutUsPara2Input?.value.trim() || ""
+      });
+      const feedback = document.querySelector("#aboutUsIntroSaveFeedback");
+      if (feedback) { feedback.textContent = "Saved."; feedback.classList.add("success"); }
+    };
+    document.querySelector("#aboutUsIntroSaveButton")?.addEventListener("click", saveAboutUsIntroFields);
+    [aboutUsPara1Input, aboutUsPara2Input].forEach((field) => {
+      field?.addEventListener("input", saveAboutUsIntroFields);
+    });
+  }
+
+  const historyPara1Input = document.querySelector("#historyPara1Input");
+  if (historyPara1Input) {
+    const historyPara2Input = document.querySelector("#historyPara2Input");
+    const historyPara3Input = document.querySelector("#historyPara3Input");
+    const historyContent = getAboutHistoryTextContent();
+    historyPara1Input.value = historyContent.paragraph1;
+    if (historyPara2Input) historyPara2Input.value = historyContent.paragraph2;
+    if (historyPara3Input) historyPara3Input.value = historyContent.paragraph3;
+
+    const saveHistoryTextFields = () => {
+      saveAboutHistoryTextContent({
+        paragraph1: historyPara1Input.value.trim(),
+        paragraph2: historyPara2Input?.value.trim() || "",
+        paragraph3: historyPara3Input?.value.trim() || ""
+      });
+      const feedback = document.querySelector("#historyTextSaveFeedback");
+      if (feedback) { feedback.textContent = "Saved."; feedback.classList.add("success"); }
+    };
+    document.querySelector("#historyTextSaveButton")?.addEventListener("click", saveHistoryTextFields);
+    [historyPara1Input, historyPara2Input, historyPara3Input].forEach((field) => {
+      field?.addEventListener("input", saveHistoryTextFields);
+    });
+  }
+
+  const aboutVisionInput = document.querySelector("#aboutVisionInput");
+  if (aboutVisionInput) {
+    const aboutMissionInput = document.querySelector("#aboutMissionInput");
+    const aboutQualityInput = document.querySelector("#aboutQualityInput");
+    const vmqContent = getAboutVmqContent();
+    aboutVisionInput.value = vmqContent.vision;
+    if (aboutMissionInput) aboutMissionInput.value = vmqContent.mission;
+    if (aboutQualityInput) aboutQualityInput.value = vmqContent.quality;
+
+    const saveAboutVmqFields = () => {
+      saveAboutVmqContent({
+        vision: aboutVisionInput.value.trim(),
+        mission: aboutMissionInput?.value.trim() || "",
+        quality: aboutQualityInput?.value.trim() || ""
+      });
+      const feedback = document.querySelector("#aboutVmqSaveFeedback");
+      if (feedback) { feedback.textContent = "Saved."; feedback.classList.add("success"); }
+    };
+    document.querySelector("#aboutVmqSaveButton")?.addEventListener("click", saveAboutVmqFields);
+    [aboutVisionInput, aboutMissionInput, aboutQualityInput].forEach((field) => {
+      field?.addEventListener("input", saveAboutVmqFields);
+    });
+  }
+
+  const aboutServiceRulesTextInput = document.querySelector("#aboutServiceRulesTextInput");
+  if (aboutServiceRulesTextInput) {
+    const aboutServiceRulesLinkInput = document.querySelector("#aboutServiceRulesLinkInput");
+    const serviceRulesContent = getAboutServiceRulesContent();
+    aboutServiceRulesTextInput.value = serviceRulesContent.description;
+    if (aboutServiceRulesLinkInput) aboutServiceRulesLinkInput.value = serviceRulesContent.pdfUrl;
+
+    const saveAboutServiceRulesFields = () => {
+      saveAboutServiceRulesContent({
+        description: aboutServiceRulesTextInput.value.trim(),
+        pdfUrl: aboutServiceRulesLinkInput?.value.trim() || ""
+      });
+      const feedback = document.querySelector("#aboutServiceRulesSaveFeedback");
+      if (feedback) { feedback.textContent = "Saved."; feedback.classList.add("success"); }
+    };
+    document.querySelector("#aboutServiceRulesSaveButton")?.addEventListener("click", saveAboutServiceRulesFields);
+    [aboutServiceRulesTextInput, aboutServiceRulesLinkInput].forEach((field) => {
+      field?.addEventListener("input", saveAboutServiceRulesFields);
+    });
+  }
+
+  // "Name | Role" one per line <-> [{name, role}], for the About Us Management groups below.
+  const parseNameRoleLines = (text) => (text || "")
+    .split("\n")
+    .map((line) => line.split("|").map((part) => part.trim()))
+    .filter(([name]) => name)
+    .map(([name, role]) => ({ name, role: role || "" }));
+  const formatNameRoleLines = (items) => (items || []).map((item) => `${item.name} | ${item.role}`).join("\n");
+
+  const aboutManagementPara1Input = document.querySelector("#aboutManagementPara1Input");
+  if (aboutManagementPara1Input) {
+    const aboutManagementPara2Input = document.querySelector("#aboutManagementPara2Input");
+    const aboutManagementFounderTrusteesInput = document.querySelector("#aboutManagementFounderTrusteesInput");
+    const aboutManagementCurrentTrustInput = document.querySelector("#aboutManagementCurrentTrustInput");
+    const aboutManagementProfessionalCollegesInput = document.querySelector("#aboutManagementProfessionalCollegesInput");
+    const aboutManagementOtherInstitutesInput = document.querySelector("#aboutManagementOtherInstitutesInput");
+    const aboutManagementServiceOrgsInput = document.querySelector("#aboutManagementServiceOrgsInput");
+    const managementContent = getAboutManagementContent();
+    aboutManagementPara1Input.value = managementContent.paragraph1;
+    if (aboutManagementPara2Input) aboutManagementPara2Input.value = managementContent.paragraph2;
+    if (aboutManagementFounderTrusteesInput) aboutManagementFounderTrusteesInput.value = formatNameRoleLines(managementContent.founderTrustees);
+    if (aboutManagementCurrentTrustInput) aboutManagementCurrentTrustInput.value = formatNameRoleLines(managementContent.currentTrust);
+    if (aboutManagementProfessionalCollegesInput) aboutManagementProfessionalCollegesInput.value = formatNameRoleLines(managementContent.professionalColleges);
+    if (aboutManagementOtherInstitutesInput) aboutManagementOtherInstitutesInput.value = formatNameRoleLines(managementContent.otherInstitutes);
+    if (aboutManagementServiceOrgsInput) aboutManagementServiceOrgsInput.value = formatNameRoleLines(managementContent.serviceOrgs);
+
+    const saveAboutManagementFields = () => {
+      saveAboutManagementContent({
+        paragraph1: aboutManagementPara1Input.value.trim(),
+        paragraph2: aboutManagementPara2Input?.value.trim() || "",
+        founderTrustees: parseNameRoleLines(aboutManagementFounderTrusteesInput?.value),
+        currentTrust: parseNameRoleLines(aboutManagementCurrentTrustInput?.value),
+        professionalColleges: parseNameRoleLines(aboutManagementProfessionalCollegesInput?.value),
+        otherInstitutes: parseNameRoleLines(aboutManagementOtherInstitutesInput?.value),
+        serviceOrgs: parseNameRoleLines(aboutManagementServiceOrgsInput?.value)
+      });
+      const feedback = document.querySelector("#aboutManagementSaveFeedback");
+      if (feedback) { feedback.textContent = "Saved."; feedback.classList.add("success"); }
+    };
+    document.querySelector("#aboutManagementSaveButton")?.addEventListener("click", saveAboutManagementFields);
+    [
+      aboutManagementPara1Input, aboutManagementPara2Input, aboutManagementFounderTrusteesInput,
+      aboutManagementCurrentTrustInput, aboutManagementProfessionalCollegesInput,
+      aboutManagementOtherInstitutesInput, aboutManagementServiceOrgsInput
+    ].forEach((field) => {
+      field?.addEventListener("input", saveAboutManagementFields);
+    });
+  }
+
+  // "Name | Designation | Position" one per line <-> [{name, role, position}] - Governing Body
+  // members need a 3rd field (Position: Chairman/Member), unlike Management's plain name+role.
+  const parseNameRolePositionLines = (text) => (text || "")
+    .split("\n")
+    .map((line) => line.split("|").map((part) => part.trim()))
+    .filter(([name]) => name)
+    .map(([name, role, position]) => ({ name, role: role || "", position: position || "Member" }));
+  const formatNameRolePositionLines = (items) => (items || [])
+    .map((item) => `${item.name} | ${item.role} | ${item.position || "Member"}`)
+    .join("\n");
+
+  const governingBodyManagementInput = document.querySelector("#governingBodyManagementInput");
+  if (governingBodyManagementInput) {
+    const governingBodyFacultyInput = document.querySelector("#governingBodyFacultyInput");
+    const governingBodyExternalInput = document.querySelector("#governingBodyExternalInput");
+    const governingBodyNomineesInput = document.querySelector("#governingBodyNomineesInput");
+    const governingBodyLeadershipInput = document.querySelector("#governingBodyLeadershipInput");
+    const governingBodyContent = getAboutGoverningBodyContent();
+    governingBodyManagementInput.value = formatNameRolePositionLines(governingBodyContent.management);
+    if (governingBodyFacultyInput) governingBodyFacultyInput.value = formatNameRolePositionLines(governingBodyContent.faculty);
+    if (governingBodyExternalInput) governingBodyExternalInput.value = formatNameRolePositionLines(governingBodyContent.external);
+    if (governingBodyNomineesInput) governingBodyNomineesInput.value = formatNameRolePositionLines(governingBodyContent.nominees);
+    if (governingBodyLeadershipInput) governingBodyLeadershipInput.value = formatNameRolePositionLines(governingBodyContent.leadership);
+
+    const saveGoverningBodyFields = () => {
+      saveAboutGoverningBodyContent({
+        management: parseNameRolePositionLines(governingBodyManagementInput.value),
+        faculty: parseNameRolePositionLines(governingBodyFacultyInput?.value),
+        external: parseNameRolePositionLines(governingBodyExternalInput?.value),
+        nominees: parseNameRolePositionLines(governingBodyNomineesInput?.value),
+        leadership: parseNameRolePositionLines(governingBodyLeadershipInput?.value)
+      });
+      const feedback = document.querySelector("#governingBodySaveFeedback");
+      if (feedback) { feedback.textContent = "Saved."; feedback.classList.add("success"); }
+    };
+    document.querySelector("#governingBodySaveButton")?.addEventListener("click", saveGoverningBodyFields);
+    [
+      governingBodyManagementInput, governingBodyFacultyInput, governingBodyExternalInput,
+      governingBodyNomineesInput, governingBodyLeadershipInput
+    ].forEach((field) => {
+      field?.addEventListener("input", saveGoverningBodyFields);
+    });
+  }
+
+  const academicCouncilChairmanInput = document.querySelector("#academicCouncilChairmanInput");
+  if (academicCouncilChairmanInput) {
+    const academicCouncilSecretaryInput = document.querySelector("#academicCouncilSecretaryInput");
+    const academicCouncilDeansHeadsInput = document.querySelector("#academicCouncilDeansHeadsInput");
+    const academicCouncilFacultyCadresInput = document.querySelector("#academicCouncilFacultyCadresInput");
+    const academicCouncilWomanFacultyInput = document.querySelector("#academicCouncilWomanFacultyInput");
+    const academicCouncilExpertsInput = document.querySelector("#academicCouncilExpertsInput");
+    const academicCouncilJntuaNomineesInput = document.querySelector("#academicCouncilJntuaNomineesInput");
+    const academicCouncilContent = getAboutAcademicCouncilContent();
+    academicCouncilChairmanInput.value = formatNameRoleLines(academicCouncilContent.chairman);
+    if (academicCouncilSecretaryInput) academicCouncilSecretaryInput.value = formatNameRoleLines(academicCouncilContent.secretary);
+    if (academicCouncilDeansHeadsInput) academicCouncilDeansHeadsInput.value = formatNameRoleLines(academicCouncilContent.deansHeads);
+    if (academicCouncilFacultyCadresInput) academicCouncilFacultyCadresInput.value = formatNameRoleLines(academicCouncilContent.facultyCadres);
+    if (academicCouncilWomanFacultyInput) academicCouncilWomanFacultyInput.value = formatNameRoleLines(academicCouncilContent.womanFaculty);
+    if (academicCouncilExpertsInput) academicCouncilExpertsInput.value = formatNameRoleLines(academicCouncilContent.experts);
+    if (academicCouncilJntuaNomineesInput) academicCouncilJntuaNomineesInput.value = formatNameRoleLines(academicCouncilContent.jntuaNominees);
+
+    const saveAcademicCouncilFields = () => {
+      saveAboutAcademicCouncilContent({
+        chairman: parseNameRoleLines(academicCouncilChairmanInput.value),
+        secretary: parseNameRoleLines(academicCouncilSecretaryInput?.value),
+        deansHeads: parseNameRoleLines(academicCouncilDeansHeadsInput?.value),
+        facultyCadres: parseNameRoleLines(academicCouncilFacultyCadresInput?.value),
+        womanFaculty: parseNameRoleLines(academicCouncilWomanFacultyInput?.value),
+        experts: parseNameRoleLines(academicCouncilExpertsInput?.value),
+        jntuaNominees: parseNameRoleLines(academicCouncilJntuaNomineesInput?.value)
+      });
+      const feedback = document.querySelector("#academicCouncilSaveFeedback");
+      if (feedback) { feedback.textContent = "Saved."; feedback.classList.add("success"); }
+    };
+    document.querySelector("#academicCouncilSaveButton")?.addEventListener("click", saveAcademicCouncilFields);
+    [
+      academicCouncilChairmanInput, academicCouncilSecretaryInput, academicCouncilDeansHeadsInput,
+      academicCouncilFacultyCadresInput, academicCouncilWomanFacultyInput, academicCouncilExpertsInput,
+      academicCouncilJntuaNomineesInput
+    ].forEach((field) => {
+      field?.addEventListener("input", saveAcademicCouncilFields);
+    });
+  }
+
+  // Bio textarea <-> stored string: a blank line between paragraphs, same convention as the
+  // public-page renderer (renderAboutLeaderBio splits on "\n\n").
+  const formatBioParagraphs = (text) => (text || "")
+    .split(/\n\s*\n/)
+    .map((para) => para.trim())
+    .filter(Boolean)
+    .join("\n\n");
+
+  const adminPrincipalNameInput = document.querySelector("#adminPrincipalNameInput");
+  if (adminPrincipalNameInput) {
+    const adminPrincipalDesignationInput = document.querySelector("#adminPrincipalDesignationInput");
+    const adminPrincipalBioInput = document.querySelector("#adminPrincipalBioInput");
+    const principalContent = getAboutAdministrationContent();
+    adminPrincipalNameInput.value = principalContent.principal.name;
+    if (adminPrincipalDesignationInput) adminPrincipalDesignationInput.value = principalContent.principal.designation;
+    if (adminPrincipalBioInput) adminPrincipalBioInput.value = principalContent.principal.bio;
+
+    const savePrincipalFields = () => {
+      saveAboutAdministrationContent({
+        ...getAboutAdministrationContent(),
+        principal: {
+          name: adminPrincipalNameInput.value.trim(),
+          designation: adminPrincipalDesignationInput?.value.trim() || "",
+          bio: formatBioParagraphs(adminPrincipalBioInput?.value)
+        }
+      });
+      const feedback = document.querySelector("#adminPrincipalSaveFeedback");
+      if (feedback) { feedback.textContent = "Saved."; feedback.classList.add("success"); }
+    };
+    document.querySelector("#adminPrincipalSaveButton")?.addEventListener("click", savePrincipalFields);
+  }
+
+  const adminVicePrincipalNameInput = document.querySelector("#adminVicePrincipalNameInput");
+  if (adminVicePrincipalNameInput) {
+    const adminVicePrincipalDesignationInput = document.querySelector("#adminVicePrincipalDesignationInput");
+    const adminVicePrincipalBioInput = document.querySelector("#adminVicePrincipalBioInput");
+    const vicePrincipalContent = getAboutAdministrationContent();
+    adminVicePrincipalNameInput.value = vicePrincipalContent.vicePrincipal.name;
+    if (adminVicePrincipalDesignationInput) adminVicePrincipalDesignationInput.value = vicePrincipalContent.vicePrincipal.designation;
+    if (adminVicePrincipalBioInput) adminVicePrincipalBioInput.value = vicePrincipalContent.vicePrincipal.bio;
+
+    const saveVicePrincipalFields = () => {
+      saveAboutAdministrationContent({
+        ...getAboutAdministrationContent(),
+        vicePrincipal: {
+          name: adminVicePrincipalNameInput.value.trim(),
+          designation: adminVicePrincipalDesignationInput?.value.trim() || "",
+          bio: formatBioParagraphs(adminVicePrincipalBioInput?.value)
+        }
+      });
+      const feedback = document.querySelector("#adminVicePrincipalSaveFeedback");
+      if (feedback) { feedback.textContent = "Saved."; feedback.classList.add("success"); }
+    };
+    document.querySelector("#adminVicePrincipalSaveButton")?.addEventListener("click", saveVicePrincipalFields);
+  }
+
+  const adminDeansManagerBody = document.querySelector("#adminDeansManagerBody");
+  if (adminDeansManagerBody) {
+    const adminDeansManagerEmpty = document.querySelector("#adminDeansManagerEmpty");
+    const renderAdminDeansManager = () => {
+      const deans = getAboutAdministrationContent().deans || [];
+      adminDeansManagerBody.innerHTML = deans
+        .map(
+          (dean, index) => `
+            <tr>
+              <td>${escapeHtml(dean.position)}</td>
+              <td>${escapeHtml(dean.name)}</td>
+              <td>${escapeHtml(dean.department)}</td>
+              <td>${escapeHtml(dean.email)}</td>
+              <td>${escapeHtml(dean.phone)}</td>
+              <td><button type="button" class="icon-btn-delete" data-remove-dean="${index}" aria-label="Remove" title="Remove">${deleteIconSvg}</button></td>
+            </tr>`
+        )
+        .join("");
+      if (adminDeansManagerEmpty) adminDeansManagerEmpty.classList.toggle("is-hidden", deans.length > 0);
+    };
+    renderAdminDeansManager();
+
+    document.querySelector("#adminDeanAddButton")?.addEventListener("click", () => {
+      const position = document.querySelector("#adminDeanPositionInput")?.value.trim() || "";
+      const name = document.querySelector("#adminDeanNameInput")?.value.trim() || "";
+      const department = document.querySelector("#adminDeanDepartmentInput")?.value.trim() || "";
+      const email = document.querySelector("#adminDeanEmailInput")?.value.trim() || "";
+      const phone = document.querySelector("#adminDeanPhoneInput")?.value.trim() || "";
+      const feedback = document.querySelector("#adminDeanAddFeedback");
+      if (!position || !name) {
+        if (feedback) { feedback.textContent = "Enter at least a position and name."; feedback.classList.remove("success"); }
+        return;
+      }
+      const current = getAboutAdministrationContent();
+      saveAboutAdministrationContent({
+        ...current,
+        deans: [...(current.deans || []), { position, name, department, email, phone }]
+      });
+      renderAdminDeansManager();
+      ["#adminDeanPositionInput", "#adminDeanNameInput", "#adminDeanDepartmentInput", "#adminDeanEmailInput", "#adminDeanPhoneInput"].forEach((sel) => {
+        const field = document.querySelector(sel);
+        if (field) field.value = "";
+      });
+      if (feedback) { feedback.textContent = "Dean added."; feedback.classList.add("success"); }
+    });
+
+    adminDeansManagerBody.addEventListener("click", (event) => {
+      const button = event.target.closest("[data-remove-dean]");
+      if (!button) return;
+      const index = Number(button.dataset.removeDean);
+      const current = getAboutAdministrationContent();
+      saveAboutAdministrationContent({
+        ...current,
+        deans: (current.deans || []).filter((_, i) => i !== index)
+      });
+      renderAdminDeansManager();
+      showFeedToast("Dean removed.");
+    });
+  }
+
   const admissionsBtechCategoryAInput = document.querySelector("#admissionsBtechCategoryAInput");
   if (admissionsBtechCategoryAInput) {
     const admissionsBtechCategoryBInput = document.querySelector("#admissionsBtechCategoryBInput");
@@ -29895,11 +30512,10 @@ cleanHtmlFromAddressBar();
 // after any role-specific greeting above it, never before.
 applyGprecianBotGreeting();
 
-// Admin Overview panel: real counts (not the old hardcoded "4,826"/"312") plus a one-glance
-// directory of every role dashboard in the portal. Placed at the very end of the file so every
-// directory this reads from (defaultStudentDirectory, defaultDepartmentFacultyByDept,
-// defaultNonTeachingStaffDirectory, getAllFacultyFlat, getAdminDirectory) is already declared -
-// see the getAdmissionsContent bug earlier this session for why that ordering matters here.
+// Admin Overview panel: real counts plus a one-glance directory of every role dashboard in the
+// portal. Placed at the very end of the file so every directory this reads from
+// (defaultStudentDirectory, defaultDepartmentFacultyByDept, defaultNonTeachingStaffDirectory,
+// getAllFacultyFlat, getAdminDirectory) is already declared by the time this runs.
 const portalDashboardsOverviewBody = document.querySelector("#portalDashboardsOverviewBody");
 if (portalDashboardsOverviewBody || document.querySelector("#adminOverviewStudentCount")) {
   const studentCount = defaultStudentDirectory.length;

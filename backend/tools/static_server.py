@@ -2,10 +2,9 @@
 """Plain static file server for this project, meant to replace VS Code Live Server.
 
 Unlike Live Server, this never auto-refreshes the browser - it just serves files. That matters
-here because portal_db_server.py and admin_config_server.py write into this same project folder
-(admin-config.json, uploads/) as part of normal saves; Live Server watches every file in the
-project and reloads the page whenever any of them change, including those writes, which made
-saving in the admin dashboard look like the page was randomly refreshing itself.
+because portal_db_server.py and admin_config_server.py write into this same project folder
+(admin-config.json, uploads/), and Live Server's auto-reload treated those writes as file changes,
+making the admin dashboard look like it was randomly refreshing itself.
 
 Usage: python3 tools/static_server.py
 Then open http://127.0.0.1:8080/index.html (or any dashboards/logins/pages page under that origin).
@@ -15,9 +14,8 @@ from pathlib import Path
 from flask import Flask, send_from_directory
 
 ROOT = Path(__file__).resolve().parents[2]
-# 0.0.0.0 (not 127.0.0.1) so this is reachable from other devices on the same LAN (e.g. a phone,
-# to test QR scanning against a real camera) - still only bound to your own network interface, not
-# exposed beyond it.
+# 0.0.0.0 (not 127.0.0.1) so this is reachable from other devices on the same LAN
+# (e.g. a phone, to test QR scanning against a real camera).
 HOST = "0.0.0.0"
 PORT = 8080
 

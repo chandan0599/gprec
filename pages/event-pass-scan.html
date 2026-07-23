@@ -6,7 +6,7 @@
     <title>Event Pass Scan | GPREC</title>
     <meta name="description" content="Verify a campus event pass and check in an attendee at G. Pulla Reddy Engineering College.">
     <link rel="icon" href="https://www.gprec.ac.in/wp-content/uploads/2017/08/fav.png" sizes="32x32">
-    <link rel="stylesheet" href="../styles.css">
+    <link rel="stylesheet" href="../styles.css?v=20260722-29">
   </head>
   <body class="student-portal-page assignment-page">
     <header class="login-header">
@@ -47,7 +47,7 @@
       </div>
     </main>
     <script src="../qrcode-generator.js"></script>
-    <script src="../script.js"></script>
+    <script src="../script.js?v=20260722-29"></script>
     <script>
       (() => {
         const params = new URLSearchParams(window.location.search);
@@ -78,7 +78,7 @@
         };
 
         const setupManualFallback = () => {
-          const isSignedIn = Boolean(localStorage.getItem("gprecSessionToken") && ["student", "admin"].includes(localStorage.getItem("gprecActiveRole")));
+          const isSignedIn = Boolean(localStorage.getItem("gprecSessionToken") && localStorage.getItem("gprecActiveRole") === "student");
           if (!fallbackCard || !isSignedIn) return;
           const events = getCampusEvents();
           fallbackEventSelect.innerHTML = events.map((event) => `<option value="${event.id}">${event.title}</option>`).join("");
@@ -139,6 +139,17 @@
           `;
         };
 
+        const renderWrongRoleForVolunteer = () => {
+          titleEl.textContent = "Student volunteer login required";
+          const returnUrl = `event-pass-scan.html${window.location.search}`;
+          bodyEl.innerHTML = `
+            <p>You're signed in as an admin, but only a student volunteer can check attendees in here. Sign out and sign back in with a student roll number.</p>
+            <div class="action-cell gate-scan-actions">
+              <a class="payment-open-button" href="../pages/student-login.html?next=${encodeURIComponent(returnUrl)}">Switch to Event Volunteer Login</a>
+            </div>
+          `;
+        };
+
         const checkInAttendee = () => {
           const response = gprecDbRequest("/campus-event/gate-log", { method: "POST", body: { eventId, regId, token } });
           if (response && response.ok) {
@@ -161,6 +172,10 @@
             showFallbackFeedback("Use only one field: roll number for GPREC students, email for outside visitors.", false);
             return;
           }
+          if (!isAssignedEventVolunteer(selectedEventId, getCurrentStudentId())) {
+            showFallbackFeedback("You aren't on the assigned volunteer list for this event.", false);
+            return;
+          }
           const response = gprecDbPost("/campus-event/manual-checkin", { eventId: selectedEventId, rollNumber, email });
           if (response && response.ok) {
             showFallbackFeedback(`${rollNumber || email} checked in.`, true);
@@ -179,8 +194,13 @@
         } else if (!eventId || !regId || !token) {
           titleEl.textContent = "Invalid QR code";
           bodyEl.innerHTML = "<p>This link is missing the information a real event-pass QR should carry.</p>";
-        } else if (!localStorage.getItem("gprecSessionToken") || !["student", "admin"].includes(localStorage.getItem("gprecActiveRole"))) {
+        } else if (!localStorage.getItem("gprecSessionToken")) {
           renderLoginRequired();
+        } else if (localStorage.getItem("gprecActiveRole") !== "student") {
+          renderWrongRoleForVolunteer();
+        } else if (!isAssignedEventVolunteer(eventId, getCurrentStudentId())) {
+          titleEl.textContent = "Not an assigned volunteer";
+          bodyEl.innerHTML = `<p>${getCurrentStudentId() || "This student"} isn't on the assigned volunteer list for this event. Ask the event's Faculty Head to add this roll number, or sign in with an assigned volunteer's roll number instead.</p>`;
         } else {
           const response = gprecDbRequest("/campus-event/gate-lookup", { method: "POST", body: { eventId, regId, token } });
           if (response && response.ok) {

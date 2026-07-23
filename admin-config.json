@@ -9,6 +9,14 @@
     "apiKey": "",
     "baseUrl": "http://localhost:11434"
   },
+  "mapSdkSettings": {
+    "provider": "mappls",
+    "sdkUrl": "https://sdk.mappls.com/map/sdk/web",
+    "version": "3.0",
+    "accessToken": "qdonytuzqbpashwfsfqkvbgltqqvyaxqnokk",
+    "plugins": "",
+    "layer": "vector"
+  },
   "libraryApiConfig": {
     "baseUrl": "",
     "apiKey": ""

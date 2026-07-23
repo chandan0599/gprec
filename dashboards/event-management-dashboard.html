@@ -6,7 +6,7 @@
     <title>Event Management Dashboard | GPREC</title>
     <meta name="description" content="GPREC college fest event management dashboard for admins, faculty coordinators, and student volunteers.">
     <link rel="icon" href="https://www.gprec.ac.in/wp-content/uploads/2017/08/fav.png" sizes="32x32">
-    <link rel="stylesheet" href="../styles.css">
+    <link rel="stylesheet" href="../styles.css?v=20260722-29">
   </head>
   <body class="admin-dashboard-page">
     <header class="student-topbar admin-topbar">
@@ -14,14 +14,28 @@
         <img src="../gprec-logo-enhanced.png" alt="G Pulla Reddy Engineering College">
       </a>
       <div class="student-user">
+        <div class="notification-bell-wrap">
+          <button type="button" class="notification-bell" id="notificationBellButton" aria-label="Notifications">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 8a6 6 0 1 1 12 0c0 4 1.5 5.5 2 6H4c.5-.5 2-2 2-6Z"/><path d="M10 20a2 2 0 0 0 4 0"/></svg>
+            <span class="notification-badge is-hidden" id="notificationBadge">0</span>
+          </button>
+          <div class="notification-dropdown is-hidden" id="notificationDropdown">
+            <div class="notification-dropdown-head">Notifications</div>
+            <div id="notificationList"></div>
+          </div>
+        </div>
         <div class="student-user-menu">
           <span class="student-user-avatar" id="festUserAvatar">GF</span>
-          <span class="student-user-name-block">
-            <strong id="festUserName">College Fest</strong>
-            <small id="festUserMeta">Event Management</small>
-          </span>
+          <button type="button" class="student-user-toggle" aria-label="Account menu" aria-expanded="false">
+            <span class="student-user-name-block">
+              <strong id="festUserName">College Fest</strong>
+              <small id="festUserMeta">Event Management</small>
+            </span>
+          </button>
+          <div class="student-user-dropdown">
+            <a href="admin-dashboard.html" id="festHomeLink">Dashboard</a>
+          </div>
         </div>
-        <a class="login-home" href="admin-dashboard.html" id="festHomeLink"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m3 11 9-8 9 8M5 10v11h14V10M9 21v-6h6v6"/></svg>Dashboard</a>
       </div>
     </header>
 
@@ -38,6 +52,8 @@
           <a class="admin-nav-static" href="#festCreateActivitySection"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg><span class="admin-nav-text">Create Activity</span></a>
           <a class="admin-nav-static" href="#festActivitiesSection"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 3v4M17 3v4M4 8h16M5 5h14a1 1 0 0 1 1 1v14H4V6a1 1 0 0 1 1-1Z"/></svg><span class="admin-nav-text">Fest Activities</span></a>
           <a class="admin-nav-static" href="#festCoordinatorsSection"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="9" cy="8" r="3"/><path d="M2 20c0-3 3-5 7-5s7 2 7 5"/><circle cx="17" cy="8" r="3"/><path d="M14 15c3 .3 5 2 5 5"/></svg><span class="admin-nav-text">Fest Coordinators</span></a>
+          <a class="admin-nav-static" href="#visitorContentSection"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 5h16v14H4zM4 9h16M8 13h8M8 16h5"/></svg><span class="admin-nav-text">Visitor Page Content</span></a>
+          <a class="admin-nav-static" href="#zoneMapSection"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 18 3 21V6l6-3 6 3 6-3v15l-6 3-6-3ZM9 3v15M15 6v15"/></svg><span class="admin-nav-text">Zone Map</span></a>
           <a class="admin-nav-static" href="#festPosterDesignerSection"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="4" width="18" height="16" rx="2"/><circle cx="8.5" cy="9.5" r="1.5"/><path d="m4 17 5-5 4 4 3-3 4 4"/></svg><span class="admin-nav-text">Poster &amp; Ad Designer</span></a>
           <a class="admin-nav-static" href="#festVisitorsSection"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 6h16v12H4zM4 7l8 6 8-6"/></svg><span class="admin-nav-text">Visitor Registrations</span></a>
         </div>
@@ -105,6 +121,151 @@
                 <tbody id="festCoordinatorBody"></tbody>
               </table>
               <p class="lookup-empty is-hidden" id="festCoordinatorEmpty">No approved fest coordinators yet.</p>
+            </div>
+          </article>
+          <article class="admin-card admin-form-card" id="visitorContentSection">
+            <h3>Visitor Page Content</h3>
+            <p>Feeds the public Event Visitor page (ticker, zone map, announcements, schedule, sponsors, gallery, and section blurbs). Each block falls back to its placeholder copy until you save real content here.</p>
+
+            <p class="eyebrow">Live Ticker Messages</p>
+            <label>One message per line<textarea id="visitorTickerInput" rows="4" placeholder="e.g. Registrations open"></textarea></label>
+            <button type="button" id="visitorTickerSaveButton">Save Ticker</button>
+            <p class="admin-add-feedback" id="visitorTickerFeedback" aria-live="polite"></p>
+
+            <p class="eyebrow">Announcements</p>
+            <div class="admin-add-grid">
+              <label>Time / Tag<input type="text" id="visitorAnnouncementsLabelInput" placeholder="e.g. 09:30"></label>
+              <label>Title<input type="text" id="visitorAnnouncementsTitleInput" placeholder="e.g. Code Quest check-in"></label>
+              <label>Note<input type="text" id="visitorAnnouncementsNoteInput" placeholder="e.g. Report to CSE Block, Lab 2 with your college ID."></label>
+            </div>
+            <button type="button" id="visitorAnnouncementsAddButton">Add Announcement</button>
+            <p class="admin-add-feedback" id="visitorAnnouncementsFeedback" aria-live="polite"></p>
+            <div class="admin-table-card">
+              <table>
+                <thead><tr><th>Time</th><th>Title</th><th>Note</th><th></th></tr></thead>
+                <tbody id="visitorAnnouncementsBody"></tbody>
+              </table>
+              <p class="lookup-empty is-hidden" id="visitorAnnouncementsEmpty">No announcements added yet.</p>
+            </div>
+
+            <p class="eyebrow">Schedule</p>
+            <div class="admin-add-grid">
+              <label>Day / Tag<input type="text" id="visitorScheduleLabelInput" placeholder="e.g. Day 01"></label>
+              <label>Title<input type="text" id="visitorScheduleTitleInput" placeholder="e.g. Registrations, workshops, technical rounds"></label>
+              <label>Note<input type="text" id="visitorScheduleNoteInput" placeholder="e.g. Morning to evening across labs and halls."></label>
+            </div>
+            <button type="button" id="visitorScheduleAddButton">Add Schedule Item</button>
+            <p class="admin-add-feedback" id="visitorScheduleFeedback" aria-live="polite"></p>
+            <div class="admin-table-card">
+              <table>
+                <thead><tr><th>Day</th><th>Title</th><th>Note</th><th></th></tr></thead>
+                <tbody id="visitorScheduleBody"></tbody>
+              </table>
+              <p class="lookup-empty is-hidden" id="visitorScheduleEmpty">No schedule items added yet.</p>
+            </div>
+
+            <p class="eyebrow">Sponsors</p>
+            <label>One sponsor label per line<textarea id="visitorSponsorsInput" rows="4" placeholder="e.g. Title Sponsor"></textarea></label>
+            <button type="button" id="visitorSponsorsSaveButton">Save Sponsors</button>
+            <p class="admin-add-feedback" id="visitorSponsorsFeedback" aria-live="polite"></p>
+
+            <p class="eyebrow">Gallery Labels</p>
+            <label>One label per line<textarea id="visitorGalleryInput" rows="4" placeholder="e.g. Photo Wall"></textarea></label>
+            <button type="button" id="visitorGallerySaveButton">Save Gallery Labels</button>
+            <p class="admin-add-feedback" id="visitorGalleryFeedback" aria-live="polite"></p>
+
+            <p class="eyebrow">Section Blurbs</p>
+            <div class="admin-add-grid">
+              <label>Workshops Heading<input type="text" id="visitorBlurbWorkshopsTitleInput"></label>
+              <label>Workshops Body<textarea id="visitorBlurbWorkshopsBodyInput"></textarea></label>
+              <label>Competitions Heading<input type="text" id="visitorBlurbCompetitionsTitleInput"></label>
+              <label>Competitions Body<textarea id="visitorBlurbCompetitionsBodyInput"></textarea></label>
+              <label>Celebrity Night Heading<input type="text" id="visitorBlurbCelebrityTitleInput"></label>
+              <label>Celebrity Night Body<textarea id="visitorBlurbCelebrityBodyInput"></textarea></label>
+              <label>Accommodation Heading<input type="text" id="visitorBlurbAccommodationTitleInput"></label>
+              <label>Accommodation Body<textarea id="visitorBlurbAccommodationBodyInput"></textarea></label>
+              <label>FAQs Heading<input type="text" id="visitorBlurbFaqsTitleInput"></label>
+              <label>FAQs Body<textarea id="visitorBlurbFaqsBodyInput"></textarea></label>
+              <label>Contact Heading<input type="text" id="visitorBlurbContactTitleInput"></label>
+              <label>Contact Body<textarea id="visitorBlurbContactBodyInput" placeholder="One line per row, e.g. Email: events@gprec.ac.in"></textarea></label>
+            </div>
+            <button type="button" id="visitorBlurbsSaveButton">Save Section Blurbs</button>
+            <p class="admin-add-feedback" id="visitorBlurbsFeedback" aria-live="polite"></p>
+          </article>
+          <article class="admin-card admin-form-card" id="zoneMapSection">
+            <h3>Zone Map</h3>
+            <p>Manage the SDK event-zone map used on the visitor page. Zone labels, colors, icons, coordinates, crowd levels, entrance, theatre, seating, and default camera settings are saved here.</p>
+
+            <p class="eyebrow">Map View Settings</p>
+            <div class="admin-add-grid">
+              <label>Center Latitude<input type="number" id="visitorZoneMapCenterLatInput" min="-90" max="90" step="any" placeholder="15.7741"></label>
+              <label>Center Longitude<input type="number" id="visitorZoneMapCenterLngInput" min="-180" max="180" step="any" placeholder="78.0565"></label>
+              <label>Zoom<input type="number" id="visitorZoneMapZoomInput" min="1" max="22" step="0.1" placeholder="16.5"></label>
+              <label>Pitch / Tilt<input type="number" id="visitorZoneMapPitchInput" min="0" max="0" step="1" value="0" placeholder="0" readonly></label>
+              <label>Enable Rotation<select id="visitorZoneMapRotationInput"><option value="false">No</option><option value="true">Yes</option></select></label>
+              <label>Bearing / Heading<input type="number" id="visitorZoneMapBearingInput" min="0" max="360" step="1" value="0" placeholder="0" readonly></label>
+              <div class="zone-map-dpad">
+                <span class="zone-compass-label">Rotate</span>
+                <div class="zone-compass" aria-label="Map rotation controls">
+                  <button type="button" class="zone-compass-step" data-zone-bearing-step="-15" aria-label="Rotate left">
+                    <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M15 6l-6 6 6 6"/></svg>
+                  </button>
+                  <div class="zone-compass-dial" id="zoneCompassDial">
+                    <div class="zone-compass-needle" id="zoneCompassNeedle" aria-hidden="true"></div>
+                    <button type="button" class="zone-compass-point zone-compass-point-n" data-zone-bearing="0" aria-label="North up">N</button>
+                    <button type="button" class="zone-compass-point zone-compass-point-e" data-zone-bearing="90" aria-label="East up">E</button>
+                    <button type="button" class="zone-compass-point zone-compass-point-s" data-zone-bearing="180" aria-label="South up">S</button>
+                    <button type="button" class="zone-compass-point zone-compass-point-w" data-zone-bearing="270" aria-label="West up">W</button>
+                  </div>
+                  <button type="button" class="zone-compass-step" data-zone-bearing-step="15" aria-label="Rotate right">
+                    <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 6l6 6-6 6"/></svg>
+                  </button>
+                </div>
+                <small class="field-hint">Sets which direction faces up on the visitor zone map. Click N/E/S/W to snap to that heading, or use ‹ › to nudge 15&deg; at a time. Requires Enable Rotation set to Yes.</small>
+              </div>
+              <label>Map Style<input type="text" id="visitorZoneMapStyleInput" placeholder="whiteboard"></label>
+              <label>Enable Intro Tour<select id="visitorZoneMapIntroInput"><option value="true">Yes</option><option value="false">No</option></select></label>
+              <label>Enable Theatre Animation<select id="visitorZoneMapTheatreInput"><option value="true">Yes</option><option value="false">No</option></select></label>
+              <label>Enable Live Navigation<select id="visitorZoneMapLiveNavInput"><option value="true">Yes</option><option value="false">No</option></select></label>
+            </div>
+
+            <p class="eyebrow">Reference Points</p>
+            <div class="admin-add-grid">
+              <label>Entrance Latitude<input type="number" id="visitorZoneMapEntranceLatInput" min="-90" max="90" step="any" placeholder="15.774665"></label>
+              <label>Entrance Longitude<input type="number" id="visitorZoneMapEntranceLngInput" min="-180" max="180" step="any" placeholder="78.058641"></label>
+              <label>Open Air Theatre Latitude<input type="number" id="visitorZoneMapTheatreLatInput" min="-90" max="90" step="any" placeholder="15.7757375"></label>
+              <label>Open Air Theatre Longitude<input type="number" id="visitorZoneMapTheatreLngInput" min="-180" max="180" step="any" placeholder="78.0566940"></label>
+              <label>Seating Latitude<input type="number" id="visitorZoneMapSeatingLatInput" min="-90" max="90" step="any" placeholder="15.7735"></label>
+              <label>Seating Longitude<input type="number" id="visitorZoneMapSeatingLngInput" min="-180" max="180" step="any" placeholder="78.0585"></label>
+            </div>
+            <button type="button" id="visitorZoneMapSettingsSaveButton">Save Map Settings</button>
+            <button type="button" id="visitorZoneMapHdDownloadButton">Download HD Image</button>
+            <p class="admin-add-feedback" id="visitorZoneMapSettingsFeedback" aria-live="polite"></p>
+            <div class="zone-map-print-preview" id="visitorZoneMapPrintPreview" aria-label="Actual SDK zone map preview"></div>
+
+            <p class="eyebrow">Zone Tiles</p>
+            <div class="admin-add-grid">
+              <label>Zone No.<input type="text" id="visitorZoneMapLabelInput" placeholder="e.g. 1" maxlength="4"></label>
+              <label>Title<input type="text" id="visitorZoneMapTitleInput" placeholder="e.g. Technical Zone"></label>
+              <label>Icon<input type="text" id="visitorZoneMapIconInput" placeholder="e.g. 💻" maxlength="4"></label>
+              <label>Color<input type="color" id="visitorZoneMapColorInput" value="#FFB15C"></label>
+              <label>Current Activity<input type="text" id="visitorZoneMapCurrentInput" placeholder="e.g. Code Quest live"></label>
+              <label>Next Activity<input type="text" id="visitorZoneMapNextInput" placeholder="e.g. Debug round · 4 PM"></label>
+              <label>Capacity<input type="number" id="visitorZoneMapCapacityInput" min="0" step="1" placeholder="e.g. 150"></label>
+              <label>Note / Description<input type="text" id="visitorZoneMapNoteInput" placeholder="e.g. CSE Block · labs · coding rounds"></label>
+              <label>Latitude<input type="number" id="visitorZoneMapLatInput" min="-90" max="90" step="any" placeholder="e.g. 15.7742"></label>
+              <label>Longitude<input type="number" id="visitorZoneMapLngInput" min="-180" max="180" step="any" placeholder="e.g. 78.0561"></label>
+              <label>Crowd %<input type="number" id="visitorZoneMapCrowdInput" min="0" max="100" step="1" placeholder="e.g. 65"></label>
+              <label>Status<select id="visitorZoneMapStatusInput"><option value="live">Live</option><option value="soon">Soon</option><option value="info">Info</option><option value="ended">Ended</option></select></label>
+            </div>
+            <button type="button" id="visitorZoneMapAddButton">Add Zone</button>
+            <p class="admin-add-feedback" id="visitorZoneMapFeedback" aria-live="polite"></p>
+            <div class="admin-table-card">
+              <table>
+                <thead><tr><th>No.</th><th>Title</th><th>Note</th><th>Coordinates</th><th>Status</th><th></th></tr></thead>
+                <tbody id="visitorZoneMapBody"></tbody>
+              </table>
+              <p class="lookup-empty is-hidden" id="visitorZoneMapEmpty">No zones added yet.</p>
             </div>
           </article>
           <article class="admin-card admin-form-card" id="festPosterDesignerSection">
@@ -236,7 +397,8 @@
       </section>
     </main>
 
-    <script src="../script.js"></script>
+    <script src="../html2canvas.min.js"></script>
+    <script src="../script.js?v=20260722-29"></script>
     <script>
       (() => {
         const role = localStorage.getItem("gprecActiveRole");
@@ -489,6 +651,982 @@
             renderCoordinators();
             recordActivity(`Removed ${email} as a fest coordinator`, "College Fest");
           });
+
+          // ---- Visitor Page Content (event-visitor-dashboard.html's ticker/zone map/
+          // announcements/schedule/sponsors/gallery/section blurbs - getVisitorTickerMessages
+          // and friends in script.js) ----
+          const wireVisitorTextListEditor = (inputId, saveButtonId, feedbackId, getItems, saveItems, noun) => {
+            const input = document.querySelector(`#${inputId}`);
+            const saveButton = document.querySelector(`#${saveButtonId}`);
+            const feedback = document.querySelector(`#${feedbackId}`);
+            if (!input || !saveButton) return;
+            input.value = getItems().join("\n");
+            saveButton.addEventListener("click", () => {
+              const items = input.value.split("\n").map((line) => line.trim()).filter(Boolean);
+              saveItems(items);
+              feedback.textContent = `${noun} saved.`;
+              feedback.classList.add("success");
+              recordActivity(`Updated visitor page ${noun.toLowerCase()}`, "College Fest");
+            });
+          };
+          wireVisitorTextListEditor("visitorTickerInput", "visitorTickerSaveButton", "visitorTickerFeedback", getVisitorTickerMessages, saveVisitorTickerMessages, "Ticker");
+          wireVisitorTextListEditor("visitorSponsorsInput", "visitorSponsorsSaveButton", "visitorSponsorsFeedback", getVisitorSponsors, saveVisitorSponsors, "Sponsors");
+          wireVisitorTextListEditor("visitorGalleryInput", "visitorGallerySaveButton", "visitorGalleryFeedback", getVisitorGalleryLabels, saveVisitorGalleryLabels, "Gallery labels");
+
+          const wireVisitorTripleListEditor = (prefix, getItems, saveItems, noun) => {
+            const bodyEl = document.querySelector(`#${prefix}Body`);
+            const emptyEl = document.querySelector(`#${prefix}Empty`);
+            const labelInput = document.querySelector(`#${prefix}LabelInput`);
+            const titleInput = document.querySelector(`#${prefix}TitleInput`);
+            const iconInput = document.querySelector(`#${prefix}IconInput`);
+            const colorInput = document.querySelector(`#${prefix}ColorInput`);
+            const currentInput = document.querySelector(`#${prefix}CurrentInput`);
+            const nextInput = document.querySelector(`#${prefix}NextInput`);
+            const capacityInput = document.querySelector(`#${prefix}CapacityInput`);
+            const noteInput = document.querySelector(`#${prefix}NoteInput`);
+            const latInput = document.querySelector(`#${prefix}LatInput`);
+            const lngInput = document.querySelector(`#${prefix}LngInput`);
+            const crowdInput = document.querySelector(`#${prefix}CrowdInput`);
+            const statusInput = document.querySelector(`#${prefix}StatusInput`);
+            const addButton = document.querySelector(`#${prefix}AddButton`);
+            const feedback = document.querySelector(`#${prefix}Feedback`);
+            if (!bodyEl || !addButton) return;
+            const statusLabel = (value) => ({ live: "Live", soon: "Soon", info: "Info", ended: "Ended" }[value] || "Info");
+            const render = () => {
+              const items = getItems();
+              emptyEl?.classList.toggle("is-hidden", items.length > 0);
+              bodyEl.innerHTML = items
+                .map(
+                  (item, index) => `
+                    <tr>
+                      <td>${escapeHtmlSafe(item.label)}</td>
+                      <td>${escapeHtmlSafe(item.title)}</td>
+                      <td>${escapeHtmlSafe(item.note)}</td>
+                      ${prefix === "visitorZoneMap" ? `<td>${escapeHtmlSafe(Number(item.lat).toFixed(5))}, ${escapeHtmlSafe(Number(item.lng).toFixed(5))}</td><td>${escapeHtmlSafe(statusLabel(item.status))}</td>` : ""}
+                      <td><button type="button" class="icon-btn-delete" data-visitor-remove-index="${index}" aria-label="Remove" title="Remove">${deleteIconSvg}</button></td>
+                    </tr>
+                  `
+                )
+                .join("");
+            };
+            render();
+            addButton.addEventListener("click", () => {
+              const label = labelInput?.value.trim() || "";
+              const title = titleInput?.value.trim() || "";
+              const icon = iconInput?.value.trim() || "📍";
+              const color = colorInput?.value || "#FFB15C";
+              const current = currentInput?.value.trim() || "";
+              const next = nextInput?.value.trim() || "";
+              const capacity = Number(capacityInput?.value);
+              const note = noteInput?.value.trim() || "";
+              const lat = Number(latInput?.value);
+              const lng = Number(lngInput?.value);
+              const crowd = Number(crowdInput?.value);
+              if (!title) {
+                feedback.textContent = "Enter a title.";
+                feedback.classList.remove("success");
+                return;
+              }
+              const nextItem = { label, title, note };
+              if (prefix === "visitorZoneMap") {
+                if (!Number.isFinite(lat) || !Number.isFinite(lng)) {
+                  feedback.textContent = "Enter valid latitude and longitude.";
+                  feedback.classList.remove("success");
+                  return;
+                }
+                nextItem.lat = Math.min(90, Math.max(-90, lat));
+                nextItem.lng = Math.min(180, Math.max(-180, lng));
+                nextItem.icon = icon;
+                nextItem.color = color;
+                nextItem.current = current;
+                nextItem.next = next;
+                nextItem.capacity = Number.isFinite(capacity) ? Math.max(0, capacity) : 0;
+                nextItem.crowd = Number.isFinite(crowd) ? Math.min(100, Math.max(0, crowd)) : 0;
+                nextItem.status = statusInput?.value || "info";
+              }
+              saveItems([...getItems(), nextItem]);
+              render();
+              if (prefix === "visitorZoneMap") window.dispatchEvent(new CustomEvent("visitorZoneMapChanged"));
+              if (labelInput) labelInput.value = "";
+              if (titleInput) titleInput.value = "";
+              if (iconInput) iconInput.value = "";
+              if (colorInput) colorInput.value = "#FFB15C";
+              if (currentInput) currentInput.value = "";
+              if (nextInput) nextInput.value = "";
+              if (capacityInput) capacityInput.value = "";
+              if (noteInput) noteInput.value = "";
+              if (latInput) latInput.value = "";
+              if (lngInput) lngInput.value = "";
+              if (crowdInput) crowdInput.value = "";
+              if (statusInput) statusInput.value = "live";
+              feedback.textContent = `${noun} added.`;
+              feedback.classList.add("success");
+              recordActivity(`Added a visitor page ${noun.toLowerCase()} entry`, "College Fest");
+            });
+            bodyEl.addEventListener("click", (event) => {
+              const removeButton = event.target.closest("[data-visitor-remove-index]");
+              if (!removeButton) return;
+              const index = Number(removeButton.dataset.visitorRemoveIndex);
+              saveItems(getItems().filter((_, itemIndex) => itemIndex !== index));
+              render();
+              if (prefix === "visitorZoneMap") window.dispatchEvent(new CustomEvent("visitorZoneMapChanged"));
+              recordActivity(`Removed a visitor page ${noun.toLowerCase()} entry`, "College Fest");
+            });
+          };
+          wireVisitorTripleListEditor("visitorZoneMap", getVisitorZoneMap, saveVisitorZoneMap, "Zone");
+          wireVisitorTripleListEditor("visitorAnnouncements", getVisitorAnnouncements, saveVisitorAnnouncements, "Announcement");
+          wireVisitorTripleListEditor("visitorSchedule", getVisitorSchedule, saveVisitorSchedule, "Schedule item");
+
+          const wireVisitorZoneMapSettings = () => {
+            const fields = {
+              centerLat: "visitorZoneMapCenterLatInput",
+              centerLng: "visitorZoneMapCenterLngInput",
+              zoom: "visitorZoneMapZoomInput",
+              pitch: "visitorZoneMapPitchInput",
+              bearing: "visitorZoneMapBearingInput",
+              rotationEnabled: "visitorZoneMapRotationInput",
+              style: "visitorZoneMapStyleInput",
+              introEnabled: "visitorZoneMapIntroInput",
+              theatreEnabled: "visitorZoneMapTheatreInput",
+              liveNavEnabled: "visitorZoneMapLiveNavInput",
+              entranceLat: "visitorZoneMapEntranceLatInput",
+              entranceLng: "visitorZoneMapEntranceLngInput",
+              theatreLat: "visitorZoneMapTheatreLatInput",
+              theatreLng: "visitorZoneMapTheatreLngInput",
+              seatingLat: "visitorZoneMapSeatingLatInput",
+              seatingLng: "visitorZoneMapSeatingLngInput"
+            };
+            const saveButton = document.querySelector("#visitorZoneMapSettingsSaveButton");
+            const hdDownloadButton = document.querySelector("#visitorZoneMapHdDownloadButton");
+            const previewEl = document.querySelector("#visitorZoneMapPrintPreview");
+            const feedback = document.querySelector("#visitorZoneMapSettingsFeedback");
+            if (!saveButton || typeof getVisitorZoneMapSettings !== "function") return;
+            const settings = getVisitorZoneMapSettings();
+            let adminZoneMapInstance = null;
+            let adminZoneMapReady = false;
+            let adminZoneMapScriptLoading = false;
+            let adminZoneFullscreenWired = false;
+            const statusText = (status) => ({ live: "Live Now", soon: "Starting Soon", info: "Info", ended: "Ended" }[status] || "Info");
+            const readMapSettingsForm = () => {
+              const nextSettings = {};
+              Object.entries(fields).forEach(([key, id]) => {
+                const input = document.querySelector(`#${id}`);
+                if (!input) return;
+                if (input.tagName === "SELECT") {
+                  nextSettings[key] = input.value === "true";
+                } else if (["style"].includes(key)) {
+                  nextSettings[key] = input.value.trim() || "whiteboard";
+                } else {
+                  const value = Number(input.value);
+                  nextSettings[key] = Number.isFinite(value) ? value : settings[key];
+                }
+              });
+              return nextSettings;
+            };
+            const getPreviewMapSettings = () => ({ ...getVisitorZoneMapSettings(), ...readMapSettingsForm() });
+            const getAdminZone2dCamera = (currentSettings = getPreviewMapSettings()) => ({
+              center: { lat: Number(currentSettings.centerLat) || 15.7741, lng: Number(currentSettings.centerLng) || 78.0565 },
+              zoom: Number(currentSettings.zoom) || 16.5,
+              pitch: 0,
+              bearing: currentSettings.rotationEnabled ? (Number(currentSettings.bearing) || 0) : 0
+            });
+            const getAdminZonePoints = () => {
+              const currentSettings = getPreviewMapSettings();
+              return [
+                {
+                  key: "entrance",
+                  label: "IN",
+                  title: "Entrance",
+                  note: "Main campus entry",
+                  color: "#00C853",
+                  lat: currentSettings.entranceLat,
+                  lng: currentSettings.entranceLng,
+                  type: "entrance",
+                  status: "entrance"
+                },
+                {
+                  key: "theatre",
+                  label: "OAT",
+                  title: "Open Air Theatre",
+                  note: "Main stage and audience area",
+                  color: "#8B2EFF",
+                  lat: currentSettings.theatreLat,
+                  lng: currentSettings.theatreLng,
+                  icon: "🎭",
+                  type: "theatre",
+                  status: "theatre"
+                },
+                {
+                  key: "seating",
+                  label: "SEAT",
+                  title: "Seating Area",
+                  note: "Audience seating",
+                  color: "#4CAF50",
+                  lat: currentSettings.seatingLat,
+                  lng: currentSettings.seatingLng,
+                  icon: "🎟️",
+                  type: "seating",
+                  status: "seating"
+                },
+                ...getVisitorZoneMap().map((zone, index) => ({
+                  key: `zone-${index}`,
+                  label: String(index + 1),
+                  title: zone.title || "Zone",
+                  note: zone.note || statusText(zone.status),
+                  color: zone.color || "#FFB15C",
+                  lat: zone.lat,
+                  lng: zone.lng,
+                  icon: zone.icon || "",
+                  type: "zone",
+                  status: zone.status || "info"
+                }))
+              ].filter((point) => Number.isFinite(Number(point.lat)) && Number.isFinite(Number(point.lng)));
+            };
+            const renderAdminZoneMapShell = () => {
+              if (!previewEl) return;
+              if (!previewEl.querySelector("#adminZoneSdkMap")) {
+                previewEl.innerHTML = `
+                  <div class="admin-zone-sdk-stage">
+                    <div class="admin-zone-sdk-map" id="adminZoneSdkMap"></div>
+                    <div class="admin-zone-sdk-pins" id="adminZoneSdkPins"></div>
+                    <div class="admin-zone-map-heading">
+                      <img src="../gprec-logo-enhanced.png" alt="">
+                      <span>GPREC Event Zone Map</span>
+                    </div>
+                    <div class="admin-zone-sdk-legend" id="adminZoneSdkLegend" aria-label="Map legend"></div>
+                  </div>
+                `;
+              }
+            };
+            const syncAdminZoneFullscreen = () => {
+              setTimeout(() => {
+                try { adminZoneMapInstance?.resize?.(); } catch (error) {}
+                positionAdminZoneMapLabels();
+              }, 180);
+            };
+            const wireAdminZoneNativeFullscreen = () => {
+              if (adminZoneFullscreenWired) return;
+              const stage = document.querySelector(".admin-zone-sdk-stage");
+              if (!stage) return;
+              adminZoneFullscreenWired = true;
+              stage.addEventListener("click", async (event) => {
+                const control = event.target?.closest?.("button, a");
+                if (!control || control.closest(".admin-zone-sdk-pins")) return;
+                const meta = `${control.className || ""} ${control.getAttribute("aria-label") || ""} ${control.getAttribute("title") || ""}`.toLowerCase();
+                const isFullscreenControl = meta.includes("fullscreen") || meta.includes("full screen") || meta.includes("ctrl-fullscreen");
+                if (!isFullscreenControl) return;
+                event.preventDefault();
+                event.stopPropagation();
+                try {
+                  if (document.fullscreenElement === stage) await document.exitFullscreen();
+                  else await stage.requestFullscreen();
+                  syncAdminZoneFullscreen();
+                } catch (error) {}
+              }, true);
+              document.addEventListener("fullscreenchange", syncAdminZoneFullscreen);
+            };
+            const positionAdminZoneMapLabels = () => {
+              const pinsEl = document.querySelector("#adminZoneSdkPins");
+              if (!adminZoneMapInstance || !pinsEl) return;
+              getAdminZonePoints().forEach((point) => {
+                const pin = pinsEl.querySelector(`[data-admin-zone-key="${point.key}"]`);
+                if (!pin) return;
+                try {
+                  const px = adminZoneMapInstance.project([Number(point.lng), Number(point.lat)]);
+                  pin.style.left = `${px.x}px`;
+                  pin.style.top = `${px.y}px`;
+                  pin.style.opacity = "1";
+                } catch (error) {}
+              });
+            };
+            const renderAdminZoneMapOverlays = () => {
+              const pinsEl = document.querySelector("#adminZoneSdkPins");
+              const legendEl = document.querySelector("#adminZoneSdkLegend");
+              const points = getAdminZonePoints();
+              if (pinsEl) {
+                pinsEl.innerHTML = points.map((point) => `
+                  <button type="button" class="visitor-zone-pin visitor-zone-pin-${escapeHtmlSafe(point.status)}" style="--zone-color:${escapeHtmlSafe(point.color)}" data-admin-zone-key="${escapeHtmlSafe(point.key)}" aria-label="${escapeHtmlSafe(point.title)}">
+                    ${["live", "soon", "theatre"].includes(point.status) ? '<span class="visitor-zone-pin-pulse"></span>' : ""}
+                    <span class="visitor-zone-pin-dot">${escapeHtmlSafe(point.label)}</span>
+                  </button>
+                `).join("");
+                pinsEl.querySelectorAll("[data-admin-zone-key]").forEach((pin) => {
+                  pin.addEventListener("click", () => {
+                    const point = points.find((item) => item.key === pin.dataset.adminZoneKey);
+                    if (!point || !adminZoneMapInstance) return;
+                    const camera = getAdminZone2dCamera();
+                    try {
+                      adminZoneMapInstance.flyTo({ center: { lat: Number(point.lat), lng: Number(point.lng) }, zoom: 18, pitch: 0, bearing: camera.bearing, duration: 900, essential: true });
+                    } catch (error) {}
+                  });
+                });
+              }
+              if (legendEl) {
+                const zoneRows = points.filter((point) => point.type === "zone").map((point) => `
+                  <span><i style="background:${escapeHtmlSafe(point.color)}"></i>${escapeHtmlSafe(point.label)} ${escapeHtmlSafe(point.title)}</span>
+                `).join("");
+                legendEl.innerHTML = `
+                  <strong>Legend</strong>
+                  <span><i style="background:#00C853"></i>Entrance</span>
+                  <span><i style="background:#8B2EFF"></i>OAT</span>
+                  <span><i style="background:#4CAF50"></i>Seating</span>
+                  ${zoneRows}
+                `;
+              }
+              positionAdminZoneMapLabels();
+            };
+            const fitAdminZoneBannerView = () => {
+              if (!adminZoneMapInstance) return;
+              const points = getAdminZonePoints();
+              const lngs = points.map((point) => Number(point.lng)).filter(Number.isFinite);
+              const lats = points.map((point) => Number(point.lat)).filter(Number.isFinite);
+              if (!lngs.length || !lats.length) return;
+              const minLng = Math.min(...lngs) - 0.00035;
+              const maxLng = Math.max(...lngs) + 0.00035;
+              const minLat = Math.min(...lats) - 0.00035;
+              const maxLat = Math.max(...lats) + 0.00035;
+              const camera = getAdminZone2dCamera();
+              try {
+                adminZoneMapInstance.fitBounds?.([[minLng, minLat], [maxLng, maxLat]], {
+                  padding: { top: 122, right: 84, bottom: 178, left: 84 },
+                  pitch: 0,
+                  bearing: camera.bearing,
+                  duration: 800,
+                  essential: true
+                });
+              } catch (error) {}
+            };
+            const initAdminZoneMapSdk = () => {
+              renderAdminZoneMapShell();
+              const mapEl = document.querySelector("#adminZoneSdkMap");
+              if (!mapEl || adminZoneMapInstance) return;
+              if (typeof mappls === "undefined") {
+                loadAdminZoneMapSdk();
+                return;
+              }
+              const currentSettings = getPreviewMapSettings();
+              const camera = getAdminZone2dCamera(currentSettings);
+              try {
+                mapEl.innerHTML = "";
+                adminZoneMapInstance = new mappls.Map("adminZoneSdkMap", {
+                  center: camera.center,
+                  zoom: camera.zoom,
+                  tilt: 0,
+                  heading: 0,
+                  pitch: camera.pitch,
+                  bearing: camera.bearing,
+                  traffic: false,
+                  geolocation: false,
+                  zoomControl: true,
+                  mapType: currentSettings.style || "whiteboard",
+                  clickableIcons: false,
+                  preserveDrawingBuffer: true
+                });
+                const onReady = () => {
+                  adminZoneMapReady = true;
+                  try { mappls.setStyle(adminZoneMapInstance, currentSettings.style || "whiteboard"); } catch (error) {}
+                  try { adminZoneMapInstance.resize?.(); } catch (error) {}
+                  if (typeof hideMapSdkAttribution === "function") hideMapSdkAttribution();
+                  renderAdminZoneMapOverlays();
+                  wireAdminZoneNativeFullscreen();
+                  fitAdminZoneBannerView();
+                  setTimeout(positionAdminZoneMapLabels, 250);
+                  setTimeout(() => {
+                    try { adminZoneMapInstance.resize?.(); } catch (error) {}
+                    if (typeof hideMapSdkAttribution === "function") hideMapSdkAttribution();
+                    fitAdminZoneBannerView();
+                    positionAdminZoneMapLabels();
+                  }, 650);
+                };
+                adminZoneMapInstance.addListener?.("load", onReady);
+                ["move", "zoom", "rotate", "pitch", "resize"].forEach((eventName) => adminZoneMapInstance.addListener?.(eventName, positionAdminZoneMapLabels));
+                setTimeout(onReady, 1200);
+              } catch (error) {
+                mapEl.innerHTML = '<div class="admin-zone-map-error">Map failed to load. Check the Mappls SDK token.</div>';
+              }
+            };
+            const loadAdminZoneMapSdk = () => {
+              const mapEl = document.querySelector("#adminZoneSdkMap");
+              const sdkSettings = typeof getMapSdkSettings === "function" ? getMapSdkSettings() : {};
+              if (!mapEl || adminZoneMapScriptLoading) return;
+              if (!sdkSettings.accessToken) {
+                if (typeof onAdminConfigLoaded === "function" && (typeof adminConfigHasLoaded === "undefined" || !adminConfigHasLoaded)) {
+                  mapEl.innerHTML = '<div class="admin-zone-map-error">Loading Map SDK settings...</div>';
+                  adminZoneMapScriptLoading = true;
+                  onAdminConfigLoaded(() => {
+                    adminZoneMapScriptLoading = false;
+                    initAdminZoneMapSdk();
+                  });
+                  return;
+                }
+                mapEl.innerHTML = '<div class="admin-zone-map-error">Map SDK token is not configured in Admin Dashboard &gt; Data Integrations &gt; Map SDK.</div>';
+                return;
+              }
+              adminZoneMapScriptLoading = true;
+              window.initAdminZoneMapSdk = initAdminZoneMapSdk;
+              const existingScript = document.querySelector("#adminMapplsSdkScript, #visitorMapplsSdkScript");
+              if (existingScript) {
+                const waitForSdk = setInterval(() => {
+                  if (typeof mappls === "undefined") return;
+                  clearInterval(waitForSdk);
+                  adminZoneMapScriptLoading = false;
+                  initAdminZoneMapSdk();
+                }, 120);
+                setTimeout(() => {
+                  clearInterval(waitForSdk);
+                  if (typeof mappls === "undefined") {
+                    adminZoneMapScriptLoading = false;
+                    mapEl.innerHTML = '<div class="admin-zone-map-error">Map SDK is still loading. Refresh this page once.</div>';
+                  }
+                }, 8000);
+                return;
+              }
+              const params = new URLSearchParams({
+                v: sdkSettings.version || "3.0",
+                access_token: sdkSettings.accessToken,
+                layer: sdkSettings.layer || "vector",
+                callback: "initAdminZoneMapSdk"
+              });
+              if (sdkSettings.plugins) params.set("plugins", sdkSettings.plugins);
+              const script = document.createElement("script");
+              script.id = "adminMapplsSdkScript";
+              script.src = `${sdkSettings.sdkUrl || "https://sdk.mappls.com/map/sdk/web"}?${params.toString()}`;
+              script.defer = true;
+              script.async = true;
+              script.onerror = () => {
+                adminZoneMapScriptLoading = false;
+                mapEl.innerHTML = '<div class="admin-zone-map-error">Map SDK failed to load. Check the Map SDK URL and token.</div>';
+              };
+              document.head.appendChild(script);
+            };
+            const refreshAdminZoneSdkPreview = () => {
+              renderAdminZoneMapShell();
+              if (!adminZoneMapInstance) {
+                initAdminZoneMapSdk();
+                return;
+              }
+              const currentSettings = getPreviewMapSettings();
+              const camera = getAdminZone2dCamera(currentSettings);
+              try {
+                adminZoneMapInstance.flyTo({
+                  center: camera.center,
+                  zoom: camera.zoom,
+                  pitch: camera.pitch,
+                  bearing: camera.bearing,
+                  duration: 700,
+                  essential: true
+                });
+                mappls.setStyle(adminZoneMapInstance, currentSettings.style || "whiteboard");
+                adminZoneMapInstance.resize?.();
+                if (typeof hideMapSdkAttribution === "function") hideMapSdkAttribution();
+              } catch (error) {}
+              renderAdminZoneMapOverlays();
+              fitAdminZoneBannerView();
+              setTimeout(positionAdminZoneMapLabels, 250);
+              setTimeout(() => {
+                try { adminZoneMapInstance.resize?.(); } catch (error) {}
+                fitAdminZoneBannerView();
+                positionAdminZoneMapLabels();
+              }, 650);
+            };
+            const buildPrintableZoneMapSvg = () => {
+              const zones = getVisitorZoneMap();
+              const currentSettings = getVisitorZoneMapSettings();
+              const width = 1200;
+              const height = 760;
+              const allPoints = [
+                { lat: currentSettings.entranceLat, lng: currentSettings.entranceLng },
+                { lat: currentSettings.theatreLat, lng: currentSettings.theatreLng },
+                { lat: currentSettings.seatingLat, lng: currentSettings.seatingLng },
+                ...zones
+              ].filter((point) => Number.isFinite(Number(point.lat)) && Number.isFinite(Number(point.lng)));
+              const lats = allPoints.map((point) => Number(point.lat));
+              const lngs = allPoints.map((point) => Number(point.lng));
+              const minLat = Math.min(...lats) - 0.0008;
+              const maxLat = Math.max(...lats) + 0.0008;
+              const minLng = Math.min(...lngs) - 0.0008;
+              const maxLng = Math.max(...lngs) + 0.0008;
+              const project = (lat, lng) => ({
+                x: 86 + ((Number(lng) - minLng) / Math.max(0.00001, maxLng - minLng)) * (width - 172),
+                y: 104 + ((maxLat - Number(lat)) / Math.max(0.00001, maxLat - minLat)) * (height - 208)
+              });
+              const roads = [
+                "M90 610 C260 560 410 585 560 520 S850 470 1100 420",
+                "M210 130 C370 240 470 360 620 650",
+                "M470 90 C570 260 720 390 1060 650",
+                "M130 365 H1085",
+                "M300 690 C460 560 620 470 880 180"
+              ];
+              const zoneNodes = zones.map((zone, index) => {
+                const point = project(zone.lat, zone.lng);
+                const color = zone.color || "#FFB15C";
+                const label = String(index + 1);
+                return `
+                  <g class="print-zone" transform="translate(${point.x.toFixed(1)} ${point.y.toFixed(1)})">
+                    <circle r="30" fill="${escapeHtmlSafe(color)}" stroke="#ffffff" stroke-width="4"/>
+                    <text y="7" text-anchor="middle" font-size="22" font-weight="900" fill="#06203A">${escapeHtmlSafe(label)}</text>
+                    <rect x="-92" y="-80" width="184" height="38" rx="18" fill="#071B33" stroke="${escapeHtmlSafe(color)}" stroke-width="2"/>
+                    <text y="-56" text-anchor="middle" font-size="16" font-weight="900" fill="#ffffff">${escapeHtmlSafe(zone.icon || "•")} ${escapeHtmlSafe(zone.title || "Zone")}</text>
+                  </g>
+                `;
+              }).join("");
+              const entrance = project(currentSettings.entranceLat, currentSettings.entranceLng);
+              const theatre = project(currentSettings.theatreLat, currentSettings.theatreLng);
+              const seating = project(currentSettings.seatingLat, currentSettings.seatingLng);
+              const legend = zones.map((zone, index) => `
+                <g transform="translate(${80 + (index % 4) * 270} ${height - 88 + Math.floor(index / 4) * 34})">
+                  <circle r="12" fill="${escapeHtmlSafe(zone.color || "#FFB15C")}"/>
+                  <text x="22" y="5" font-size="15" font-weight="800" fill="#10243D">${index + 1}. ${escapeHtmlSafe(zone.title || "Zone")} · ${escapeHtmlSafe(statusText(zone.status))}</text>
+                </g>
+              `).join("");
+              const markerLegendY = height - 154;
+              return `
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${width} ${height}" role="img" aria-label="Printable GPREC event zone map">
+                  <rect width="${width}" height="${height}" fill="#F5F7FB"/>
+                  <rect x="28" y="28" width="${width - 56}" height="${height - 56}" rx="24" fill="#E8EDF4" stroke="#D1DBE8" stroke-width="2"/>
+                  <g opacity="0.68">${roads.map((road) => `<path d="${road}" fill="none" stroke="#B8C3D1" stroke-width="22" stroke-linecap="round"/><path d="${road}" fill="none" stroke="#FFFFFF" stroke-width="8" stroke-linecap="round"/>`).join("")}</g>
+                  <text x="60" y="72" font-size="30" font-weight="950" fill="#04284A">GPREC Event Zone Map</text>
+                  <text x="60" y="100" font-size="16" font-weight="800" fill="#E85D04">Bird's-eye printable display map</text>
+                  <g transform="translate(${entrance.x.toFixed(1)} ${entrance.y.toFixed(1)})">
+                    <circle r="28" fill="#00C853" stroke="#ffffff" stroke-width="4"/>
+                    <text y="6" text-anchor="middle" font-size="14" font-weight="950" fill="#06203A">IN</text>
+                    <text x="38" y="6" font-size="16" font-weight="900" fill="#06203A">Entrance</text>
+                  </g>
+                  <g transform="translate(${theatre.x.toFixed(1)} ${theatre.y.toFixed(1)})">
+                    <circle r="32" fill="#8B2EFF" stroke="#ffffff" stroke-width="4"/>
+                    <text y="6" text-anchor="middle" font-size="13" font-weight="950" fill="#ffffff">OAT</text>
+                    <text x="42" y="6" font-size="16" font-weight="900" fill="#06203A">Open Air Theatre</text>
+                  </g>
+                  <g transform="translate(${seating.x.toFixed(1)} ${seating.y.toFixed(1)})">
+                    <rect x="-32" y="-20" width="64" height="40" rx="18" fill="#4CAF50" stroke="#ffffff" stroke-width="4"/>
+                    <text y="5" text-anchor="middle" font-size="12" font-weight="950" fill="#06203A">SEAT</text>
+                  </g>
+                  ${zoneNodes}
+                  <rect x="48" y="${height - 190}" width="${width - 96}" height="154" rx="18" fill="#FFFFFF" stroke="#D7E0EC"/>
+                  <text x="76" y="${markerLegendY}" font-size="17" font-weight="950" fill="#04284A">Legend</text>
+                  <g transform="translate(170 ${markerLegendY - 5})">
+                    <circle r="11" fill="#00C853"/><text x="20" y="5" font-size="14" font-weight="800" fill="#10243D">IN Entrance</text>
+                  </g>
+                  <g transform="translate(330 ${markerLegendY - 5})">
+                    <circle r="11" fill="#8B2EFF"/><text x="20" y="5" font-size="14" font-weight="800" fill="#10243D">OAT Open Air Theatre</text>
+                  </g>
+                  <g transform="translate(575 ${markerLegendY - 5})">
+                    <rect x="-12" y="-9" width="24" height="18" rx="8" fill="#4CAF50"/><text x="20" y="5" font-size="14" font-weight="800" fill="#10243D">SEAT Seating</text>
+                  </g>
+                  <g transform="translate(760 ${markerLegendY - 5})">
+                    <circle r="8" fill="#00E5B4"/><text x="16" y="5" font-size="14" font-weight="800" fill="#10243D">Live</text>
+                    <circle cx="82" r="8" fill="#7DD3FC"/><text x="98" y="5" font-size="14" font-weight="800" fill="#10243D">Soon</text>
+                    <circle cx="172" r="8" fill="#8888AA"/><text x="188" y="5" font-size="14" font-weight="800" fill="#10243D">Info</text>
+                    <circle cx="258" r="8" fill="#4B5563"/><text x="274" y="5" font-size="14" font-weight="800" fill="#10243D">Ended</text>
+                  </g>
+                  ${legend}
+                </svg>
+              `;
+            };
+            const renderPrintableZoneMap = () => {
+              refreshAdminZoneSdkPreview();
+            };
+            Object.entries(fields).forEach(([key, id]) => {
+              const input = document.querySelector(`#${id}`);
+              if (!input) return;
+              if (input.tagName === "SELECT") input.value = String(Boolean(settings[key]));
+              else input.value = settings[key] ?? "";
+            });
+            const rotationInput = document.querySelector("#visitorZoneMapRotationInput");
+            const bearingInput = document.querySelector("#visitorZoneMapBearingInput");
+            const compassNeedle = document.querySelector("#zoneCompassNeedle");
+            const compassPoints = document.querySelectorAll(".zone-compass-point");
+            const compassButtons = document.querySelectorAll(".zone-compass-point, .zone-compass-step");
+            const normalizeBearing = (value) => ((Number(value) % 360) + 360) % 360;
+            const syncCompassVisual = () => {
+              const bearing = normalizeBearing(bearingInput?.value);
+              if (compassNeedle) compassNeedle.style.transform = `translate(-50%, -100%) rotate(${bearing}deg)`;
+              compassPoints.forEach((point) => {
+                point.classList.toggle("is-active", Number(point.dataset.zoneBearing) === bearing);
+              });
+            };
+            const setBearingFromDpad = (value) => {
+              if (rotationInput) rotationInput.value = "true";
+              if (bearingInput) bearingInput.value = String(Math.round(normalizeBearing(value)));
+              syncRotationInput();
+              syncCompassVisual();
+              renderPrintableZoneMap();
+            };
+            const syncRotationInput = () => {
+              const enabled = rotationInput?.value === "true";
+              if (bearingInput) {
+                bearingInput.readOnly = !enabled;
+                if (!enabled) bearingInput.value = "0";
+              }
+              compassButtons.forEach((button) => { button.disabled = !enabled; });
+              syncCompassVisual();
+            };
+            rotationInput?.addEventListener("change", () => {
+              syncRotationInput();
+              renderPrintableZoneMap();
+            });
+            document.querySelectorAll("[data-zone-bearing], [data-zone-bearing-step]").forEach((button) => {
+              button.addEventListener("click", () => {
+                const current = Number(bearingInput?.value) || 0;
+                if (button.dataset.zoneBearing !== undefined) {
+                  setBearingFromDpad(Number(button.dataset.zoneBearing));
+                  return;
+                }
+                setBearingFromDpad(current + (Number(button.dataset.zoneBearingStep) || 0));
+              });
+            });
+            syncRotationInput();
+            saveButton.addEventListener("click", () => {
+              const nextSettings = readMapSettingsForm();
+              if (!nextSettings.rotationEnabled) nextSettings.bearing = 0;
+              saveVisitorZoneMapSettings(nextSettings);
+              if (feedback) {
+                feedback.textContent = "Zone map settings saved.";
+                feedback.classList.add("success");
+              }
+              recordActivity("Updated visitor zone map settings", "College Fest");
+              renderPrintableZoneMap();
+            });
+            hdDownloadButton?.addEventListener("click", async () => {
+              const downloadCanvas = (canvas) => {
+                canvas.toBlob((pngBlob) => {
+                  if (!pngBlob) return;
+                  const link = document.createElement("a");
+                  link.href = URL.createObjectURL(pngBlob);
+                  link.download = "gprec-zone-map-display-hd.png";
+                  link.click();
+                  URL.revokeObjectURL(link.href);
+                  recordActivity("Downloaded visitor zone display map HD image", "College Fest");
+                }, "image/png", 1);
+              };
+              const downloadPrintableFallback = () => {
+                const svg = buildPrintableZoneMapSvg();
+                const blob = new Blob([svg], { type: "image/svg+xml;charset=utf-8" });
+                const url = URL.createObjectURL(blob);
+                const image = new Image();
+                image.onload = () => {
+                  const canvas = document.createElement("canvas");
+                  canvas.width = 2400;
+                  canvas.height = 1520;
+                  const context = canvas.getContext("2d");
+                  context.fillStyle = "#ffffff";
+                  context.fillRect(0, 0, canvas.width, canvas.height);
+                  context.drawImage(image, 0, 0, canvas.width, canvas.height);
+                  URL.revokeObjectURL(url);
+                  downloadCanvas(canvas);
+                };
+                image.onerror = () => {
+                  URL.revokeObjectURL(url);
+                  if (feedback) {
+                    feedback.textContent = "Could not generate the HD image. Please try again.";
+                    feedback.classList.remove("success");
+                  }
+                };
+                image.src = url;
+              };
+              // Captures the live preview stage itself - not a rebuild of it - so the download
+              // matches whatever is actually on screen. html2canvas can't parse/lay out a handful
+              // of specific things this page uses, so those are neutralized on a *clone* only
+              // (the real page is never touched):
+              //  - color-mix() (pin glow/pulse) -> html2canvas's CSS parser predates it and throws;
+              //    swapped for the equivalent plain rgba() (X P%-mixed-with-transparent == X at
+              //    alpha=P%).
+              //  - the pulse ring's CSS animation -> frozen mid-frame it reads as a blurry blob, so
+              //    it's hidden for the capture.
+              //  - the map SDK's zoom/3D/fullscreen control widget -> UI chrome, not map content.
+              //  - object-fit: contain on the logo -> html2canvas ignores it and stretches the raw
+              //    image; pre-computed contain-fit width/height is set explicitly instead.
+              //  - flexbox align-items:center (heading row, legend dot+label) -> html2canvas's
+              //    support is weak enough that children land uncentered; positions are measured
+              //    from the real live elements just before capture and replayed as plain absolute
+              //    offsets, which it does handle reliably.
+              //  - font-weight:950 (Inter) -> no real file at that weight, so the browser
+              //    synthesizes it, and html2canvas paints that synthetic bold as a doubled/blurry
+              //    stroke; capped to a real weight (700) on a safe system font with no network
+              //    fetch (an earlier attempt to fix this via @font-face raced html2canvas's paint
+              //    against the font finishing loading and intermittently clipped the heading).
+              //  - the pin number/letter labels -> html2canvas re-implements text shaping in JS
+              //    instead of using the browser's, so this bold monospace label doesn't center
+              //    right ("IN" read almost like "TN"); swapped for SVG <text>, rendered as vector
+              //    geometry instead of shaped text.
+              const stage = document.querySelector(".admin-zone-sdk-stage");
+              if (!stage || !adminZoneMapInstance || typeof html2canvas !== "function") {
+                downloadPrintableFallback();
+                return;
+              }
+              const hexToRgba = (hex, alpha) => {
+                const clean = (hex || "").trim().replace("#", "");
+                const full = clean.length === 3 ? clean.split("").map((c) => c + c).join("") : clean;
+                const r = parseInt(full.slice(0, 2), 16) || 0;
+                const g = parseInt(full.slice(2, 4), 16) || 0;
+                const b = parseInt(full.slice(4, 6), 16) || 0;
+                return `rgba(${r}, ${g}, ${b}, ${alpha})`;
+              };
+              // html2canvas can drop the logo or clip the heading text, so the export hides the
+              // fragile DOM heading and draws the finished header directly on the output canvas.
+              let exportStageRect = null;
+              const loadExportLogo = (src) => new Promise((resolve) => {
+                const image = new Image();
+                image.onload = () => resolve(image);
+                image.onerror = () => resolve(null);
+                image.src = src;
+              });
+              const roundRectPath = (context, x, y, width, height, radius) => {
+                const r = Math.min(radius, width / 2, height / 2);
+                context.beginPath();
+                context.moveTo(x + r, y);
+                context.lineTo(x + width - r, y);
+                context.quadraticCurveTo(x + width, y, x + width, y + r);
+                context.lineTo(x + width, y + height - r);
+                context.quadraticCurveTo(x + width, y + height, x + width - r, y + height);
+                context.lineTo(x + r, y + height);
+                context.quadraticCurveTo(x, y + height, x, y + height - r);
+                context.lineTo(x, y + r);
+                context.quadraticCurveTo(x, y, x + r, y);
+                context.closePath();
+              };
+              const drawHdExportHeader = async (sourceCanvas) => {
+                const output = document.createElement("canvas");
+                output.width = sourceCanvas.width;
+                output.height = sourceCanvas.height;
+                const context = output.getContext("2d");
+                context.drawImage(sourceCanvas, 0, 0);
+                const logo = await loadExportLogo(typeof gprecLogoUrl === "string" ? gprecLogoUrl : "../gprec-logo-enhanced.png");
+                const headerWidth = Math.round(output.width * 0.78);
+                const headerX = Math.round((output.width - headerWidth) / 2);
+                const headerY = Math.round(output.height * 0.03);
+                const headerHeight = Math.round(output.height * 0.115);
+                const radius = Math.round(headerHeight * 0.2);
+                context.save();
+                context.shadowColor = "rgba(4, 40, 74, 0.16)";
+                context.shadowBlur = Math.round(output.width * 0.018);
+                context.shadowOffsetY = Math.round(output.height * 0.012);
+                roundRectPath(context, headerX, headerY, headerWidth, headerHeight, radius);
+                context.fillStyle = "rgba(255, 255, 255, 0.94)";
+                context.fill();
+                context.restore();
+                context.lineWidth = Math.max(1, output.width * 0.001);
+                context.strokeStyle = "rgba(4, 40, 74, 0.10)";
+                roundRectPath(context, headerX, headerY, headerWidth, headerHeight, radius);
+                context.stroke();
+                const fontSize = Math.round(Math.min(54, Math.max(34, output.width * 0.026)));
+                context.font = `900 ${fontSize}px Arial, Helvetica, sans-serif`;
+                context.fillStyle = "#04284A";
+                context.textBaseline = "middle";
+                const title = "GPREC Event Zone Map";
+                const titleWidth = context.measureText(title).width;
+                const logoHeight = Math.round(Math.min(headerHeight * 0.48, fontSize * 1.04));
+                const logoWidth = Math.round(logoHeight * 3.65);
+                const gap = Math.round(output.width * 0.018);
+                const groupWidth = logoWidth + gap + titleWidth;
+                const logoX = Math.round(headerX + (headerWidth - groupWidth) / 2);
+                const titleX = Math.round(logoX + logoWidth + gap);
+                const centerY = headerY + headerHeight / 2;
+                if (logo) {
+                  context.drawImage(logo, logoX, centerY - logoHeight / 2, logoWidth, logoHeight);
+                }
+                context.fillText(title, titleX, centerY + Math.round(fontSize * 0.02));
+                const points = getAdminZonePoints();
+                const legendItems = [
+                  { label: "Entrance", color: "#00C853" },
+                  { label: "OAT", color: "#8B2EFF" },
+                  { label: "Seating", color: "#4CAF50" },
+                  ...points.filter((point) => point.type === "zone").map((point) => ({
+                    label: `${point.label} ${point.title}`,
+                    color: point.color || "#FFB15C"
+                  }))
+                ];
+                const legendWidth = Math.round(output.width * 0.94);
+                const legendX = Math.round((output.width - legendWidth) / 2);
+                const legendHeight = Math.round(output.height * 0.155);
+                const legendY = Math.round(output.height - legendHeight - output.height * 0.022);
+                const legendRadius = Math.round(legendHeight * 0.13);
+                context.save();
+                context.shadowColor = "rgba(4, 40, 74, 0.12)";
+                context.shadowBlur = Math.round(output.width * 0.012);
+                context.shadowOffsetY = Math.round(output.height * 0.008);
+                roundRectPath(context, legendX, legendY, legendWidth, legendHeight, legendRadius);
+                context.fillStyle = "rgba(255, 255, 255, 0.92)";
+                context.fill();
+                context.restore();
+                context.lineWidth = Math.max(1, output.width * 0.001);
+                context.strokeStyle = "rgba(4, 40, 74, 0.10)";
+                roundRectPath(context, legendX, legendY, legendWidth, legendHeight, legendRadius);
+                context.stroke();
+                const legendPadX = Math.round(legendWidth * 0.022);
+                const legendPadY = Math.round(legendHeight * 0.24);
+                const legendTitleSize = Math.round(Math.max(18, output.width * 0.012));
+                const legendTextSize = Math.round(Math.max(18, output.width * 0.011));
+                const dotRadius = Math.round(Math.max(8, output.width * 0.005));
+                context.fillStyle = "#04284A";
+                context.font = `900 ${legendTitleSize}px Arial, Helvetica, sans-serif`;
+                context.textBaseline = "alphabetic";
+                context.fillText("LEGEND", legendX + legendPadX, legendY + legendPadY);
+                context.font = `800 ${legendTextSize}px Arial, Helvetica, sans-serif`;
+                context.textBaseline = "middle";
+                const columns = 4;
+                const columnWidth = Math.round(output.width * 0.145);
+                const firstRowY = legendY + legendPadY + Math.round(legendHeight * 0.29);
+                const rowGap = Math.round(legendHeight * 0.31);
+                legendItems.forEach((item, index) => {
+                  const column = index % columns;
+                  const row = Math.floor(index / columns);
+                  const x = legendX + legendPadX + column * columnWidth;
+                  const y = firstRowY + row * rowGap;
+                  context.beginPath();
+                  context.arc(x + dotRadius, y, dotRadius, 0, Math.PI * 2);
+                  context.fillStyle = item.color;
+                  context.fill();
+                  context.fillStyle = "#10243D";
+                  context.fillText(item.label, x + dotRadius * 2 + Math.round(output.width * 0.007), y + 1);
+                });
+                return output;
+              };
+              const sanitizeClonedZoneMap = (clonedDoc) => {
+                const exportWidth = Math.max(900, exportStageRect?.width || stage.getBoundingClientRect().width || 1200);
+                const exportHeight = Math.max(560, exportStageRect?.height || stage.getBoundingClientRect().height || 760);
+                const pinSize = Math.max(30, exportWidth * 0.024);
+                const pinDotSize = Math.max(24, exportWidth * 0.019);
+                const pinFontSize = Math.max(9, pinDotSize * 0.36);
+                clonedDoc.querySelectorAll(".visitor-zone-pin").forEach((pin) => {
+                  const zoneColor = pin.style.getPropertyValue("--zone-color") || "#FFB15C";
+                  pin.style.width = `${pinSize}px`;
+                  pin.style.height = `${pinSize}px`;
+                  const dot = pin.querySelector(".visitor-zone-pin-dot");
+                  if (dot) {
+                    dot.style.width = `${pinDotSize}px`;
+                    dot.style.height = `${pinDotSize}px`;
+                    dot.style.borderWidth = "2px";
+                    dot.style.boxShadow = `0 0 0 8px ${hexToRgba(zoneColor, 0.18)}, 0 8px 18px rgba(4, 40, 74, 0.22)`;
+                    const label = (dot.textContent || "").trim();
+                    const size = pinDotSize;
+                    // Replacing the dot's children also breaks its ::after pointer triangle (still
+                    // present in computed style, just doesn't paint) - add the tail back as a real
+                    // element instead of relying on the pseudo-element.
+                    dot.textContent = "";
+                    dot.innerHTML = `
+                      <svg width="${size}" height="${size}" viewBox="0 0 ${size} ${size}"><text x="50%" y="52%" text-anchor="middle" dominant-baseline="middle" font-family="'Courier New', monospace" font-weight="950" font-size="${pinFontSize}" fill="#071024">${escapeHtmlSafe(label)}</text></svg>
+                      <span style="position:absolute; left:50%; top:calc(100% - 3px); width:0; height:0; transform:translateX(-50%); border-top:${Math.max(8, pinDotSize * 0.34)}px solid ${escapeHtmlSafe(zoneColor)}; border-right:${Math.max(6, pinDotSize * 0.23)}px solid transparent; border-left:${Math.max(6, pinDotSize * 0.23)}px solid transparent;"></span>
+                    `;
+                  }
+                  const pulse = pin.querySelector(".visitor-zone-pin-pulse");
+                  if (pulse) {
+                    pulse.style.background = "transparent";
+                    pulse.style.display = "none";
+                  }
+                });
+                clonedDoc.querySelectorAll(".maplibregl-control-container, .map-control").forEach((el) => {
+                  el.style.setProperty("display", "none", "important");
+                });
+                const headingRow = clonedDoc.querySelector(".admin-zone-map-heading");
+                if (headingRow) {
+                  headingRow.style.display = "none";
+                }
+                const legendEl = clonedDoc.querySelector(".admin-zone-sdk-legend");
+                if (legendEl) {
+                  legendEl.style.display = "none";
+                }
+                // Leave the legend spans' own `display` untouched (inline-flex) - the legend
+                // grid's column widths are minmax(130px, max-content), and switching display type
+                // here throws off html2canvas's max-content sizing and wraps the label.
+                clonedDoc.querySelectorAll(".admin-zone-sdk-legend span").forEach((span) => {
+                  const dot = span.querySelector("i");
+                  if (!dot) return;
+                  span.style.display = "inline-flex";
+                  span.style.alignItems = "center";
+                  span.style.gap = "8px";
+                  span.style.paddingLeft = "0";
+                  span.style.lineHeight = "1";
+                  dot.style.position = "static";
+                  dot.style.width = "12px";
+                  dot.style.height = "12px";
+                  dot.style.margin = "0";
+                  dot.style.transform = "none";
+                });
+                clonedDoc.querySelectorAll(".admin-zone-map-heading, .admin-zone-sdk-legend").forEach((el) => {
+                  el.style.fontFamily = "Arial, Helvetica, sans-serif";
+                  el.style.fontWeight = "700";
+                });
+              };
+              try {
+                // The Download button sits above the preview box in the page, so clicking it
+                // without scrolling further down leaves most (or all) of the stage below the
+                // fold. html2canvas only paints what's actually in the visible viewport in that
+                // case - scroll the stage fully into view first so the whole thing is on-screen.
+                stage.scrollIntoView({ block: "center", behavior: "instant" });
+                await new Promise((resolve) => requestAnimationFrame(() => requestAnimationFrame(resolve)));
+                let stageRect = stage.getBoundingClientRect();
+                if (stageRect.height < 300 || stageRect.width < 300) {
+                  // The box hasn't finished laying out yet - force a reflow and give it another
+                  // frame rather than capture a broken sliver of just the heading.
+                  void stage.offsetHeight;
+                  await new Promise((resolve) => requestAnimationFrame(() => requestAnimationFrame(resolve)));
+                  stageRect = stage.getBoundingClientRect();
+                }
+                if (stageRect.height < 300 || stageRect.width < 300) {
+                  downloadPrintableFallback();
+                  return;
+                }
+                exportStageRect = stageRect;
+                // The map flies to fit all zones on load (800ms animation). Clicking Download
+                // during that flight can catch one pin's on-screen position mid-transition while
+                // the map's own camera has already moved on - wait it out, then force one last
+                // re-sync so every pin matches where it's actually shown at rest.
+                await new Promise((resolve) => setTimeout(resolve, 500));
+                try { positionAdminZoneMapLabels(); } catch (error) {}
+                const hdScale = Math.max(2, 2000 / Math.max(1, stageRect.width));
+                const canvas = await html2canvas(stage, {
+                  backgroundColor: "#ffffff",
+                  scale: hdScale,
+                  useCORS: true,
+                  allowTaint: true,
+                  logging: false,
+                  onclone: sanitizeClonedZoneMap
+                });
+                downloadCanvas(await drawHdExportHeader(canvas));
+              } catch (error) {
+                downloadPrintableFallback();
+              }
+            });
+            window.addEventListener("visitorZoneMapChanged", () => {
+              renderPrintableZoneMap();
+            });
+            renderPrintableZoneMap();
+          };
+          wireVisitorZoneMapSettings();
+
+          const visitorBlurbFieldMap = {
+            workshops: ["visitorBlurbWorkshopsTitleInput", "visitorBlurbWorkshopsBodyInput"],
+            competitions: ["visitorBlurbCompetitionsTitleInput", "visitorBlurbCompetitionsBodyInput"],
+            celebrity: ["visitorBlurbCelebrityTitleInput", "visitorBlurbCelebrityBodyInput"],
+            accommodation: ["visitorBlurbAccommodationTitleInput", "visitorBlurbAccommodationBodyInput"],
+            faqs: ["visitorBlurbFaqsTitleInput", "visitorBlurbFaqsBodyInput"],
+            contact: ["visitorBlurbContactTitleInput", "visitorBlurbContactBodyInput"]
+          };
+          const visitorBlurbsSaveButton = document.querySelector("#visitorBlurbsSaveButton");
+          const visitorBlurbsFeedback = document.querySelector("#visitorBlurbsFeedback");
+          if (visitorBlurbsSaveButton) {
+            const currentVisitorBlurbs = getVisitorBlurbs();
+            Object.entries(visitorBlurbFieldMap).forEach(([key, [titleId, bodyId]]) => {
+              const titleInput = document.querySelector(`#${titleId}`);
+              const bodyInput = document.querySelector(`#${bodyId}`);
+              if (titleInput) titleInput.value = currentVisitorBlurbs[key]?.title || "";
+              if (bodyInput) bodyInput.value = currentVisitorBlurbs[key]?.body || "";
+            });
+            visitorBlurbsSaveButton.addEventListener("click", () => {
+              const blurbs = {};
+              Object.entries(visitorBlurbFieldMap).forEach(([key, [titleId, bodyId]]) => {
+                blurbs[key] = {
+                  title: document.querySelector(`#${titleId}`)?.value.trim() || "",
+                  body: document.querySelector(`#${bodyId}`)?.value.trim() || ""
+                };
+              });
+              saveVisitorBlurbs(blurbs);
+              visitorBlurbsFeedback.textContent = "Section blurbs saved.";
+              visitorBlurbsFeedback.classList.add("success");
+              recordActivity("Updated visitor page section blurbs", "College Fest");
+            });
+          }
 
           // ---- Poster & Ad Designer (EVENT_POSTER_TEMPLATES/buildPosterFromTemplate in script.js) ----
           // Every variable here is poster-prefixed on purpose, even where it wouldn't strictly

@@ -6,7 +6,7 @@
     <title>Hostel Gate Scan | GPREC</title>
     <meta name="description" content="Verify a hostel pass and record exit/entry at G. Pulla Reddy Engineering College.">
     <link rel="icon" href="https://www.gprec.ac.in/wp-content/uploads/2017/08/fav.png" sizes="32x32">
-    <link rel="stylesheet" href="../styles.css">
+    <link rel="stylesheet" href="../styles.css?v=20260722-29">
   </head>
   <body class="student-portal-page assignment-page">
     <header class="login-header">
@@ -30,7 +30,7 @@
       </div>
     </main>
     <script src="../qrcode-generator.js"></script>
-    <script src="../script.js"></script>
+    <script src="../script.js?v=20260722-29"></script>
     <script>
       (() => {
         const params = new URLSearchParams(window.location.search);
@@ -134,14 +134,27 @@
           }
         };
 
+        const storedAdminRole = localStorage.getItem("gprecAdminRole") || "";
+        const isHostelWarden = storedAdminRole === "Boys Hostel Warden" || storedAdminRole === "Girls Hostel Warden";
+
         const renderLoginRequired = () => {
-          titleEl.textContent = "Warden login required";
+          titleEl.textContent = "Hostel Warden login required";
           const returnUrl = `hostel-gate-scan.html${window.location.search}`;
           bodyEl.innerHTML = `
-            <p>Sign in with your official warden/admin email and password on this same server, then the scanned pass can be verified.</p>
-            <p>The QR scan login will use your configured role automatically.</p>
+            <p>Sign in as the Boys or Girls Hostel Warden on this device, then the scanned pass can be verified.</p>
             <div class="action-cell gate-scan-actions">
-              <a class="payment-open-button" href="../pages/admin-login.html?next=${encodeURIComponent(returnUrl)}">Open Central Services Login</a>
+              <a class="payment-open-button" href="../pages/admin-login.html?next=${encodeURIComponent(returnUrl)}">Open Hostel Warden Login</a>
+            </div>
+          `;
+        };
+
+        const renderWrongAdminRole = () => {
+          titleEl.textContent = "Hostel Warden login required";
+          const returnUrl = `hostel-gate-scan.html${window.location.search}`;
+          bodyEl.innerHTML = `
+            <p>You're signed in as ${escapeHtml(storedAdminRole || "an admin")}, but only the Hostel Warden can verify gate passes. Sign out and sign back in with the Hostel Warden account.</p>
+            <div class="action-cell gate-scan-actions">
+              <a class="payment-open-button" href="../pages/admin-login.html?next=${encodeURIComponent(returnUrl)}">Switch to Hostel Warden Login</a>
             </div>
           `;
         };
@@ -151,6 +164,8 @@
           bodyEl.innerHTML = "<p>This link is missing the information a real gate-scan QR should carry.</p>";
         } else if (!localStorage.getItem("gprecSessionToken") || localStorage.getItem("gprecActiveRole") !== "admin") {
           renderLoginRequired();
+        } else if (!isHostelWarden) {
+          renderWrongAdminRole();
         } else {
           const response = gprecDbRequest("/hostel/gate-lookup", { method: "POST", body: { passType, passId, token } });
           if (response && response.ok) {

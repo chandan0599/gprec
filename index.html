@@ -136,15 +136,10 @@
 
     <main id="home">
       <section class="hero">
-        <!-- Photo slides rendered by renderHomeHeroSlides() in script.js from getHomeHeroSlides()
-             (localStorage), managed from the admin dashboard's Media > Home Page Slider panel.
-             Poster slides (placement records) stay fixed here since they use a different
-             (contain, not cover) display mode. -->
+        <!-- Slides rendered by renderHomeHeroSlides() in script.js from getHomeHeroSlides(),
+             managed from the admin dashboard's Media > Home Page Slider panel. -->
         <div class="hero-carousel" aria-label="GPREC campus photos">
           <div id="homeHeroSlides"></div>
-          <img class="hero-slide poster-slide" src="https://www.gprec.ac.in/wp-content/uploads/2026/04/WhatsApp-Image-2026-04-20-at-12.59.54-PM.jpeg" alt="GPREC CSE Department Placements Record">
-          <img class="hero-slide poster-slide" src="https://www.gprec.ac.in/wp-content/uploads/2026/04/WhatsApp-Image-2026-04-20-at-12.59.55-PM-1.jpeg" alt="GPREC Civil and ME Placement Record">
-          <img class="hero-slide poster-slide" src="https://www.gprec.ac.in/wp-content/uploads/2026/04/WhatsApp-Image-2026-04-20-at-12.59.55-PM.jpeg" alt="ECE and EEE Placement Record">
         </div>
 
         <div class="hero-overlay"></div>
@@ -326,10 +321,9 @@
           <p class="eyebrow">Campus Placements</p>
           <h2>Recruiters who connect with GPREC talent.</h2>
         </div>
-        <!-- Rendered by renderPlacementLogos() in script.js from getPlacementLogos() (localStorage),
-             managed from the admin dashboard's Media > Campus Placements panel. If there are more
-             logos than fit on one row, it auto-scrolls right to left (paused on hover); otherwise
-             it displays as a static row. -->
+        <!-- Rendered by renderPlacementLogos() in script.js from getPlacementLogos(), managed
+             from the admin dashboard's Media > Campus Placements panel. Auto-scrolls right to
+             left if the logos overflow one row (paused on hover); static row otherwise. -->
         <div class="logo-grid-track-wrap">
           <div class="logo-grid" id="placementLogoGrid"></div>
         </div>
