@@ -39,21 +39,11 @@
         <script src="https://accounts.google.com/gsi/client" async defer onload="initAlumniGoogleSignIn()"></script>
 
         <div class="auth-view is-active" data-auth-view="signin">
-          <!--
-            Google Sign-In (Google Identity Services):
-            1. Create an OAuth Client ID at https://console.cloud.google.com/apis/credentials
-               (Application type: Web application).
-            2. Add this site's exact URL (e.g. https://yourdomain.com) as an Authorized
-               JavaScript origin. Google Sign-In does NOT work when the page is opened directly
-               as a file (file://...) - it must be served over http/https.
-            3. Put that Client ID in the "googleClientId" field of admin-config.json (project
-               root). This page fetches it at load time, so you only ever edit that JSON file,
-               not this HTML. Note: fetch() of a local JSON file also requires http/https
-               hosting - same requirement as Google Sign-In itself, so this doesn't add a new
-               limitation.
-            For production authentication, verify the Google sign-in token on the backend
-            before trusting it.
-          -->
+          <!-- Google Sign-In (Google Identity Services): create an OAuth Client ID at
+               console.cloud.google.com/apis/credentials, add this site's URL as an Authorized
+               JavaScript origin, then set it in admin-config.json's "googleClientId" field
+               (this page fetches it at load time, not edited here). Requires http/https
+               hosting, not file://. Verify the token on the backend before trusting it. -->
           <div class="g_id_signin" data-type="standard" data-size="large" data-theme="outline" data-text="continue_with" data-shape="rectangular">
             <!-- Placeholder shown until a real Client ID is configured and Google's script
                  successfully renders its own button in its place (see initAlumniGoogleSignIn

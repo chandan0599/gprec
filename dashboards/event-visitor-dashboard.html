@@ -6,7 +6,7 @@
     <title>My Event Registrations | GPREC</title>
     <meta name="description" content="View your GPREC public event registrations, passes, and receipts.">
     <link rel="icon" href="https://www.gprec.ac.in/wp-content/uploads/2017/08/fav.png" sizes="32x32">
-    <link rel="stylesheet" href="../styles.css">
+    <link rel="stylesheet" href="../styles.css?v=20260722-29">
   </head>
   <body class="login-page event-visitor-page">
     <svg class="icon-sprite" aria-hidden="true" focusable="false">
@@ -239,20 +239,7 @@
         </div>
 
         <div class="visitor-live-ticker" aria-label="Live festival updates">
-          <div class="visitor-live-ticker-track">
-            <span>Registrations open</span>
-            <span>Code Quest pass ready</span>
-            <span>Cultural stage at Main Auditorium</span>
-            <span>Robo Rally moves through Innovation Lab</span>
-            <span>Follow the compass to your event zone</span>
-            <span>Download pass and receipt instantly</span>
-            <span>Registrations open</span>
-            <span>Code Quest pass ready</span>
-            <span>Cultural stage at Main Auditorium</span>
-            <span>Robo Rally moves through Innovation Lab</span>
-            <span>Follow the compass to your event zone</span>
-            <span>Download pass and receipt instantly</span>
-          </div>
+          <div class="visitor-live-ticker-track" id="visitorLiveTickerTrack"></div>
         </div>
 
         <div class="visitor-section-head is-hidden" id="visitorPosterHead">
@@ -320,12 +307,26 @@
             <div class="visitor-section-head">
               <div><p class="eyebrow">Zone Map</p><h2>Find your festival direction</h2></div>
             </div>
-            <div class="visitor-zone-map">
-              <article><span>N</span><strong>Technical Zone</strong><small>CSE Block · labs · coding rounds</small></article>
-              <article><span>E</span><strong>Cultural Zone</strong><small>Main Auditorium · stage · music</small></article>
-              <article><span>S</span><strong>Sports Zone</strong><small>Grounds · arena · team events</small></article>
-              <article><span>W</span><strong>Workshop Zone</strong><small>Innovation Lab · hands-on sessions</small></article>
-              <article><span>?</span><strong>Help Desk</strong><small>Passes · payments · venue support</small></article>
+            <div class="visitor-zone-map" id="visitorZoneMapGrid" aria-label="Festival zone map">
+              <div class="visitor-zone-map-stage">
+                <div class="visitor-zone-sdk-map" id="visitorZoneSdkMap"></div>
+                <div class="visitor-zone-map-pins" id="visitorZoneMapPins"></div>
+                <div class="visitor-zone-map-controls" aria-label="Map controls">
+                  <div class="visitor-zone-control-group">
+                    <button type="button" id="visitorZoneLiveNavButton" title="Live navigation" aria-label="Live navigation">NAV</button>
+                  </div>
+                  <div class="visitor-zone-control-group">
+                    <button type="button" id="visitorZoneLocateButton" title="My location" aria-label="My location">⌖</button>
+                  </div>
+                  <div class="visitor-zone-control-group">
+                    <button type="button" id="visitorZoneResetButton" title="Home view" aria-label="Home view">⌂</button>
+                  </div>
+                </div>
+                <div class="visitor-zone-user-marker" id="visitorZoneUserMarker"><span></span></div>
+                <button type="button" class="visitor-zone-tour-skip" id="visitorZoneTourSkip">Skip Intro</button>
+                <div class="visitor-zone-tour-label" id="visitorZoneTourLabel"></div>
+              </div>
+              <div class="visitor-zone-map-list" id="visitorZoneMapList"></div>
             </div>
           </section>
 
@@ -333,11 +334,7 @@
             <div class="visitor-section-head">
               <div><p class="eyebrow">Live Board</p><h2>Announcements and updates</h2></div>
             </div>
-            <div class="visitor-announcement-list">
-              <article><span>Now</span><strong>Pass counter active</strong><small>Download event passes and receipts from My Registrations.</small></article>
-              <article><span>09:30</span><strong>Code Quest check-in</strong><small>Report to CSE Block, Lab 2 with your college ID.</small></article>
-              <article><span>17:30</span><strong>Cultural stage opens</strong><small>Main Auditorium seating starts 20 minutes before showtime.</small></article>
-            </div>
+            <div class="visitor-announcement-list" id="visitorAnnouncementList"></div>
           </section>
 
           <div class="visitor-dashboard-grid" id="visitorOpenEventsPanel">
@@ -369,30 +366,24 @@
             <div class="visitor-section-head">
               <div><p class="eyebrow">Schedule</p><h2>Day-wise timeline</h2></div>
             </div>
-            <div class="visitor-fest-timeline">
-              <article><span>Day 01</span><strong>Registrations, workshops, technical rounds</strong><small>Morning to evening across labs and halls.</small></article>
-              <article><span>Day 02</span><strong>Competitions, finals, cultural stage</strong><small>Filtered by Technical, Cultural, Sports, and Workshops.</small></article>
-              <article><span>Night</span><strong>Celebrity Night / Chief Guest</strong><small>Artist announcement, countdown, and live streaming area.</small></article>
-            </div>
+            <div class="visitor-fest-timeline" id="visitorFestTimeline"></div>
           </section>
 
           <section class="visitor-fest-band visitor-fest-split" id="visitorFestWorkshops">
-            <div><p class="eyebrow">Workshops</p><h2>Hands-on sessions with limited seats.</h2><p>Each workshop can show eligibility, coordinators, fee, venue, rulebook, and calendar actions.</p></div>
-            <div id="visitorFestCompetitions"><p class="eyebrow">Competitions</p><h2>Technical, cultural, and sports contests.</h2><p>Cards support team size, prize money, previous winners, leaderboards, results, and register buttons.</p></div>
+            <div><p class="eyebrow">Workshops</p><h2 id="visitorBlurbWorkshopsTitle"></h2><p id="visitorBlurbWorkshopsBody"></p></div>
+            <div id="visitorFestCompetitions"><p class="eyebrow">Competitions</p><h2 id="visitorBlurbCompetitionsTitle"></h2><p id="visitorBlurbCompetitionsBody"></p></div>
           </section>
 
           <section class="visitor-fest-band visitor-fest-split" id="visitorFestCelebrity">
-            <div><p class="eyebrow">Celebrity Night</p><h2>Artist / Chief Guest announcement</h2><p>Countdown, past highlights video, Instagram reels, live announcements, and live stream blocks are prepared as content zones.</p></div>
-            <div id="visitorFestAccommodation"><p class="eyebrow">Accommodation</p><h2>Stay support</h2><p>Accommodation instructions, contact form, campus map, and help desk details can sit here during the fest window.</p></div>
+            <div><p class="eyebrow">Celebrity Night</p><h2 id="visitorBlurbCelebrityTitle"></h2><p id="visitorBlurbCelebrityBody"></p></div>
+            <div id="visitorFestAccommodation"><p class="eyebrow">Accommodation</p><h2 id="visitorBlurbAccommodationTitle"></h2><p id="visitorBlurbAccommodationBody"></p></div>
           </section>
 
           <section class="visitor-fest-band" id="visitorFestSponsors">
             <div class="visitor-section-head">
               <div><p class="eyebrow">Sponsors</p><h2>Partners and opportunities</h2></div>
             </div>
-            <div class="visitor-sponsor-strip">
-              <span>Title Sponsor</span><span>Powered By</span><span>Media Partner</span><span>Food Partner</span><span>Tech Partner</span>
-            </div>
+            <div class="visitor-sponsor-strip" id="visitorSponsorStrip"></div>
             <p class="visitor-fest-note">Sponsor logos, partnership decks, and enquiry forms can be managed here.</p>
           </section>
 
@@ -400,22 +391,34 @@
             <div class="visitor-section-head">
               <div><p class="eyebrow">Gallery</p><h2>Photos, videos, reels, and 360 campus tour.</h2></div>
             </div>
-            <div class="visitor-media-wall">
-              <span>Photo Wall</span><span>Past Highlights Video</span><span>Instagram Reels</span><span>360° Campus Tour</span><span>Social Feed</span>
-            </div>
+            <div class="visitor-media-wall" id="visitorMediaWall"></div>
           </section>
 
           <section class="visitor-fest-band visitor-fest-split" id="visitorFestFaqs">
-            <div><p class="eyebrow">FAQs</p><h2>Quick answers</h2><p>Registration, payment, passes, refunds, team size, accommodation, and event-day help can be listed here.</p></div>
-            <div id="visitorFestContact"><p class="eyebrow">Contact</p><h2>Fest help desk</h2><p>Email: events@gprec.ac.in<br>Phone: 08518-270957<br>Use the event card coordinator details for event-specific help.</p></div>
+            <div><p class="eyebrow">FAQs</p><h2 id="visitorBlurbFaqsTitle"></h2><p id="visitorBlurbFaqsBody"></p></div>
+            <div id="visitorFestContact"><p class="eyebrow">Contact</p><h2 id="visitorBlurbContactTitle"></h2><p id="visitorBlurbContactBody"></p></div>
           </section>
         </section>
       </section>
     </main>
 
     <div class="visitor-scroll-compass" id="visitorScrollCompass" aria-hidden="true">
-      <span>N</span>
-      <i><b id="visitorScrollCompassNeedle"></b></i>
+      <svg viewBox="0 0 100 100" class="visitor-scroll-compass-art">
+        <circle class="visitor-scroll-compass-dashring" cx="50" cy="50" r="40" fill="none" stroke="#E85D04" stroke-width="1" stroke-dasharray="1.5 5" opacity=".4"/>
+        <circle cx="50" cy="50" r="32" fill="none" stroke="#E85D04" stroke-width="1" opacity=".3"/>
+        <g fill="#FF9A3C" opacity=".8" font-family="Courier New, monospace" font-size="8" font-weight="700" text-anchor="middle">
+          <text x="50" y="7">N</text>
+          <text x="50" y="98">S</text>
+          <text x="6" y="53">W</text>
+          <text x="94" y="53">E</text>
+        </g>
+        <circle cx="50" cy="50" r="24" fill="#1a2040" stroke="#E85D04" stroke-width="1" opacity=".85"/>
+        <g id="visitorScrollCompassNeedle">
+          <polygon points="50,38 52.5,48 62,50 52.5,52 50,62 47.5,52 38,50 47.5,48" fill="#E85D04"/>
+          <circle cx="50" cy="50" r="5" fill="#B44500"/>
+          <circle cx="50" cy="50" r="3" fill="#FF9A3C"/>
+        </g>
+      </svg>
       <small id="visitorScrollCompassProgress">0%</small>
     </div>
 
@@ -450,6 +453,7 @@
           </div>
         </div>
         <div class="gprecian-welcome" id="gprecianWelcome">
+          <div class="gprecian-compass-directions" aria-hidden="true"><i>N</i><i>E</i><i>S</i><i>W</i></div>
           <p class="gprecian-welcome-greeting" id="gprecianWelcomeGreeting">Hello</p>
           <p class="gprecian-welcome-question">Need help with event registration?</p>
           <p class="gprecian-welcome-subtext">Ask about registration, passes, receipts, payment support, or event manager contact details.</p>
@@ -518,13 +522,11 @@
       <div class="copyright">&copy; Copyright GPREC <span id="currentYear">2026</span>. All Right Reserved.</div>
     </footer>
 
-    <script src="../three.min.js"></script>
     <script src="../qrcode-generator.js"></script>
-    <script src="../script.js"></script>
+    <script src="../script.js?v=20260722-29"></script>
     <script>
       (() => {
         const festName = getFestName();
-        document.body.dataset.visitorTheme = getFestVisitorTheme();
         document.body.dataset.compassPosition = getFestVisitorCompassPosition();
         document.querySelectorAll("#visitorFestNameHero, #visitorFestNameDash, #visitorFestNameBadge").forEach((el) => {
           el.textContent = festName;
@@ -656,7 +658,26 @@
             tile.classList.toggle("is-active", Number(tile.dataset.posterIndex) === index);
           });
         };
-        if (visiblePosters.length) {
+        if (!visiblePosters.length && visitorPosterSettings.showVisitorLogin) {
+          // Same "still show the widget" treatment as the internal dashboards' Spotlight
+          // carousel (buildSpotlightPosterPlayer in script.js) - previously this whole section
+          // just stayed hidden when there was nothing to show.
+          document.querySelector("#visitorPosterHead").classList.remove("is-hidden");
+          const player = document.querySelector("#visitorPosterPlayer");
+          player.classList.remove("is-hidden");
+          const stage = document.querySelector("#visitorPosterStage");
+          if (stage) {
+            stage.style.backgroundImage = "none";
+            stage.classList.add("spotlight-poster-stage-empty", "spotlight-poster-stage-noads");
+            stage.removeAttribute("href");
+            stage.innerHTML = `
+              <span class="spotlight-poster-noads-logo-wrap">
+                <img class="spotlight-poster-noads-logo" src="${gprecRootPrefix}gprec-logo-enhanced.png" alt="">
+              </span>
+              <span class="spotlight-poster-noads-text">No ads to show</span>
+            `;
+          }
+        } else if (visiblePosters.length) {
           document.querySelector("#visitorPosterHead").classList.remove("is-hidden");
           const player = document.querySelector("#visitorPosterPlayer");
           player.classList.remove("is-hidden");
@@ -690,9 +711,542 @@
               el.addEventListener("mouseleave", () => { isPaused = false; });
               el.addEventListener("focusin", () => { isPaused = true; });
               el.addEventListener("focusout", () => { isPaused = false; });
+              el.addEventListener("touchstart", () => { isPaused = true; }, { passive: true });
             });
+            // On touch devices the swap above (new background-image, filmstrip tile restyle) can
+            // land mid-gesture and cost a paint right under the visitor's finger - on a phone
+            // that reads as the page scroll itself stalling for a moment, right around this
+            // carousel. Pausing while the page is actively scrolling (regardless of where the
+            // touch started) keeps that repaint from ever competing with a scroll in progress.
+            let scrollResumeTimer = null;
+            window.addEventListener("scroll", () => {
+              isPaused = true;
+              clearTimeout(scrollResumeTimer);
+              scrollResumeTimer = setTimeout(() => { isPaused = false; }, 500);
+            }, { passive: true });
           }
         }
+
+        // Admin-editable fest content (Event Management Dashboard > Visitor Page Content) -
+        // ticker, zone map, announcements, schedule, sponsors, gallery labels, and section
+        // blurbs. Each getter falls back to this page's shipped placeholder copy, so nothing
+        // below changes visually until an admin actually saves something.
+        const renderVisitorTickerMessages = () => {
+          const track = document.querySelector("#visitorLiveTickerTrack");
+          if (!track) return;
+          const messages = getVisitorTickerMessages();
+          // Duplicated once so the CSS marquee (translateX -50%) loops seamlessly.
+          track.innerHTML = [...messages, ...messages].map((message) => `<span>${escapeHtml(message)}</span>`).join("");
+        };
+        const renderVisitorTripleList = (containerSelector, items) => {
+          const container = document.querySelector(containerSelector);
+          if (!container) return;
+          container.innerHTML = items
+            .map((item) => `<article><span>${escapeHtml(item.label || "")}</span><strong>${escapeHtml(item.title || "")}</strong><small>${escapeHtml(item.note || "")}</small></article>`)
+            .join("");
+        };
+        let visitorZoneMapInstance = null;
+        let visitorZoneMapReady = false;
+        let visitorZoneSelectedIndex = null;
+        let visitorZoneMapLabelPoints = [];
+        let visitorZoneIntroDone = false;
+        let visitorZoneIntroTimers = [];
+        let visitorZoneTheatreStarted = false;
+        let visitorZoneUserLocation = null;
+        let visitorZoneLiveNavEnabled = false;
+        let visitorZoneRouteTimer = null;
+        const visitorZoneSettings = typeof getVisitorZoneMapSettings === "function" ? getVisitorZoneMapSettings() : {};
+        const visitorZoneMapCenter = { lat: Number(visitorZoneSettings.centerLat) || 15.7741, lng: Number(visitorZoneSettings.centerLng) || 78.0565 };
+        const visitorZoneEntrance = { lat: Number(visitorZoneSettings.entranceLat) || 15.774665, lng: Number(visitorZoneSettings.entranceLng) || 78.058641 };
+        const visitorOpenAirTheatre = { lat: Number(visitorZoneSettings.theatreLat) || 15.775737524532342, lng: Number(visitorZoneSettings.theatreLng) || 78.05669404577294 };
+        const visitorSeatingArea = { lat: Number(visitorZoneSettings.seatingLat) || 15.7735, lng: Number(visitorZoneSettings.seatingLng) || 78.0585 };
+        const visitorZoneDefaultZoom = Number(visitorZoneSettings.zoom) || 16.5;
+        const visitorZoneDefaultPitch = Number(visitorZoneSettings.pitch) || 70;
+        const visitorZoneDefaultBearing = Number(visitorZoneSettings.bearing) || 330;
+        const visitorZoneRouteSource = "visitor-zone-route-source";
+        const visitorZoneRouteLayer = "visitor-zone-route-layer";
+        const clearVisitorZoneRoute = () => {
+          if (visitorZoneRouteTimer) {
+            clearInterval(visitorZoneRouteTimer);
+            visitorZoneRouteTimer = null;
+          }
+          try { if (visitorZoneMapInstance?.getLayer(visitorZoneRouteLayer)) visitorZoneMapInstance.removeLayer(visitorZoneRouteLayer); } catch (error) {}
+          try { if (visitorZoneMapInstance?.getSource(visitorZoneRouteSource)) visitorZoneMapInstance.removeSource(visitorZoneRouteSource); } catch (error) {}
+        };
+        const drawVisitorZoneRoute = (zone) => {
+          if (!visitorZoneMapInstance || !zone) return;
+          clearVisitorZoneRoute();
+          const start = visitorZoneLiveNavEnabled && visitorZoneUserLocation ? visitorZoneUserLocation : visitorZoneEntrance;
+          const steps = 44;
+          const coords = Array.from({ length: steps + 1 }, (_, index) => {
+            const p = index / steps;
+            return [
+              start.lng + (zone.lng - start.lng) * p,
+              start.lat + (zone.lat - start.lat) * p
+            ];
+          });
+          const makeData = (visibleCoords) => ({ type: "Feature", geometry: { type: "LineString", coordinates: visibleCoords } });
+          try {
+            visitorZoneMapInstance.addSource(visitorZoneRouteSource, { type: "geojson", data: makeData(coords.slice(0, 2)) });
+            visitorZoneMapInstance.addLayer({
+              id: visitorZoneRouteLayer,
+              type: "line",
+              source: visitorZoneRouteSource,
+              layout: { "line-join": "round", "line-cap": "round" },
+              paint: {
+                "line-color": zone.color || "#FFB15C",
+                "line-width": 5,
+                "line-opacity": 0.92,
+                "line-dasharray": [1.2, 0.9]
+              }
+            });
+            let drawn = 2;
+            visitorZoneRouteTimer = setInterval(() => {
+              drawn += 2;
+              try {
+                visitorZoneMapInstance.getSource(visitorZoneRouteSource)?.setData(makeData(coords.slice(0, Math.min(coords.length, drawn))));
+              } catch (error) {}
+              if (drawn >= coords.length && visitorZoneRouteTimer) {
+                clearInterval(visitorZoneRouteTimer);
+                visitorZoneRouteTimer = null;
+              }
+            }, 24);
+          } catch (error) {}
+        };
+        const positionVisitorZoneLabels = () => {
+          const pinsEl = document.querySelector("#visitorZoneMapPins");
+          if (!visitorZoneMapInstance || !pinsEl) return;
+          visitorZoneMapLabelPoints.forEach((point) => {
+            const label = pinsEl.querySelector(`[data-zone-index="${point.index}"]`);
+            if (!label) return;
+            try {
+              const px = visitorZoneMapInstance.project([point.lng, point.lat]);
+              label.style.left = `${px.x}px`;
+              label.style.top = `${px.y}px`;
+              label.style.opacity = "1";
+            } catch (error) {}
+          });
+          const userMarker = document.querySelector("#visitorZoneUserMarker");
+          if (userMarker && visitorZoneUserLocation) {
+            try {
+              const px = visitorZoneMapInstance.project([visitorZoneUserLocation.lng, visitorZoneUserLocation.lat]);
+              userMarker.style.left = `${px.x}px`;
+              userMarker.style.top = `${px.y}px`;
+              userMarker.classList.add("is-visible");
+            } catch (error) {}
+          }
+        };
+        const setActiveVisitorZone = (index, shouldFly) => {
+          visitorZoneSelectedIndex = Number(index) || 0;
+          const zones = getVisitorZoneMap();
+          const zone = zones[visitorZoneSelectedIndex];
+          const pinsEl = document.querySelector("#visitorZoneMapPins");
+          const listEl = document.querySelector("#visitorZoneMapList");
+          pinsEl?.querySelectorAll("[data-zone-index]").forEach((pin) => pin.classList.toggle("is-active", pin.dataset.zoneIndex === String(visitorZoneSelectedIndex)));
+          listEl?.querySelectorAll("[data-zone-list-index]").forEach((row) => row.classList.toggle("is-active", row.dataset.zoneListIndex === String(visitorZoneSelectedIndex)));
+          if (zone) drawVisitorZoneRoute(zone);
+          if (shouldFly && visitorZoneMapInstance && zone) {
+            try {
+              visitorZoneMapInstance.flyTo({ center: { lat: zone.lat, lng: zone.lng }, zoom: 18, pitch: 55, bearing: 330, duration: 1300, essential: true });
+            } catch (error) {
+              try { visitorZoneMapInstance.setCenter({ lat: zone.lat, lng: zone.lng }); visitorZoneMapInstance.setZoom(18); } catch (innerError) {}
+            }
+          }
+        };
+        const finishVisitorZoneIntro = () => {
+          visitorZoneIntroDone = true;
+          visitorZoneIntroTimers.forEach(clearTimeout);
+          visitorZoneIntroTimers = [];
+          document.querySelector("#visitorZoneTourSkip")?.classList.remove("is-visible");
+          const label = document.querySelector("#visitorZoneTourLabel");
+          if (label) {
+            label.classList.remove("is-visible");
+            setTimeout(() => { label.textContent = ""; }, 250);
+          }
+          try {
+            visitorZoneMapInstance?.flyTo({ center: visitorZoneMapCenter, zoom: visitorZoneDefaultZoom, pitch: visitorZoneDefaultPitch, bearing: visitorZoneDefaultBearing, duration: 1600, essential: true });
+          } catch (error) {}
+        };
+        const startVisitorZoneIntro = () => {
+          if (visitorZoneIntroDone || !visitorZoneMapInstance || document.fullscreenElement || window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+          const zones = getVisitorZoneMap();
+          const label = document.querySelector("#visitorZoneTourLabel");
+          const skip = document.querySelector("#visitorZoneTourSkip");
+          if (!label || !skip) return;
+          skip.classList.add("is-visible");
+          skip.onclick = finishVisitorZoneIntro;
+          const stops = [
+            { title: "START · Entrance", lat: visitorZoneEntrance.lat, lng: visitorZoneEntrance.lng, icon: "🚩", color: "#00C853" },
+            ...zones.map((zone, index) => ({ title: `${index + 1}. ${zone.title}`, lat: zone.lat, lng: zone.lng, icon: zone.icon || "📍", color: zone.color || "#FFB15C" }))
+          ];
+          let index = 0;
+          const flyNext = () => {
+            if (visitorZoneIntroDone || document.fullscreenElement) return;
+            if (index >= stops.length) {
+              finishVisitorZoneIntro();
+              return;
+            }
+            const stop = stops[index];
+            label.innerHTML = `<span style="background:${escapeHtml(stop.color)}">${escapeHtml(index === 0 ? "IN" : String(index))}</span>${escapeHtml(stop.icon)} <strong>${escapeHtml(stop.title)}</strong><small>${index}/${stops.length - 1}</small>`;
+            label.style.borderColor = stop.color;
+            label.style.boxShadow = `0 0 20px ${stop.color}88`;
+            label.classList.add("is-visible");
+            try {
+              visitorZoneMapInstance.flyTo({ center: { lat: stop.lat, lng: stop.lng }, zoom: 18.5, pitch: 60, bearing: 330, duration: 950, essential: true });
+            } catch (error) {}
+            index += 1;
+            visitorZoneIntroTimers.push(setTimeout(() => {
+              label.classList.remove("is-visible");
+              visitorZoneIntroTimers.push(setTimeout(flyNext, 120));
+            }, 1500));
+          };
+          flyNext();
+        };
+        const startVisitorTheatreAnimation = () => {
+          if (visitorZoneTheatreStarted || !visitorZoneMapInstance) return;
+          visitorZoneTheatreStarted = true;
+          const stage = document.querySelector(".visitor-zone-map-stage");
+          if (!stage) return;
+          const canvas = document.createElement("canvas");
+          canvas.className = "visitor-zone-concert-canvas";
+          stage.appendChild(canvas);
+          const fixtures = document.createElement("div");
+          fixtures.className = "visitor-zone-beam-fixtures";
+          stage.appendChild(fixtures);
+          const crowdLayer = document.createElement("div");
+          crowdLayer.className = "visitor-zone-crowd-layer";
+          stage.appendChild(crowdLayer);
+          const beams = [
+            { lng: 78.05671082150171, lat: 15.775655057197282, speed: 1.2, range: 0.35 },
+            { lng: 78.05666723544276, lat: 15.775810573181909, speed: -1.2, range: 0.35 }
+          ];
+          beams.forEach((beam) => {
+            const el = document.createElement("span");
+            el.className = "visitor-zone-beam-fixture";
+            fixtures.appendChild(el);
+            beam.el = el;
+          });
+          const dancers = Array.from({ length: 42 }, (_, index) => {
+            const ring = Math.floor(index / 9);
+            const angle = index * 0.92;
+            return { dx: Math.cos(angle) * (14 + ring * 13), dy: Math.sin(angle) * (8 + ring * 8), phase: index * 0.55 };
+          });
+          const syncDancers = () => {
+            let anchor;
+            try { anchor = visitorZoneMapInstance.project([78.05720, 15.77586]); } catch (error) { return; }
+            dancers.forEach((dancer, index) => {
+              if (!dancer.el) {
+                const el = document.createElement("span");
+                el.className = "visitor-zone-dancer";
+                el.style.setProperty("--i", index);
+                crowdLayer.appendChild(el);
+                dancer.el = el;
+              }
+              dancer.el.style.left = `${anchor.x + dancer.dx}px`;
+              dancer.el.style.top = `${anchor.y + dancer.dy}px`;
+            });
+          };
+          const resizeCanvas = () => {
+            const rect = stage.getBoundingClientRect();
+            const dpr = window.devicePixelRatio || 1;
+            canvas.width = Math.max(1, Math.round(rect.width * dpr));
+            canvas.height = Math.max(1, Math.round(rect.height * dpr));
+            canvas.style.width = `${rect.width}px`;
+            canvas.style.height = `${rect.height}px`;
+            return { rect, dpr };
+          };
+          const draw = (now) => {
+            requestAnimationFrame(draw);
+            if (!visitorZoneMapInstance) return;
+            const { dpr } = resizeCanvas();
+            const ctx = canvas.getContext("2d");
+            ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            let theatre;
+            try { theatre = visitorZoneMapInstance.project([visitorOpenAirTheatre.lng, visitorOpenAirTheatre.lat]); } catch (error) { return; }
+            const t = now * 0.001;
+            const haze = ctx.createRadialGradient(theatre.x, theatre.y, 0, theatre.x, theatre.y, 72);
+            haze.addColorStop(0, "rgba(139,46,255,0.28)");
+            haze.addColorStop(1, "rgba(139,46,255,0)");
+            ctx.fillStyle = haze;
+            ctx.beginPath();
+            ctx.arc(theatre.x, theatre.y, 72, 0, Math.PI * 2);
+            ctx.fill();
+            beams.forEach((beam) => {
+              let origin;
+              try { origin = visitorZoneMapInstance.project([beam.lng, beam.lat]); } catch (error) { return; }
+              if (beam.el) {
+                beam.el.style.left = `${origin.x}px`;
+                beam.el.style.top = `${origin.y}px`;
+              }
+              const angle = Math.sin(t * beam.speed) * beam.range;
+              const len = 220;
+              const spread = 0.18;
+              const grad = ctx.createLinearGradient(origin.x, origin.y, origin.x + Math.sin(angle) * len, origin.y - Math.cos(angle) * len);
+              grad.addColorStop(0, "rgba(255,200,0,0.72)");
+              grad.addColorStop(1, "rgba(255,200,0,0)");
+              ctx.fillStyle = grad;
+              ctx.beginPath();
+              ctx.moveTo(origin.x, origin.y);
+              ctx.lineTo(origin.x + Math.sin(angle - spread) * len, origin.y - Math.cos(angle - spread) * len);
+              ctx.lineTo(origin.x + Math.sin(angle + spread) * len, origin.y - Math.cos(angle + spread) * len);
+              ctx.closePath();
+              ctx.fill();
+            });
+            syncDancers();
+          };
+          ["move", "zoom", "rotate", "pitch", "resize"].forEach((eventName) => visitorZoneMapInstance.addListener?.(eventName, syncDancers));
+          requestAnimationFrame(draw);
+        };
+        const resetVisitorZoneMapView = () => {
+          try {
+          visitorZoneMapInstance?.flyTo({ center: visitorZoneMapCenter, zoom: visitorZoneDefaultZoom, pitch: visitorZoneDefaultPitch, bearing: visitorZoneDefaultBearing, duration: 1300, essential: true });
+          } catch (error) {}
+        };
+        const locateVisitorOnMap = () => {
+          if (!navigator.geolocation) return;
+          navigator.geolocation.getCurrentPosition((position) => {
+            visitorZoneUserLocation = { lat: position.coords.latitude, lng: position.coords.longitude };
+            positionVisitorZoneLabels();
+            try {
+              visitorZoneMapInstance?.flyTo({ center: visitorZoneUserLocation, zoom: 18, pitch: 55, bearing: 330, duration: 1300, essential: true });
+            } catch (error) {}
+          const zone = visitorZoneSelectedIndex === null ? null : getVisitorZoneMap()[visitorZoneSelectedIndex];
+          if (visitorZoneLiveNavEnabled && zone) drawVisitorZoneRoute(zone);
+          });
+        };
+        const wireVisitorZoneMapControls = () => {
+          const resetButton = document.querySelector("#visitorZoneResetButton");
+          const locateButton = document.querySelector("#visitorZoneLocateButton");
+          const liveNavButton = document.querySelector("#visitorZoneLiveNavButton");
+          if (resetButton) resetButton.onclick = resetVisitorZoneMapView;
+          if (locateButton) locateButton.onclick = locateVisitorOnMap;
+          if (liveNavButton && visitorZoneSettings.liveNavEnabled === false) {
+            liveNavButton.closest(".visitor-zone-control-group")?.classList.add("is-hidden");
+            visitorZoneLiveNavEnabled = false;
+            clearVisitorZoneRoute();
+            return;
+          }
+          if (liveNavButton) liveNavButton.onclick = () => {
+            visitorZoneLiveNavEnabled = !visitorZoneLiveNavEnabled;
+            liveNavButton.classList.toggle("is-active", visitorZoneLiveNavEnabled);
+            if (visitorZoneLiveNavEnabled && !visitorZoneUserLocation) {
+              locateVisitorOnMap();
+              return;
+            }
+            const zone = visitorZoneSelectedIndex === null ? null : getVisitorZoneMap()[visitorZoneSelectedIndex];
+            if (zone) drawVisitorZoneRoute(zone);
+          };
+        };
+        let visitorZoneFullscreenWired = false;
+        const syncVisitorZoneFullscreen = () => {
+          setTimeout(() => {
+            try { visitorZoneMapInstance?.resize?.(); } catch (error) {}
+            positionVisitorZoneLabels();
+          }, 180);
+        };
+        const wireVisitorZoneNativeFullscreen = () => {
+          if (visitorZoneFullscreenWired) return;
+          const stage = document.querySelector(".visitor-zone-map-stage");
+          if (!stage) return;
+          visitorZoneFullscreenWired = true;
+          stage.addEventListener("click", async (event) => {
+            const control = event.target?.closest?.("button, a");
+            if (!control || control.closest(".visitor-zone-map-controls")) return;
+            const meta = `${control.className || ""} ${control.getAttribute("aria-label") || ""} ${control.getAttribute("title") || ""}`.toLowerCase();
+            const isFullscreenControl = meta.includes("fullscreen") || meta.includes("full screen") || meta.includes("ctrl-fullscreen");
+            if (!isFullscreenControl) return;
+            event.preventDefault();
+            event.stopPropagation();
+            try {
+              if (document.fullscreenElement === stage) {
+                await document.exitFullscreen();
+              } else {
+                await stage.requestFullscreen();
+              }
+              syncVisitorZoneFullscreen();
+            } catch (error) {}
+          }, true);
+          document.addEventListener("fullscreenchange", syncVisitorZoneFullscreen);
+        };
+        const initVisitorZoneMapSdk = () => {
+          const mapEl = document.querySelector("#visitorZoneSdkMap");
+          if (!mapEl || visitorZoneMapInstance) return;
+          if (typeof mappls === "undefined") {
+            loadVisitorZoneMapSdk();
+            return;
+          }
+          try {
+            mapEl.innerHTML = "";
+            visitorZoneMapInstance = new mappls.Map("visitorZoneSdkMap", {
+              center: visitorZoneMapCenter,
+              zoom: visitorZoneDefaultZoom,
+              pitch: visitorZoneDefaultPitch,
+              bearing: visitorZoneDefaultBearing,
+              traffic: false,
+              geolocation: false,
+              zoomControl: true,
+              clickableIcons: false
+            });
+            const onReady = () => {
+              visitorZoneMapReady = true;
+              try { mappls.setStyle(visitorZoneMapInstance, visitorZoneSettings.style || "whiteboard"); } catch (error) {}
+              if (typeof hideMapSdkAttribution === "function") hideMapSdkAttribution();
+              setTimeout(positionVisitorZoneLabels, 250);
+              setTimeout(() => { if (visitorZoneSelectedIndex !== null) setActiveVisitorZone(visitorZoneSelectedIndex, false); }, 350);
+              if (visitorZoneSettings.introEnabled !== false) setTimeout(startVisitorZoneIntro, 450);
+              if (visitorZoneSettings.theatreEnabled !== false) setTimeout(startVisitorTheatreAnimation, 500);
+              setTimeout(wireVisitorZoneNativeFullscreen, 300);
+            };
+            visitorZoneMapInstance.addListener?.("load", onReady);
+            ["move", "zoom", "rotate", "pitch", "resize"].forEach((eventName) => visitorZoneMapInstance.addListener?.(eventName, positionVisitorZoneLabels));
+            setTimeout(onReady, 1200);
+          } catch (error) {
+            mapEl.innerHTML = '<div class="visitor-zone-map-error">Map failed to load. Check the Mappls SDK token.</div>';
+          }
+        };
+        window.initVisitorZoneMapSdk = initVisitorZoneMapSdk;
+        const loadVisitorZoneMapSdk = () => {
+          const mapEl = document.querySelector("#visitorZoneSdkMap");
+          const settings = getMapSdkSettings();
+          if (!mapEl) return;
+          if (!settings.accessToken) {
+            mapEl.innerHTML = '<div class="visitor-zone-map-error">Map SDK token is not configured in Admin Dashboard &gt; Data Integrations &gt; Map SDK.</div>';
+            return;
+          }
+          if (document.querySelector("#visitorMapplsSdkScript")) return;
+          const params = new URLSearchParams({
+            v: settings.version || "3.0",
+            access_token: settings.accessToken,
+            layer: settings.layer || "vector",
+            callback: "initVisitorZoneMapSdk"
+          });
+          if (settings.plugins) params.set("plugins", settings.plugins);
+          const script = document.createElement("script");
+          script.id = "visitorMapplsSdkScript";
+          script.src = `${settings.sdkUrl || "https://sdk.mappls.com/map/sdk/web"}?${params.toString()}`;
+          script.defer = true;
+          script.async = true;
+          script.onerror = () => {
+            mapEl.innerHTML = '<div class="visitor-zone-map-error">Map SDK failed to load. Check the Map SDK URL and token.</div>';
+          };
+          document.head.appendChild(script);
+        };
+        window.refreshVisitorZoneMapSdk = () => {
+          if (!visitorZoneMapInstance) {
+            initVisitorZoneMapSdk();
+            return;
+          }
+          try { visitorZoneMapInstance.resize?.(); } catch (error) {}
+          positionVisitorZoneLabels();
+          if (visitorZoneSelectedIndex !== null) setActiveVisitorZone(visitorZoneSelectedIndex, false);
+        };
+        const renderVisitorZoneMap = () => {
+          const zones = getVisitorZoneMap();
+          const pinsEl = document.querySelector("#visitorZoneMapPins");
+          const listEl = document.querySelector("#visitorZoneMapList");
+          if (!pinsEl || !listEl) return;
+          const statusText = (status) => ({ live: "Live Now", soon: "Starting Soon", ended: "Ended", info: "Info" }[status] || "Info");
+          visitorZoneMapLabelPoints = [
+            { index: "entrance", lat: visitorZoneEntrance.lat, lng: visitorZoneEntrance.lng },
+            { index: "theatre", lat: visitorOpenAirTheatre.lat, lng: visitorOpenAirTheatre.lng },
+            { index: "seating", lat: visitorSeatingArea.lat, lng: visitorSeatingArea.lng },
+            ...zones.map((zone, index) => ({ index, lat: zone.lat, lng: zone.lng }))
+          ];
+          pinsEl.innerHTML = `
+            <button type="button" class="visitor-zone-pin visitor-zone-pin-entrance" style="--zone-color:#00C853" data-zone-index="entrance" aria-label="Entrance">
+              <span class="visitor-zone-pin-dot">IN</span>
+              <span class="visitor-zone-pin-card"><strong>Entrance</strong><small>Main campus entry and first help point.</small></span>
+            </button>
+            <button type="button" class="visitor-zone-pin visitor-zone-pin-theatre" style="--zone-color:#8B2EFF" data-zone-index="theatre" aria-label="Open Air Theatre">
+              <span class="visitor-zone-pin-pulse"></span>
+              <span class="visitor-zone-pin-dot">OAT</span>
+              <span class="visitor-zone-pin-card"><strong>🎭 Open Air Theatre</strong><small>Stage lights, audience area, and main fest energy.</small></span>
+            </button>
+            <button type="button" class="visitor-zone-pin visitor-zone-pin-seating" style="--zone-color:#4CAF50" data-zone-index="seating" aria-label="Seating Area">
+              <span class="visitor-zone-pin-dot">SEAT</span>
+              <span class="visitor-zone-pin-card"><strong>🎟️ Seating Area</strong><small>Open Air Theatre audience seating.</small></span>
+            </button>
+          ` + zones.map((zone, index) => `
+            <button type="button" class="visitor-zone-pin visitor-zone-pin-${escapeHtml(zone.status || "info")}" style="--zone-color:${escapeHtml(zone.color || "#FFB15C")}" data-zone-index="${index}" aria-label="${escapeHtml(zone.title || "Festival zone")}">
+              <span class="visitor-zone-pin-pulse"></span>
+              <span class="visitor-zone-pin-dot">${escapeHtml(String(index + 1))}</span>
+              <span class="visitor-zone-pin-card"><strong>${escapeHtml(zone.icon || "📍")} ${escapeHtml(zone.title || "")}</strong><small>${escapeHtml(zone.note || "")}</small></span>
+            </button>
+          `).join("");
+          listEl.innerHTML = `
+            <article class="visitor-zone-map-list-entrance">
+              <span style="--zone-color:#00C853">IN</span>
+              <div><strong>Entrance</strong><small>Main campus entry and first help point.</small></div>
+              <em>Start Here</em>
+            </article>
+          ` + zones.map((zone, index) => `
+            <article data-zone-list-index="${index}">
+              <span style="--zone-color:${escapeHtml(zone.color || "#FFB15C")}">${escapeHtml(String(index + 1))}</span>
+              <div><strong>${escapeHtml(zone.icon || "📍")} ${escapeHtml(zone.title || "")}</strong><small>${escapeHtml(zone.note || "")}</small><b><i style="width:${Number(zone.crowd) || 0}%"></i></b></div>
+              <em>${escapeHtml(statusText(zone.status))}</em>
+            </article>
+          `).join("");
+          pinsEl.querySelectorAll("[data-zone-index]").forEach((pin) => {
+            pin.addEventListener("click", () => {
+              if (pin.dataset.zoneIndex === "entrance") {
+                clearVisitorZoneRoute();
+                try {
+                  visitorZoneMapInstance?.flyTo({ center: { lat: visitorZoneEntrance.lat, lng: visitorZoneEntrance.lng }, zoom: 17.4, pitch: 50, bearing: 325, duration: 900, essential: true });
+                } catch (error) {}
+                return;
+              }
+              if (pin.dataset.zoneIndex === "theatre") {
+                try {
+                  visitorZoneMapInstance?.flyTo({ center: { lat: visitorOpenAirTheatre.lat, lng: visitorOpenAirTheatre.lng }, zoom: 18.5, pitch: 62, bearing: 330, duration: 900, essential: true });
+                } catch (error) {}
+                return;
+              }
+              if (pin.dataset.zoneIndex === "seating") {
+                try {
+                  visitorZoneMapInstance?.flyTo({ center: { lat: visitorSeatingArea.lat, lng: visitorSeatingArea.lng }, zoom: 18.2, pitch: 55, bearing: 330, duration: 900, essential: true });
+                } catch (error) {}
+                return;
+              }
+              setActiveVisitorZone(pin.dataset.zoneIndex, true);
+            });
+          });
+          listEl.querySelectorAll("[data-zone-list-index]").forEach((row) => {
+            row.addEventListener("click", () => setActiveVisitorZone(row.dataset.zoneListIndex, true));
+          });
+          initVisitorZoneMapSdk();
+          if (visitorZoneMapReady) positionVisitorZoneLabels();
+          if (visitorZoneSelectedIndex !== null) setActiveVisitorZone(visitorZoneSelectedIndex, false);
+          wireVisitorZoneMapControls();
+        };
+        const renderVisitorLabelStrip = (containerSelector, labels) => {
+          const container = document.querySelector(containerSelector);
+          if (!container) return;
+          container.innerHTML = labels.map((label) => `<span>${escapeHtml(label)}</span>`).join("");
+        };
+        const renderVisitorBlurb = (key, titleSelector, bodySelector) => {
+          const blurb = getVisitorBlurbs()[key] || {};
+          const titleEl = document.querySelector(titleSelector);
+          const bodyEl = document.querySelector(bodySelector);
+          if (titleEl) titleEl.textContent = blurb.title || "";
+          if (bodyEl) bodyEl.innerHTML = escapeHtml(blurb.body || "").replace(/\n/g, "<br>");
+        };
+        renderVisitorTickerMessages();
+        renderVisitorZoneMap();
+        onAdminConfigLoaded(() => {
+          renderVisitorZoneMap();
+          setTimeout(() => window.refreshVisitorZoneMapSdk?.(), 250);
+        });
+        renderVisitorTripleList("#visitorAnnouncementList", getVisitorAnnouncements());
+        renderVisitorTripleList("#visitorFestTimeline", getVisitorSchedule());
+        renderVisitorLabelStrip("#visitorSponsorStrip", getVisitorSponsors());
+        renderVisitorLabelStrip("#visitorMediaWall", getVisitorGalleryLabels());
+        renderVisitorBlurb("workshops", "#visitorBlurbWorkshopsTitle", "#visitorBlurbWorkshopsBody");
+        renderVisitorBlurb("competitions", "#visitorBlurbCompetitionsTitle", "#visitorBlurbCompetitionsBody");
+        renderVisitorBlurb("celebrity", "#visitorBlurbCelebrityTitle", "#visitorBlurbCelebrityBody");
+        renderVisitorBlurb("accommodation", "#visitorBlurbAccommodationTitle", "#visitorBlurbAccommodationBody");
+        renderVisitorBlurb("faqs", "#visitorBlurbFaqsTitle", "#visitorBlurbFaqsBody");
+        renderVisitorBlurb("contact", "#visitorBlurbContactTitle", "#visitorBlurbContactBody");
 
         const showView = (name, title, subtitle) => {
           views.forEach((view) => view.classList.toggle("is-active", view.dataset.authView === name));
@@ -815,7 +1369,7 @@
           document.querySelector("#visitorLoginFooter")?.classList.remove("is-hidden");
           document.querySelector("#visitorDashTopbar").classList.remove("is-hidden");
           document.querySelector("#visitorDashShell").classList.remove("is-hidden");
-          window.initVisitorDashCompass3D?.();
+          setTimeout(() => window.refreshVisitorZoneMapSdk?.(), 250);
           window.revealVisitorSectionsOnScroll?.();
           document.querySelector(".gprecian")?.classList.remove("is-hidden");
           const email = localStorage.getItem("gprecEventVisitorEmail") || "";
@@ -1348,12 +1902,6 @@
     </script>
 
     <script>
-      // Cinematic 3D compass for the post-login dashboard hero, replacing the flat SVG
-      // (#visitorDashCompassFallback) with a real rotating WebGL scene: orbiting rings, a
-      // swaying needle, a starfield, and a subtle mouse-parallax tilt. Called once from
-      // showDashboard() above, after #visitorDashShell is revealed. Falls back to leaving the
-      // flat SVG untouched if Three.js failed to load (CDN blocked/offline) or WebGL isn't
-      // available - never leaves a blank hole where the compass should be.
       // Cinematic scroll-in reveal for the fest sections (About, Events, Schedule, Workshops,
       // Celebrity Night, Sponsors, Gallery, FAQs, and the open-events grid) - each stays hidden
       // (see .visitor-fest-band / .visitor-dashboard-grid in styles.css) until it scrolls into
@@ -1379,199 +1927,9 @@
                 }
               });
             },
-            { threshold: 0.12, rootMargin: "0px 0px -60px 0px" }
+            { threshold: 0, rootMargin: "0px 0px -60px 0px" }
           );
           targets.forEach((el) => observer.observe(el));
-        };
-      })();
-
-      window.initVisitorDashCompass3D = (() => {
-        let initialized = false;
-        return () => {
-          if (initialized) return;
-          if (typeof THREE === "undefined") {
-            console.warn("[visitor dashboard] Three.js didn't load (CDN blocked or offline) - showing the flat SVG compass instead.");
-            return;
-          }
-          const canvas = document.querySelector("#visitorDashCompass3D");
-          const fallback = document.querySelector("#visitorDashCompassFallback");
-          const hero = document.querySelector(".visitor-dash-hero");
-          if (!canvas || !hero) return;
-
-          let renderer;
-          try {
-            renderer = new THREE.WebGLRenderer({ canvas, alpha: true, antialias: true });
-          } catch (err) {
-            console.warn("[visitor dashboard] WebGL unavailable - showing the flat SVG compass instead.", err);
-            return;
-          }
-          initialized = true;
-
-          const prefersReducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-
-          const scene = new THREE.Scene();
-          const camera = new THREE.PerspectiveCamera(38, 1, 0.1, 100);
-          camera.position.set(0, 0, 9);
-
-          const setSize = () => {
-            const rect = canvas.getBoundingClientRect();
-            const size = Math.max(rect.width, rect.height, 1);
-            renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
-            renderer.setSize(size, size, false);
-          };
-
-          scene.add(new THREE.AmbientLight(0x8892c8, 0.9));
-          const keyLight = new THREE.PointLight(0xFF9A3C, 2.2, 20);
-          keyLight.position.set(3, 3, 6);
-          scene.add(keyLight);
-          const rimLight = new THREE.PointLight(0x3a5fd9, 1.1, 20);
-          rimLight.position.set(-4, -2, -4);
-          scene.add(rimLight);
-
-          const compassGroup = new THREE.Group();
-          scene.add(compassGroup);
-
-          const outerRing = new THREE.Mesh(
-            new THREE.TorusGeometry(3.1, 0.02, 8, 96),
-            new THREE.MeshBasicMaterial({ color: 0xE85D04, transparent: true, opacity: 0.28 })
-          );
-          compassGroup.add(outerRing);
-
-          const midRing = new THREE.Mesh(
-            new THREE.TorusGeometry(2.55, 0.03, 8, 96),
-            new THREE.MeshBasicMaterial({ color: 0xE85D04, transparent: true, opacity: 0.32 })
-          );
-          compassGroup.add(midRing);
-
-          const body = new THREE.Mesh(
-            new THREE.CylinderGeometry(1.7, 1.7, 0.28, 64),
-            new THREE.MeshStandardMaterial({ color: 0x1a2040, metalness: 0.35, roughness: 0.55, emissive: 0x0a1024, emissiveIntensity: 0.6 })
-          );
-          body.rotation.x = Math.PI / 2;
-          compassGroup.add(body);
-
-          const bodyRim = new THREE.Mesh(
-            new THREE.TorusGeometry(1.7, 0.05, 12, 64),
-            new THREE.MeshStandardMaterial({ color: 0xE85D04, metalness: 0.6, roughness: 0.3, emissive: 0xB44500, emissiveIntensity: 0.4 })
-          );
-          compassGroup.add(bodyRim);
-
-          // 8-point kite/star, built from the exact same polygon points used by the flat SVG
-          // compass everywhere else on the site (login page, dashboard fallback) - scaled from
-          // SVG units (radius 52) down to scene units - so the 3D needle actually matches the
-          // brand's compass shape instead of a generic pair of cones.
-          const starPoints2D = [
-            [0, -52], [13, -13], [52, 0], [13, 13],
-            [0, 52], [-13, 13], [-52, 0], [-13, -13]
-          ].map(([x, y]) => [x / 50, y / 50]);
-          const makeStarShape = () => {
-            const shape = new THREE.Shape();
-            shape.moveTo(starPoints2D[0][0], starPoints2D[0][1]);
-            for (let i = 1; i < starPoints2D.length; i++) shape.lineTo(starPoints2D[i][0], starPoints2D[i][1]);
-            shape.closePath();
-            return shape;
-          };
-
-          // Static, thin outline star behind the needle (matches .visitor-login-compass-group in
-          // the SVG - the faint rotated-22.5deg star outline).
-          const outlineStar = new THREE.Mesh(
-            new THREE.ExtrudeGeometry(makeStarShape(), { depth: 0.03, bevelEnabled: false }),
-            new THREE.MeshBasicMaterial({ color: 0xFF9A3C, transparent: true, opacity: 0.25, wireframe: true })
-          );
-          outlineStar.rotation.z = Math.PI / 8;
-          outlineStar.position.z = 0.05;
-          compassGroup.add(outlineStar);
-
-          const needleGroup = new THREE.Group();
-          const needle = new THREE.Mesh(
-            new THREE.ExtrudeGeometry(makeStarShape(), { depth: 0.22, bevelEnabled: true, bevelThickness: 0.04, bevelSize: 0.03, bevelSegments: 2 }),
-            new THREE.MeshStandardMaterial({ color: 0xE85D04, metalness: 0.55, roughness: 0.3, emissive: 0xB44500, emissiveIntensity: 0.55 })
-          );
-          needle.position.z = -0.11;
-          needleGroup.add(needle);
-          needleGroup.position.z = 0.2;
-          compassGroup.add(needleGroup);
-
-          const core = new THREE.Mesh(
-            new THREE.SphereGeometry(0.28, 24, 24),
-            new THREE.MeshStandardMaterial({ color: 0xFF9A3C, emissive: 0xFF9A3C, emissiveIntensity: 0.9, metalness: 0.2, roughness: 0.4 })
-          );
-          core.position.z = 0.25;
-          compassGroup.add(core);
-
-          const starCount = 220;
-          const starPositions = new Float32Array(starCount * 3);
-          for (let i = 0; i < starCount; i++) {
-            const radius = 6 + Math.random() * 6;
-            const theta = Math.random() * Math.PI * 2;
-            const phi = Math.acos(Math.random() * 2 - 1);
-            starPositions[i * 3] = radius * Math.sin(phi) * Math.cos(theta);
-            starPositions[i * 3 + 1] = radius * Math.sin(phi) * Math.sin(theta);
-            starPositions[i * 3 + 2] = radius * Math.cos(phi) - 4;
-          }
-          const starGeometry = new THREE.BufferGeometry();
-          starGeometry.setAttribute("position", new THREE.BufferAttribute(starPositions, 3));
-          const stars = new THREE.Points(
-            starGeometry,
-            new THREE.PointsMaterial({ color: 0xffffff, size: 0.045, transparent: true, opacity: 0.55, sizeAttenuation: true })
-          );
-          scene.add(stars);
-
-          let targetTiltX = 0;
-          let targetTiltY = 0;
-          hero.addEventListener("pointermove", (event) => {
-            const rect = hero.getBoundingClientRect();
-            const relX = ((event.clientX - rect.left) / rect.width) * 2 - 1;
-            const relY = ((event.clientY - rect.top) / rect.height) * 2 - 1;
-            targetTiltY = relX * 0.35;
-            targetTiltX = relY * -0.25;
-          });
-          hero.addEventListener("pointerleave", () => {
-            targetTiltX = 0;
-            targetTiltY = 0;
-          });
-
-          let rafId = null;
-          let started = false;
-          const clock = new THREE.Clock();
-
-          const renderFrame = () => {
-            const elapsed = clock.getElapsedTime();
-            if (!prefersReducedMotion) {
-              outerRing.rotation.z = elapsed * 0.12;
-              midRing.rotation.z = -elapsed * 0.2;
-              needleGroup.rotation.z = Math.sin(elapsed * 0.7) * 0.12;
-              stars.rotation.y = elapsed * 0.015;
-            }
-            compassGroup.rotation.x += (targetTiltX - compassGroup.rotation.x) * 0.06;
-            compassGroup.rotation.y += (targetTiltY - compassGroup.rotation.y) * 0.06;
-            renderer.render(scene, camera);
-            if (!started) {
-              started = true;
-              fallback?.classList.add("is-hidden");
-              canvas.classList.add("is-ready");
-            }
-            if (!prefersReducedMotion) {
-              rafId = requestAnimationFrame(renderFrame);
-            }
-          };
-
-          // One frame late so the canvas has settled into its post-.is-hidden-removal layout
-          // box before we measure it - avoids sizing the renderer off a stale 0x0 rect.
-          requestAnimationFrame(() => {
-            setSize();
-            window.addEventListener("resize", setSize);
-            renderFrame();
-          });
-
-          document.addEventListener("visibilitychange", () => {
-            if (document.hidden) {
-              if (rafId) cancelAnimationFrame(rafId);
-              rafId = null;
-            } else if (!prefersReducedMotion && !rafId && started) {
-              renderFrame();
-            }
-          });
         };
       })();
 
@@ -1584,7 +1942,7 @@
           const max = Math.max(document.documentElement.scrollHeight - window.innerHeight, 1);
           const progress = Math.min(1, Math.max(0, window.scrollY / max));
           const percent = Math.round(progress * 100);
-          needle.style.transform = `rotate(${progress * 360}deg)`;
+          needle.setAttribute("transform", `rotate(${progress * 360} 50 50)`);
           progressText.textContent = `${percent}%`;
           compass.classList.toggle("is-active", percent > 4);
         };

@@ -160,13 +160,10 @@
       </form>
     </main>
     <!--
-      Payments here open the college's real PayU hosted checkout link (see admin-config.json's
-      "payuPaymentLink" field; merchant dashboard: https://onboarding.payu.in, docs:
-      https://docs.payu.in) in a new tab. Configure the backend webhook so
-      there's no webhook or return-URL to confirm the payment actually completed - it's recorded
-      locally as soon as the tab opens, trusting the payer to finish paying. A production
-      deployment should add a backend that listens for PayU's payment confirmation webhook
-      before treating a payment as real.
+      Payments open the college's real PayU hosted checkout (see admin-config.json's
+      "payuPaymentLink" field) in a new tab. There's no webhook or return-URL check yet -
+      payment is recorded locally as soon as the tab opens, trusting the payer to complete
+      it. Production should add a backend that confirms PayU's payment webhook first.
     -->
     <script src="../script.js"></script>
   </body>

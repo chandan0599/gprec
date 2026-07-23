@@ -222,6 +222,17 @@ CREATE TABLE IF NOT EXISTS fee_dues (
   created_at TIMESTAMPTZ NOT NULL DEFAULT now()
 );
 
+-- The application id (e.g. "semester-tuition") a bulk-uploaded pending fee applies to, plus the
+-- detail/total/paid breakdown the CSV upload actually carries - previously dropped entirely on
+-- save and reconstructed wrong on read (application guessed from a slug of fee_type, paid_amount
+-- hardcoded to 0), which meant a paid-down student's real remaining balance never reached the
+-- matching payment card's PayU checkout amount. See replace_pending_fees/BOOTSTRAP_SQL in
+-- portal_db_server.py.
+ALTER TABLE IF EXISTS fee_dues ADD COLUMN IF NOT EXISTS application TEXT;
+ALTER TABLE IF EXISTS fee_dues ADD COLUMN IF NOT EXISTS detail TEXT;
+ALTER TABLE IF EXISTS fee_dues ADD COLUMN IF NOT EXISTS total_fee NUMERIC(10,2);
+ALTER TABLE IF EXISTS fee_dues ADD COLUMN IF NOT EXISTS paid_amount NUMERIC(10,2) NOT NULL DEFAULT 0;
+
 CREATE TABLE IF NOT EXISTS payments (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   student_roll_no TEXT NOT NULL REFERENCES students(roll_no) ON DELETE CASCADE,

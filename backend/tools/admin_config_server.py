@@ -2,6 +2,7 @@
 import base64
 import binascii
 import json
+import os
 import re
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
@@ -10,14 +11,23 @@ from time import time
 ROOT = Path(__file__).resolve().parents[2]
 CONFIG_PATH = ROOT / "admin-config.json"
 UPLOAD_ROOT = ROOT / "uploads"
+# Loopback-only on purpose: /upload and /admin-config accept writes with no auth check beyond
+# origin, so this is deliberately unreachable from outside this machine. In production, put a
+# reverse proxy (same server) in front and let it terminate TLS/handle the public origin - do not
+# change this to 0.0.0.0 without adding real authentication first.
 HOST = "127.0.0.1"
 PORT = 8765
-ALLOWED_ORIGINS = {"http://127.0.0.1:8080", "http://localhost:8080"}
+# Set GPREC_ALLOWED_ORIGINS (comma-separated) to add the real deployed origin(s) instead of
+# editing this default - see portal_db_server.py's ALLOWED_ORIGINS for the same pattern.
+ALLOWED_ORIGINS = {"http://127.0.0.1:8080", "http://localhost:8080"} | {
+    origin.strip() for origin in os.environ.get("GPREC_ALLOWED_ORIGINS", "").split(",") if origin.strip()
+}
 INTEGRATION_KEYS = {
     "googleClientId",
     "googleCalendarApiKey",
     "payuPaymentLink",
     "aiSettings",
+    "mapSdkSettings",
     "libraryApiConfig",
     "databaseApiConfig",
     "smsSettings",

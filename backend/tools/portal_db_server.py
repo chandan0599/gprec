@@ -21,17 +21,13 @@ from pypdf import PdfReader
 from docx import Document as DocxDocument
 
 ROOT = Path(__file__).resolve().parents[2]
-# 0.0.0.0 (not 127.0.0.1) so this is reachable from other devices on the same LAN (e.g. a phone,
-# to test QR scanning against a real camera) - still only bound to your own network interface, not
-# exposed beyond it.
+# 0.0.0.0 (not 127.0.0.1) so this is reachable from other devices on the same LAN
+# (e.g. a phone, to test QR scanning against a real camera).
 HOST = "0.0.0.0"
 PORT = 8766
-# tools/static_server.py is the actual dev origin this API is called from (VS Code Live Server was
-# replaced earlier this project - see static_server.py's own docstring). Add the real deployed
-# origin(s) here once this is hosted anywhere other than localhost.
-# The LAN IP entry lets a phone on the same WiFi hit this API when testing features that need a
-# real device (e.g. scanning a hostel-pass QR with an actual camera) - update it if your Mac's
-# local IP changes (check with `ipconfig getifaddr en0`).
+# tools/static_server.py is the actual dev origin this API is called from. Add real deployed
+# origin(s) here once this is hosted anywhere other than localhost. The LAN IP entry lets a phone
+# on the same WiFi hit this API (update it if your Mac's local IP changes).
 ALLOWED_ORIGINS = {"http://127.0.0.1:8080", "http://localhost:8080", "http://192.168.1.17:8080"}
 PSQL = "/Applications/Postgres.app/Contents/Versions/18/bin/psql"
 DB_NAME = os.environ.get("GPREC_DB_NAME", "lakkavaramsaichandan")
@@ -41,15 +37,13 @@ DB_PASSWORD = os.environ.get("GPREC_DB_PASSWORD", "1230599")
 DB_HOST = os.environ.get("GPREC_DB_HOST", "localhost")
 DB_PORT = os.environ.get("GPREC_DB_PORT", "5432")
 
-# reCAPTCHA on the public event registration/login forms (no GPREC login gate to fall back on
-# there, unlike every other write path in this app). The secret key stays server-side-only via an
-# env var, never committed - the site key is the public half and is safe to embed client-side.
+# reCAPTCHA for the public event registration/login forms, which have no GPREC login gate to fall
+# back on. The secret key stays server-side-only via an env var, never committed.
 RECAPTCHA_SECRET_KEY = os.environ.get("RECAPTCHA_SECRET_KEY", "")
 
-# Encryption-at-rest for financial PII (bank account details) - a compromised DB dump or backup
-# should not reveal plaintext account numbers/IFSC codes. Key is generated once and persisted
-# outside the DB (a Postgres dump alone is then useless for decrypting this column); set
-# GPREC_BANK_ENCRYPTION_KEY to pin a specific key instead (e.g. in production).
+# Encryption-at-rest for financial PII (bank account details) so a compromised DB dump/backup
+# doesn't reveal plaintext account numbers/IFSC codes. Key is generated once and persisted
+# outside the DB; set GPREC_BANK_ENCRYPTION_KEY to pin a specific key (e.g. in production).
 BANK_ENCRYPTION_KEY_PATH = ROOT / "backend" / "tools" / ".bank_encryption.key"
 
 
@@ -111,8 +105,7 @@ def run_json(sql, fallback):
     output = output.strip()
     if not output:
         return fallback
-    # psql sometimes emits advisory messages or blank lines before JSON.
-    # Keep only the first valid JSON object/array in the output.
+    # psql sometimes emits advisory messages or blank lines before the JSON output.
     start = min(
         [pos for pos in (output.find('{'), output.find('[')) if pos >= 0] or [0]
     )
@@ -120,7 +113,6 @@ def run_json(sql, fallback):
     try:
         return json.loads(output)
     except json.JSONDecodeError:
-        # Fallback more leniently: strip any leading non-JSON prefix.
         for marker in ('{', '['):
             pos = output.find(marker)
             if pos > 0:
@@ -128,14 +120,12 @@ def run_json(sql, fallback):
                     return json.loads(output[pos:])
                 except json.JSONDecodeError:
                     continue
-        # If parsing still fails, log the raw output and return fallback.
         print('portal_db_server: failed to parse JSON output from psql:', repr(output), file=sys.stderr)
         return fallback
 
 
-# Deliberately narrow (name only, like /api/auth/has-admin-credentials elsewhere in this file) -
-# the Challan form has no login (matching the real examcell.gprec.ac.in form it replaces), so this
-# stays unauthenticated, but only ever returns the one field a receipt actually needs to show.
+# Unauthenticated (the Challan form has no login, matching the real examcell.gprec.ac.in form it
+# replaces) but deliberately narrow - returns only the one field a receipt needs to show.
 def lookup_student_name(roll_no):
     rows = run_json(
         f"SELECT COALESCE(json_agg(json_build_object('name', full_name)), '[]'::json) "
@@ -225,12 +215,9 @@ def get_finance_export():
 
 
 def check_data_retention():
-    # Dry-run only: reports how many rows in each classified table are older than that table's
-    # policy cutoff. Never deletes or modifies anything - purge/archival stays a manual, deliberate
-    # action for an admin to take after reviewing this report, not something this endpoint does
-    # automatically. table_name/date_column come from data_retention_table_policies (admin-entered
-    # config, not end-user input), but are still checked against information_schema before being
-    # interpolated into SQL, since they're used as bare identifiers rather than bound parameters.
+    # Dry-run only - reports counts, never deletes; purge/archival stays a manual admin action.
+    # table_name/date_column come from admin config, but are still validated against
+    # information_schema before being interpolated as bare SQL identifiers (not bound params).
     policies = run_json(
         "SELECT COALESCE(json_agg(json_build_object("
         "'tableName', t.table_name, 'dateColumn', t.date_column, "
@@ -294,11 +281,9 @@ MYSQL_CLI = "mysql"
 
 
 def test_external_db_connection(config):
-    # Distinct from check_database_health()/check_database_stats(), which only ever test the
-    # connection this server itself was started with (DB_HOST/DB_USER/... above) - this tests
-    # whatever host/port/database/username/password an admin just typed into the "Database
-    # Connection" form, before they've saved/relied on it, since a browser can't open that raw
-    # connection itself to check.
+    # Distinct from check_database_health()/check_database_stats(), which test the connection this
+    # server itself was started with - this tests whatever host/port/credentials an admin just
+    # typed into the "Database Connection" form, before saving, since the browser can't do that itself.
     db_type = config.get("type") or ""
     host = (config.get("host") or "").strip()
     database = (config.get("database") or "").strip()
@@ -891,14 +876,10 @@ SELECT json_build_object(
 """
 
 # Served to /api/bootstrap when no valid session token is present. Deliberately omits every
-# student-linked or otherwise sensitive field BOOTSTRAP_SQL carries (studentProfiles,
-# studentGrades, attendanceRecords/Entries, assignmentSubmissions, complaints, hostel-request
-# tables, pendingFees, examCellData, library borrowing records, admin roster, etc.) - only
-# genuinely public/reference data an anonymous visitor to the public site already sees: curriculum,
-# timetable, published notices, the faculty/staff directory (already-public fields per the
-# existing schema comment), open placement drives, the library catalog, and site content. Each
-# field expression below is copied verbatim from BOOTSTRAP_SQL's own definition, not
-# re-derived, to avoid the two drifting apart.
+# student-linked or sensitive field BOOTSTRAP_SQL carries (grades, attendance, complaints,
+# hostel/exam/library records, admin roster, etc.) - only public data an anonymous visitor already
+# sees. Each field expression below is copied verbatim from BOOTSTRAP_SQL, not re-derived, so the
+# two definitions can't drift apart.
 PUBLIC_BOOTSTRAP_SQL = r"""
 WITH
 catalog_rows AS (
@@ -1065,11 +1046,8 @@ def clear_all_notifications(recipient_type, recipient_id):
 
 
 # Bus/Vehicle pass validity on approval: students run through the end of the current academic
-# year (matches the "2025-26" academic-year convention used for Internal Marks - the year starts
-# in June, so it ends May 31 of the following calendar year); faculty (and non-student requesters)
-# get a plain rolling 1 year from whenever they were approved, since they have no academic-year
-# cycle to align to. Referenced inline in the same UPDATE as the status change, keyed off the
-# row's own requester_type column, so it's one round trip rather than a separate lookup.
+# year (June-May, matching the Internal Marks academic-year convention); faculty and other
+# non-student requesters get a plain rolling 1 year from approval instead.
 PASS_VALID_UNTIL_SQL = """
     CASE WHEN requester_type = 'student' THEN (
       CASE WHEN EXTRACT(MONTH FROM now()) >= 6 THEN make_date((EXTRACT(YEAR FROM now()) + 1)::int, 5, 31)
@@ -1094,10 +1072,9 @@ def verify_password(password, salt_hex, hash_hex):
 
 
 def verify_recaptcha(token):
-    # If no secret key is configured yet (RECAPTCHA_SECRET_KEY unset), fail open rather than
-    # locking out every public registration/login - matches this app's existing "degrade gracefully
-    # when an integration isn't configured" convention (e.g. resolvePayuPaymentLink's "gateway is
-    # not linked yet" message) rather than a hard 500.
+    # If no secret key is configured yet, fail open rather than locking out every public
+    # registration/login - matches this app's convention of degrading gracefully when an
+    # integration isn't configured, rather than a hard 500.
     if not RECAPTCHA_SECRET_KEY:
         return True
     if not token:
@@ -1115,12 +1092,9 @@ def verify_recaptcha(token):
         return False
 
 
-# Simple self-hosted CAPTCHA (a math question) used instead of reCAPTCHA on the public event
-# forms - no external site key/account needed, works immediately. The question is generated
-# server-side and the answer never sent to the client in the clear: the token is an HMAC of the
-# answer plus an issue time, so verify_math_captcha can check a submitted answer is correct
-# without the token itself revealing it, and expires after 10 minutes so a token can't be reused
-# indefinitely against a stale question.
+# Self-hosted CAPTCHA (math question) for the public event forms - no external site key needed.
+# The answer is never sent to the client; the token is an HMAC of the answer + issue time, so it
+# can be verified without revealing the answer, and expires after 10 minutes.
 CAPTCHA_SECRET = secrets.token_hex(32)
 
 
@@ -1155,11 +1129,9 @@ def normalize_mobile(value):
 
 
 def get_bank_details(key):
-    # Deliberately not part of BOOTSTRAP_SQL (like user_credentials) - bank account numbers/IFSC
-    # are financial PII and must never be handed out in the one big public bootstrap response.
-    # Only reachable by whoever already knows the exact role-prefixed key (e.g.
-    # "student-20X51A0501") for the single record they're asking about. The column itself also
-    # stores Fernet-encrypted ciphertext, not plaintext JSON - decrypted only here, on the way out.
+    # Deliberately not part of BOOTSTRAP_SQL - bank account numbers/IFSC are financial PII and
+    # must never ride along in the public bootstrap response. Only reachable by whoever already
+    # knows the exact role-prefixed key. Stored as Fernet-encrypted ciphertext, decrypted here only.
     encrypted = run_psql(f"SELECT details FROM bank_details WHERE detail_key = {quote(key)};")
     if not encrypted:
         return None
@@ -1224,10 +1196,8 @@ def read_admin_config():
 
 # --- GPRECian Bot knowledge base: real (embedding-based) semantic search -----------------------
 # Uses a local Ollama embedding model (nomic-embed-text, 768 dims) rather than an external API -
-# no extra API key/cost, and this app already runs everything else locally. Reads the Ollama base
-# URL from the same aiSettings the chat model itself uses (falls back to the default local port if
-# aiSettings isn't configured for ollama specifically - embeddings and chat can use different
-# providers/hosts without any issue since this call is independent of fetchAiReply's provider).
+# no extra API key/cost. Reads the Ollama base URL from the same aiSettings the chat model uses,
+# falling back to the default local port if aiSettings isn't configured for ollama specifically.
 EMBEDDING_MODEL = "nomic-embed-text"
 EMBEDDING_DIMENSIONS = 768
 
@@ -1254,10 +1224,8 @@ def vector_literal(embedding):
 
 
 def refresh_knowledge_base(chunks):
-    # Upserts every chunk in this batch (re-embedding all of them - simplest correct approach for
-    # a knowledge base of this size, no incremental diffing), then deletes any row whose id wasn't
-    # in the batch, so content that was renamed/removed on the site doesn't linger as a stale,
-    # unreachable chunk that could still surface in search results.
+    # Upserts every chunk in this batch (re-embedding all of them), then deletes any row whose id
+    # wasn't in the batch, so renamed/removed content doesn't linger as a stale, searchable chunk.
     kept_ids = []
     for chunk in chunks:
         chunk_id = str(chunk.get("id") or "").strip()
@@ -1301,10 +1269,9 @@ def search_knowledge_base(question, top_n=4):
 
 
 # --- GPRECian Bot feedback loop - the actual "learning" mechanism -------------------------------
-# Nothing here retrains the LLM itself; this is a human-in-the-loop correction pipeline: a visitor
-# flags a bad answer, an admin reviews it and writes the right one, and approving it embeds that
-# correction into knowledge_base_chunks (the same table/pipeline as an ordinary refresh) so the
-# same or a similarly-worded question is answered correctly next time via normal semantic search.
+# Nothing here retrains the LLM; this is a human-in-the-loop correction pipeline: a visitor flags
+# a bad answer, an admin writes the right one, and approving it embeds that correction into
+# knowledge_base_chunks so a similarly-worded question is answered correctly next time.
 def submit_bot_feedback(question, bot_answer, reporter_type, reporter_id):
     run_psql(f"""
         INSERT INTO bot_feedback (question, bot_answer, reporter_type, reporter_id)
@@ -1393,10 +1360,9 @@ def update_exam_cell_application_status(application_id, status, admin_note):
 
 
 def verify_google_id_token(id_token):
-    # The alumni Google sign-in JWT was previously only ever decoded client-side (no signature
-    # check) - anyone could POST a forged JWT-shaped payload and claim any alumni email. Google's
-    # tokeninfo endpoint does full verification (signature, expiry, audience) for us, so no JWT
-    # library / public-key rotation handling is needed here - one HTTPS GET, stdlib only.
+    # Verifies via Google's tokeninfo endpoint (signature, expiry, audience) rather than decoding
+    # the JWT client-side unchecked - a forged JWT-shaped payload could otherwise claim any alumni
+    # email. No JWT library / public-key rotation handling needed - one HTTPS GET, stdlib only.
     expected_client_id = (read_admin_config().get("googleClientId") or "").strip()
     if not expected_client_id or expected_client_id == "YOUR_GOOGLE_CLIENT_ID.apps.googleusercontent.com":
         return None
@@ -1416,13 +1382,9 @@ def verify_google_id_token(id_token):
 
 
 def send_msg91_sms(auth_key, template_id, template_variable, mobile, value):
-    # MSG91's Flow API (transactional SMS via a DLT-approved template) - built to their commonly
-    # documented v5 contract; verify against the current MSG91 dashboard/docs once real
-    # credentials are in place, since third-party API surfaces can change. Returns
-    # (sent: bool, error: str | None) - never raises, so a misconfigured/unreachable gateway falls
-    # back to the caller's own fallback behavior instead of breaking the calling flow entirely.
-    # Generic across use cases (OTP, grades/attendance notifications, ...) - the caller decides
-    # which template and single variable value get sent.
+    # MSG91's Flow API (transactional SMS via a DLT-approved template). Built to their commonly
+    # documented v5 contract; verify against current MSG91 docs once real credentials are in
+    # place. Never raises - returns (sent, error) so a misconfigured gateway falls back gracefully.
     if not auth_key or not template_id:
         return False, "not-configured"
 
@@ -1455,11 +1417,8 @@ def send_msg91_sms(auth_key, template_id, template_variable, mobile, value):
 
 
 def send_msg91_whatsapp(auth_key, integrated_number, template_name, body_variable, mobile, value):
-    # Fallback channel when SMS isn't configured or the SMS send fails - MSG91's WhatsApp Business
-    # API (same auth key, a separate DLT-exempt WhatsApp template on their dashboard). Built to
-    # their commonly documented v5 contract; verify against the current MSG91 dashboard/docs once
-    # real credentials are in place. Returns (sent: bool, error: str | None), never raises. Generic
-    # across use cases, same as send_msg91_sms above.
+    # Fallback channel when SMS isn't configured or fails - MSG91's WhatsApp Business API (same
+    # auth key, a separate DLT-exempt template). Same contract/caveats as send_msg91_sms above.
     if not auth_key or not integrated_number or not template_name:
         return False, "not-configured"
 
@@ -1550,17 +1509,9 @@ def deliver_parent_notification(mobile, kind, message):
 
 
 def verify_vehicle_documents(license_number, vehicle_number):
-    # Real government DL/RC lookups (India's Sarathi/VAHAN systems) have no public API for a
-    # college app to call directly - this is a generic REST contract built for API Setu
-    # (apisetu.gov.in), the Government of India's own API gateway, which exposes official DL/RC
-    # verification from the Ministry of Road Transport at no per-call cost once GPREC is
-    # registered as a consumer organization there. Admin fills in the base URL/paths/key API Setu
-    # issues after that approval; verify the exact request/response shape against API Setu's docs
-    # for the specific DL/RC verification API, since this was built to a generic best-guess
-    # contract without real credentials to test against. Returns
-    # (result: 'verified'|'failed'|'not-configured'|'error', notes: str | None) - never raises, and
-    # the result is only ever a decision AID for the admin, never an auto-approval - the admin
-    # always makes the final call. Never logs the license/vehicle numbers themselves.
+    # Built for API Setu (apisetu.gov.in), India's government API gateway for DL/RC verification,
+    # to a generic best-guess contract untested against real credentials - verify against API
+    # Setu's docs. Result is a decision aid only, never an auto-approval; DL/vehicle numbers aren't logged.
     settings = read_admin_config().get("kycSettings") or {}
     auth_key = (settings.get("authKey") or "").strip()
     base_url = (settings.get("baseUrl") or "").strip().rstrip("/")
@@ -1629,11 +1580,9 @@ def alumni_account_exists(email):
 
 
 def alumni_identity_matches(email, batch_year):
-    # Previously alumni/reset-password only checked the account existed - anyone who knew an
-    # alumnus's email could take over their account with no verification at all. batchYear isn't
-    # a strong secret, but it's real data already on file from signup (not something newly
-    # collected here) and is a meaningful bar over "just an email", consistent in spirit with the
-    # recovery-mobile check admin/faculty/non-teaching password reset already uses.
+    # batchYear isn't a strong secret, but it's real signup data (not newly collected here) and
+    # is a meaningful bar over "just an email" - same spirit as the recovery-mobile check other
+    # roles' password reset uses.
     sql = (
         "SELECT COALESCE((SELECT true FROM alumni_accounts "
         f"WHERE email = {quote(email)} AND data->>'batchYear' = {quote(str(batch_year))}), false);"
@@ -1650,10 +1599,9 @@ def reset_alumni_password(email, new_password):
 
 
 def upsert_alumni_google_profile(email, name, batch_year):
-    # Merges into existing `data` (rather than overwriting it) so a repeat Google sign-in doesn't
-    # clobber profile fields (bio, posts, memories, etc.) set since the account was created.
-    # password_hash/salt stay NULL until/unless this alumnus also sets a real password - a
-    # Google-only account simply can't use the email+password sign-in form.
+    # Merges into existing `data` (rather than overwriting) so a repeat Google sign-in doesn't
+    # clobber profile fields set since the account was created. password_hash/salt stay NULL until
+    # this alumnus also sets a real password - a Google-only account can't use the password form.
     data = json.dumps({"name": name, "batchYear": batch_year, "viaGoogle": True})
     run_psql(f"""
         INSERT INTO alumni_accounts (email, data) VALUES ({quote(email)}, {quote(data)}::jsonb)
@@ -1664,11 +1612,9 @@ def upsert_alumni_google_profile(email, name, batch_year):
 
 
 def save_alumni_profiles(accounts):
-    # Every profile-edit call site reads the full alumni directory, mutates or appends one
-    # account's non-secret fields, and saves the full array back - this treats each entry as an
-    # update to that email's `data` column only. Never touches password_hash/salt, and never
-    # inserts a brand-new row (account creation only happens through create_alumni_account /
-    # upsert_alumni_google_profile, which are the only paths allowed to set a password).
+    # Treats each entry as an update to that email's `data` column only - never touches
+    # password_hash/salt, and never inserts a new row (account creation only happens through
+    # create_alumni_account / upsert_alumni_google_profile).
     statements = []
     for account in accounts:
         email = (account.get("email") or "").strip().lower()
@@ -1757,10 +1703,8 @@ def any_admin_credentials_exist():
 
 # --- Session tokens (all six login roles) ---------------------------------------------------
 # Sliding-expiry - idle timeout resets on every authenticated request (see authenticate()), so
-# anyone who opens the app at least once within the idle window stays logged in indefinitely in
-# practice ("always logged in"). The absolute cap is the one thing that never extends no matter
-# how active the session is - a stolen/leaked token, or a browser left open on a shared device and
-# forgotten about, still eventually stops working on its own rather than staying valid forever.
+# regular use keeps a session alive indefinitely. The absolute cap never extends no matter how
+# active the session is, so a stolen token or a forgotten open browser still expires eventually.
 SESSION_TIERS = {
     "admin": ("60 days", "365 days"),
     "faculty": ("60 days", "365 days"),
@@ -1916,13 +1860,9 @@ def replace_complaints(records):
     run_psql(sql)
 
 
-# Placement/Internship/Mock Interview/Aptitude Test/Job Recommendation all share this one table
-# (drive_type discriminator - see the field-reuse comment on the placement_drives CREATE TABLE in
-# schema.sql). create/remove are targeted single-row operations, not a full-array replace - the
-# previous replace_placement_drives() did "TRUNCATE placement_drives ... CASCADE" on every single
-# add/remove, which silently wiped ALL placement_applications (and would now also wipe
-# interview_schedules) every time, since TRUNCATE CASCADE empties the whole child table regardless
-# of which row changed. This matches the notices/assignments create+remove-by-id idiom instead.
+# create/remove are targeted single-row operations, not a full-array replace - the previous
+# replace_placement_drives() truncated placement_drives on every add/remove, which cascaded to
+# silently wipe ALL placement_applications regardless of which row changed.
 DRIVE_TYPES_WITH_ELIGIBILITY = ("Placement", "Internship")
 
 
@@ -2099,17 +2039,10 @@ def upsert_student_grades(rows):
 
 
 def save_attendance_record(faculty_email, subject_code, section, attendance_date, entries):
-    # One class session's roster - the whole entries list is the source of truth for that
-    # session, so this deletes and re-inserts entries for the (upserted) record rather than
-    # trying to diff them, unlike curriculum/timetable's per-row upsert.
-    #
-    # Deliberately three separate top-level statements, not one WITH-clause combining the upsert,
-    # delete, and insert as CTEs: Postgres does not guarantee a data-modifying CTE runs before a
-    # sibling one unless there's a real data dependency between them, and the delete-then-insert
-    # here has none (both just need the record's id) - tested directly against Postgres and the
-    # delete silently didn't happen before the insert, so a re-save hit a duplicate-key error
-    # instead of replacing the roster. Plain sequential statements in one psql call don't have
-    # that ambiguity - each one fully completes before the next runs.
+    # Deletes and re-inserts entries rather than diffing. Deliberately three separate statements,
+    # not a WITH-clause combining upsert/delete/insert as CTEs - Postgres doesn't guarantee CTE
+    # ordering without a real data dependency, and testing showed the delete ran after the insert,
+    # hitting a duplicate-key error.
     record_key = f"""
         faculty_email = {quote(faculty_email)} AND subject_code = {quote(subject_code)}
         AND section = {quote(section)} AND attendance_date = {quote(attendance_date)}
@@ -2243,10 +2176,8 @@ def get_attendance_shortage_report(department_code):
 
 def get_attendance_section_report(department_code, from_date, to_date, section=""):
     # One row per student per class session (not aggregated like the shortage report above).
-    # from_date/to_date are both optional and inclusive, same "either edge blank = no limit on
-    # that side" rule as the Hostel Gate Activity date-range export. section is also optional -
-    # blank/omitted means every section in the department (still shown per-row, so the report
-    # stays "section-wise" either way).
+    # from_date/to_date are both optional and inclusive (blank edge = no limit on that side).
+    # section is also optional - blank means every section in the department.
     date_clause = ""
     if from_date:
         date_clause += f" AND r.attendance_date >= {quote(from_date)}::date"
@@ -2831,11 +2762,9 @@ def record_payment(student_roll_no, amount, payment_mode, transaction_ref, detai
 
 
 def upsert_bank_details(key, details_json_text):
-    # Two copies: `details` is Fernet-encrypted ciphertext of the full record (only ever decrypted
-    # by get_bank_details, which nothing in the current UI calls - the account number is never
-    # editable in place, only re-enterable). `masked_details` is a plaintext preview (account
-    # number masked to first-5/last-4) safe to include in the public bootstrap so the dashboard can
-    # show "account ending 4821" without decrypting anything on every page load.
+    # Two copies: `details` is Fernet-encrypted ciphertext of the full record. `masked_details` is
+    # a plaintext preview (account number masked to first-5/last-4) safe to include in the public
+    # bootstrap so the dashboard can show "account ending 4821" without decrypting anything.
     details = json.loads(details_json_text)
     encrypted = encrypt_text(details_json_text)
     masked = json.dumps(build_masked_bank_details(details))
@@ -2927,12 +2856,9 @@ def create_class_cancellation(payload):
     """)
 
 
-# Projects/research are rich nested documents (team members, per-milestone submission status,
-# staged files) that the frontend already manages as one JS object per record, read-all/mutate-
-# one/save-all (including removal-by-filter) across ~30 call sites. Storing the whole record as
-# JSONB keyed by its client-generated id, and treating each save as the full replacement set
-# (delete whatever's no longer present, upsert the rest), preserves all of that existing logic
-# unchanged instead of normalizing team/milestone data into new tables in this pass.
+# Projects/research are rich nested documents the frontend already manages as one JS object per
+# record, read-all/mutate-one/save-all across ~30 call sites. Storing the whole record as JSONB
+# keyed by its client-generated id preserves that existing logic unchanged.
 def replace_student_submissions(table, records):
     ids = [record.get("id") for record in records if record.get("id")]
     id_list = ", ".join(quote(item_id) for item_id in ids) or "''"
@@ -2946,13 +2872,9 @@ def replace_student_submissions(table, records):
     run_psql(sql)
 
 
-# Gate scanning for the three hostel pass types re-uses these same JSONB-blob tables rather than
-# adding dedicated ones - the QR printed on a pass just encodes {passType, passId, gateToken}, and
-# gateToken/gateLog live as extra keys inside the existing `data` blob (the student side already
-# treats that blob as a free-form object, e.g. request.studentId/request.status, so adding fields
-# here needs no migration). gateToken is a random opaque string set once when the pass PDF is first
-# generated - never the request's own id - so a printed pass reveals nothing an outsider could use
-# to look up or guess any other pass.
+# Gate scanning re-uses these same JSONB-blob tables - gateToken/gateLog live as extra keys inside
+# the existing `data` blob, so adding fields needs no migration. gateToken is a random opaque
+# string, never the request's own id, so a printed pass reveals nothing usable to find another pass.
 HOSTEL_PASS_TABLES = {
     "outing": "hostel_outing_requests",
     "leave": "hostel_leave_requests",
@@ -2988,9 +2910,8 @@ def hostel_gate_log_append(pass_type, pass_id, token, direction, scanned_by):
           updated_at = now()
         WHERE id = {quote(pass_id)} AND data->>'gateToken' = {quote(token)} AND data->>'status' = 'Approved'
           -- Every pass is one round trip (Exit+Entry, or Entry+Exit for a Visit Pass), not a
-          -- repeatable in/out toggle - once both directions are already on file, reject further
-          -- scans server-side too (the gate-scan page itself already stops offering the buttons,
-          -- this is the same rule enforced against a stale page or a direct API call).
+          -- repeatable toggle - once both directions are on file, reject further scans here too,
+          -- not just in the gate-scan page's own UI (covers a stale page or a direct API call).
           AND NOT (
             EXISTS (SELECT 1 FROM jsonb_array_elements(COALESCE(data->'gateLog', '[]'::jsonb)) e WHERE e->>'direction' = 'Exit')
             AND EXISTS (SELECT 1 FROM jsonb_array_elements(COALESCE(data->'gateLog', '[]'::jsonb)) e WHERE e->>'direction' = 'Entry')
@@ -3002,20 +2923,13 @@ def hostel_gate_log_append(pass_type, pass_id, token, direction, scanned_by):
     return rows[0] if rows else None
 
 
-# Campus Event registrations get a single-record upsert rather than replace_student_submissions'
-# delete-then-reinsert-by-id shape - a student only ever has one registration record for
-# themselves (id = "{eventId}:{rollNo}"), never a personal list they manage/prune, so there's no
-# "delete anything the client didn't send" semantics to reuse, and reusing that shape here would
-# risk a lost-update race (a stale full-array snapshot from one student's page silently deleting
-# another student's just-inserted row).
+# Single-record upsert rather than replace_student_submissions' delete-then-reinsert-by-id shape -
+# a student only ever has one registration (id = "{eventId}:{rollNo}"), and reusing that shape
+# would risk a lost-update race (a stale full-array snapshot deleting another student's new row).
 def upsert_campus_event_registration(record):
-    # Enforces an optional per-event registration cap (event.capacity, set by admin/faculty head)
-    # server-side - this is the authoritative check; the UI also pre-checks client-side using the
-    # cached registration count for immediate feedback, but that snapshot can race between two
-    # students registering close together, so the real limit has to be enforced here. Only blocks
-    # a genuinely NEW registration - re-saving your own existing one (e.g. regenerating a ticket)
-    # must never get rejected by a cap that only counts new signups, so an existing row for this
-    # exact id is always allowed through regardless of how full the event is.
+    # Enforces the optional per-event capacity server-side, since the UI's client-side pre-check
+    # can race between two students registering close together. Only blocks a genuinely NEW
+    # registration - re-saving your own existing one is always allowed regardless of capacity.
     reg_id = record.get("id")
     event_id = record.get("eventId")
     events = run_json("SELECT content_value FROM site_content WHERE content_key = 'campusEvents';", [])
@@ -3034,10 +2948,9 @@ def upsert_campus_event_registration(record):
     return True
 
 
-# Self-service account for an outside-college visitor - same email+password hash/salt shape as
-# create_alumni_account, own table (event_visitor_accounts) since these aren't alumni. Upserts
-# rather than rejecting a repeat email so someone registering for a second public event with the
-# same address just re-confirms their existing password rather than erroring.
+# Self-service account for an outside-college visitor - same email+password shape as
+# create_alumni_account, own table since these aren't alumni. Upserts rather than rejecting a
+# repeat email, so a second registration just re-confirms the existing password.
 def create_event_visitor_account(email, password, name, phone, college):
     salt_hex, hash_hex = hash_password(password)
     run_psql(f"""
@@ -3061,10 +2974,9 @@ def verify_event_visitor_login(email, password):
     return {"email": email, "name": row.get("name")}
 
 
-# Forgot-password for a visitor account - no email/OTP delivery infra exists in this app to prove
-# inbox ownership, so this checks the phone number they gave at registration instead (the same
-# "something they already gave us, not a newly collected secret" shape as alumni_identity_matches'
-# batchYear check) rather than accepting a bare email with no verification at all.
+# Forgot-password for a visitor account - no email/OTP delivery infra exists, so this checks the
+# phone number given at registration instead (same "already-on-file data" shape as
+# alumni_identity_matches' batchYear check).
 def event_visitor_identity_matches(email, phone):
     return run_psql(
         f"SELECT COALESCE((SELECT true FROM event_visitor_accounts WHERE email = {quote(email)} AND phone = {quote(phone)}), false);"
@@ -3079,13 +2991,10 @@ def reset_event_visitor_password(email, new_password):
     """)
 
 
-# Shared by both a brand-new public registration (register_for_public_event, which also creates
-# the visitor's account) and an already-signed-in visitor registering for a second/third event
-# (register_existing_visitor_for_event, which reuses their existing account's details) - the event
-# validation, fee/payment check, and record shape are identical either way. Reuses
-# upsert_campus_event_registration as-is, so the same capacity cap and single-record-upsert safety
-# already covers external registrants too - the id just uses "ext:{email}" instead of a roll
-# number, since external registrants don't have one.
+# Shared by both a brand-new public registration and an already-signed-in visitor registering for
+# another event - the validation, fee check, and record shape are identical either way. Reuses
+# upsert_campus_event_registration as-is; the id uses "ext:{email}" since external registrants
+# don't have a roll number.
 def _build_and_insert_public_registration(event_id, name, email, phone, college, payment_type, payment_reference):
     cleanup_completed_public_events()
     events = run_json("SELECT content_value FROM site_content WHERE content_key = 'campusEvents';", [])
@@ -3093,10 +3002,9 @@ def _build_and_insert_public_registration(event_id, name, email, phone, college,
     if not event or not event.get("isPublic"):
         return None, "This event is not open for public registration."
     fee = float(event.get("fee") or 0)
-    # Payment itself isn't verified server-side (matches this app's existing PayU pattern for
-    # students - see openPayuCheckoutAndRecord in script.js, a hosted-checkout-link + trust-the-
-    # payer flow with no webhook yet), but a paid event still requires the client to have gone
-    # through that checkout-open step and gotten a reference back before the registration counts.
+    # Payment isn't verified server-side (matches this app's existing PayU trust-the-payer pattern
+    # with no webhook yet), but a paid event still requires a payment reference from the client's
+    # checkout-open step before the registration counts.
     if fee > 0 and not payment_reference:
         return None, "Payment is required for this event."
     reg_id = f"{event_id}:ext:{email}"
@@ -3118,11 +3026,9 @@ def _build_and_insert_public_registration(event_id, name, email, phone, college,
         "paymentReference": payment_reference or "-",
         "paymentStatus": "Paid" if fee > 0 else "Registered",
         "registeredAt": datetime.datetime.utcnow().isoformat() + "Z",
-        # Generated here, not via ensureEventGateToken's usual client-side read-back-from-bootstrap
-        # path - an anonymous public registrant has no session, and campusEventRegistrations
-        # (everyone's names/emails/phones) is deliberately not exposed in the public bootstrap, so
-        # the client has no way to read this back after the fact. Returning it directly in the
-        # response is the only path available.
+        # Generated here rather than via the usual client-side read-back-from-bootstrap path - an
+        # anonymous public registrant has no session, and campusEventRegistrations isn't exposed
+        # in the public bootstrap, so returning it directly is the only path available.
         "gateToken": secrets.token_hex(16),
     }
     if not upsert_campus_event_registration(record):
@@ -3130,10 +3036,9 @@ def _build_and_insert_public_registration(event_id, name, email, phone, college,
     return record, None
 
 
-# Public/external event registration - no GPREC login at all up front, for outside-college
-# visitors, but registering creates a real account (email+password, self-chosen) so they can log
-# back in later rather than only ever having the one downloaded ticket image. Only events an admin
-# explicitly marked event.isPublic=true accept this (server-checked here, never client-trusted).
+# Public/external event registration - no GPREC login, for outside-college visitors, but
+# registering creates a real account so they can log back in later. Only events an admin
+# explicitly marked event.isPublic=true accept this (server-checked, never client-trusted).
 def register_for_public_event(event_id, name, email, phone, college, password, payment_type=None, payment_reference=None):
     name = (name or "").strip()
     email = (email or "").strip().lower()
@@ -3174,11 +3079,9 @@ def delete_event_visitor_account(identity_email):
     revoke_all_sessions("event_visitor", email)
 
 
-# Deletes an event's registrations and, for each external registrant, their visitor account too -
-# but only once they have no OTHER remaining registration elsewhere (one email can register for
-# several public events; deleting the account the moment any single one of those ends would lock
-# them out of a still-open registration). Called both when an admin explicitly removes an event
-# and opportunistically from cleanup_completed_public_events for events whose date has passed.
+# Deletes an event's registrations and, for external registrants, their visitor account too - but
+# only once they have no other remaining registration elsewhere (one email can register for
+# several public events, so deleting on the first one ending would lock them out of the rest).
 def remove_campus_event_registrations(event_id):
     emails = run_json(
         f"SELECT COALESCE(json_agg(DISTINCT data->>'email'), '[]'::json) FROM campus_event_registrations "
@@ -3208,10 +3111,9 @@ def cleanup_completed_public_events():
         remove_campus_event_registrations(event_id)
 
 
-# Event pass gate scanning - same gateToken/checkIn-inside-the-JSONB-blob technique as the hostel
-# gate passes above, simplified to a single check-in (no Exit/Entry round trip - a ticket is used
-# once, then it's used). Both 'Paid' and 'Registered' payment statuses are valid (free events never
-# reach 'Paid'), unlike the hostel passes' single 'Approved' status check.
+# Event pass gate scanning - same gateToken/checkIn-inside-JSONB technique as the hostel gate
+# passes above, simplified to a single check-in (no Exit/Entry round trip). Both 'Paid' and
+# 'Registered' payment statuses are valid, since free events never reach 'Paid'.
 def campus_event_gate_lookup(event_id, reg_id, token):
     rows = run_json(
         f"SELECT COALESCE(json_agg(data), '[]'::json) FROM campus_event_registrations "
@@ -3241,14 +3143,10 @@ def campus_event_gate_log_append(event_id, reg_id, token, scanned_by):
     return rows[0] if rows else None
 
 
-# Campus Events themselves (title/date/venue/fee/description) live under the generic
-# site_content key "campusEvents" - normally admin-only via /api/site-content. A faculty member
-# assigned as an event's "Faculty Head" (event.facultyHeadEmail) needs to manage that one event's
-# own details too, not just view its registrants, so this is a purpose-built endpoint with its own
-# permission check rather than reusing the generic admin-only one: allowed if the caller is an
-# admin, OR a faculty identity whose email matches the event's CURRENT facultyHeadEmail. Only an
-# admin may reassign facultyHeadEmail itself - the current head can't hand off/lock out admin
-# control by changing who else is allowed to manage the event.
+# Campus Events live under the generic site_content key "campusEvents", normally admin-only. A
+# faculty "Faculty Head" (event.facultyHeadEmail) needs to manage their one event's details too,
+# so this purpose-built endpoint allows an admin, or the matching Faculty Head - but only an admin
+# may reassign facultyHeadEmail, so a head can't lock admin out by handing it off.
 def campus_event_manual_checkin(event_id, roll_number, email, scanned_by):
     # QR-fallback lookup for student volunteers: internal attendees can be checked in by roll
     # number, and outside-college/event-visitor attendees by email.
@@ -3304,13 +3202,9 @@ def update_campus_event_as_head(identity, event_id, fields):
     return event
 
 
-# College Fest activities (a separate feature from the public-facing Campus Events above - no
-# registration/fees/gate scanning, just an activity - published by admin or by an approved faculty
-# coordinator - that gets staffed with student volunteers by roll number). Same "purpose-built
-# endpoint, own permission check" shape as update_campus_event_as_head: an admin, or the faculty
-# identity matching the activity's CURRENT facultyCoordinatorEmail, may update it - only an admin
-# may reassign the coordinator itself (handing that off would otherwise let a coordinator lock
-# admin out of their own activity).
+# College Fest activities - separate from Campus Events above, no registration/fees/gate scanning.
+# Same permission shape as update_campus_event_as_head: an admin, or the faculty identity matching
+# the activity's CURRENT facultyCoordinatorEmail, may update it; only an admin may reassign it.
 def update_fest_activity(identity, activity_id, fields):
     rows = run_json("SELECT content_value FROM site_content WHERE content_key = 'festActivities';", [])
     activities = rows if isinstance(rows, list) else []
@@ -3333,11 +3227,9 @@ def update_fest_activity(identity, activity_id, fields):
     return activity
 
 
-# Admin can publish a fest activity for any coordinator directly (via the generic admin-only
-# /api/site-content, same as Campus Events). A faculty member creating their OWN activity goes
-# through this instead, gated on the festCoordinators allowlist (site_content key
-# "festCoordinators", an array of emails admin maintains) - otherwise any faculty login could
-# publish fest activities for themselves with no admin involvement at all.
+# A faculty member creating their OWN activity goes through this, gated on the festCoordinators
+# allowlist (site_content key, an array of emails admin maintains) - otherwise any faculty login
+# could publish fest activities with no admin involvement.
 def create_fest_activity(identity, fields):
     if identity["identityType"] != "faculty":
         return None
@@ -3651,9 +3543,8 @@ class PortalHandler(SimpleHTTPRequestHandler):
                 return
             if path == "/api/auth/has-admin-credentials":
                 # Public and deliberately narrow (just a boolean) - admin-login.html's
-                # "First-Time Setup" card needs to know whether to show itself before anyone has
-                # ever logged in, but the full email/status listing that /api/auth/credentials
-                # returns is real staff-roster data and stays admin-only below.
+                # "First-Time Setup" card needs this before anyone has logged in; the full
+                # email/status listing at /api/auth/credentials stays admin-only below.
                 self.send_json(200, {"hasAdmin": any_admin_credentials_exist()})
                 return
             if path == "/api/auth/credentials":
@@ -3710,12 +3601,10 @@ class PortalHandler(SimpleHTTPRequestHandler):
                 self.send_json(200, run_json(BOOTSTRAP_SQL, {}).get("libraryRecords", []))
                 return
             if path == "/api/auth/set-password":
-                # Genesis exception: admin-login.html's "First-Time Setup" card (see
-                # adminFirstSetupCard in script.js) calls this before anyone has ever logged in,
-                # to create the very first admin's credentials - there's no admin session to
-                # require yet in that one case. Only allowed through unauthenticated when zero
-                # admin credentials exist anywhere; the moment one does, every call here (setting
-                # up faculty/non-teaching/further admins) requires a real admin session again.
+                # Genesis exception: admin-login.html's "First-Time Setup" card calls this to
+                # create the very first admin, with no admin session to require yet. Only allowed
+                # unauthenticated while zero admin credentials exist; the moment one does, every
+                # call here requires a real admin session again.
                 if any_admin_credentials_exist() and not require_auth(self, allowed_types=["admin"]):
                     return
                 email = (payload.get("email") or "").strip().lower()
@@ -3823,10 +3712,8 @@ class PortalHandler(SimpleHTTPRequestHandler):
                 self.send_json(200, {"ok": True})
                 return
             if path == "/api/auth/student-login":
-                # Previously student login never touched the backend at all - roll+DOB was
-                # compared purely client-side against data already sitting in the browser
-                # (getGprecDbBootstrap().studentProfiles), which isn't really verification. This
-                # is the first real server-side check for this role.
+                # roll+DOB is verified server-side here, not compared client-side against data
+                # already sitting in the browser like it used to be.
                 roll_no = (payload.get("rollNo") or "").strip().upper()
                 dob_digits = re.sub(r"\D", "", payload.get("dob") or "")
                 throttle_key = f"student:{roll_no}"
@@ -3880,11 +3767,10 @@ class PortalHandler(SimpleHTTPRequestHandler):
                 if not roll_no:
                     record_throttle_failure(mobile_throttle_key)
                     record_throttle_failure(ip_throttle_key)
-                    # Deliberately the same shape as the success response below (no "reason" that
-                    # distinguishes "mobile not registered" from anything else) - the one exception
-                    # this local app can't avoid is that a match includes an "otp" field and this
-                    # doesn't, since there's no SMS gateway to deliver it out-of-band instead. A
-                    # real deployment with SMS delivery would make this response identical too.
+                    # Same shape as the success response below (no distinguishing "reason") to
+                    # avoid revealing whether a mobile number is registered - the only unavoidable
+                    # difference here is the missing "otp" field, since there's no gateway to
+                    # deliver it out-of-band instead.
                     self.send_json(200, {"ok": True})
                     return
                 otp = f"{secrets.randbelow(1_000_000):06d}"
@@ -4030,11 +3916,10 @@ class PortalHandler(SimpleHTTPRequestHandler):
                 self.send_json(200, {"ok": sent, "channel": channel, "error": error})
                 return
             if path == "/api/plagiarism/extract-text":
-                # Pulls text out of an assignment submission's uploaded PDF/Word file(s) so the
-                # browser can hand it to the configured AI provider (same fetchAiReply() call the
-                # rest of the app already uses) for a manual, faculty-triggered originality check.
-                # Project/Research submissions don't need this - their title/description text is
-                # already in the bootstrap the browser has.
+                # Pulls text out of an assignment submission's uploaded PDF/Word file(s) for a
+                # manual, faculty-triggered originality check via the configured AI provider.
+                # Project/Research submissions don't need this - their text is already in the
+                # bootstrap the browser has.
                 if not require_auth(self, allowed_types=["admin", "faculty"]):
                     return
                 submission_id = (payload.get("submissionId") or "").strip()
@@ -4235,11 +4120,9 @@ class PortalHandler(SimpleHTTPRequestHandler):
                 self.send_json(200, {"ok": True, "request": row})
                 return
             if path == "/api/bus-requests/mark-paid":
-                # Called right after a successful Transportation Fee payment (see the payment
-                # success handler in script.js) - marks the caller's own latest bus request as
-                # paid, which /api/bus-requests/decide then requires before a student's request
-                # can be Approved. Faculty never call this (no fee for faculty), but the endpoint
-                # doesn't need to special-case that - it just marks the caller's own latest row.
+                # Called right after a successful Transportation Fee payment - marks the caller's
+                # own latest bus request as paid, which /api/bus-requests/decide then requires
+                # before a student's request can be Approved (faculty have no fee, so this is a no-op for them).
                 identity = require_auth(self, allowed_types=["student", "faculty"])
                 if not identity:
                     return
@@ -4254,12 +4137,9 @@ class PortalHandler(SimpleHTTPRequestHandler):
                 self.send_json(200, {"ok": True})
                 return
             if path == "/api/bus-requests/request-cancellation":
-                # Self-service surrender of an already-Approved pass - for students this is also
-                # how they switch routes/buses (cancel the current one, then submit a fresh
-                # request for a different bus from the Available Buses list). This doesn't cancel
-                # it outright - it flags it for admin to confirm (matches the rest of this app's
-                # convention of admin having the final say on request state changes), via the
-                # "Cancelled" status /api/bus-requests/decide now also accepts.
+                # Self-service surrender of an already-Approved pass. Doesn't cancel it outright -
+                # flags it for admin to confirm, matching this app's convention of admin having
+                # the final say on request state changes.
                 identity = require_auth(self, allowed_types=["student", "faculty"])
                 if not identity:
                     return
@@ -4492,8 +4372,7 @@ class PortalHandler(SimpleHTTPRequestHandler):
                 if identity["identityType"] == "faculty":
                     # Ownership check: a faculty member can only enter marks for the subject the
                     # faculty table actually has them assigned to, not any subject code they claim
-                    # in the payload - this is the reason a real table + server-side check is used
-                    # here instead of the JSONB-blob-replace-all pattern used elsewhere in this file.
+                    # in the payload.
                     real_subject_code = run_psql(f"SELECT subject_code FROM faculty WHERE email = {quote(identity['identityId'])};").strip()
                     if not real_subject_code or real_subject_code != subject_code:
                         self.send_json(403, {"ok": False, "error": "forbidden"})
@@ -4615,10 +4494,8 @@ class PortalHandler(SimpleHTTPRequestHandler):
                 self.send_json(200, {"ok": True})
                 return
             if path == "/api/placement-drive-applicants":
-                # Placement-admin-only (loose "any admin" check, matching the rest of this file's
-                # admin-family endpoints rather than a stricter role_label check nothing else here
-                # does either) - powers the CSV export on placement-dashboard.html. driveId is
-                # optional: omitted means "every application, across every drive" (Export All).
+                # Powers the CSV export on placement-dashboard.html. driveId is optional -
+                # omitted means "every application, across every drive" (Export All).
                 if not require_auth(self, allowed_types=["admin"]):
                     return
                 drive_id = (payload or {}).get("driveId") or ""
@@ -4946,10 +4823,8 @@ class PortalHandler(SimpleHTTPRequestHandler):
                 self.send_json(200, {"ok": True})
                 return
             if path == "/api/hostel-allocations/assign":
-                # Warden/admin-only, matches allowed_types=["admin"] already used for the
-                # hostel/gate-* endpoints below. hostel_allocations has student_roll_no UNIQUE, so
-                # this upserts - assigning a student who's already allocated moves them to the new
-                # room/bed instead of erroring or creating a duplicate row.
+                # hostel_allocations has student_roll_no UNIQUE, so this upserts - assigning a
+                # student who's already allocated moves them to the new room/bed instead of erroring.
                 if not require_auth(self, allowed_types=["admin"]):
                     return
                 data = payload or {}
@@ -5022,9 +4897,8 @@ class PortalHandler(SimpleHTTPRequestHandler):
                 self.send_json(200, {"ok": True})
                 return
             if path == "/api/campus-event-registrations/public":
-                # Deliberately no require_auth() call - this is for visitors with no GPREC login
-                # at all (outside-college attendees). register_for_public_event() does its own
-                # server-side checks (event.isPublic, payment-required-if-fee) rather than trusting
+                # Deliberately no require_auth() call - for visitors with no GPREC login at all.
+                # register_for_public_event() does its own server-side checks rather than trusting
                 # the client.
                 data = payload or {}
                 if not verify_math_captcha(data.get("captchaToken"), data.get("captchaAnswer")):
@@ -5057,11 +4931,9 @@ class PortalHandler(SimpleHTTPRequestHandler):
                 self.send_json(200, {"ok": True, "registration": record})
                 return
             if path == "/api/event-visitor/signup":
-                # Creating an account is now a standalone step (event-visitor-dashboard.html's
-                # "Create an account" view), separate from registering for any specific event -
-                # register_for_public_event still creates the account inline too, for a visitor who
-                # goes straight to an event link without an account yet, so this isn't the only path
-                # to a visitor account, just the direct one.
+                # A standalone account-creation step, separate from registering for a specific
+                # event - register_for_public_event also creates an account inline for a visitor
+                # who goes straight to an event link without one yet.
                 data = payload or {}
                 if not verify_math_captcha(data.get("captchaToken"), data.get("captchaAnswer")):
                     self.send_json(400, {"ok": False, "error": "Incorrect CAPTCHA answer. Please try again."})
@@ -5090,11 +4962,9 @@ class PortalHandler(SimpleHTTPRequestHandler):
                     return
                 account = verify_event_visitor_login((data.get("email") or "").strip().lower(), data.get("password") or "")
                 if not account:
-                    # 200 + ok:false, not 401 - matches /api/auth/login's convention (see
-                    # "bad-password" there). gprecDbRequest treats ANY 401 response, from any
-                    # endpoint, as "your session expired" and force-redirects to student-login.html
-                    # - that's for an invalid/expired session TOKEN, not a rejected login attempt,
-                    # and this call carries no session token at all yet.
+                    # 200 + ok:false, not 401 - the client treats ANY 401 as "session expired" and
+                    # force-redirects to login, which is wrong for a rejected login attempt that
+                    # carries no session token at all yet.
                     self.send_json(200, {"ok": False, "error": "Incorrect email or password."})
                     return
                 token = create_session("event_visitor", account["email"], account.get("name"))
@@ -5258,10 +5128,9 @@ class PortalHandler(SimpleHTTPRequestHandler):
                 return
             if path == "/api/contact-messages":
                 # Deliberately left open, unlike its siblings above - this is the public Contact Us
-                # form's submit path (anonymous visitors, no login at all) sharing one bulk-replace
-                # endpoint with the admin inbox's "remove a message" action. Splitting those into
-                # separate add-only/admin-only endpoints so this can be gated too is real follow-up
-                # work, not attempted here - noted as a residual gap, not silently left implicit.
+                # form's submit path sharing one bulk-replace endpoint with the admin inbox's
+                # "remove a message" action. Splitting these into separate add-only/admin-only
+                # endpoints so this can be gated too is a known follow-up, not done here.
                 replace_student_submissions("contact_messages", payload or [])
                 self.send_json(200, {"ok": True})
                 return

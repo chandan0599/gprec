@@ -712,14 +712,11 @@
     </div>
 
     <!--
-      Payments here open the college's real PayU hosted checkout link (see admin-config.json's
-      "payuPaymentLink" field; merchant dashboard: https://onboarding.payu.in, docs:
-      https://docs.payu.in). Clicking "Pay"/"Contribute" opens that link in a new tab so the
-      payer completes checkout on PayU's own page. Limitation: this is a static site with no
-      backend, so there's no webhook or return-URL to confirm the payment actually completed -
-      the payment is recorded locally as soon as the tab opens, trusting the payer to finish
-      paying. A production deployment should add a backend that listens for PayU's payment
-      confirmation webhook before treating a payment as real.
+      "Pay"/"Contribute" buttons open the college's real PayU hosted checkout (see
+      admin-config.json's "payuPaymentLink" field) in a new tab. There's no backend webhook
+      or return-URL check - payment is recorded locally as soon as the tab opens, trusting
+      the payer to complete it. Production should add a backend that confirms PayU's
+      payment webhook first.
     -->
     <script src="../script.js"></script>
   </body>

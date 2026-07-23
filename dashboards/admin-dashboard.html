@@ -6,7 +6,7 @@
     <title>Admin Dashboard | GPREC</title>
     <meta name="description" content="GPREC college admin dashboard for users & access, approvals, notices, and reports.">
     <link rel="icon" href="https://www.gprec.ac.in/wp-content/uploads/2017/08/fav.png" sizes="32x32">
-    <link rel="stylesheet" href="../styles.css">
+    <link rel="stylesheet" href="../styles.css?v=20260722-29">
   </head>
   <body class="admin-dashboard-page">
     <header class="student-topbar admin-topbar">
@@ -26,15 +26,31 @@
         </div>
         <div class="notification-bell-wrap app-drawer-wrap is-hidden">
           <button type="button" class="notification-bell app-drawer-button" id="appDrawerButton" aria-label="Apps">
-            <svg viewBox="0 0 24 24" aria-hidden="true"><rect class="app-switcher-frame" x="4.5" y="4.5" width="15" height="15" rx="4.5"/><path class="app-switcher-dots" d="M9 9h.01M15 9h.01M9 15h.01M15 15h.01"/><path class="app-switcher-spark" d="M18.5 5.5v3M17 7h3"/></svg>
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path class="app-switcher-dots" d="M6 6h.01M12 6h.01M18 6h.01M6 12h.01M12 12h.01M18 12h.01M6 18h.01M12 18h.01M18 18h.01"/></svg>
           </button>
           <div class="notification-dropdown app-drawer-dropdown is-hidden" id="appDrawerDropdown">
-            <div class="notification-dropdown-head">Apps</div>
-            <a class="app-drawer-link" href="event-management-dashboard.html">
-              <span class="app-drawer-link-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 3v4M17 3v4M4 8h16M5 5h14a1 1 0 0 1 1 1v14H4V6a1 1 0 0 1 1-1Z"/><path d="M8 12h3M8 16h8"/></svg></span>
-              <span class="app-drawer-link-copy"><strong>Event Manager</strong><small>Fest activities & posters</small></span>
-              <span class="app-drawer-link-arrow" aria-hidden="true">›</span>
-            </a>
+            <div class="notification-dropdown-head">
+              <span>Apps</span>
+            </div>
+            <p class="app-drawer-section-label">College apps</p>
+            <div class="app-drawer-grid">
+              <a class="app-drawer-tile" href="event-management-dashboard.html">
+                <span class="app-drawer-tile-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 3v4M17 3v4M4 8h16M5 5h14a1 1 0 0 1 1 1v14H4V6a1 1 0 0 1 1-1Z"/><path d="M8 12h3M8 16h8"/></svg></span>
+                <span class="app-drawer-tile-label">Event Manager</span>
+              </a>
+            </div>
+            <p class="app-drawer-section-label">
+              <span>Your apps</span>
+              <button type="button" class="app-drawer-add-toggle" id="appDrawerAddToggle" aria-label="Add app link" aria-expanded="false">+</button>
+            </p>
+            <div class="app-drawer-grid">
+              <div id="appDrawerCustomLinks" class="app-drawer-grid-fragment"></div>
+            </div>
+            <form class="app-drawer-add-link-form is-hidden" id="appDrawerAddLinkForm">
+              <input type="text" id="appDrawerLinkName" placeholder="App name" maxlength="40" required>
+              <input type="text" id="appDrawerLinkUrl" placeholder="Link (e.g. drive.google.com/...)" required>
+              <button type="submit">Save</button>
+            </form>
           </div>
         </div>
         <div class="student-user-menu">
@@ -72,12 +88,14 @@
         <div class="admin-nav" data-admin-target="#staff-leave-approvals" data-admin-roles="College Admin" title="Non-Teaching Staff Leave" role="button" tabindex="0"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="4" y="5" width="16" height="15" rx="2"/><path d="M4 10h16M8 3v4M16 3v4"/></svg><span class="admin-nav-text">Non-Teaching Staff Leave</span></div>
         <div class="admin-nav" data-admin-target="#notices-content" title="Notices" role="button" tabindex="0"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 2h9l5 5v15H6Z"/><path d="M15 2v5h5"/></svg><span class="admin-nav-text">Notices</span></div>
         <div class="admin-nav" data-admin-target="#poster-design" title="Poster Design" role="button" tabindex="0"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="4" width="18" height="16" rx="2"/><circle cx="8.5" cy="9.5" r="1.5"/><path d="m4 17 5-5 4 4 3-3 4 4"/></svg><span class="admin-nav-text">Poster Design</span></div>
+        <div class="admin-nav" data-admin-target="#register-for-event" title="Register for Event" role="button" tabindex="0"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 3v4M17 3v4M4 8h16M5 5h14a1 1 0 0 1 1 1v14H4V6a1 1 0 0 1 1-1Z"/><path d="m9 14 2 2 4-4"/></svg><span class="admin-nav-text">Register for Event</span></div>
         <div class="admin-nav" data-admin-target="#reports-audit" title="Reports & Audit" role="button" tabindex="0"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 20V10"/><path d="M10 20V4"/><path d="M16 20v-7"/><path d="M22 20H2"/></svg><span class="admin-nav-text">Reports & Audit</span></div>
         <div class="admin-nav" data-admin-target="#site-maintenance" data-admin-roles="College Admin" title="Site Maintenance" role="button" tabindex="0"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94z"/></svg><span class="admin-nav-text">Site Maintenance</span></div>
         <div class="admin-nav" data-admin-target="#transportation-admin" data-admin-roles="College Admin" title="Transportation" role="button" tabindex="0"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="7" width="18" height="10" rx="2"/><circle cx="7.5" cy="17" r="1.5"/><circle cx="16.5" cy="17" r="1.5"/><path d="M3 11h18"/></svg><span class="admin-nav-text">Transportation</span></div>
         <div class="admin-nav" data-admin-target="#users-access" title="Users & Access" role="button" tabindex="0"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="9" cy="8" r="3"/><path d="M2 20c0-3 3-5 7-5s7 2 7 5"/><circle cx="17" cy="8" r="3"/><path d="M14 15c3 .3 5 2 5 5"/></svg><span class="admin-nav-text">Users & Access</span></div>
         <div class="admin-nav" data-admin-target="#web-page-content" title="Web Page Content" role="button" tabindex="0"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 5h16v14H4zM4 9h16M8 5v4"/></svg><span class="admin-nav-text">Web Page Content</span></div>
         <div class="admin-nav" data-admin-target="#webinars-content" title="Webinars" role="button" tabindex="0"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="6" width="14" height="12" rx="2"/><path d="m17 10 4-3v10l-4-3"/></svg><span class="admin-nav-text">Webinars</span></div>
+        <div class="admin-nav admin-nav-footer" data-admin-target="#readme-content" title="Read Me" role="button" tabindex="0"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 8h.01"/><path d="M11 11h1.5v5"/><path d="M10 16h4"/></svg><span class="admin-nav-text">Read Me</span></div>
       </aside>
 
       <section class="admin-workspace">
@@ -346,6 +364,7 @@
               <label>Homepage Banner End (optional)<input type="date" id="campusEventBannerEndInput"></label>
             </div>
             <label>Description<textarea id="campusEventDescriptionInput" placeholder="What is this event about?"></textarea></label>
+            <label>Assigned Volunteers (roll numbers)<textarea id="campusEventVolunteersInput" placeholder="One roll number per line or comma-separated - only these students can sign in to scan/check in tickets for this event"></textarea></label>
             <label class="declaration-check"><input type="checkbox" id="campusEventPublicInput"><span>Open to outside colleges (public registration, no GPREC login required - paid events use the PayU link set up in Settings)</span></label>
             <button type="button" id="campusEventAddButton">Publish Event</button>
             <p class="admin-add-feedback" id="campusEventAddFeedback" aria-live="polite"></p>
@@ -358,6 +377,38 @@
               <tbody id="campusEventManagerBody"></tbody>
             </table>
             <p class="lookup-empty is-hidden" id="campusEventManagerEmpty">No campus events published yet.</p>
+          </div>
+        </section>
+
+        <section class="admin-panel" id="register-for-event">
+          <div class="admin-section-head">
+            <div><p class="eyebrow">Campus Events</p><h2>Register for Event</h2></div>
+          </div>
+          <div class="event-grid" id="campusEventGrid"></div>
+          <p class="lookup-empty is-hidden" id="campusEventEmpty">No campus events published yet.</p>
+
+          <div class="event-apply-form is-hidden" id="eventApplyForm">
+            <div class="service-card-head">
+              <p class="eyebrow">Event Registration</p>
+              <h2 id="eventApplyTitle">Event Name</h2>
+            </div>
+            <label>Participant Name
+              <input type="text" id="eventParticipantName" required>
+            </label>
+            <label>Team Members (optional)
+              <textarea rows="2" maxlength="220" id="eventTeamMembers" placeholder="Names of teammates, if any"></textarea>
+            </label>
+            <p class="service-amount is-hidden" id="eventFeeRow">Registration Fee<strong id="eventFeeAmount">&#8377;0</strong></p>
+            <label class="declaration-check">
+              <input type="checkbox" required>
+              <span>I confirm the above details are correct and agree to the event participation rules.</span>
+            </label>
+            <button type="button" class="event-payment-open-button" id="eventSubmitButton">Submit Registration</button>
+            <p class="portal-feedback is-hidden" id="eventFeedback"></p>
+
+            <a class="application-download is-hidden" id="eventReceiptDownload" href="#" download="gprec-event-receipt.pdf">Download Registration Receipt</a>
+            <a class="application-download is-hidden" id="eventTicketDownload" href="#" download="gprec-event-pass.png">Download Event Pass (Ticket)</a>
+            <p class="portal-note is-hidden" id="eventTicketHint">If the download doesn't start, press and hold the ticket image to save it.</p>
           </div>
         </section>
 
@@ -697,8 +748,9 @@
 
         <section class="admin-panel" id="web-page-content">
           <div class="admin-section-head">
-            <div><p class="eyebrow">Web Page Content</p><h2>Edit content on the public Careers, Contact Us, Mandatory Disclosures, and R&amp;D pages.</h2></div>
+            <div><p class="eyebrow">Web Page Content</p><h2>Edit content on the public About Us, Careers, Contact Us, Mandatory Disclosures, Idea Lab, and R&amp;D pages.</h2></div>
             <select class="admin-select" id="webPageSelect">
+              <option value="about-us">About Us</option>
               <option value="admissions">Admissions</option>
               <option value="careers">Careers</option>
               <option value="contact-us">Contact Us</option>
@@ -706,12 +758,126 @@
               <option value="disclosures">Mandatory Disclosures</option>
               <option value="exam-cell">Exam Cell</option>
               <option value="fee-structure">Fee Structure</option>
+              <option value="idea-lab">Idea Lab</option>
               <option value="research-dev">Research &amp; Development</option>
               <option value="scholarships">Scholarships</option>
             </select>
           </div>
 
-          <div class="web-page-section is-active" data-web-page="admissions">
+          <div class="web-page-section is-active" data-web-page="about-us">
+            <article class="admin-card admin-form-card">
+              <h3>About Us Intro</h3>
+              <label>Paragraph 1<textarea id="aboutUsPara1Input"></textarea></label>
+              <label>Paragraph 2<textarea id="aboutUsPara2Input"></textarea></label>
+              <button type="button" id="aboutUsIntroSaveButton">Save About Us Intro</button>
+              <p class="admin-add-feedback" id="aboutUsIntroSaveFeedback" aria-live="polite"></p>
+            </article>
+
+            <article class="admin-card admin-form-card">
+              <h3>History</h3>
+              <label>Paragraph 1<textarea id="historyPara1Input"></textarea></label>
+              <label>Paragraph 2<textarea id="historyPara2Input"></textarea></label>
+              <label>Paragraph 3<textarea id="historyPara3Input"></textarea></label>
+              <button type="button" id="historyTextSaveButton">Save History Text</button>
+              <p class="admin-add-feedback" id="historyTextSaveFeedback" aria-live="polite"></p>
+            </article>
+
+            <article class="admin-card admin-form-card">
+              <h3>Vision / Mission / Quality Policy</h3>
+              <label>Our Vision<textarea id="aboutVisionInput"></textarea></label>
+              <label>Our Mission<textarea id="aboutMissionInput"></textarea></label>
+              <label>Quality Policy<textarea id="aboutQualityInput"></textarea></label>
+              <button type="button" id="aboutVmqSaveButton">Save Vision / Mission / Quality</button>
+              <p class="admin-add-feedback" id="aboutVmqSaveFeedback" aria-live="polite"></p>
+            </article>
+
+            <article class="admin-card admin-form-card">
+              <h3>Service Rules</h3>
+              <label>Description<textarea id="aboutServiceRulesTextInput"></textarea></label>
+              <label>PDF URL<input type="text" id="aboutServiceRulesLinkInput" placeholder="https://..."></label>
+              <button type="button" id="aboutServiceRulesSaveButton">Save Service Rules</button>
+              <p class="admin-add-feedback" id="aboutServiceRulesSaveFeedback" aria-live="polite"></p>
+            </article>
+
+            <article class="admin-card admin-form-card">
+              <h3>Management</h3>
+              <label>Paragraph 1<textarea id="aboutManagementPara1Input"></textarea></label>
+              <label>Paragraph 2<textarea id="aboutManagementPara2Input"></textarea></label>
+              <label>Founder Trustees<textarea id="aboutManagementFounderTrusteesInput" placeholder="One per line: Name | Role"></textarea><small class="field-hint">One per line: Name | Role</small></label>
+              <label>Current Trust Management<textarea id="aboutManagementCurrentTrustInput" placeholder="One per line: Name | Role"></textarea><small class="field-hint">One per line: Name | Role</small></label>
+              <label>Professional Colleges<textarea id="aboutManagementProfessionalCollegesInput" placeholder="One per line: Name | Location"></textarea><small class="field-hint">One per line: Name | Location</small></label>
+              <label>Other Educational Institutes<textarea id="aboutManagementOtherInstitutesInput" placeholder="One per line: Name | Location"></textarea><small class="field-hint">One per line: Name | Location</small></label>
+              <label>Service Organizations<textarea id="aboutManagementServiceOrgsInput" placeholder="One per line: Name | Location"></textarea><small class="field-hint">One per line: Name | Location</small></label>
+              <button type="button" id="aboutManagementSaveButton">Save Management</button>
+              <p class="admin-add-feedback" id="aboutManagementSaveFeedback" aria-live="polite"></p>
+            </article>
+
+            <article class="admin-card admin-form-card">
+              <h3>Governing Body</h3>
+              <label>Members from Management<textarea id="governingBodyManagementInput" placeholder="One per line: Name | Designation | Position"></textarea><small class="field-hint">One per line: Name | Designation | Position (Chairman or Member)</small></label>
+              <label>Faculty Representatives<textarea id="governingBodyFacultyInput" placeholder="One per line: Name | Designation | Position"></textarea><small class="field-hint">One per line: Name | Designation | Position (Chairman or Member)</small></label>
+              <label>External Educationist<textarea id="governingBodyExternalInput" placeholder="One per line: Name | Designation | Position"></textarea><small class="field-hint">One per line: Name | Designation | Position (Chairman or Member)</small></label>
+              <label>Government &amp; University Nominees<textarea id="governingBodyNomineesInput" placeholder="One per line: Name | Designation | Position"></textarea><small class="field-hint">One per line: Name | Designation | Position (Chairman or Member)</small></label>
+              <label>Administrative Leadership<textarea id="governingBodyLeadershipInput" placeholder="One per line: Name | Designation | Position"></textarea><small class="field-hint">One per line: Name | Designation | Position (Chairman or Member)</small></label>
+              <button type="button" id="governingBodySaveButton">Save Governing Body</button>
+              <p class="admin-add-feedback" id="governingBodySaveFeedback" aria-live="polite"></p>
+            </article>
+
+            <article class="admin-card admin-form-card">
+              <h3>Academic Council</h3>
+              <label>Chairman<textarea id="academicCouncilChairmanInput" placeholder="One per line: Name | Designation"></textarea><small class="field-hint">One per line: Name | Designation</small></label>
+              <label>Member Secretary<textarea id="academicCouncilSecretaryInput" placeholder="One per line: Name | Designation"></textarea><small class="field-hint">One per line: Name | Designation</small></label>
+              <label>Deans &amp; Heads<textarea id="academicCouncilDeansHeadsInput" rows="6" placeholder="One per line: Name | Designation"></textarea><small class="field-hint">One per line: Name | Designation</small></label>
+              <label>Three Cadres of Faculty<textarea id="academicCouncilFacultyCadresInput" placeholder="One per line: Name | Designation"></textarea><small class="field-hint">One per line: Name | Designation</small></label>
+              <label>Senior Most Woman Faculty<textarea id="academicCouncilWomanFacultyInput" placeholder="One per line: Name | Designation"></textarea><small class="field-hint">One per line: Name | Designation</small></label>
+              <label>Experts Nominated by Governing Council<textarea id="academicCouncilExpertsInput" placeholder="One per line: Name | Designation"></textarea><small class="field-hint">One per line: Name | Designation</small></label>
+              <label>Nominees of JNTUA, Anantapuramu<textarea id="academicCouncilJntuaNomineesInput" placeholder="One per line: Name | Designation"></textarea><small class="field-hint">One per line: Name | Designation</small></label>
+              <button type="button" id="academicCouncilSaveButton">Save Academic Council</button>
+              <p class="admin-add-feedback" id="academicCouncilSaveFeedback" aria-live="polite"></p>
+            </article>
+
+            <article class="admin-card admin-form-card">
+              <h3>Administration &ndash; Principal</h3>
+              <p class="field-hint">Photo is managed under Media &rarr; Website Photo Manager (Principal Photo).</p>
+              <label>Name<input type="text" id="adminPrincipalNameInput"></label>
+              <label>Designation<input type="text" id="adminPrincipalDesignationInput"></label>
+              <label>Biography (separate paragraphs with a blank line)<textarea id="adminPrincipalBioInput" rows="6"></textarea></label>
+              <button type="button" id="adminPrincipalSaveButton">Save Principal</button>
+              <p class="admin-add-feedback" id="adminPrincipalSaveFeedback" aria-live="polite"></p>
+            </article>
+
+            <article class="admin-card admin-form-card">
+              <h3>Administration &ndash; Vice Principal</h3>
+              <p class="field-hint">Photo is managed under Media &rarr; Website Photo Manager (Vice Principal Photo).</p>
+              <label>Name<input type="text" id="adminVicePrincipalNameInput"></label>
+              <label>Designation<input type="text" id="adminVicePrincipalDesignationInput"></label>
+              <label>Biography (separate paragraphs with a blank line)<textarea id="adminVicePrincipalBioInput" rows="6"></textarea></label>
+              <button type="button" id="adminVicePrincipalSaveButton">Save Vice Principal</button>
+              <p class="admin-add-feedback" id="adminVicePrincipalSaveFeedback" aria-live="polite"></p>
+            </article>
+
+            <article class="admin-card admin-form-card">
+              <h3>Administration &ndash; Add Dean</h3>
+              <div class="admin-add-grid">
+                <label>Position<input type="text" id="adminDeanPositionInput" placeholder="e.g. Dean-Academics"></label>
+                <label>Name<input type="text" id="adminDeanNameInput" placeholder="e.g. Dr. Y. Venkata Mohan Reddy"></label>
+                <label>Department<input type="text" id="adminDeanDepartmentInput" placeholder="e.g. ME"></label>
+                <label>Email<input type="email" id="adminDeanEmailInput" placeholder="e.g. dean.academics@gprec.ac.in"></label>
+                <label>Phone<input type="text" id="adminDeanPhoneInput" placeholder="e.g. 9848366453"></label>
+              </div>
+              <button type="button" id="adminDeanAddButton">Add Dean</button>
+              <p class="admin-add-feedback" id="adminDeanAddFeedback" aria-live="polite"></p>
+            </article>
+            <div class="admin-table-card">
+              <table>
+                <thead><tr><th>Position</th><th>Name</th><th>Department</th><th>Email</th><th>Phone</th><th></th></tr></thead>
+                <tbody id="adminDeansManagerBody"></tbody>
+              </table>
+              <p class="lookup-empty is-hidden" id="adminDeansManagerEmpty">No deans added yet.</p>
+            </div>
+          </div>
+
+          <div class="web-page-section" data-web-page="admissions">
             <div class="web-page-subtabs">
               <button type="button" class="web-page-subtab is-active" data-web-subsection="btech">B.Tech</button>
               <button type="button" class="web-page-subtab" data-web-subsection="lateral">Lateral Entry</button>
@@ -1213,6 +1379,39 @@
               </div>
             </div>
           </div>
+
+          <div class="web-page-section" data-web-page="idea-lab">
+            <article class="admin-card admin-form-card">
+              <h3>Idea Lab - About</h3>
+              <label>Introduction<textarea id="ideaLabAboutInput"></textarea></label>
+              <label>Equipment &amp; Features<textarea id="ideaLabEquipmentInput"></textarea></label>
+              <label>Slogan / Tagline<textarea id="ideaLabSloganInput" rows="2"></textarea></label>
+              <label>Vision<textarea id="ideaLabVisionInput"></textarea></label>
+              <label>Mission (one point per line)<textarea id="ideaLabMissionInput" rows="5"></textarea></label>
+              <label>Benefits to Students (one point per line)<textarea id="ideaLabBenefitsInput" rows="5"></textarea></label>
+              <label>Supporting Infrastructure<textarea id="ideaLabInfrastructureInput"></textarea></label>
+              <label>Tender Document URL<input type="text" id="ideaLabTenderUrlInput" placeholder="https://www.gprec.ac.in/collegepdf/..."></label>
+              <button type="button" id="ideaLabContentSaveButton">Save</button>
+              <p class="admin-add-feedback" id="ideaLabContentSaveFeedback" aria-live="polite"></p>
+            </article>
+
+            <article class="admin-card admin-form-card">
+              <h3>Idea Lab Team</h3>
+              <div class="admin-add-grid">
+                <label>Role<input type="text" id="ideaLabTeamRoleInput" placeholder="e.g. Tech Gurus"></label>
+                <label>Details (one person per line)<textarea id="ideaLabTeamDetailsInput" placeholder="Name, Designation, Department"></textarea></label>
+              </div>
+              <button type="button" id="ideaLabTeamAddButton">Add Row</button>
+              <p class="admin-add-feedback" id="ideaLabTeamAddFeedback" aria-live="polite"></p>
+              <div class="admin-table-card">
+                <table>
+                  <thead><tr><th>Role</th><th>Details</th><th></th></tr></thead>
+                  <tbody id="ideaLabTeamBodyAdmin"></tbody>
+                </table>
+                <p class="lookup-empty is-hidden" id="ideaLabTeamAdminEmpty">No team members added yet.</p>
+              </div>
+            </article>
+          </div>
         </section>
 
         <section class="admin-panel" id="media">
@@ -1275,7 +1474,7 @@
           <div class="media-section" data-media-section="photos">
             <div class="admin-table-card">
               <table>
-                <thead><tr><th>Page / Section</th><th>Recommended Size</th><th>Current Photo</th><th>Upload</th><th></th></tr></thead>
+                <thead><tr><th>Photo</th><th>Page / Section</th><th></th></tr></thead>
                 <tbody id="sitePhotoManagerBody"></tbody>
               </table>
             </div>
@@ -1612,6 +1811,7 @@
               <option value="ai">AI Provider</option>
               <option value="google">Google Sign-In</option>
               <option value="google-calendar">Google Calendar API</option>
+              <option value="map-sdk">Map SDK</option>
               <option value="payu">PayU Payments</option>
               <option value="library">Library API</option>
               <option value="database">Database Connection</option>
@@ -1710,7 +1910,7 @@
             </div>
           </article>
 
-          <article class="admin-card">
+          <article class="admin-card" data-integration="ai">
             <div class="portal-block-head"><h3>Bot Feedback / Training Queue</h3><span>The bot's actual "learning" mechanism</span></div>
             <div class="ai-settings-note">
               <span class="ai-settings-note-icon">i</span>
@@ -1758,6 +1958,34 @@
             <button type="button" id="saveGoogleCalendarApiKeyButton">Save</button>
             <p class="portal-feedback" id="googleCalendarApiKeyFeedback" aria-live="polite"></p>
             <p id="googleCalendarApiKeyStatus"></p>
+          </article>
+
+          <article class="admin-card admin-form-card" data-integration="map-sdk">
+            <h3>Map SDK (Event Zone Map)</h3>
+            <div class="ai-settings-note">
+              <span class="ai-settings-note-icon">i</span>
+              <ul>
+                <li>The public Event Visitor dashboard loads its live zone map from this SDK setting.</li>
+                <li>Use a browser/referrer-restricted Mappls web SDK token for production.</li>
+                <li>Zone coordinates are managed in Event Management Dashboard &gt; Visitor Page Content &gt; Zone Map.</li>
+                <li>Leave plugins blank unless a map feature needs them; use <code>direction</code> for route support.</li>
+              </ul>
+            </div>
+            <div class="admin-add-grid">
+              <label>Provider
+                <select id="mapSdkProviderInput">
+                  <option value="mappls">Mappls</option>
+                </select>
+              </label>
+              <label>SDK URL<input type="text" id="mapSdkUrlInput" placeholder="https://sdk.mappls.com/map/sdk/web"></label>
+              <label>SDK Version<input type="text" id="mapSdkVersionInput" placeholder="3.0"></label>
+              <label>Access Token<input type="password" id="mapSdkAccessTokenInput" placeholder="Mappls web SDK access token" autocomplete="off"></label>
+              <label>Plugins<input type="text" id="mapSdkPluginsInput" placeholder="e.g. direction"></label>
+              <label>Layer<input type="text" id="mapSdkLayerInput" placeholder="vector"></label>
+            </div>
+            <button type="button" id="saveMapSdkSettingsButton">Save Map SDK</button>
+            <p class="admin-add-feedback" id="mapSdkSettingsFeedback" aria-live="polite"></p>
+            <p id="mapSdkSettingsStatus"></p>
           </article>
 
           <article class="admin-card admin-form-card" data-integration="payu">
@@ -2050,6 +2278,117 @@
             <p class="lookup-empty is-hidden" id="dataRetentionResultsEmpty">No table currently has rows past its retention cutoff.</p>
           </div>
         </section>
+
+        <section class="admin-panel" id="readme-content">
+          <div class="admin-section-head">
+            <div><p class="eyebrow">Read Me</p><h2>What this application is and how to run it.</h2></div>
+          </div>
+          <div class="admin-card admin-form-card readme-index-card">
+            <h3>Quick Index</h3>
+            <label>Search Read Me<input type="search" id="readmeSearchInput" placeholder="Search sections, modules, roles..." autocomplete="off"></label>
+            <nav class="readme-toc" id="readmeToc" aria-label="Read Me sections">
+              <a href="#readme-overview" data-readme-toc="readme-overview">Overview</a>
+              <a href="#readme-roles" data-readme-toc="readme-roles">Roles &amp; Login</a>
+              <a href="#readme-first-setup" data-readme-toc="readme-first-setup">First-Time Admin Setup</a>
+              <a href="#readme-structure" data-readme-toc="readme-structure">Project Structure</a>
+              <a href="#readme-modules" data-readme-toc="readme-modules">Admin Console Modules</a>
+              <a href="#readme-running" data-readme-toc="readme-running">Running Locally</a>
+              <a href="#readme-security" data-readme-toc="readme-security">Data &amp; Security</a>
+            </nav>
+            <p class="lookup-empty is-hidden" id="readmeSearchEmpty">No matching sections.</p>
+          </div>
+          <article class="admin-card readme-section" id="readme-overview">
+            <h3>Overview</h3>
+            <p>Static website and role-based dashboard portal for G Pulla Reddy Engineering College (gprec.ac.in) - the public site plus a full ERP-style admin/student/faculty portal, all built as plain HTML/CSS/JS with an optional Python + PostgreSQL backend. The full document lives at <code>README.md</code> in the project root.</p>
+          </article>
+          <div class="admin-table-card readme-section" id="readme-roles">
+            <h3>Roles &amp; Login</h3>
+            <p>Every role signs in with real credentials on its own login page.</p>
+            <table>
+              <thead><tr><th>Role</th><th>Login Page</th><th>Dashboard</th></tr></thead>
+              <tbody>
+                <tr><td>College Admin</td><td><code>pages/admin-login.html</code></td><td><code>dashboards/admin-dashboard.html</code></td></tr>
+                <tr><td>Department Admin (per department)</td><td><code>pages/admin-login.html</code></td><td><code>dashboards/department-dashboard.html</code></td></tr>
+                <tr><td>Hostel Warden (Boys/Girls)</td><td><code>pages/admin-login.html</code></td><td><code>dashboards/hostel-dashboard.html</code></td></tr>
+                <tr><td>Exam Cell Officer</td><td><code>pages/admin-login.html</code></td><td><code>dashboards/exam-cell-dashboard.html</code></td></tr>
+                <tr><td>Placement Cell Officer</td><td><code>pages/admin-login.html</code></td><td><code>dashboards/placement-dashboard.html</code></td></tr>
+                <tr><td>Student</td><td><code>pages/student-login.html</code></td><td><code>dashboards/student-dashboard.html</code></td></tr>
+                <tr><td>Faculty</td><td><code>pages/faculty-login.html</code></td><td><code>dashboards/faculty-dashboard.html</code></td></tr>
+                <tr><td>Parent</td><td><code>pages/parent-login.html</code></td><td><code>dashboards/parent-dashboard.html</code></td></tr>
+                <tr><td>Alumni</td><td><code>pages/alumni-login.html</code></td><td><code>dashboards/alumni-dashboard.html</code></td></tr>
+                <tr><td>Non-Teaching Staff</td><td><code>pages/non-teaching-login.html</code></td><td><code>dashboards/non-teaching-dashboard.html</code></td></tr>
+              </tbody>
+            </table>
+            <p>The specific admin role (College Admin vs. a department/hostel/exam/placement admin) is chosen on the Admin Login form and must match the role configured for that admin's email in Users &amp; Access below.</p>
+          </div>
+          <article class="admin-card readme-section" id="readme-first-setup">
+            <h3>First-Time Admin Setup</h3>
+            <p>No admin can log in until an admin password exists, and passwords can normally only be set from Users &amp; Access inside this dashboard - which itself requires being logged in. To break that bootstrap loop, the Admin Login page shows a one-time <strong>First-Time Setup</strong> card whenever zero admins anywhere have a password yet.</p>
+            <ol>
+              <li>The email must already be a registered admin (seeded via <code>backend/database/postgres/seed.sql</code>, e.g. <code>admin@gprec.ac.in</code> as College Admin, or added later via <code>admin-config.json</code>). The login page can only set a password for an admin that already exists - it can't create one.</li>
+              <li>Open <code>pages/admin-login.html</code>. If no admin has a password yet, the First-Time Setup card appears below the normal login form automatically.</li>
+              <li>Enter that admin email and a recovery mobile number, then click Generate Initial Password. This is the only time <code>POST /api/auth/set-password</code> is allowed without an admin session - once any admin has a password, the same endpoint requires one.</li>
+              <li>Save the generated password shown on screen - it's shown once and never again.</li>
+              <li>Log in normally on the main Admin Login form (role, email, password, captcha). Since it's a freshly generated password, you'll be forced to change it immediately after this first login.</li>
+              <li>The First-Time Setup card is now gone for good. Every further admin is added by an already-logged-in admin under Users &amp; Access, not this bootstrap path.</li>
+            </ol>
+            <p>This requires the backend running (<code>./backend/tools/start_servers.sh</code>). If a password already exists and you've just forgotten it, use Forgot password? on the login form instead.</p>
+          </article>
+          <div class="admin-table-card readme-section" id="readme-structure">
+            <h3>Project Structure</h3>
+            <table>
+              <thead><tr><th>Path</th><th>What it is</th></tr></thead>
+              <tbody>
+                <tr><td><code>index.html</code></td><td>Public homepage.</td></tr>
+                <tr><td><code>pages/</code></td><td>Public pages and the six role login pages.</td></tr>
+                <tr><td><code>dashboards/</code></td><td>Role-based dashboards: admin, student, faculty, parent, alumni, department, placement, exam cell, hostel, non-teaching, and event dashboards.</td></tr>
+                <tr><td><code>file_templates/</code></td><td>Printable HTML templates (ID cards, passes, hall tickets, fee challan, pay slip, Form 16, posters, certificates).</td></tr>
+                <tr><td><code>backend/tools/</code></td><td>Local Python servers (static, portal DB API, PDF render, admin config).</td></tr>
+                <tr><td><code>backend/database/postgres/</code></td><td><code>schema.sql</code> / <code>seed.sql</code> for the <code>gprec_erp</code> schema.</td></tr>
+                <tr><td><code>uploads/</code></td><td>User-uploaded files written by the admin config server.</td></tr>
+                <tr><td><code>admin-config.json</code></td><td>Local runtime config: main admin contact, integration keys (Google, PayU, AI, library, database, SMS, KYC), and the admin directory.</td></tr>
+                <tr><td><code>script.js</code> / <code>styles.css</code></td><td>Single shared JS/CSS driving every page.</td></tr>
+              </tbody>
+            </table>
+          </div>
+          <div class="admin-table-card readme-section" id="readme-modules">
+            <h3>Admin Console Modules</h3>
+            <p>What each item in the sidebar on the left is for.</p>
+            <table>
+              <thead><tr><th>Module</th><th>What it's for</th></tr></thead>
+              <tbody>
+                <tr><td>Overview</td><td>Portal-wide counts, system health, and a directory of every dashboard and integration.</td></tr>
+                <tr><td>Calendar</td><td>Academic dates and reminders shown on the student and faculty dashboards.</td></tr>
+                <tr><td>Campus Events</td><td>Fest and activity listings shown on the public Campus Life page.</td></tr>
+                <tr><td>Contact Messages</td><td>Submissions from the public Contact Us form.</td></tr>
+                <tr><td>Data Integrations</td><td>Google, PayU, AI, library, database, and SMS/KYC connection settings.</td></tr>
+                <tr><td>Feature Ideas</td><td>Describe a feature in plain English and get a draft approach and starter code for a developer to review.</td></tr>
+                <tr><td>Fee Management</td><td>Student fee structures, dues, and payment tracking.</td></tr>
+                <tr><td>HOD Leave Requests</td><td>Leave approvals routed to department HODs.</td></tr>
+                <tr><td>Media</td><td>Photos and media used across the public site and dashboards.</td></tr>
+                <tr><td>Non-Teaching Staff Leave</td><td>Leave approvals for non-teaching staff.</td></tr>
+                <tr><td>Notices</td><td>Notices published to students, faculty, and other dashboards.</td></tr>
+                <tr><td>Poster Design</td><td>Event poster builder for campus events.</td></tr>
+                <tr><td>Reports &amp; Audit</td><td>Academic/financial report exports, the admin audit trail, and the data retention policy reference.</td></tr>
+                <tr><td>Site Maintenance</td><td>Take the public site or individual dashboards offline, with an optional advance-warning banner.</td></tr>
+                <tr><td>Transportation</td><td>Bus routes and transportation records.</td></tr>
+                <tr><td>Users &amp; Access</td><td>Admin directory - who has access, at what role, in which department.</td></tr>
+                <tr><td>Web Page Content</td><td>Editable content blocks on the public website.</td></tr>
+                <tr><td>Webinars</td><td>Webinar listings shown on the public site.</td></tr>
+              </tbody>
+            </table>
+          </div>
+          <article class="admin-card readme-section" id="readme-running">
+            <h3>Running Locally</h3>
+            <p>The site works opened directly via <code>file://</code>, but for uploads, the admin config API, and PostgreSQL-backed portal data, start the local servers:</p>
+            <pre>./backend/tools/start_servers.sh</pre>
+            <p>This starts <code>static_server.py</code> (<code>http://127.0.0.1:8080</code>), <code>portal_db_server.py</code> (<code>http://127.0.0.1:8766</code>), and <code>pdf_render_server.py</code> (<code>http://127.0.0.1:8767</code>, optional). Stop them with <code>./backend/tools/stop_servers.sh</code>. Database setup steps are in <code>backend/database/postgres/README.md</code>.</p>
+          </article>
+          <article class="admin-card readme-section" id="readme-security">
+            <h3>Data &amp; Security</h3>
+            <p>Every dashboard requires a real session (issued at login) matched against the role it was issued for. Session tokens and role identity are kept in the browser's local storage and cleared on logout. Uploaded files are written under <code>uploads/</code>, and portal records live in PostgreSQL under the <code>gprec_erp</code> schema when the backend is connected.</p>
+          </article>
+        </section>
       </section>
     </main>
 
@@ -2113,6 +2452,6 @@
       </button>
     </div>
 
-    <script src="../script.js"></script>
+    <script src="../script.js?v=20260722-29"></script>
   </body>
 </html>
