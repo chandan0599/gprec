@@ -10858,6 +10858,46 @@ img.student-user-avatar {
   color: var(--muted);
 }
 
+/* Overrides .internal-grid div's padding: 18px (meant for the card's text block) - without
+   this, that generic descendant selector also pads this wrapper div, shrinking the image away
+   from the card edges and leaving the prev/next buttons floating over blank space instead of
+   sitting flush on the photo. */
+.internal-grid .facility-carousel {
+  position: relative;
+  padding: 0;
+}
+
+.facility-carousel-nav {
+  position: absolute;
+  top: 50%;
+  display: grid;
+  width: 32px;
+  height: 32px;
+  place-items: center;
+  border: 0;
+  border-radius: 999px;
+  background: rgba(4, 40, 74, 0.55);
+  color: var(--white);
+  font-size: 0.8rem;
+  cursor: pointer;
+  transform: translateY(-50%);
+  transition: background 180ms ease;
+}
+
+.facility-carousel-nav:hover,
+.facility-carousel-nav:focus-visible {
+  outline: none;
+  background: var(--orange);
+}
+
+.facility-carousel-prev {
+  left: 10px;
+}
+
+.facility-carousel-next {
+  right: 10px;
+}
+
 .about-content {
   max-width: 1180px;
   padding: 48px 0 0;
@@ -11473,29 +11513,6 @@ img.student-user-avatar {
 
 .disclosure-panel h4:first-child {
   margin-top: 0;
-}
-
-.facility-photo-group {
-  margin-bottom: 20px;
-}
-
-.facility-photo-group:last-child {
-  margin-bottom: 0;
-}
-
-.facility-photo-grid {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 10px;
-  margin-top: 8px;
-}
-
-.facility-photo-grid img {
-  width: 120px;
-  height: 90px;
-  object-fit: cover;
-  border-radius: 8px;
-  box-shadow: var(--shadow);
 }
 
 .disclosure-list {
