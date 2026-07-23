@@ -10031,8 +10031,24 @@ if (document.querySelector("#notificationList")) {
     currentHeroDots[activeSlide]?.classList.add("active");
     // .hero-dots caps itself to ~4 dots wide and scrolls (see styles.css) so a long slide list
     // doesn't stretch the pill - without this, the active (orange) dot rotates past the edge of
-    // that window and disappears from view once its slide is more than ~4 slides in.
-    currentHeroDots[activeSlide]?.scrollIntoView({ inline: "nearest", block: "nearest", behavior: "smooth" });
+    // that window and disappears from view once its slide is more than ~4 slides in. Adjusting
+    // .hero-dots' own scrollLeft directly (not scrollIntoView) - scrollIntoView's "nearest" only
+    // means "scroll the minimum amount needed", and since .hero-dots is position: absolute and
+    // can end up outside the current viewport once the visitor has scrolled past the hero
+    // section, "nearest" would still recruit the whole page's scroll to bring it back into view,
+    // yanking the page back toward the hero every ~4s. Scoping the scroll to just this element's
+    // own scrollLeft can never touch the page's vertical scroll position.
+    const activeDot = currentHeroDots[activeSlide];
+    const dotsContainer = activeDot?.parentElement;
+    if (activeDot && dotsContainer) {
+      const dotLeft = activeDot.offsetLeft;
+      const dotRight = dotLeft + activeDot.offsetWidth;
+      if (dotLeft < dotsContainer.scrollLeft) {
+        dotsContainer.scrollTo({ left: dotLeft, behavior: "smooth" });
+      } else if (dotRight > dotsContainer.scrollLeft + dotsContainer.clientWidth) {
+        dotsContainer.scrollTo({ left: dotRight - dotsContainer.clientWidth, behavior: "smooth" });
+      }
+    }
   }, 4200);
 }
 
