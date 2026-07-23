@@ -139,57 +139,69 @@
               <p class="about-justify">Students are also represented on administrative committees - the Hostel Governing Body, Canteen Committee, Course Monitoring Committee, and Discipline Committee - giving them hands-on management science experience through real organizational responsibilities.</p>
             </article>
 
-            <!-- Slides are rendered by renderCampusLifeGrid() in script.js from getCampusLifeSlides() (localStorage),
-                 managed from the admin dashboard's Notices & Content > Campus Life Slides panel. -->
-            <div class="internal-grid" id="campusLifeGrid" aria-label="Campus life sections"></div>
-
             <article class="about-panel" id="facilities">
               <h2 class="about-subheading">Campus Facilities</h2>
-
-              <div class="facility-photo-group">
-                <h3 class="about-subheading-sm">e-Class Rooms</h3>
-                <div class="facility-photo-grid">
-                  <img src="https://www.gprec.ac.in/wp-content/uploads/2019/04/1b.jpg" alt="e-Class Room" loading="lazy">
-                  <img src="https://www.gprec.ac.in/wp-content/uploads/2019/04/2b.jpg" alt="e-Class Room" loading="lazy">
-                  <img src="https://www.gprec.ac.in/wp-content/uploads/2019/04/3b.jpg" alt="e-Class Room" loading="lazy">
-                </div>
-              </div>
-
-              <div class="facility-photo-group">
-                <h3 class="about-subheading-sm">Seminar Halls</h3>
-                <div class="facility-photo-grid">
-                  <img src="https://www.gprec.ac.in/wp-content/uploads/2019/04/1b-1.jpg" alt="Seminar Hall" loading="lazy">
-                  <img src="https://www.gprec.ac.in/wp-content/uploads/2019/04/2b-1.jpg" alt="Seminar Hall" loading="lazy">
-                  <img src="https://www.gprec.ac.in/wp-content/uploads/2019/04/3b-1.jpg" alt="Seminar Hall" loading="lazy">
-                </div>
-              </div>
-
-              <div class="facility-photo-group">
-                <h3 class="about-subheading-sm">Auditorium</h3>
-                <div class="facility-photo-grid">
-                  <img src="https://www.gprec.ac.in/wp-content/uploads/2019/04/1b-2.jpg" alt="Auditorium" loading="lazy">
-                  <img src="https://www.gprec.ac.in/wp-content/uploads/2019/04/2b-2.jpg" alt="Auditorium" loading="lazy">
-                  <img src="https://www.gprec.ac.in/wp-content/uploads/2019/04/3b-2.jpg" alt="Auditorium" loading="lazy">
-                </div>
-              </div>
-
-              <div class="facility-photo-group">
-                <h3 class="about-subheading-sm">Food Courts</h3>
-                <div class="facility-photo-grid">
-                  <img src="https://www.gprec.ac.in/wp-content/uploads/2019/04/1b-3.jpg" alt="Food Court" loading="lazy">
-                  <img src="https://www.gprec.ac.in/wp-content/uploads/2019/04/2b-3.jpg" alt="Food Court" loading="lazy">
-                  <img src="https://www.gprec.ac.in/wp-content/uploads/2019/04/3b-3.jpg" alt="Food Court" loading="lazy">
-                  <img src="https://www.gprec.ac.in/wp-content/uploads/2019/04/4b.jpg" alt="Food Court" loading="lazy">
-                </div>
-              </div>
-
-              <div class="facility-photo-group">
-                <h3 class="about-subheading-sm">Uninterrupted Power Supply</h3>
-                <div class="facility-photo-grid">
-                  <img src="https://www.gprec.ac.in/wp-content/uploads/2019/04/2s-1.jpg" alt="Uninterrupted Power Supply" loading="lazy">
-                  <img src="https://www.gprec.ac.in/wp-content/uploads/2019/04/3s-1.jpg" alt="Uninterrupted Power Supply" loading="lazy">
-                  <img src="https://www.gprec.ac.in/wp-content/uploads/2019/04/4s.jpg" alt="Uninterrupted Power Supply" loading="lazy">
-                </div>
+              <div class="internal-grid">
+                <a>
+                  <div class="facility-carousel" data-facility-carousel data-photos='["https://www.gprec.ac.in/wp-content/uploads/2019/04/1b.jpg","https://www.gprec.ac.in/wp-content/uploads/2019/04/2b.jpg","https://www.gprec.ac.in/wp-content/uploads/2019/04/3b.jpg"]'>
+                    <img src="https://www.gprec.ac.in/wp-content/uploads/2019/04/1b.jpg" alt="e-Class Rooms" loading="lazy" data-facility-carousel-img>
+                    <button type="button" class="facility-carousel-nav facility-carousel-prev" data-facility-carousel-prev aria-label="Previous photo">&#10094;</button>
+                    <button type="button" class="facility-carousel-nav facility-carousel-next" data-facility-carousel-next aria-label="Next photo">&#10095;</button>
+                  </div>
+                  <div>
+                    <span>Campus Life</span>
+                    <strong>e-Class Rooms</strong>
+                    <p>Digitally equipped classrooms for interactive, technology-driven learning.</p>
+                  </div>
+                </a>
+                <a>
+                  <div class="facility-carousel" data-facility-carousel data-photos='["https://www.gprec.ac.in/wp-content/uploads/2019/04/1b-1.jpg","https://www.gprec.ac.in/wp-content/uploads/2019/04/2b-1.jpg","https://www.gprec.ac.in/wp-content/uploads/2019/04/3b-1.jpg"]'>
+                    <img src="https://www.gprec.ac.in/wp-content/uploads/2019/04/1b-1.jpg" alt="Seminar Halls" loading="lazy" data-facility-carousel-img>
+                    <button type="button" class="facility-carousel-nav facility-carousel-prev" data-facility-carousel-prev aria-label="Previous photo">&#10094;</button>
+                    <button type="button" class="facility-carousel-nav facility-carousel-next" data-facility-carousel-next aria-label="Next photo">&#10095;</button>
+                  </div>
+                  <div>
+                    <span>Campus Life</span>
+                    <strong>Seminar Halls</strong>
+                    <p>Dedicated spaces for guest lectures, seminars, and department events.</p>
+                  </div>
+                </a>
+                <a>
+                  <div class="facility-carousel" data-facility-carousel data-photos='["https://www.gprec.ac.in/wp-content/uploads/2019/04/1b-2.jpg","https://www.gprec.ac.in/wp-content/uploads/2019/04/2b-2.jpg","https://www.gprec.ac.in/wp-content/uploads/2019/04/3b-2.jpg"]'>
+                    <img src="https://www.gprec.ac.in/wp-content/uploads/2019/04/1b-2.jpg" alt="Auditorium" loading="lazy" data-facility-carousel-img>
+                    <button type="button" class="facility-carousel-nav facility-carousel-prev" data-facility-carousel-prev aria-label="Previous photo">&#10094;</button>
+                    <button type="button" class="facility-carousel-nav facility-carousel-next" data-facility-carousel-next aria-label="Next photo">&#10095;</button>
+                  </div>
+                  <div>
+                    <span>Campus Life</span>
+                    <strong>Auditorium</strong>
+                    <p>Auditorium and Seminary Gallery with a built-in public address system.</p>
+                  </div>
+                </a>
+                <a>
+                  <div class="facility-carousel" data-facility-carousel data-photos='["https://www.gprec.ac.in/wp-content/uploads/2019/04/1b-3.jpg","https://www.gprec.ac.in/wp-content/uploads/2019/04/2b-3.jpg","https://www.gprec.ac.in/wp-content/uploads/2019/04/3b-3.jpg","https://www.gprec.ac.in/wp-content/uploads/2019/04/4b.jpg"]'>
+                    <img src="https://www.gprec.ac.in/wp-content/uploads/2019/04/1b-3.jpg" alt="Food Courts" loading="lazy" data-facility-carousel-img>
+                    <button type="button" class="facility-carousel-nav facility-carousel-prev" data-facility-carousel-prev aria-label="Previous photo">&#10094;</button>
+                    <button type="button" class="facility-carousel-nav facility-carousel-next" data-facility-carousel-next aria-label="Next photo">&#10095;</button>
+                  </div>
+                  <div>
+                    <span>Campus Life</span>
+                    <strong>Food Courts</strong>
+                    <p>On-campus dining spaces serving students and staff throughout the day.</p>
+                  </div>
+                </a>
+                <a>
+                  <div class="facility-carousel" data-facility-carousel data-photos='["https://www.gprec.ac.in/wp-content/uploads/2019/04/2s-1.jpg","https://www.gprec.ac.in/wp-content/uploads/2019/04/3s-1.jpg","https://www.gprec.ac.in/wp-content/uploads/2019/04/4s.jpg"]'>
+                    <img src="https://www.gprec.ac.in/wp-content/uploads/2019/04/2s-1.jpg" alt="Uninterrupted Power Supply" loading="lazy" data-facility-carousel-img>
+                    <button type="button" class="facility-carousel-nav facility-carousel-prev" data-facility-carousel-prev aria-label="Previous photo">&#10094;</button>
+                    <button type="button" class="facility-carousel-nav facility-carousel-next" data-facility-carousel-next aria-label="Next photo">&#10095;</button>
+                  </div>
+                  <div>
+                    <span>Campus Life</span>
+                    <strong>Uninterrupted Power Supply</strong>
+                    <p>Backup power infrastructure keeping classrooms, labs, and hostels running.</p>
+                  </div>
+                </a>
               </div>
             </article>
           </div>

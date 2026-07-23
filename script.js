@@ -16859,6 +16859,32 @@ const renderCampusLifeGrid = () => {
 
 renderCampusLifeGrid();
 
+// Campus Life page's Campus Facilities cards - each card has several photos for that facility
+// (see pages/campus-life.html), cycled via prev/next instead of a static single image.
+document.querySelectorAll("[data-facility-carousel]").forEach((carousel) => {
+  let photos = [];
+  try {
+    photos = JSON.parse(carousel.dataset.photos || "[]");
+  } catch {
+    photos = [];
+  }
+  if (photos.length <= 1) return;
+  const img = carousel.querySelector("[data-facility-carousel-img]");
+  let index = 0;
+  const show = (nextIndex) => {
+    index = (nextIndex + photos.length) % photos.length;
+    if (img) img.src = photos[index];
+  };
+  carousel.querySelector("[data-facility-carousel-prev]")?.addEventListener("click", (event) => {
+    event.preventDefault();
+    show(index - 1);
+  });
+  carousel.querySelector("[data-facility-carousel-next]")?.addEventListener("click", (event) => {
+    event.preventDefault();
+    show(index + 1);
+  });
+});
+
 const campusSlideManagerBody = document.querySelector("#campusSlideManagerBody");
 const campusSlideTitleInput = document.querySelector("#campusSlideTitleInput");
 const campusSlideDescInput = document.querySelector("#campusSlideDescInput");
