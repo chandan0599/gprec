@@ -3254,7 +3254,28 @@ const getVisibleSpotlightPosters = (placement = "dashboard") => {
 const buildSpotlightPosterPlayer = (container, posters) => {
   if (!container) return;
   container.querySelectorAll("[data-spotlight-poster-carousel]").forEach((el) => el.remove());
-  if (!posters.length) return;
+  if (!posters.length) {
+    // Same card shell/footprint as the real carousel (no layout jump once a poster is added)
+    // instead of the widget just silently disappearing when there's nothing to show yet.
+    const emptyCard = document.createElement("article");
+    emptyCard.className = "dashboard-poster-carousel-card";
+    emptyCard.setAttribute("data-spotlight-poster-carousel", "true");
+    emptyCard.innerHTML = `
+      <div class="dashboard-poster-carousel-head">
+        <strong>Posters &amp; Ads</strong>
+      </div>
+      <div class="spotlight-poster-player">
+        <div class="spotlight-poster-stage spotlight-poster-stage-empty spotlight-poster-stage-noads">
+          <span class="spotlight-poster-noads-logo-wrap">
+            <img class="spotlight-poster-noads-logo" src="${gprecRootPrefix}gprec-logo-enhanced.png" alt="">
+          </span>
+          <span class="spotlight-poster-noads-text">No ads to show</span>
+        </div>
+      </div>
+    `;
+    container.prepend(emptyCard);
+    return;
+  }
   const card = document.createElement("article");
   card.className = "dashboard-poster-carousel-card";
   card.setAttribute("data-spotlight-poster-carousel", "true");
@@ -9840,6 +9861,10 @@ if (document.querySelector("#notificationList")) {
     activeSlide = (activeSlide + 1) % currentHeroSlides.length;
     currentHeroSlides[activeSlide]?.classList.add("active");
     currentHeroDots[activeSlide]?.classList.add("active");
+    // .hero-dots caps itself to ~4 dots wide and scrolls (see styles.css) so a long slide list
+    // doesn't stretch the pill - without this, the active (orange) dot rotates past the edge of
+    // that window and disappears from view once its slide is more than ~4 slides in.
+    currentHeroDots[activeSlide]?.scrollIntoView({ inline: "nearest", block: "nearest", behavior: "smooth" });
   }, 4200);
 }
 
@@ -26378,6 +26403,74 @@ const saveContactMessages = (messages) => gprecDbPost("/contact-messages", messa
 const getCareerListings = () => getSiteContent("careerListings", []);
 const saveCareerListings = (listings) => saveSiteContent("careerListings", listings);
 
+// pages/academic.html - seeded from the real gprec.ac.in/academics/academic-calendar/ page,
+// which is just a year-by-year list of academic schedule PDFs (the actual semester/exam/holiday
+// dates only exist inside those PDFs, not as structured data on the live page) plus two
+// instruction PDFs. Admin can add/remove years or swap the instruction links via the corresponding
+// admin-dashboard.html panel; the public page re-renders from here, same pattern as Careers.
+const ACADEMIC_CALENDAR_DEFAULT_SCHEDULE = [
+  { id: "seed-2026", year: "2026-2027", pdfUrl: "https://www.gprec.ac.in/academicplanner/ACADEMIC%20SCHEDULE-2026-2027.pdf" },
+  { id: "seed-2025", year: "2025-2026", pdfUrl: "https://www.gprec.ac.in/academicplanner/ACADEMIC%20SCHEDULE-2025-2026.pdf" },
+  { id: "seed-2024", year: "2024-2025", pdfUrl: "https://www.gprec.ac.in/academicplanner/ACADEMIC-SCHEDULE-2024-2025.pdf" },
+  { id: "seed-2023", year: "2023-2024", pdfUrl: "https://www.gprec.ac.in/academicplanner/Academic-schedule-2023-24-oddsem.pdf" },
+  { id: "seed-2022", year: "2022-2023", pdfUrl: "https://www.gprec.ac.in/academicplanner/Academic-Schedules-2022-2023.pdf" },
+  { id: "seed-2021", year: "2021-2022", pdfUrl: "https://www.gprec.ac.in/academicplanner/Academic-schedule-2021-22.pdf" },
+  { id: "seed-2020", year: "2020-2021", pdfUrl: "https://www.gprec.ac.in/academicplanner/Academic-schedule-2020-21.pdf" },
+  { id: "seed-2019", year: "2019-2020", pdfUrl: "https://www.gprec.ac.in/academicplanner/Academic-Schedule-B.Tech%20&%20M.Tech-2019-20.pdf" }
+];
+const getAcademicCalendarContent = () => {
+  const saved = getSiteContent("academicCalendarContent", {});
+  return {
+    schedule: Array.isArray(saved.schedule) ? saved.schedule : ACADEMIC_CALENDAR_DEFAULT_SCHEDULE,
+    instructionsFacultyUrl: saved.instructionsFacultyUrl ?? "https://www.gprec.ac.in/academicplanner/Instructions%20to%20Faculty.pdf",
+    instructionsStudentsUrl: saved.instructionsStudentsUrl ?? "https://www.gprec.ac.in/instructions-to-students/"
+  };
+};
+const saveAcademicCalendarContent = (content) => saveSiteContent("academicCalendarContent", content);
+
+// pages/medals-awards.html - seeded from the real gprec.ac.in/academics/medals-awards/ page.
+// category groups the flat admin-managed list into the same sections that page uses (Gold
+// Medals, Cash Awards, etc.) when rendering publicly, without needing separate CRUD lists per
+// section - same one-flat-list-grouped-by-a-field approach as departmentGallery elsewhere.
+const MEDALS_AWARDS_DEFAULT_LIST = [
+  { id: "seed-1", category: "Gold Medals", title: "Smt. G. Narayanamma Gold Medal", criteria: "College Topper" },
+  { id: "seed-2", category: "Gold Medals", title: "Smt. G. Narayanamma Gold Medal", criteria: "Girls Topper" },
+  { id: "seed-3", category: "Gold Medals", title: "Sri G. Pulla Reddy Gold Medal", criteria: "ECE & EEE branch toppers" },
+  { id: "seed-4", category: "Gold Medals", title: "Sri R.V. Seshacharlu Gold Medal", criteria: "CSE & CE branch toppers" },
+  { id: "seed-5", category: "Gold Medals", title: "Sri G. Pulla Reddy Gold Medal", criteria: "CSIT/IT branch topper" },
+  { id: "seed-6", category: "Gold Medals", title: "Smt. R. Lakshmi Narasamma Gold Medal", criteria: "ME branch topper" },
+  { id: "seed-7", category: "Gold Medals", title: "Sri T. Sridhar Reddy Gold Medal", criteria: "Best outgoing student" },
+  { id: "seed-8", category: "Cash Awards (Branch Toppers)", title: "Class Toppers", criteria: "I, II, III & IV B.Tech, all branches" },
+  { id: "seed-9", category: "Cash Awards (Branch Toppers)", title: "Sri Keshri Prasad Srivatsava Memorial", criteria: "Civil, up to III year" },
+  { id: "seed-10", category: "Cash Awards (Branch Toppers)", title: "Sri Batchu Anata Janardhana Gupta Memorial", criteria: "All branches, up to III year" },
+  { id: "seed-11", category: "Cash Awards (Branch Toppers)", title: "Sri Batchu Ananta Janardhana Gupta Memorial", criteria: "Mechanical, up to III year" },
+  { id: "seed-12", category: "Cash Awards (Branch Toppers)", title: "Sri A.V. Kishore Kumar Memorial", criteria: "ECE, up to II year" },
+  { id: "seed-13", category: "Cash Awards (Branch Toppers)", title: "Late Smt. Bayapu Reddy Lakshmidevi Memorial", criteria: "ME & CE branches" },
+  { id: "seed-14", category: "Cash Awards (Branch Toppers)", title: "Sri Pabbisetty Venkatasubbaiah Memorial", criteria: "CE branch, up to II & III years" },
+  { id: "seed-15", category: "Subject & Performance Awards", title: "Late Sri Rambhat Hosadurg", criteria: "Mathematics" },
+  { id: "seed-16", category: "Subject & Performance Awards", title: "Late Sri B.B. Sinha", criteria: "Surveying" },
+  { id: "seed-17", category: "Subject & Performance Awards", title: "Late Dr. Chinta Ramesh Kumar", criteria: "Physics, I B.Tech" },
+  { id: "seed-18", category: "Subject & Performance Awards", title: "Smt. Chinta Venkata Subbamma", criteria: "Best I year student" },
+  { id: "seed-19", category: "Subject & Performance Awards", title: "Late Smt. P. Lakshmamma", criteria: "ECE II topper" },
+  { id: "seed-20", category: "Subject & Performance Awards", title: "Sri P. Venkata Reddy", criteria: "CSE II topper" },
+  { id: "seed-21", category: "Specialized Awards", title: "Late Chinta Sree Rama Murthy & Chinta Vijaya Lakshmi", criteria: "Best cricketer" },
+  { id: "seed-22", category: "Specialized Awards", title: "Sri Chitna Prathap Reddy", criteria: "Best outgoing sports person" },
+  { id: "seed-23", category: "Specialized Awards", title: "Sri Kartik Tadanki", criteria: "Best coder" },
+  { id: "seed-24", category: "Specialized Awards", title: "1988-92 Batch", criteria: "Best innovative ideas" },
+  { id: "seed-25", category: "Alumni Awards", title: "ME Alumni", criteria: "1991-95 batch" },
+  { id: "seed-26", category: "Alumni Awards", title: "CSE Alumni", criteria: "" },
+  { id: "seed-27", category: "Alumni Awards", title: "ECE Alumni", criteria: "1986-90 batch" },
+  { id: "seed-28", category: "Alumni Awards", title: "Late V. Sarath Chandra Reddy Memorial", criteria: "4 ME students" }
+];
+const getMedalsAwardsContent = () => {
+  const saved = getSiteContent("medalsAwardsContent", {});
+  return {
+    awards: Array.isArray(saved.awards) ? saved.awards : MEDALS_AWARDS_DEFAULT_LIST,
+    eligibilityNote: saved.eligibilityNote ?? "For purpose of awards and Medals aggregate of the marks i.e., the end/university examination marks and the sessional marks put together in all the subjects in first attempt are considered. Improvement marks are not considered."
+  };
+};
+const saveMedalsAwardsContent = (content) => saveSiteContent("medalsAwardsContent", content);
+
 const getContactPageInfo = () => getSiteContent("contactPageInfo", {});
 const saveContactPageInfo = (info) => saveSiteContent("contactPageInfo", info);
 
@@ -29064,6 +29157,64 @@ if (careerListingsContainer) {
     : `<p class="lookup-empty">No open positions right now. Check back soon.</p>`;
 }
 
+const academicCalendarScheduleBody = document.querySelector("#academicCalendarScheduleBody");
+if (academicCalendarScheduleBody) {
+  const calendar = getAcademicCalendarContent();
+  academicCalendarScheduleBody.innerHTML = calendar.schedule.length
+    ? calendar.schedule
+        .map(
+          (row) => `
+            <tr>
+              <td>${escapeHtml(row.year)}</td>
+              <td><a class="notice-download" href="${escapeHtml(row.pdfUrl)}" target="_blank" rel="noreferrer">Download</a></td>
+            </tr>`
+        )
+        .join("")
+    : `<tr><td colspan="2">Academic schedule will be published here soon.</td></tr>`;
+
+  const instructionsBody = document.querySelector("#academicCalendarInstructionsBody");
+  if (instructionsBody) {
+    const rows = [
+      calendar.instructionsFacultyUrl ? { label: "Instructions to Faculty", url: calendar.instructionsFacultyUrl } : null,
+      calendar.instructionsStudentsUrl ? { label: "Instructions to Students", url: calendar.instructionsStudentsUrl } : null
+    ].filter(Boolean);
+    instructionsBody.innerHTML = rows.length
+      ? rows
+          .map(
+            (row) => `
+              <tr>
+                <td>${escapeHtml(row.label)}</td>
+                <td><a class="notice-download" href="${escapeHtml(row.url)}" target="_blank" rel="noreferrer">Open</a></td>
+              </tr>`
+          )
+          .join("")
+      : `<tr><td colspan="2">No instruction documents published yet.</td></tr>`;
+  }
+}
+
+const medalsAwardsSections = document.querySelector("#medalsAwardsSections");
+if (medalsAwardsSections) {
+  const medals = getMedalsAwardsContent();
+  medalsAwardsSections.innerHTML = medals.awards.length
+    ? `
+      <article class="about-panel">
+        <h2 class="about-subheading">Medals &amp; Awards</h2>
+        <div class="disclosure-table-wrap">
+          <table class="disclosure-table">
+            <thead><tr><th>Category</th><th>Award</th><th>Awarded For</th></tr></thead>
+            <tbody>
+              ${medals.awards
+                .map((award) => `<tr><td>${escapeHtml(award.category)}</td><td>${escapeHtml(award.title)}</td><td>${escapeHtml(award.criteria)}</td></tr>`)
+                .join("")}
+            </tbody>
+          </table>
+        </div>
+        <h2 class="about-subheading" style="margin-top:20px;">Eligibility Criteria</h2>
+        <p class="about-justify">${escapeHtml(medals.eligibilityNote)}</p>
+      </article>`
+    : `<p class="lookup-empty">Medals &amp; awards list will be published here soon.</p>`;
+}
+
 const contactAddressText = document.querySelector("#contactAddressText");
 if (contactAddressText) {
   const info = getContactPageInfo();
@@ -29266,6 +29417,135 @@ if (webPageSelect) {
     saveCareerListings(getCareerListings().filter((job) => job.id !== id));
     renderCareerAdmin();
     showFeedToast("Listing removed.");
+  });
+
+  // --- Academic ---
+  const academicInstructionsFacultyInput = document.querySelector("#academicInstructionsFacultyInput");
+  const academicInstructionsStudentsInput = document.querySelector("#academicInstructionsStudentsInput");
+  if (academicInstructionsFacultyInput) {
+    const calendar = getAcademicCalendarContent();
+    academicInstructionsFacultyInput.value = calendar.instructionsFacultyUrl;
+    if (academicInstructionsStudentsInput) academicInstructionsStudentsInput.value = calendar.instructionsStudentsUrl;
+  }
+  document.querySelector("#academicInstructionsSaveButton")?.addEventListener("click", () => {
+    const calendar = getAcademicCalendarContent();
+    calendar.instructionsFacultyUrl = academicInstructionsFacultyInput?.value.trim() || "";
+    calendar.instructionsStudentsUrl = academicInstructionsStudentsInput?.value.trim() || "";
+    saveAcademicCalendarContent(calendar);
+    const feedback = document.querySelector("#academicInstructionsSaveFeedback");
+    if (feedback) { feedback.textContent = "Saved."; feedback.classList.add("success"); }
+  });
+
+  const academicScheduleAdminBody = document.querySelector("#academicCalendarScheduleAdminBody");
+  const academicScheduleAdminEmpty = document.querySelector("#academicCalendarScheduleAdminEmpty");
+  const renderAcademicScheduleAdmin = () => {
+    const calendar = getAcademicCalendarContent();
+    academicScheduleAdminBody.innerHTML = calendar.schedule
+      .map(
+        (row) => `
+          <tr>
+            <td>${escapeHtml(row.year)}</td>
+            <td><a href="${escapeHtml(row.pdfUrl)}" target="_blank" rel="noreferrer">Link</a></td>
+            <td><button type="button" class="icon-btn-delete" data-remove-academic-schedule="${row.id}" aria-label="Remove" title="Remove">${deleteIconSvg}</button></td>
+          </tr>`
+      )
+      .join("");
+    if (academicScheduleAdminEmpty) academicScheduleAdminEmpty.classList.toggle("is-hidden", calendar.schedule.length > 0);
+  };
+  if (academicScheduleAdminBody) renderAcademicScheduleAdmin();
+
+  document.querySelector("#academicScheduleAddButton")?.addEventListener("click", () => {
+    const year = document.querySelector("#academicScheduleYearInput")?.value.trim() || "";
+    const pdfUrl = document.querySelector("#academicSchedulePdfInput")?.value.trim() || "";
+    const feedback = document.querySelector("#academicScheduleAddFeedback");
+    if (!year || !pdfUrl) {
+      if (feedback) { feedback.textContent = "Enter both an academic year and a PDF link."; feedback.classList.remove("success"); }
+      return;
+    }
+    const calendar = getAcademicCalendarContent();
+    calendar.schedule.unshift({ id: Date.now(), year, pdfUrl });
+    saveAcademicCalendarContent(calendar);
+    renderAcademicScheduleAdmin();
+    ["#academicScheduleYearInput", "#academicSchedulePdfInput"].forEach((sel) => {
+      const field = document.querySelector(sel);
+      if (field) field.value = "";
+    });
+    if (feedback) { feedback.textContent = "Year added."; feedback.classList.add("success"); }
+  });
+
+  academicScheduleAdminBody?.addEventListener("click", (event) => {
+    const button = event.target.closest("[data-remove-academic-schedule]");
+    if (!button) return;
+    // Seed rows use string ids ("seed-2026"), admin-added ones use Date.now() (numeric) - compare
+    // as strings so both kinds actually match instead of numeric coercion turning seed ids into
+    // NaN (which never equals anything, silently making seed rows impossible to remove).
+    const id = button.dataset.removeAcademicSchedule;
+    const calendar = getAcademicCalendarContent();
+    calendar.schedule = calendar.schedule.filter((row) => String(row.id) !== id);
+    saveAcademicCalendarContent(calendar);
+    renderAcademicScheduleAdmin();
+    showFeedToast("Year removed.");
+  });
+
+  // --- Medals & Awards ---
+  const medalsEligibilityInput = document.querySelector("#medalsEligibilityInput");
+  if (medalsEligibilityInput) medalsEligibilityInput.value = getMedalsAwardsContent().eligibilityNote;
+  document.querySelector("#medalsEligibilitySaveButton")?.addEventListener("click", () => {
+    const medals = getMedalsAwardsContent();
+    medals.eligibilityNote = medalsEligibilityInput?.value.trim() || "";
+    saveMedalsAwardsContent(medals);
+    const feedback = document.querySelector("#medalsEligibilitySaveFeedback");
+    if (feedback) { feedback.textContent = "Saved."; feedback.classList.add("success"); }
+  });
+
+  const medalsAdminBody = document.querySelector("#medalsAdminBody");
+  const medalsAdminEmpty = document.querySelector("#medalsAdminEmpty");
+  const renderMedalsAdmin = () => {
+    const medals = getMedalsAwardsContent();
+    medalsAdminBody.innerHTML = medals.awards
+      .map(
+        (award) => `
+          <tr>
+            <td>${escapeHtml(award.category)}</td>
+            <td>${escapeHtml(award.title)}</td>
+            <td>${escapeHtml(award.criteria)}</td>
+            <td><button type="button" class="icon-btn-delete" data-remove-medal="${award.id}" aria-label="Remove" title="Remove">${deleteIconSvg}</button></td>
+          </tr>`
+      )
+      .join("");
+    if (medalsAdminEmpty) medalsAdminEmpty.classList.toggle("is-hidden", medals.awards.length > 0);
+  };
+  if (medalsAdminBody) renderMedalsAdmin();
+
+  document.querySelector("#medalAddButton")?.addEventListener("click", () => {
+    const category = document.querySelector("#medalCategoryInput")?.value.trim() || "";
+    const title = document.querySelector("#medalTitleInput")?.value.trim() || "";
+    const criteria = document.querySelector("#medalCriteriaInput")?.value.trim() || "";
+    const feedback = document.querySelector("#medalAddFeedback");
+    if (!category || !title) {
+      if (feedback) { feedback.textContent = "Enter at least a category and an award name."; feedback.classList.remove("success"); }
+      return;
+    }
+    const medals = getMedalsAwardsContent();
+    medals.awards.push({ id: Date.now(), category, title, criteria });
+    saveMedalsAwardsContent(medals);
+    renderMedalsAdmin();
+    ["#medalCategoryInput", "#medalTitleInput", "#medalCriteriaInput"].forEach((sel) => {
+      const field = document.querySelector(sel);
+      if (field) field.value = "";
+    });
+    if (feedback) { feedback.textContent = "Award added."; feedback.classList.add("success"); }
+  });
+
+  medalsAdminBody?.addEventListener("click", (event) => {
+    const button = event.target.closest("[data-remove-medal]");
+    if (!button) return;
+    const id = button.dataset.removeMedal;
+    const medals = getMedalsAwardsContent();
+    medals.awards = medals.awards.filter((award) => String(award.id) !== id);
+    saveMedalsAwardsContent(medals);
+    renderMedalsAdmin();
+    showFeedToast("Award removed.");
   });
 
   // --- Departments (nav menu) ---

@@ -751,6 +751,7 @@
             <div><p class="eyebrow">Web Page Content</p><h2>Edit content on the public About Us, Careers, Contact Us, Mandatory Disclosures, Idea Lab, and R&amp;D pages.</h2></div>
             <select class="admin-select" id="webPageSelect">
               <option value="about-us">About Us</option>
+              <option value="academic-calendar">Academic</option>
               <option value="admissions">Admissions</option>
               <option value="careers">Careers</option>
               <option value="contact-us">Contact Us</option>
@@ -954,6 +955,58 @@
                 <tbody id="careerAdminBody"></tbody>
               </table>
               <p class="lookup-empty" id="careerAdminEmpty">No listings yet.</p>
+            </div>
+          </div>
+
+          <div class="web-page-section" data-web-page="academic-calendar">
+            <article class="admin-card admin-form-card">
+              <h3>Add Academic Schedule Year</h3>
+              <div class="admin-add-grid">
+                <label>Academic Year<input type="text" id="academicScheduleYearInput" placeholder="e.g. 2027-2028"></label>
+                <label>PDF URL<input type="text" id="academicSchedulePdfInput" placeholder="Link to the schedule PDF"></label>
+              </div>
+              <button type="button" id="academicScheduleAddButton">Add Year</button>
+              <p class="admin-add-feedback" id="academicScheduleAddFeedback" aria-live="polite"></p>
+            </article>
+            <div class="admin-table-card">
+              <table>
+                <thead><tr><th>Academic Year</th><th>PDF</th><th></th></tr></thead>
+                <tbody id="academicCalendarScheduleAdminBody"></tbody>
+              </table>
+              <p class="lookup-empty" id="academicCalendarScheduleAdminEmpty">No academic years added yet.</p>
+            </div>
+
+            <article class="admin-card admin-form-card">
+              <h3>Instructions</h3>
+              <label>Instructions to Faculty (PDF URL)<input type="text" id="academicInstructionsFacultyInput" placeholder="Link to instructions for faculty"></label>
+              <label>Instructions to Students (URL)<input type="text" id="academicInstructionsStudentsInput" placeholder="Link to instructions for students"></label>
+              <button type="button" id="academicInstructionsSaveButton">Save</button>
+              <p class="admin-add-feedback" id="academicInstructionsSaveFeedback" aria-live="polite"></p>
+            </article>
+
+            <article class="admin-card admin-form-card">
+              <h3>Medals &amp; Awards Eligibility Criteria</h3>
+              <label>Note<textarea id="medalsEligibilityInput"></textarea></label>
+              <button type="button" id="medalsEligibilitySaveButton">Save</button>
+              <p class="admin-add-feedback" id="medalsEligibilitySaveFeedback" aria-live="polite"></p>
+            </article>
+
+            <article class="admin-card admin-form-card">
+              <h3>Add Medal / Award</h3>
+              <div class="admin-add-grid">
+                <label>Category<input type="text" id="medalCategoryInput" placeholder="e.g. Gold Medals"></label>
+                <label>Award / Medal<input type="text" id="medalTitleInput" placeholder="e.g. Sri G. Pulla Reddy Gold Medal"></label>
+                <label>Awarded For<input type="text" id="medalCriteriaInput" placeholder="e.g. ECE & EEE branch toppers"></label>
+              </div>
+              <button type="button" id="medalAddButton">Add Award</button>
+              <p class="admin-add-feedback" id="medalAddFeedback" aria-live="polite"></p>
+            </article>
+            <div class="admin-table-card">
+              <table>
+                <thead><tr><th>Category</th><th>Award / Medal</th><th>Awarded For</th><th></th></tr></thead>
+                <tbody id="medalsAdminBody"></tbody>
+              </table>
+              <p class="lookup-empty" id="medalsAdminEmpty">No medals/awards added yet.</p>
             </div>
           </div>
 

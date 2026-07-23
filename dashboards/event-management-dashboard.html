@@ -240,6 +240,7 @@
             </div>
             <button type="button" id="visitorZoneMapSettingsSaveButton">Save Map Settings</button>
             <button type="button" id="visitorZoneMapHdDownloadButton">Download HD Image</button>
+            <div class="subject-progress-bar" id="visitorZoneMapHdProgressBar" hidden><span id="visitorZoneMapHdProgressFill"></span></div>
             <p class="admin-add-feedback" id="visitorZoneMapSettingsFeedback" aria-live="polite"></p>
             <div class="zone-map-print-preview" id="visitorZoneMapPrintPreview" aria-label="Actual SDK zone map preview"></div>
 
@@ -469,6 +470,12 @@
             links.forEach((link) => {
               link.classList.toggle("active", link.getAttribute("href") === `#${targetId}`);
             });
+            // Anything constructed while its own tab was hidden (currently just the Zone Map SDK
+            // preview - see wireVisitorZoneMapSettings) needs a nudge once it's actually visible,
+            // since display:none gave it a near-zero size to lay out against at init time.
+            if (targetId === "zoneMapSection" && typeof window.refreshAdminZoneSdkPreviewOnShow === "function") {
+              window.refreshAdminZoneSdkPreviewOnShow();
+            }
           };
           links.forEach((link) => {
             link.addEventListener("click", (event) => {
@@ -1023,7 +1030,7 @@
               if (pinsEl) {
                 pinsEl.innerHTML = points.map((point) => `
                   <button type="button" class="visitor-zone-pin visitor-zone-pin-${escapeHtmlSafe(point.status)}" style="--zone-color:${escapeHtmlSafe(point.color)}" data-admin-zone-key="${escapeHtmlSafe(point.key)}" aria-label="${escapeHtmlSafe(point.title)}">
-                    ${["live", "soon", "theatre"].includes(point.status) ? '<span class="visitor-zone-pin-pulse"></span>' : ""}
+                    <span class="visitor-zone-pin-pulse"></span>
                     <span class="visitor-zone-pin-dot">${escapeHtmlSafe(point.label)}</span>
                   </button>
                 `).join("");
@@ -1256,7 +1263,14 @@
                   line-height: normal;
                 }
                 .zone-export-stage, .zone-export-stage * { box-sizing: border-box; }
-                .zone-export-map { position: absolute; inset: 0; }
+                /* Not "position:absolute;inset:0" - the Mappls SDK's own stylesheet (injected by
+                   the deferred SDK <script> below, so it lands in <head> after this block) sets
+                   ".mapboxgl-map { position: relative }" on this same element via a same-
+                   specificity class selector and wins the cascade by coming later, silently
+                   cancelling the position:absolute this inset:0 depends on - the map then
+                   collapses to an auto content height (~168px) instead of filling the stage.
+                   width/height:100% has no such dependency on the position value. */
+                #zoneExportMap.zone-export-map { position: relative; width: 100%; height: 100%; }
                 .zone-export-map canvas,
                 .zone-export-map img,
                 .zone-export-map .maplibregl-canvas,
@@ -1316,7 +1330,8 @@
                   border: 3px solid rgba(255, 255, 255, 0.95);
                   border-radius: 50%;
                   background: var(--zone-color);
-                  box-shadow: 0 0 0 12px var(--zone-halo), 0 14px 28px rgba(0, 0, 0, 0.22);
+                  color: #ffffff;
+                  box-shadow: 0 14px 28px rgba(0, 0, 0, 0.22);
                   font: 950 15px/1 "Courier New", monospace;
                 }
                 .zone-export-pin-dot::after {
@@ -1514,18 +1529,53 @@
               recordActivity("Updated visitor zone map settings", "College Fest");
               renderPrintableZoneMap();
             });
+            const hdProgressBar = document.querySelector("#visitorZoneMapHdProgressBar");
+            const hdProgressFill = document.querySelector("#visitorZoneMapHdProgressFill");
+            let hdProgressTimer = null;
+            const setHdProgress = (percent) => {
+              if (hdProgressFill) hdProgressFill.style.width = `${Math.max(0, Math.min(100, percent))}%`;
+            };
+            // There's no real byte-progress to report for either export path (a single fetch to
+            // the local render server, or a single html2canvas pass) - this creeps the bar toward
+            // 90% so it reads as "working" for however long that turns out to take, then
+            // finishHdProgress snaps it to 100% the instant the browser download actually fires.
+            const startHdProgress = () => {
+              if (!hdProgressBar) return;
+              clearInterval(hdProgressTimer);
+              hdProgressBar.hidden = false;
+              let current = 4;
+              setHdProgress(current);
+              hdProgressTimer = setInterval(() => {
+                current += (90 - current) * 0.08 + 0.4;
+                setHdProgress(current);
+              }, 180);
+            };
+            const finishHdProgress = (success) => {
+              clearInterval(hdProgressTimer);
+              hdProgressTimer = null;
+              if (!hdProgressBar) return;
+              setHdProgress(success ? 100 : 0);
+              setTimeout(() => {
+                hdProgressBar.hidden = true;
+                setHdProgress(0);
+              }, success ? 500 : 0);
+            };
             hdDownloadButton?.addEventListener("click", async () => {
-              const downloadCanvas = (canvas) => {
+              const downloadCanvas = (canvas) => new Promise((resolve) => {
                 canvas.toBlob((pngBlob) => {
-                  if (!pngBlob) return;
+                  if (!pngBlob) {
+                    resolve(false);
+                    return;
+                  }
                   const link = document.createElement("a");
                   link.href = URL.createObjectURL(pngBlob);
                   link.download = "gprec-zone-map-display-hd.png";
                   link.click();
                   URL.revokeObjectURL(link.href);
                   recordActivity("Downloaded visitor zone display map HD image", "College Fest");
+                  resolve(true);
                 }, "image/png", 1);
-              };
+              });
               const stage = document.querySelector(".admin-zone-sdk-stage");
               if (!stage) {
                 if (feedback) {
@@ -1534,39 +1584,61 @@
                 }
                 return;
               }
-              if (typeof renderA4DocViaNativePng === "function") {
-                const exportDocument = buildAdminZoneSdkExportDocument();
-                const nativePng = await renderA4DocViaNativePng(
-                  exportDocument.html,
-                  exportDocument.css,
-                  ".zone-export-stage",
-                  1600,
-                  1.6,
-                  { waitForSelector: ".zone-export-stage.is-ready", waitMs: 12000, timeoutMs: 18000 }
-                );
-                if (nativePng) {
-                  const link = document.createElement("a");
-                  link.href = URL.createObjectURL(nativePng);
-                  link.download = "gprec-zone-map-display-hd.png";
-                  link.click();
-                  URL.revokeObjectURL(link.href);
-                  recordActivity("Downloaded visitor zone display map HD image", "College Fest");
+              hdDownloadButton.disabled = true;
+              startHdProgress();
+              try {
+                if (typeof renderA4DocViaNativePng === "function") {
+                  const exportDocument = buildAdminZoneSdkExportDocument();
+                  const nativePng = await renderA4DocViaNativePng(
+                    exportDocument.html,
+                    exportDocument.css,
+                    ".zone-export-stage",
+                    1600,
+                    1.6,
+                    { waitForSelector: ".zone-export-stage.is-ready", waitMs: 12000, timeoutMs: 18000 }
+                  );
+                  if (nativePng) {
+                    const link = document.createElement("a");
+                    link.href = URL.createObjectURL(nativePng);
+                    link.download = "gprec-zone-map-display-hd.png";
+                    link.click();
+                    URL.revokeObjectURL(link.href);
+                    recordActivity("Downloaded visitor zone display map HD image", "College Fest");
+                    finishHdProgress(true);
+                    return;
+                  }
+                }
+                if (typeof html2canvas !== "function") {
+                  if (feedback) {
+                    feedback.textContent = "Could not generate the HD image. Start the local render server and try again.";
+                    feedback.classList.remove("success");
+                  }
+                  finishHdProgress(false);
                   return;
                 }
-              }
-              if (typeof html2canvas !== "function") {
-                if (feedback) {
-                  feedback.textContent = "Could not generate the HD image. Start the local render server and try again.";
-                  feedback.classList.remove("success");
-                }
-                return;
-              }
-              try {
                 try { adminZoneMapInstance?.resize?.(); } catch (error) {}
+                fitAdminZoneBannerView();
                 if (typeof hideMapSdkAttribution === "function") hideMapSdkAttribution();
                 renderAdminZoneMapOverlays();
                 positionAdminZoneMapLabels();
                 stage.classList.add("is-exporting");
+                // resize()/fitBounds() above only kick off a re-render - the WebGL map needs time
+                // to actually fetch and paint tiles for the newly-visible area before a screenshot
+                // is safe, otherwise the capture grabs a half-painted canvas (crisp map up top,
+                // blank/background-colored the rest of the way down). "idle" fires once the map has
+                // finished loading and rendering; the timeout is a fallback in case that event never
+                // fires (older SDK build, error, etc).
+                await new Promise((resolve) => {
+                  let settled = false;
+                  const finish = () => {
+                    if (settled) return;
+                    settled = true;
+                    resolve();
+                  };
+                  try { adminZoneMapInstance?.addListener?.("idle", finish); } catch (error) {}
+                  setTimeout(finish, 1200);
+                });
+                positionAdminZoneMapLabels();
                 await new Promise((resolve) => requestAnimationFrame(() => requestAnimationFrame(resolve)));
                 const canvas = await html2canvas(stage, {
                   scale: 2,
@@ -1579,19 +1651,39 @@
                   windowHeight: Math.max(document.documentElement.clientHeight, stage.offsetHeight),
                   logging: false
                 });
-                downloadCanvas(canvas);
+                const downloaded = await downloadCanvas(canvas);
+                finishHdProgress(downloaded);
               } catch (error) {
                 if (feedback) {
                   feedback.textContent = "Could not generate the HD image. Please try again.";
                   feedback.classList.remove("success");
                 }
+                finishHdProgress(false);
               } finally {
                 stage.classList.remove("is-exporting");
+                hdDownloadButton.disabled = false;
               }
             });
             window.addEventListener("visitorZoneMapChanged", () => {
               renderPrintableZoneMap();
             });
+            // The Zone Map card is constructed while its "Zone Map" nav tab is hidden (the
+            // default active tab is "Fest Settings" - see wireSectionSwitcher's showSection
+            // above), so mappls.Map() locks its canvas in at the container's near-zero hidden
+            // size. Entering fullscreen already forces a resize + refit (syncAdminZoneFullscreen),
+            // which is why that view renders correctly; the plain in-tab view never got the same
+            // nudge when the tab itself becomes visible. wireSectionSwitcher calls this by name
+            // once the Zone Map tab is actually shown.
+            window.refreshAdminZoneSdkPreviewOnShow = () => {
+              try { adminZoneMapInstance?.resize?.(); } catch (error) {}
+              fitAdminZoneBannerView();
+              positionAdminZoneMapLabels();
+              setTimeout(() => {
+                try { adminZoneMapInstance?.resize?.(); } catch (error) {}
+                fitAdminZoneBannerView();
+                positionAdminZoneMapLabels();
+              }, 220);
+            };
             renderPrintableZoneMap();
           };
           wireVisitorZoneMapSettings();
