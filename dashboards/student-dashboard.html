@@ -26,15 +26,31 @@
         </div>
         <div class="notification-bell-wrap app-drawer-wrap is-hidden">
           <button type="button" class="notification-bell app-drawer-button" id="appDrawerButton" aria-label="Apps">
-            <svg viewBox="0 0 24 24" aria-hidden="true"><rect class="app-switcher-frame" x="4.5" y="4.5" width="15" height="15" rx="4.5"/><path class="app-switcher-dots" d="M9 9h.01M15 9h.01M9 15h.01M15 15h.01"/><path class="app-switcher-spark" d="M18.5 5.5v3M17 7h3"/></svg>
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path class="app-switcher-dots" d="M6 6h.01M12 6h.01M18 6h.01M6 12h.01M12 12h.01M18 12h.01M6 18h.01M12 18h.01M18 18h.01"/></svg>
           </button>
           <div class="notification-dropdown app-drawer-dropdown is-hidden" id="appDrawerDropdown">
-            <div class="notification-dropdown-head">Apps</div>
-            <a class="app-drawer-link" href="event-management-dashboard.html">
-              <span class="app-drawer-link-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 3v4M17 3v4M4 8h16M5 5h14a1 1 0 0 1 1 1v14H4V6a1 1 0 0 1 1-1Z"/><path d="M8 12h3M8 16h8"/></svg></span>
-              <span class="app-drawer-link-copy"><strong>Event Manager</strong><small>Fest activities & posters</small></span>
-              <span class="app-drawer-link-arrow" aria-hidden="true">›</span>
-            </a>
+            <div class="notification-dropdown-head">
+              <span>Apps</span>
+            </div>
+            <p class="app-drawer-section-label">College apps</p>
+            <div class="app-drawer-grid">
+              <a class="app-drawer-tile" href="event-management-dashboard.html">
+                <span class="app-drawer-tile-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 3v4M17 3v4M4 8h16M5 5h14a1 1 0 0 1 1 1v14H4V6a1 1 0 0 1 1-1Z"/><path d="M8 12h3M8 16h8"/></svg></span>
+                <span class="app-drawer-tile-label">Event Manager</span>
+              </a>
+            </div>
+            <p class="app-drawer-section-label">
+              <span>Your apps</span>
+              <button type="button" class="app-drawer-add-toggle" id="appDrawerAddToggle" aria-label="Add app link" aria-expanded="false">+</button>
+            </p>
+            <div class="app-drawer-grid">
+              <div id="appDrawerCustomLinks" class="app-drawer-grid-fragment"></div>
+            </div>
+            <form class="app-drawer-add-link-form is-hidden" id="appDrawerAddLinkForm">
+              <input type="text" id="appDrawerLinkName" placeholder="App name" maxlength="40" required>
+              <input type="text" id="appDrawerLinkUrl" placeholder="Link (e.g. drive.google.com/...)" required>
+              <button type="submit">Save</button>
+            </form>
           </div>
         </div>
         <div class="student-user-menu">

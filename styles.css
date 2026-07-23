@@ -3060,11 +3060,23 @@ a {
   border-radius: 999px;
   background: rgba(4, 40, 74, 0.38);
   backdrop-filter: blur(10px);
+  /* Admin can add slides without limit (home hero manager, About Us history gallery) - without a
+     cap this row just keeps growing wider with every dot, eventually overrunning the hero image.
+     Capped to ~4 dots' width (3 regular @10px + 1 active @28px + gaps + padding) + scrollable
+     keeps it a fixed-size control no matter how many slides exist. */
+  max-width: min(60%, 98px);
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+
+.hero-dots::-webkit-scrollbar {
+  display: none;
 }
 
 .hero-dots span {
   width: 10px;
   height: 10px;
+  flex-shrink: 0;
   border: 1px solid rgba(255, 255, 255, 0.96);
   border-radius: 999px;
   background: rgba(255, 255, 255, 0.52);
@@ -10895,7 +10907,7 @@ img.student-user-avatar {
   height: 260px;
   overflow: hidden;
   border: 6px solid var(--navy);
-  border-radius: 999px !important;
+  border-radius: 10px;
   box-shadow: 0 16px 34px rgba(4, 40, 74, 0.22);
 }
 
@@ -23350,8 +23362,8 @@ button.calendar-cell-event {
   position: absolute;
   left: 50%;
   top: 50%;
-  width: 56px;
-  height: 64px;
+  width: 50px;
+  height: 58px;
   margin: 0;
   padding: 0;
   border: 0;
@@ -23372,18 +23384,18 @@ button.calendar-cell-event {
   position: relative;
   z-index: 2;
   display: grid;
-  width: 48px;
-  height: 48px;
+  width: 42px;
+  height: 42px;
   margin: 0 auto;
   place-items: center;
   border: 3px solid rgba(255, 255, 255, 0.92);
   border-radius: 50%;
-  color: #071024;
+  color: #ffffff;
   background: var(--zone-color, #FFB15C);
   box-shadow:
-    0 0 0 12px color-mix(in srgb, var(--zone-color, #FFB15C) 18%, transparent),
+    0 0 0 10px color-mix(in srgb, var(--zone-color, #FFB15C) 18%, transparent),
     0 14px 28px rgba(0, 0, 0, 0.24);
-  font: 950 0.9rem/1 "Courier New", monospace;
+  font: 950 0.8rem/1 "Courier New", monospace;
 }
 
 .event-visitor-page.admin-dashboard-page .visitor-zone-pin-dot::after {
@@ -23393,22 +23405,16 @@ button.calendar-cell-event {
   width: 0;
   height: 0;
   content: "";
-  border-top: 14px solid var(--zone-color, #FFB15C);
-  border-right: 10px solid transparent;
-  border-left: 10px solid transparent;
+  border-top: 12px solid var(--zone-color, #FFB15C);
+  border-right: 9px solid transparent;
+  border-left: 9px solid transparent;
   transform: translateX(-50%);
 }
 
 .event-visitor-page.admin-dashboard-page .visitor-zone-pin-pulse {
-  position: absolute;
-  left: 50%;
-  top: 24px;
-  width: 74px;
-  height: 74px;
-  border-radius: 50%;
-  background: color-mix(in srgb, var(--zone-color, #FFB15C) 26%, transparent);
-  transform: translate(-50%, -50%);
-  animation: visitor-zone-pulse 1.9s ease-out infinite;
+  /* Glow is admin-preview-only (see .admin-zone-sdk-stage .visitor-zone-pin-pulse below) - the
+     visitor-facing map keeps the markup (JS still renders the span) but doesn't show it. */
+  display: none;
 }
 
 .event-visitor-page.admin-dashboard-page .visitor-zone-pin-card {
@@ -23788,6 +23794,18 @@ button.calendar-cell-event {
    map never becomes visible even though the SDK initializes without error. */
 .zone-map-print-preview {
   margin-top: 16px;
+  /* Both this and #zoneMapSection below are implicit CSS Grid items (the admin-panel/admin-card
+     nesting uses display:grid) with the default min-width:auto, which lets a fixed-pixel
+     descendant force them wider than their own track instead of shrinking to fit it. The map's
+     WebGL canvas gets a fixed inline "width: <n>px" from mappls' own resize() (needed for correct
+     devicePixelRatio rasterization), and while exiting fullscreen that pixel value can briefly be
+     the fullscreen-sized one - without min-width:0 that alone was enough to blow this card and
+     the whole admin-card out to ~1600px wide and never shrink back, pushing the sidebar mostly
+     off-screen (the "sidebar becomes a sliver" bug after closing the Zone Map fullscreen view). */
+  min-width: 0;
+}
+#zoneMapSection {
+  min-width: 0;
 }
 
 .admin-zone-sdk-stage {
@@ -23806,6 +23824,10 @@ button.calendar-cell-event {
 .admin-zone-sdk-stage.is-exporting *::after {
   animation: none !important;
   transition: none !important;
+}
+
+.admin-zone-sdk-stage.is-exporting .visitor-zone-pin-pulse {
+  display: none !important;
 }
 
 .admin-zone-sdk-map {
@@ -23828,8 +23850,8 @@ button.calendar-cell-event {
   position: absolute;
   left: 50%;
   top: 50%;
-  width: 56px;
-  height: 64px;
+  width: 50px;
+  height: 58px;
   margin: 0;
   padding: 0;
   border: 0;
@@ -23846,18 +23868,18 @@ button.calendar-cell-event {
   position: relative;
   z-index: 2;
   display: grid;
-  width: 48px;
-  height: 48px;
+  width: 42px;
+  height: 42px;
   margin: 0 auto;
   place-items: center;
   border: 3px solid rgba(255, 255, 255, 0.92);
   border-radius: 50%;
-  color: #071024;
+  color: #ffffff;
   background: var(--zone-color, #FFB15C);
-  box-shadow:
-    0 0 0 12px color-mix(in srgb, var(--zone-color, #FFB15C) 18%, transparent),
-    0 14px 28px rgba(0, 0, 0, 0.24);
-  font-size: 0.9rem;
+  /* No static halo ring here on purpose - .visitor-zone-pin-pulse below is the only circle,
+     animating outward and fading (visitor-zone-pulse keyframes) instead of sitting fixed. */
+  box-shadow: 0 14px 28px rgba(0, 0, 0, 0.24);
+  font-size: 0.8rem;
 }
 
 .admin-zone-sdk-stage .visitor-zone-pin-dot::after {
@@ -23867,29 +23889,32 @@ button.calendar-cell-event {
   width: 0;
   height: 0;
   content: "";
-  border-top: 14px solid var(--zone-color, #FFB15C);
-  border-right: 10px solid transparent;
-  border-left: 10px solid transparent;
+  border-top: 12px solid var(--zone-color, #FFB15C);
+  border-right: 9px solid transparent;
+  border-left: 9px solid transparent;
   transform: translateX(-50%);
 }
 
 .admin-zone-sdk-stage .visitor-zone-pin-pulse {
   position: absolute;
   left: 50%;
-  top: 24px;
+  top: 21px;
   display: block;
-  width: 60px;
-  height: 60px;
+  width: 54px;
+  height: 54px;
   border-radius: 50%;
-  background: color-mix(in srgb, var(--zone-color, #FFB15C) 18%, transparent);
+  /* 18% alpha here compounded with the keyframes' own opacity (peaks at 0.55, fading to 0) left
+     the ring at under ~10% effective visibility - unreadable against a busy satellite map. 45%
+     keeps it a fill (not an outline) but the animation actually reads now. */
+  background: color-mix(in srgb, var(--zone-color, #FFB15C) 45%, transparent);
   transform: translate(-50%, -50%);
   animation: visitor-zone-pulse 2.2s ease-out infinite;
 }
 
 .admin-zone-sdk-stage .visitor-zone-pin-seating .visitor-zone-pin-dot,
 .admin-zone-sdk-stage .visitor-zone-pin-theatre .visitor-zone-pin-dot {
-  width: 48px;
-  height: 48px;
+  width: 42px;
+  height: 42px;
   font-size: 0.58rem;
 }
 

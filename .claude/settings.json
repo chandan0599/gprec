@@ -5,7 +5,8 @@
       "Read(//private/tmp/**)",
       "Bash(python3)",
       "Bash(awk 'NR==1079,0' dashboards/admin-dashboard.html)",
-      "Bash(grep -n \"^          </div>$\")"
+      "Bash(grep -n \"^          </div>$\")",
+      "Bash(python3 -c ' *)"
     ]
   }
 }
