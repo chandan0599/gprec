@@ -9,7 +9,8 @@
       "Bash(python3 -c ' *)",
       "Bash(grep -n \"^renderAboutHistoryGallery\\(\\);$\\\\|^const aboutHistoryManagerBody\" script.js)",
       "Bash(sed -n '1827,2171p' /tmp/diff_c8_96_script.diff | grep -n \"^@@\\\\|^ const \\\\|^ }\" | head -20)",
-      "Bash(grep -n \"qrText: \\\\`GPREC Vehicle Pass\\\\|qrText: \\\\`GPREC Bus Pass\" script.js)"
+      "Bash(grep -n \"qrText: \\\\`GPREC Vehicle Pass\\\\|qrText: \\\\`GPREC Bus Pass\" script.js)",
+      "Bash(cd /Users/lakkavaramsaichandan/gprec.ac.in *)"
     ]
   }
 }

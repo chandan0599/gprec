@@ -14931,6 +14931,56 @@ img.alumni-post-avatar {
   color: #ffc36f;
 }
 
+.footer-contact-row {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  margin-bottom: 10px;
+}
+
+.footer-contact-icon {
+  position: relative;
+  flex: 0 0 24px;
+  width: 24px;
+  height: 24px;
+  overflow: hidden;
+  border-radius: 999px;
+  background: var(--orange);
+}
+
+.footer-contact-icon svg {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 12px;
+  height: 12px;
+  margin: -6px 0 0 -6px;
+  stroke: var(--navy);
+  stroke-width: 2;
+  fill: none;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.footer-contact-row div {
+  min-width: 0;
+}
+
+.footer-contact-row span {
+  display: block;
+  color: rgba(255, 255, 255, 0.78);
+  font-size: 0.9rem;
+  line-height: 1.4;
+}
+
+.footer-contact-row a {
+  display: block;
+  padding: 0;
+  color: #ffc36f;
+  font-size: 0.9rem;
+  line-height: 1.5;
+}
+
 .social-links {
   display: flex;
   flex-wrap: wrap;
