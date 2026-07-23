@@ -16790,7 +16790,7 @@ const getCampusLifeSlides = () => getSiteContent("campusLifeSlides", [
     id: "demo-campus-library",
     title: "Academic Amenities",
     description: "Library and learning resources for students and faculty.",
-    link: "https://www.gprec.ac.in/campus-life/libraries/",
+    link: "#library",
     photoDataUrl: "https://www.gprec.ac.in/wp-content/uploads/2019/04/library.jpg"
   },
   {
@@ -16824,9 +16824,11 @@ const renderCampusLifeGrid = () => {
   campusLifeGrid.innerHTML = getCampusLifeSlides()
     .map(
       // an <a> with no href is not a real link (no navigation, not focusable) - used here so
-      // cards without a page link still get the same card styling as ones that have one
+      // cards without a page link still get the same card styling as ones that have one.
+      // In-page anchors (e.g. "#library", linking to a section further down this same page)
+      // navigate normally instead of opening a same-page duplicate in a new tab.
       (slide) => `
-        <a ${slide.link ? `href="${slide.link}" target="_blank" rel="noreferrer"` : ""}>
+        <a ${slide.link ? `href="${slide.link}"${slide.link.startsWith("#") ? "" : ` target="_blank" rel="noreferrer"`}` : ""}>
           <img src="${slide.photoDataUrl}" alt="${slide.title}">
           <div>
             <span>Campus Life</span>
