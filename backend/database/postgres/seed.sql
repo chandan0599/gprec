@@ -140,6 +140,15 @@ INSERT INTO hostel_allocations (student_roll_no, hostel_name, block_name, room_n
   ('20X51A0553', 'Boys Hostel', 'B Block', 'B-220', '2', 'Regular plan')
 ON CONFLICT (student_roll_no) DO NOTHING;
 
+-- Real routes from gprec.ac.in/campus-life/transportation/ - that page's overview text says
+-- "6 buses" run, but only lists 4 named routes; only what's documented is seeded here, no
+-- bus_number/driver_name (buses table) since those aren't published and would be fabricated.
+INSERT INTO bus_routes (route_name, stops) VALUES
+  ('Route 1 - Bellary Chowrasta', 'B. Chowrasta, Sasya Motors, Chenamma Circle, Krishna Nagar, Abbas Nagar, Register Office, Gooty Pet. Bunk, Birla Gate, College'),
+  ('Route 2 - Pump House', 'HP Petrol Bunk (VR Colony), Road No. 4, BP Petrol Bunk, Pump House, Sitaram Nagar, Indira Gandhi Nagar, Market Yard, Bangar Peta, College'),
+  ('Route 3 - Old Bus-Stand', 'Head Post Office, Control Room, Kids World, Rajvihar, Medical College, Collectorate, Deva Nagar, M.S. Nagar, College'),
+  ('Route 4 - N.R. Peta', 'N.R. Peta, Apollo, SBI-Main Branch, RS-Road, C-Camp, Shakuntala Kala Mandir, Amma Hospital, College');
+
 INSERT INTO complaints (student_roll_no, category, subject, description, status) VALUES
   ('20X51A0501', 'Hostel', 'Fan repair', 'Ceiling fan in the room is not working.', 'Pending'),
   ('20X51A0505', 'Hostel', 'Water supply', 'Low water pressure in the washroom.', 'Pending');
