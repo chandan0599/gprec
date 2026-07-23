@@ -22,7 +22,13 @@ from playwright.sync_api import sync_playwright
 HOST = "0.0.0.0"
 PORT = 8767
 # Same allowed-origins convention as portal_db_server.py.
-ALLOWED_ORIGINS = {"http://127.0.0.1:8080", "http://localhost:8080", "http://192.168.1.17:8080"}
+ALLOWED_ORIGINS = {
+    "http://127.0.0.1:8080",
+    "http://localhost:8080",
+    "http://192.168.1.17:8080",
+    "http://127.0.0.1:8766",
+    "http://localhost:8766",
+}
 
 app = Flask(__name__)
 
@@ -105,6 +111,8 @@ def render_png():
     width = int(data.get("width", 420))
     scale = float(data.get("scale", 2.4))
     root_selector = data.get("rootSelector", ".ts-card")
+    wait_for_selector = data.get("waitForSelector")
+    wait_ms = int(data.get("waitMs", 0) or 0)
 
     with sync_playwright() as p:
         browser = p.chromium.launch()
@@ -117,6 +125,10 @@ def render_png():
                 f"<body style='margin:0'>{html}</body></html>",
                 wait_until="networkidle",
             )
+            if wait_for_selector:
+                page.wait_for_selector(wait_for_selector, timeout=max(wait_ms, 5000))
+            elif wait_ms > 0:
+                page.wait_for_timeout(wait_ms)
             # element.screenshot() clips to exactly that element's own box (including its
             # rounded corners/shadow, since Chromium screenshots the actual painted pixels) -
             # no manual width/height math needed the way page.pdf() required.
