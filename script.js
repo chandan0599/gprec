@@ -967,8 +967,10 @@ const gprecApiBaseUrl = () => {
   // itself was loaded from - a hardcoded 127.0.0.1 only works when browsing from the same machine
   // the server runs on, which breaks phone/LAN testing (the phone's own 127.0.0.1 isn't the Mac).
   // Still avoid using the current page's PORT because static preview servers such as Live Server
-  // on 127.0.0.1:5500 do not host the API routes.
-  return `http://${window.location.hostname}:8766/api`;
+  // on 127.0.0.1:5500 do not host the API routes. Protocol matches the current page so this isn't
+  // blocked as mixed content if the site ends up served over https without databaseApiConfig.baseUrl
+  // being set - see PRODUCTION.md.
+  return `${window.location.protocol}//${window.location.hostname}:8766/api`;
 };
 const gprecDbRequest = (path, options = {}) => {
   if (localStorage.getItem("gprecDemoMode")) return null;
@@ -1206,13 +1208,30 @@ const isQrScanAdminLogin = () => {
   const next = new URLSearchParams(window.location.search).get("next") || "";
   return /^(hostel-gate-scan\.html|event-pass-scan\.html)\b/.test(next);
 };
+// The hostel gate scan is warden-only (see the "Hostel Warden login required" gate on
+// hostel-gate-scan.html) - this page needs its own stricter copy/check for that one QR-login
+// path instead of the generic "any admin role, auto-detected" wording used for event-pass-scan.
+const isHostelWardenScanLogin = () => {
+  const next = new URLSearchParams(window.location.search).get("next") || "";
+  return /^hostel-gate-scan\.html\b/.test(next);
+};
+const HOSTEL_WARDEN_SCAN_LOGIN_COPY = "Hostel Warden login: enter your official Hostel Warden email and password.";
 
 if (adminLoginEmail && adminRolePreview) {
   const adminLoginRoleSelect = document.querySelector("#adminLoginRole");
   if (isQrScanAdminLogin() && adminLoginRoleSelect) {
     adminLoginRoleSelect.closest("label")?.classList.add("is-hidden");
-    adminRolePreview.textContent = "QR scan login: enter your official email and password. Your configured role will be used automatically.";
+    adminRolePreview.textContent = isHostelWardenScanLogin()
+      ? HOSTEL_WARDEN_SCAN_LOGIN_COPY
+      : "QR scan login: enter your official email and password. Your configured role will be used automatically.";
     adminRolePreview.classList.remove("is-found", "is-missing");
+    if (isHostelWardenScanLogin()) {
+      const portalHead = adminLoginEmail.closest(".portal-card")?.querySelector(".portal-head");
+      const heading = portalHead?.querySelector("h3");
+      const subtitle = portalHead?.querySelector("p");
+      if (heading) heading.textContent = "Hostel Warden Login";
+      if (subtitle) subtitle.textContent = "Only Boys/Girls Hostel Warden accounts can verify gate passes here.";
+    }
   }
   const updateAdminRolePreview = () => {
     const email = adminLoginEmail.value.trim();
@@ -1223,14 +1242,23 @@ if (adminLoginEmail && adminRolePreview) {
       return;
     }
     if (!email) {
-      adminRolePreview.textContent = isQrScanAdminLogin()
-        ? "QR scan login: enter your official email and password. Your configured role will be used automatically."
-        : "Enter your admin email to see your role.";
+      adminRolePreview.textContent = isHostelWardenScanLogin()
+        ? HOSTEL_WARDEN_SCAN_LOGIN_COPY
+        : isQrScanAdminLogin()
+          ? "QR scan login: enter your official email and password. Your configured role will be used automatically."
+          : "Enter your admin email to see your role.";
       adminRolePreview.classList.remove("is-found", "is-missing");
       return;
     }
     const adminUser = findAdminByEmail(email);
     if (adminUser) {
+      const isWarden = adminUser.role === "Boys Hostel Warden" || adminUser.role === "Girls Hostel Warden";
+      if (isHostelWardenScanLogin() && !isWarden) {
+        adminRolePreview.textContent = `This email is registered as ${adminUser.role}, not a Hostel Warden. Only Hostel Warden accounts can verify gate passes.`;
+        adminRolePreview.classList.add("is-missing");
+        adminRolePreview.classList.remove("is-found");
+        return;
+      }
       adminRolePreview.textContent = `Detected role: ${adminUser.role} (${adminUser.department || "All"})`;
       adminRolePreview.classList.add("is-found");
       adminRolePreview.classList.remove("is-missing");
@@ -1331,6 +1359,146 @@ document.addEventListener("click", (event) => {
     appDrawerDropdown.classList.add("is-hidden");
   }
 });
+
+// Personal app-drawer shortcuts - each signed-in identity (see gprecChatIdentityKey, same
+// per-account keying the chat history uses) gets their own list, stored client-side since
+// these are just personal bookmarks, not data other users or devices need to see.
+const gprecAppDrawerLinksKey = () => `gprecAppDrawerLinks:${gprecChatScopeKey()}:${gprecChatIdentityKey()}`;
+const getAppDrawerLinks = () => {
+  try {
+    return JSON.parse(localStorage.getItem(gprecAppDrawerLinksKey()) || "[]");
+  } catch {
+    return [];
+  }
+};
+const saveAppDrawerLinks = (links) => localStorage.setItem(gprecAppDrawerLinksKey(), JSON.stringify(links));
+
+const appDrawerCustomLinksList = document.querySelector("#appDrawerCustomLinks");
+const appDrawerAddToggle = document.querySelector("#appDrawerAddToggle");
+const appDrawerAddLinkForm = document.querySelector("#appDrawerAddLinkForm");
+
+// Generic "link" glyph, used only if a link's real favicon fails to load.
+const appDrawerFallbackIconSvg = `<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M10 14 21 3M21 3h-6M21 3v6M12 5H7a2 2 0 0 0-2 2v10a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-5"/></svg>`;
+
+const renderAppDrawerCustomLinks = () => {
+  if (!appDrawerCustomLinksList) return;
+  appDrawerCustomLinksList.innerHTML = "";
+  getAppDrawerLinks().forEach((link, index) => {
+    const tile = document.createElement("a");
+    tile.className = "app-drawer-tile";
+    tile.href = link.url;
+    tile.target = "_blank";
+    tile.rel = "noopener";
+
+    // Real site favicon (same idea as a browser's "Add to Home Screen") instead of a generic
+    // glyph, so each personal link looks like its actual app/site rather than a stand-in icon.
+    const iconWrap = document.createElement("span");
+    iconWrap.className = "app-drawer-tile-icon app-drawer-tile-icon-favicon";
+    let hostname = "";
+    try { hostname = new URL(link.url).hostname; } catch {}
+    if (hostname) {
+      const favicon = document.createElement("img");
+      favicon.alt = "";
+      favicon.loading = "lazy";
+      favicon.src = `https://www.google.com/s2/favicons?sz=64&domain=${encodeURIComponent(hostname)}`;
+      favicon.addEventListener("error", () => {
+        iconWrap.classList.remove("app-drawer-tile-icon-favicon");
+        iconWrap.innerHTML = appDrawerFallbackIconSvg;
+      });
+      iconWrap.appendChild(favicon);
+    } else {
+      iconWrap.innerHTML = appDrawerFallbackIconSvg;
+    }
+    tile.appendChild(iconWrap);
+
+    const label = document.createElement("span");
+    label.className = "app-drawer-tile-label";
+    // textContent (not innerHTML) for the user-supplied name - safe against a pasted name
+    // like "<img onerror=...>" ending up interpreted as markup.
+    label.textContent = link.name;
+    tile.appendChild(label);
+
+    const editButton = document.createElement("button");
+    editButton.type = "button";
+    editButton.className = "app-drawer-tile-edit";
+    editButton.setAttribute("aria-label", `Edit ${link.name}`);
+    editButton.innerHTML = `<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 20h9M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4Z"/></svg>`;
+    editButton.addEventListener("click", (event) => {
+      event.preventDefault();
+      event.stopPropagation();
+      openAppDrawerAddForm(index, link);
+    });
+    tile.appendChild(editButton);
+
+    const removeButton = document.createElement("button");
+    removeButton.type = "button";
+    removeButton.className = "app-drawer-tile-remove";
+    removeButton.setAttribute("aria-label", `Remove ${link.name}`);
+    removeButton.textContent = "×";
+    removeButton.addEventListener("click", (event) => {
+      event.preventDefault();
+      event.stopPropagation();
+      saveAppDrawerLinks(getAppDrawerLinks().filter((_, i) => i !== index));
+      renderAppDrawerCustomLinks();
+    });
+    tile.appendChild(removeButton);
+
+    appDrawerCustomLinksList.appendChild(tile);
+  });
+};
+
+// null while adding a brand-new link; the link's index while editing an existing one, so the
+// form's submit handler below knows whether to push a new entry or overwrite one in place.
+let appDrawerEditingIndex = null;
+
+const openAppDrawerAddForm = (editingIndex = null, existingLink = null) => {
+  if (!appDrawerAddLinkForm) return;
+  appDrawerEditingIndex = editingIndex;
+  const nameInput = document.querySelector("#appDrawerLinkName");
+  const urlInput = document.querySelector("#appDrawerLinkUrl");
+  if (nameInput) nameInput.value = existingLink?.name || "";
+  if (urlInput) urlInput.value = existingLink?.url || "";
+  const submitButton = appDrawerAddLinkForm.querySelector("button[type=submit]");
+  if (submitButton) submitButton.textContent = editingIndex === null ? "Save" : "Save changes";
+  appDrawerAddLinkForm.classList.remove("is-hidden");
+  appDrawerAddToggle?.setAttribute("aria-expanded", "true");
+  nameInput?.focus();
+};
+
+appDrawerAddToggle?.addEventListener("click", (event) => {
+  event.stopPropagation();
+  if (appDrawerAddLinkForm?.classList.contains("is-hidden")) {
+    openAppDrawerAddForm();
+  } else {
+    appDrawerAddLinkForm?.classList.add("is-hidden");
+    appDrawerAddToggle.setAttribute("aria-expanded", "false");
+  }
+});
+
+appDrawerAddLinkForm?.addEventListener("submit", (event) => {
+  event.preventDefault();
+  const nameInput = document.querySelector("#appDrawerLinkName");
+  const urlInput = document.querySelector("#appDrawerLinkUrl");
+  const name = nameInput.value.trim();
+  let url = urlInput.value.trim();
+  if (!name || !url) return;
+  if (!/^https?:\/\//i.test(url)) url = `https://${url}`;
+  const links = getAppDrawerLinks();
+  if (appDrawerEditingIndex !== null && links[appDrawerEditingIndex]) {
+    links[appDrawerEditingIndex] = { name, url };
+  } else {
+    links.push({ name, url });
+  }
+  saveAppDrawerLinks(links);
+  appDrawerEditingIndex = null;
+  nameInput.value = "";
+  urlInput.value = "";
+  appDrawerAddLinkForm.classList.add("is-hidden");
+  appDrawerAddToggle?.setAttribute("aria-expanded", "false");
+  renderAppDrawerCustomLinks();
+});
+
+renderAppDrawerCustomLinks();
 
 const bindGprecTap = (element, handler) => {
   if (!element) return;
@@ -10286,6 +10454,21 @@ const parentGprecianAnswers = [
   { keywords: ["fee", "fees", "payment"], answer: "Your child's fee payment status is shown in the Fees section of this dashboard." }
 ];
 
+// Sourced from README.md / the Read Me sidebar panel, so the bot can answer "how do I run this
+// locally", "what's in uploads/", "which module does X" the same way it answers any other admin
+// question - keeping these in sync with README.md and the Read Me panel content is a manual step
+// (there's no shared source of truth between the three) done by whoever edits one of them.
+const readmeGprecianAnswers = [
+  { keywords: ["run locally", "start server", "start servers", "local server", "localhost"], answer: "Run ./backend/tools/start_servers.sh to start the static site (127.0.0.1:8080), the Postgres API (127.0.0.1:8766), and the optional PDF render server (127.0.0.1:8767). Stop them with ./backend/tools/stop_servers.sh. See the Read Me panel for details." },
+  { keywords: ["project structure", "folder structure", "file structure", "where is", "codebase"], answer: "pages/ holds public pages and logins, dashboards/ holds every role dashboard, file_templates/ holds printable templates, backend/tools/ holds the local servers, and script.js/styles.css drive every page. Full breakdown is in the Read Me panel." },
+  { keywords: ["readme", "read me", "documentation", "docs"], answer: "There's a full Read Me at the bottom of this sidebar, and the same content lives in README.md in the project root." },
+  { keywords: ["postgres", "postgresql", "gprec_erp", "schema.sql"], answer: "Portal records live in PostgreSQL under the gprec_erp schema - schema.sql and seed.sql are in backend/database/postgres/, with its own README there." },
+  { keywords: ["uploads folder", "uploaded file", "where are uploads"], answer: "Uploaded files (profile pictures, assignments, notices, media, etc.) are written under uploads/ by the admin config server." },
+  { keywords: ["admin-config", "admin config", "integration key", "integration keys"], answer: "Runtime config - the main admin contact, integration keys, and the admin directory - lives in admin-config.json, managed from Data Integrations and Users & Access." },
+  { keywords: ["which role", "who can login", "who can log in", "login page", "roles and login"], answer: "Each role signs in on its own login page: admin-login, student-login, faculty-login, parent-login, alumni-login, non-teaching-login. The admin login form's role dropdown covers College Admin plus department/hostel/exam/placement admins. Full table is in the Read Me panel." },
+  { keywords: ["first admin", "first time setup", "first-time setup", "initial password", "bootstrap admin", "no admin has a password"], answer: "If zero admins anywhere have a password yet, the Admin Login page shows a one-time First-Time Setup card: enter an already-registered admin email plus a recovery mobile, generate the initial password (shown once), then log in and you'll be forced to change it. Once any admin has a password, that card is gone for good - see First-Time Admin Setup in the Read Me panel for the full steps." }
+];
+
 const adminGprecianAnswers = [
   { keywords: ["publish notice", "create notice", "notice"], answer: "Go to Notices in the sidebar to create and publish a notice to a specific audience." },
   { keywords: ["media", "manage media", "media update", "photo", "video", "gallery", "gallary"], answer: "Use the Media section to manage homepage sliders, galleries, courses, student voices, placements, and affiliations without editing code." },
@@ -10293,7 +10476,8 @@ const adminGprecianAnswers = [
   { keywords: ["approval", "approvals", "leave request"], answer: "Pending leave and adhoc class requests are under Approvals and HOD Leave Requests." },
   { keywords: ["report", "reports", "audit"], answer: "Operational reports and the activity trail are under Reports & Audit." },
   { keywords: ["ai setting", "ai settings", "chatbot", "gpt", "gemini", "claude"], answer: "Configure a chatbot AI provider (OpenAI, Claude, or Gemini) under General Settings." },
-  { keywords: ["admin account", "add admin", "users & access", "users and access"], answer: "Manage admin accounts and roles under Users & Access." }
+  { keywords: ["admin account", "add admin", "users & access", "users and access"], answer: "Manage admin accounts and roles under Users & Access." },
+  ...readmeGprecianAnswers
 ];
 
 const alumniGprecianAnswers = [
@@ -12112,6 +12296,11 @@ portalForms.forEach((form) => {
       const adminRole = adminUser.role || "College Admin";
       if (roleSelect && selectedRole && selectedRole !== adminRole) {
         feedback.textContent = `This email is registered as ${adminRole}, not ${selectedRole}. Select the matching role to continue.`;
+        feedback.classList.remove("success");
+        return;
+      }
+      if (isHostelWardenScanLogin() && adminRole !== "Boys Hostel Warden" && adminRole !== "Girls Hostel Warden") {
+        feedback.textContent = `This login is for Hostel Wardens only. ${adminRole} accounts can't verify hostel gate passes.`;
         feedback.classList.remove("success");
         return;
       }
@@ -15212,7 +15401,12 @@ const getStudentDocuments = (studentId) => getGprecDbBootstrap()?.studentDocumen
 const createStudentDocument = (doc) => gprecDbPost("/student-documents", doc);
 const removeStudentDocument = (id) => gprecDbPost("/student-documents/remove", { id });
 
-const GPREC_UPLOAD_ENDPOINT = "http://127.0.0.1:8765/upload";
+// Same reasoning as gprecApiBaseUrl() above: a hardcoded 127.0.0.1 only resolves on the machine
+// admin_config_server.py itself runs on - every other visitor's browser (LAN testing, or any real
+// deployment) would try to reach their own loopback interface and silently fail every upload.
+// Protocol matches the current page (not hardcoded http:) so this doesn't get blocked as mixed
+// content once the site is actually served over https - see PRODUCTION.md for exposing this port.
+const GPREC_UPLOAD_ENDPOINT = `${window.location.protocol}//${window.location.hostname}:8765/upload`;
 
 const uploadDataUrlToServerStorage = async (file, dataUrl, section = "general") => {
   try {
@@ -15965,8 +16159,13 @@ if (vehiclePassForm) {
 // on an <img> (hydrated via .src) or a container element (hydrated via background-image) on
 // the target page. The admin's Notices & Content > Website Photo Manager panel lists every
 // entry here automatically, so no other admin-side change is needed.
+// defaultUrl is whatever's hardcoded as that <img>'s own src on the public page - shown as the
+// current photo until an admin uploads a custom one, instead of the table just saying "No custom
+// photo uploaded" while the page itself is clearly showing something.
 const sitePhotoSlots = [
-  { key: "about-founder", page: "About Us", section: "Founder Portrait", recommendedSize: "220 x 260px, portrait, JPG/PNG" }
+  { key: "about-founder", page: "About Us", section: "Founder Portrait", recommendedSize: "220 x 260px, portrait, JPG/PNG", defaultUrl: "https://www.gprec.ac.in/wp-content/uploads/2019/04/G.-Pulla-Reddy-Garu.jpg", orientation: "portrait" },
+  { key: "admin-principal", page: "About Us", section: "Principal Photo", recommendedSize: "200 x 300px, portrait, JPG/PNG", defaultUrl: "https://www.gprec.ac.in/wp-content/uploads/2019/04/principal-01-201x300.png", orientation: "portrait" },
+  { key: "admin-vice-principal", page: "About Us", section: "Vice Principal Photo", recommendedSize: "200 x 300px, portrait, JPG/PNG", defaultUrl: "https://www.gprec.ac.in/wp-content/uploads/2026/03/VBR-240x300.jpeg", orientation: "portrait" }
 ];
 
 const getSitePhotos = () => getSiteContent("sitePhotos", {});
@@ -16169,6 +16368,339 @@ const renderAboutHistoryGallery = () => {
 };
 
 renderAboutHistoryGallery();
+
+// About Us page Management section: admin-editable trust/board content - falls back to the copy
+// the page shipped with (see pages/about-us.html), so nothing changes visually until an admin
+// actually saves something here.
+const getAboutManagementContent = () => getSiteContent("aboutManagementContent", {
+  paragraph1: "The college is managed by G.P.R. Charities Trust which was instituted by Sri G.Pulla Reddy in 1977 with the motto of rendering service to society. Sri G.Pulla Reddy is the epitome of a self made man. Born into a lower middle class agricultural family, he imbibed all the virtues of an Indian farmer. After trying out a few jobs, he found his true vocation in which he is at his best, making delicious sweets and there was no looking back. His hard work and uncompromising adherence to quality soon made him the sweets legend and G.Pulla Reddy Sweets have become a household name and a status symbol. The popularity of Pulla Reddy sweets is evident in the fact that he was appointed by His Excellency, the Governor of Andhra State as the official sweets supplier to the Government. Sri Pulla Reddy is reckoned great not because he made it big in business but because he did not forget his moorings. Deprived of educational opportunities as a child, he made it a mission of his life to provide educational opportunities to the people of this backward region of Rayalaseema from which he hailed. The success of the institutions founded by him may be attributed to his uncanny ability to find the right person for a job. Once he finds the right person, he entrusts the work to that person with all the authority and responsibility and will never interfere in that work.",
+  paragraph2: "After the demise of the founder Chairman Sri G.Pulla Reddy in 2007 Sri P.Subba Reddy, the Secretary of the college, has taken up the responsibilities of both Chairman and Secretary. Sri P.Subba Reddy is one of the Trustees of G.Pulla Reddy Charities Trust right from its inception. He is given the onerous responsibility of looking after all the educational institutions sponsored by the Trust. Thus he has vast experience of administration of educational organizations in the capacity of the secretary. Nurtured and guided by the founder chairman of the Trust, Late Sri G.Pulla Reddy, he has a great vision and is dedicated to the cause of education. Ever cheerful and with enormous patience and pragmatic outlook, he has been the live wire in the administration set up of the Trust and all the institutions of the Trust have made phenomenal progress under his supervision.",
+  founderTrustees: [
+    { name: "Late Sri G.Pulla Reddy", role: "Managing Trustee" },
+    { name: "Sri G.Raghava Reddy", role: "Trustee" },
+    { name: "Late Sri G.Narayanamma", role: "Trustee" },
+    { name: "Sri P.Subba Reddy", role: "Trustee" },
+    { name: "Late Sri R.V.Seshacharlu", role: "Trustee" }
+  ],
+  currentTrust: [
+    { name: "Sri G.Raghava Reddy", role: "Managing Trustee" },
+    { name: "Sri P.Subba Reddy", role: "Trustee" },
+    { name: "Sri G.Ekamber Reddy", role: "Trustee" }
+  ],
+  professionalColleges: [
+    { name: "G.Pulla Reddy Engineering College", role: "Kurnool" },
+    { name: "G.Pulla Reddy Pharmacy College", role: "Hyderabad" },
+    { name: "G.Narayanamma Institute of Technology & Sciences", role: "Hyderabad" },
+    { name: "G.Pulla Reddy Dental College", role: "Kurnool" }
+  ],
+  otherInstitutes: [
+    { name: "G.Pulla Reddy Degree & P.G. College", role: "Hyderabad" },
+    { name: "G.Pulla Reddy Junior College", role: "Hyderabad" },
+    { name: "G.Pulla Reddy High School", role: "Hyderabad" },
+    { name: "G.Narayanamma High School", role: "Hyderabad" }
+  ],
+  serviceOrgs: [
+    { name: "G.Narayanamma Hospital", role: "Atmakur, Kurnool Dt." },
+    { name: "Vignana Peetham (Orphanage)", role: "Kurnool" },
+    { name: "Sanskrita Basha Prachara Samithi", role: "Hyderabad" },
+    { name: "G.Narayanamma Pulla Reddy Respite Home for Mentally Challenged Adult Woman", role: "Kurnool" }
+  ]
+});
+const saveAboutManagementContent = (content) => saveSiteContent("aboutManagementContent", content);
+
+const renderAboutManagementGroup = (listEl, items) => {
+  if (!listEl) return;
+  listEl.innerHTML = (items || [])
+    .map((item) => `<li><strong>${escapeHtml(item.name)}</strong><span>${escapeHtml(item.role)}</span></li>`)
+    .join("");
+};
+
+const renderAboutManagementContent = () => {
+  const para1El = document.querySelector("#aboutManagementPara1");
+  if (!para1El) return;
+  const content = getAboutManagementContent();
+  para1El.textContent = content.paragraph1;
+  const para2El = document.querySelector("#aboutManagementPara2");
+  if (para2El) para2El.textContent = content.paragraph2;
+  renderAboutManagementGroup(document.querySelector("#aboutManagementFounderTrustees"), content.founderTrustees);
+  renderAboutManagementGroup(document.querySelector("#aboutManagementCurrentTrust"), content.currentTrust);
+  renderAboutManagementGroup(document.querySelector("#aboutManagementProfessionalColleges"), content.professionalColleges);
+  renderAboutManagementGroup(document.querySelector("#aboutManagementOtherInstitutes"), content.otherInstitutes);
+  renderAboutManagementGroup(document.querySelector("#aboutManagementServiceOrgs"), content.serviceOrgs);
+};
+
+renderAboutManagementContent();
+
+// About Us page Governing Body: same admin-editable/falls-back-to-shipped-copy convention, same
+// name+role card-group layout (renderAboutManagementGroup) as the Management section above.
+const getAboutGoverningBodyContent = () => getSiteContent("aboutGoverningBodyContent", {
+  management: [
+    { name: "Sri. P. Subba Reddy", role: "Chairman, GPREC & Trustee, GPRCT", position: "Chairman" },
+    { name: "Sri. G. Raghava Reddy", role: "Managing Trustee, GPRCT", position: "Member" },
+    { name: "Sri. G. Ekambar Reddy", role: "Trustee, GPRCT", position: "Member" },
+    { name: "Sri. K. Skanda Kumar", role: "Income Tax Practitioner, Kurnool", position: "Member" },
+    { name: "Dr. P. Raghunatha Reddy", role: "Managing Director, Sellcraft Global Solutions, Bengaluru", position: "Member" }
+  ],
+  faculty: [
+    { name: "Dr. T. Bramhananda Reddy", role: "Professor of EEE, GPREC, Kurnool (nominated by Principal)", position: "Member" },
+    { name: "Dr. K. Devaki Devi", role: "Associate Professor of ME, GPREC, Kurnool (nominated by Principal)", position: "Member" }
+  ],
+  external: [
+    { name: "Dr. K. Hemachandra Reddy", role: "Former Chairman, APSCHE & Professor of ME, JNTUA (management-nominated)", position: "Member" }
+  ],
+  nominees: [
+    { name: "Dr. V. Sumalatha", role: "Professor, Dept. of ECE, JNTUA, Anantapuramu (state government nominee)", position: "Member" },
+    { name: "Prof. B. Durga Prasad", role: "Professor of ME, JNTUA, Anantapuramu (JNTU Anantapur nominee)", position: "Member" }
+  ],
+  leadership: [
+    { name: "Prof. B. Sreenivasa Reddy", role: "Principal, GPREC, Kurnool", position: "Member" }
+  ]
+});
+const saveAboutGoverningBodyContent = (content) => saveSiteContent("aboutGoverningBodyContent", content);
+
+// Governing Body members carry a Position (Chairman/Member) alongside name+role, unlike the plain
+// name+role groups in Management, so this renders its own <li> markup instead of reusing
+// renderAboutManagementGroup.
+const renderGoverningBodyGroup = (listEl, members) => {
+  if (!listEl) return;
+  listEl.innerHTML = (members || [])
+    .map((member) => `
+      <li>
+        <strong>${escapeHtml(member.name)}</strong>
+        <span>${escapeHtml(member.role)}</span>
+        <em class="governing-body-position${member.position === "Chairman" ? " is-chairman" : ""}">${escapeHtml(member.position || "Member")}</em>
+      </li>
+    `)
+    .join("");
+};
+
+const renderAboutGoverningBodyContent = () => {
+  const el = document.querySelector("#governingBodyManagement");
+  if (!el) return;
+  const content = getAboutGoverningBodyContent();
+  renderGoverningBodyGroup(el, content.management);
+  renderGoverningBodyGroup(document.querySelector("#governingBodyFaculty"), content.faculty);
+  renderGoverningBodyGroup(document.querySelector("#governingBodyExternal"), content.external);
+  renderGoverningBodyGroup(document.querySelector("#governingBodyNominees"), content.nominees);
+  renderGoverningBodyGroup(document.querySelector("#governingBodyLeadership"), content.leadership);
+};
+
+renderAboutGoverningBodyContent();
+
+// About Us page Academic Council: same admin-editable/falls-back-to-shipped-copy convention and
+// plain name+role card-group layout (renderAboutManagementGroup) as Management above - no
+// Position field needed here, unlike Governing Body.
+const getAboutAcademicCouncilContent = () => getSiteContent("aboutAcademicCouncilContent", {
+  chairman: [
+    { name: "Dr. B. Sreenivasa Reddy", role: "Principal" }
+  ],
+  secretary: [
+    { name: "Dr. V. Satish Kumar", role: "Controller of Examinations" }
+  ],
+  deansHeads: [
+    { name: "Dr. B. Veerabhadra Reddy", role: "Vice-Principal" },
+    { name: "Dr. Y. Venkata Mohan Reddy", role: "Dean – Academics" },
+    { name: "Dr. Y. Rajasekhara Gowd", role: "Dean – Hostels" },
+    { name: "Dr. T. Bramhananda Reddy", role: "Dean – Research Planning & Consultancy" },
+    { name: "Dr. Y. V. Siva Reddy", role: "Dean – Internships & Industrial Training" },
+    { name: "Dr. K. Govardhan Reddy", role: "Dean – Alumni Relations & Higher Studies" },
+    { name: "Dr. K. Devaki Devi", role: "Dean – Student Affairs" },
+    { name: "Dr. N. Kasiviswanath", role: "HoD CSE" },
+    { name: "Dr. K. Madhava Reddy", role: "HoD ME" },
+    { name: "Dr. G. Kishor", role: "HoD EEE" },
+    { name: "Dr. K. Chinnapa Reddy", role: "HoD CE" },
+    { name: "Dr. K. Suresh Reddy", role: "HoD ECE" },
+    { name: "Dr. R. Praveen Sam", role: "HoD CSM" },
+    { name: "Dr. K.V.S.G.K. Sastry", role: "HoD HBS" }
+  ],
+  facultyCadres: [
+    { name: "Dr. B.J.S. Vara Prasad", role: "Prof of Civil Engg" },
+    { name: "Dr. C. Harinatha Reddy", role: "Asso Prof of EEE" },
+    { name: "Dr. M. Madhusudhan Reddy", role: "Asst Prof of ECE" }
+  ],
+  womanFaculty: [
+    { name: "Dr. V. Anantha Lakshmi", role: "Asso Prof of EEE" }
+  ],
+  experts: [
+    { name: "Dr. G. Giridhara", role: "Prof of ME, BMS College of Engg, Bangalore" },
+    { name: "Sri. P. Sankara Reddy", role: "EE, Highways, Kurnool" },
+    { name: "Sri. B. Manohar Raju", role: "Advocate, Kurnool" },
+    { name: "Dr. Y. Muralidhar Reddy", role: "Director, GPRDCH, Kurnool" }
+  ],
+  jntuaNominees: [
+    { name: "Prof. S.V. Satyanaryana", role: "Professor of Chemical Engg" },
+    { name: "Prof. Vaishali G. Ghorpade", role: "Professor of Civil Engg." },
+    { name: "Prof. V. Sumalatha", role: "Professor of ECE" }
+  ]
+});
+const saveAboutAcademicCouncilContent = (content) => saveSiteContent("aboutAcademicCouncilContent", content);
+
+const renderAboutAcademicCouncilContent = () => {
+  const el = document.querySelector("#academicCouncilChairman");
+  if (!el) return;
+  const content = getAboutAcademicCouncilContent();
+  renderAboutManagementGroup(el, content.chairman);
+  renderAboutManagementGroup(document.querySelector("#academicCouncilSecretary"), content.secretary);
+  renderAboutManagementGroup(document.querySelector("#academicCouncilDeansHeads"), content.deansHeads);
+  renderAboutManagementGroup(document.querySelector("#academicCouncilFacultyCadres"), content.facultyCadres);
+  renderAboutManagementGroup(document.querySelector("#academicCouncilWomanFaculty"), content.womanFaculty);
+  renderAboutManagementGroup(document.querySelector("#academicCouncilExperts"), content.experts);
+  renderAboutManagementGroup(document.querySelector("#academicCouncilJntuaNominees"), content.jntuaNominees);
+};
+
+renderAboutAcademicCouncilContent();
+
+// About Us page intro text (the top "About Us" panel, above Management) - same admin-editable/
+// falls-back-to-shipped-copy convention as everything else on this page.
+const getAboutUsIntroContent = () => getSiteContent("aboutUsIntroContent", {
+  paragraph1: "G.Pulla Reddy Engineering College is the brainchild of Late Sri G.Pulla Reddy, (popularly known as Sweets Pulla Reddy in A.P.) the renowned philanthropist and a great humanist. Established in 1984-85, it is one of the earliest private engineering colleges in Andhra Pradesh state. GPREC has been functioning as an autonomous institution since 2006.",
+  paragraph2: "The college is being managed by G. Pulla Reddy Charities trust, Hyderabad. The trust was instituted by late Sri G.Pulla Reddy Garu in 1977 with the motto of rendering service to the society. The trust has established many educational institutions, hospitals, orphanages, respite homes and other social welfare organizations in various parts of Andhra Pradesh State. G.Narayanamma Institute of Technology & Science (GNITS) – Hyderabad, G.Pulla Reddy College of Pharmacy – Hyderabad, G.Pulla Reddy Dental College – Kurnool are some of the other institutions being managed by this trust."
+});
+const saveAboutUsIntroContent = (content) => saveSiteContent("aboutUsIntroContent", content);
+
+const renderAboutUsIntroContent = () => {
+  const para1El = document.querySelector("#aboutUsPara1");
+  if (!para1El) return;
+  const content = getAboutUsIntroContent();
+  para1El.textContent = content.paragraph1;
+  const para2El = document.querySelector("#aboutUsPara2");
+  if (para2El) para2El.textContent = content.paragraph2;
+};
+
+renderAboutUsIntroContent();
+
+// About Us page History section text (the prose paragraphs, not the photo gallery - see
+// getAboutHistorySlides/renderAboutHistoryGallery above for that).
+const getAboutHistoryTextContent = () => getSiteContent("aboutHistoryTextContent", {
+  paragraph1: "G.Pulla Reddy Engineering College (Autonomous), the pride of Kurnool town is the brain child of late Sri G. Pulla Reddy (10-01-1921 to 09-05-2007), the renowned philanthropist and humanist. His love for education and care for his native district manifested themselves in the form of this college.",
+  paragraph2: "The college was inaugurated by the world famous ophthalmologist, Padma Bhushan, Dr. P. Siva Reddy on 22nd February, 1985. Though started after the capitation fee era, the college had no teething troubles. With the munificent grants and pragmatic guidance of Sri. G.Pulla Reddy, the college has made a steady progress and has become a premier institute of technical education. Though the college is second to none in physical infrastructure and human resources, it is primarily known for its discipline and value system. Sri G.Pulla Reddy belonged to the school of thought and practice that believes that \"virtue is its own reward\" and this ideal formed the basis for all activities on the campus. If his uncompromising insistence on quality in his pure ghee sweets business has made him the Sweets Legend and quality consultant to TTD in making the world famous Tirupati Laddu, his insistence on quality in education made GPREC the benchmark for technical education.",
+  paragraph3: "Though Sri. G.Pulla Reddy subsequently established several educational institutions of repute, GPREC has remained his \"first love\" and is the flagship organization of all of them."
+});
+const saveAboutHistoryTextContent = (content) => saveSiteContent("aboutHistoryTextContent", content);
+
+const renderAboutHistoryTextContent = () => {
+  const para1El = document.querySelector("#historyPara1");
+  if (!para1El) return;
+  const content = getAboutHistoryTextContent();
+  para1El.textContent = content.paragraph1;
+  const para2El = document.querySelector("#historyPara2");
+  if (para2El) para2El.textContent = content.paragraph2;
+  const para3El = document.querySelector("#historyPara3");
+  if (para3El) para3El.textContent = content.paragraph3;
+};
+
+renderAboutHistoryTextContent();
+
+// About Us page Vision / Mission / Quality Policy cards.
+const getAboutVmqContent = () => getSiteContent("aboutVmqContent", {
+  vision: "The vision of GPREC is to become the choicest institute of technology and a hub of academic and industrial research and development.",
+  mission: "To provide conducive academic ambience, excellent infrastructure, continually updated lab equipment and committed and scholarly faculty to realize the vision of the college.",
+  quality: "GPREC is engaged in imparting \"quality education and training\" in the field of engineering and technology. It aims to be an institute of excellence through continual improvement."
+});
+const saveAboutVmqContent = (content) => saveSiteContent("aboutVmqContent", content);
+
+const renderAboutVmqContent = () => {
+  const visionEl = document.querySelector("#aboutVisionText");
+  if (!visionEl) return;
+  const content = getAboutVmqContent();
+  visionEl.textContent = content.vision;
+  const missionEl = document.querySelector("#aboutMissionText");
+  if (missionEl) missionEl.textContent = content.mission;
+  const qualityEl = document.querySelector("#aboutQualityPolicyText");
+  if (qualityEl) qualityEl.textContent = content.quality;
+};
+
+renderAboutVmqContent();
+
+// About Us page Service Rules panel (last section on the page) - a short description plus a
+// link to the official PDF, same admin-editable/falls-back-to-shipped-copy convention.
+const getAboutServiceRulesContent = () => getSiteContent("aboutServiceRulesContent", {
+  description: "The Service Rules govern the terms of employment, conduct, and administrative procedures applicable to the faculty and staff of G.Pulla Reddy Engineering College.",
+  pdfUrl: "https://www.gprec.ac.in/academicplanner/GPREC-%20Service%20Rules.pdf"
+});
+const saveAboutServiceRulesContent = (content) => saveSiteContent("aboutServiceRulesContent", content);
+
+const renderAboutServiceRulesContent = () => {
+  const textEl = document.querySelector("#aboutServiceRulesText");
+  if (!textEl) return;
+  const content = getAboutServiceRulesContent();
+  textEl.textContent = content.description;
+  const linkEl = document.querySelector("#aboutServiceRulesLink");
+  if (linkEl) linkEl.href = content.pdfUrl;
+};
+
+renderAboutServiceRulesContent();
+
+// About Us page Administration section: Principal + Vice Principal (with photos) and the Deans
+// table. Same admin-editable/falls-back-to-shipped-copy convention as the rest of this page.
+const getAboutAdministrationContent = () => getSiteContent("aboutAdministrationContent", {
+  principal: {
+    name: "Dr. B. Sreenivasa Reddy",
+    designation: "Principal",
+    bio: "Dr.B.Sreenivasa Reddy received his Ph.D in Mechanical Engineering from Jawaharlal Nehru Technological University, Hyderabad in 1998. After obtaining masters degree from Birla Institute of Technology and Science, Pilani, he joined the faculty of Mechanical Engineering of GPREC 1989 and has been serving the institute since then. He headed the department of Mechanical Engineering as a professor from 2000 and 2007. He served the institute as Dean, Academics and Administration from 2006 to 2007. He took over as the Principal of the college after Dr.Jaya Rami Reddy became the Director of the college in 2007.\n\nDr.Sreenivas Reddy is known to be a hard task master and represents the youthful exuberance of the institution. Groomed and nurtured by Dr. Jaya Rami Reddy, he has been working hard to take the institute to new heights.\n\nDr. Sreenivasa Reddy's teaching and research interests lie in the areas of thermodynamics, energy power and heat transfer. He has published more than 30 research papers in several national and international journals and conferences and has guided 4 M.Tech and 3 Ph.Ds.",
+    photoDataUrl: "https://www.gprec.ac.in/wp-content/uploads/2019/04/principal-01-201x300.png"
+  },
+  vicePrincipal: {
+    name: "Dr. Veerabhadra Reddy Basam",
+    designation: "Vice Principal",
+    bio: "Dr. Veerabhadra Reddy Basam received his M.Tech and Ph.D. degrees in Mechanical Engineering from Jawaharlal Nehru Technological University, Hyderabad, in 2000 and 2009 respectively. He is currently serving as a Professor of Mechanical Engineering at G. Pulla Reddy Engineering College (Autonomous), Kurnool, and has over 26 years of experience spanning teaching, research, and industry.\n\nDr. Reddy has published more than 40 research papers in national and international journals and conferences. He has guided numerous student projects at the undergraduate, postgraduate, and doctoral levels, and has also filed two patents. He is a member of professional bodies including the Indian Society for Technical Education (ISTE), the Society for Sciences, and the Combustion Institute (India).\n\nHe has served as a member of the Governing Council, Academic Council, and Board of Studies at G. Pulla Reddy Engineering College. Over the past 15 years, he has led several key institutional initiatives related to Alumni Affairs, Corporate Relations, Placements, Internships, Industrial Training, and Innovation & Entrepreneurship development. He currently holds the position of Vice-Principal at the institution.\n\nIn addition to his academic and administrative responsibilities, Dr. Reddy has actively contributed to student training and development, with a strong focus on enhancing employability, promoting higher education, and encouraging entrepreneurship among students. His efforts in student development have been recognized and appreciated by organizations such as Infosys.\n\nDr. Reddy also served as the President of the Andhra Pradesh Placement Officers' Consortium for two years. He is actively involved in several non-profit organizations engaged in community and social service.",
+    photoDataUrl: "https://www.gprec.ac.in/wp-content/uploads/2026/03/VBR-240x300.jpeg"
+  },
+  deans: [
+    { position: "Dean–Academics", name: "Dr. Y. Venkata Mohan Reddy", department: "ME", email: "dean.academics@gprec.ac.in", phone: "9848366453" },
+    { position: "Dean–Student Affairs", name: "Dr. K. Devaki Devi", department: "ME", email: "dean.studentaffairs@gprec.ac.in", phone: "9177017334" },
+    { position: "Dean–Research, Planning & Consultancy", name: "Dr. T. Bramhananda Reddy", department: "EEE", email: "dean.research@gprec.ac.in", phone: "9966655504" },
+    { position: "Dean–Innovation & Entrepreneurship", name: "Dr. R.S. Chalapathi", department: "ME", email: "dean.entrepreneurship@gprec.ac.in", phone: "9246204471" },
+    { position: "Dean–Placements & Corporate Relations", name: "Dr. K. Govardhan Reddy", department: "CSE(AI&ML)", email: "dean.placements@gprec.ac.in", phone: "9490197740" },
+    { position: "Dean–Internships & Industrial Training", name: "Dr. Y.V. Siva Reddy", department: "EEE", email: "dean.internships@gprec.ac.in", phone: "7095667776" },
+    { position: "Dean–Alumni Relations & Higher Studies", name: "Dr. K. Govardhan Reddy", department: "CSE(AI&ML)", email: "dean.higherstudies@gprec.ac.in", phone: "9490197740" },
+    { position: "Dean–Hostels", name: "Dr. Y. Rajasekhara Gowd", department: "HBS", email: "dean.hostels@gprec.ac.in", phone: "9441587635" }
+  ]
+});
+const saveAboutAdministrationContent = (content) => saveSiteContent("aboutAdministrationContent", content);
+
+const renderAboutLeaderBio = (containerEl, bio) => {
+  if (!containerEl) return;
+  containerEl.innerHTML = (bio || "")
+    .split("\n\n")
+    .filter((para) => para.trim())
+    .map((para) => `<p>${escapeHtml(para.trim())}</p>`)
+    .join("");
+};
+
+const renderAboutAdministrationContent = () => {
+  const principalNameEl = document.querySelector("#adminPrincipalName");
+  if (!principalNameEl) return;
+  const content = getAboutAdministrationContent();
+
+  principalNameEl.textContent = content.principal.name;
+  document.querySelector("#adminPrincipalDesignation").textContent = content.principal.designation;
+  renderAboutLeaderBio(document.querySelector("#adminPrincipalBio"), content.principal.bio);
+  document.querySelector("#adminPrincipalPhoto").src = content.principal.photoDataUrl;
+
+  document.querySelector("#adminVicePrincipalName").textContent = content.vicePrincipal.name;
+  document.querySelector("#adminVicePrincipalDesignation").textContent = content.vicePrincipal.designation;
+  renderAboutLeaderBio(document.querySelector("#adminVicePrincipalBio"), content.vicePrincipal.bio);
+  document.querySelector("#adminVicePrincipalPhoto").src = content.vicePrincipal.photoDataUrl;
+
+  const deansBody = document.querySelector("#adminDeansTableBody");
+  if (deansBody) {
+    deansBody.innerHTML = (content.deans || [])
+      .map((dean) => `<tr><td>${escapeHtml(dean.position)}</td><td>${escapeHtml(dean.name)}</td><td>${escapeHtml(dean.department)}</td><td>${escapeHtml(dean.email)}</td><td>${escapeHtml(dean.phone)}</td></tr>`)
+      .join("");
+  }
+};
+
+renderAboutAdministrationContent();
+
+document.querySelectorAll("[data-bio-toggle]").forEach((button) => {
+  button.addEventListener("click", () => {
+    const bioEl = document.querySelector(`#${button.dataset.bioToggle}`);
+    if (!bioEl) return;
+    const expanded = bioEl.classList.toggle("is-expanded");
+    button.textContent = expanded ? "Read less" : "Read more";
+  });
+});
 
 const aboutHistoryManagerBody = document.querySelector("#aboutHistoryManagerBody");
 const aboutHistoryCaptionInput = document.querySelector("#aboutHistoryCaptionInput");
@@ -18076,6 +18608,14 @@ const getCampusEvents = () => {
   return Array.isArray(saved) ? saved : defaultCampusEvents;
 };
 const saveCampusEvents = (events) => saveSiteContent("campusEvents", events);
+// Only these students can sign in to scan/check in tickets for a given event (see the
+// volunteer-only gate on event-pass-scan.html and the server-side check in portal_db_server.py's
+// campus-event/gate-lookup, gate-log, and manual-checkin routes).
+const isAssignedEventVolunteer = (eventId, rollNumber) => {
+  const event = getCampusEvents().find((item) => item.id === eventId);
+  const roll = (rollNumber || "").trim().toUpperCase();
+  return Boolean(event && Array.isArray(event.volunteerRollNumbers) && event.volunteerRollNumbers.includes(roll));
+};
 // Lets a faculty Event Head edit their own assigned event's details without needing admin access -
 // a purpose-built endpoint with its own server-side permission check (see update_campus_event_as_
 // head in portal_db_server.py), not the generic admin-only /api/site-content saveCampusEvents uses.
@@ -19515,7 +20055,7 @@ const renderA4DocViaNativePdf = async (html, css, rootSelector, title, backgroun
   try {
     const controller = new AbortController();
     const timeout = setTimeout(() => controller.abort(), 5000);
-    const response = await fetch("http://localhost:8767/render-pdf", {
+    const response = await fetch(`${window.location.protocol}//${window.location.hostname}:8767/render-pdf`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ html, css, width: 793, rootSelector, title, background }),
@@ -19537,7 +20077,7 @@ const renderA4DocViaNativePng = async (html, css, rootSelector, width, scale, op
   try {
     const controller = new AbortController();
     const timeout = setTimeout(() => controller.abort(), options.timeoutMs || 5000);
-    const response = await fetch("http://localhost:8767/render-png", {
+    const response = await fetch(`${window.location.protocol}//${window.location.hostname}:8767/render-png`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ html, css, width, scale, rootSelector, waitForSelector: options.waitForSelector, waitMs: options.waitMs }),
@@ -24229,25 +24769,19 @@ if (facultyDashboardName) {
       }
     }
 
-    const facultyRoster = [
-      { studentId: "20X51A0501", name: "Sai Chandan" },
-      { studentId: "20X51A0502", name: "B. Naveen Kumar" },
-      { studentId: "20X51A0503", name: "CH. Ramya" },
-      { studentId: "20X51A0504", name: "D. Sai Teja" },
-      { studentId: "20X51A0505", name: "K. Praveena" },
-      { studentId: "20X51A0506", name: "M. Vamsi Krishna" }
-    ];
-
-    const rosterBySection = {
-      "CSE III-A": facultyRoster,
-      "CSE III-B": [
-        { studentId: "20X51A0551", name: "A. Rohit Reddy" },
-        { studentId: "20X51A0552", name: "B. Divya Sri" },
-        { studentId: "20X51A0553", name: "CH. Manoj Kumar" },
-        { studentId: "20X51A0554", name: "D. Lakshmi Priya" },
-        { studentId: "20X51A0555", name: "K. Sandeep" },
-        { studentId: "20X51A0556", name: "M. Nikhitha" }
-      ]
+    // Real studentDirectory/sectionAssignments-backed roster for a given section, replacing the
+    // old hardcoded 6-name sample roster (facultyRoster/rosterBySection) - same pattern Internal
+    // Marks already uses (see buildInternalMarksRoster further down).
+    const buildDepartmentSectionRoster = (section) => {
+      const bootstrap = getGprecDbBootstrap();
+      const directory = bootstrap?.studentDirectory || [];
+      const sectionAssignments = bootstrap?.sectionAssignments || {};
+      const profiles = bootstrap?.studentProfiles || {};
+      const targetSection = normalizeSectionLabel(section);
+      return directory
+        .filter((student) => student.branch === facultyRecord.department)
+        .filter((student) => normalizeSectionLabel(sectionAssignments[student.studentId] || profiles[student.studentId]?.className) === targetSection)
+        .sort((a, b) => a.studentId.localeCompare(b.studentId));
     };
 
     // Real attendance_records/attendance_entries tables now back this (see save_attendance_record
@@ -24308,7 +24842,23 @@ if (facultyDashboardName) {
     }
 
     const currentAttendanceClass = () => facultyClasses[Number(attendanceMarkingClassSelect?.value || 0)] || facultyClasses[0];
-    const currentAttendanceRoster = () => rosterBySection[currentAttendanceClass().section] || facultyRoster;
+    const currentAttendanceRoster = () => buildDepartmentSectionRoster(currentAttendanceClass().section);
+
+    // Union of real rosters across every section this faculty teaches - the actual audience for
+    // an assignment on facultySubjectCode (assignments aren't scoped to a single section).
+    const buildFacultySubjectRoster = () => {
+      const sections = [...new Set(facultyClasses.map((cls) => cls.section).filter((section) => section && section !== "Not assigned"))];
+      const seen = new Set();
+      const roster = [];
+      sections.forEach((section) => {
+        buildDepartmentSectionRoster(section).forEach((student) => {
+          if (seen.has(student.studentId)) return;
+          seen.add(student.studentId);
+          roster.push(student);
+        });
+      });
+      return roster;
+    };
 
     const renderAttendanceMarkingHead = () => {
       const cls = currentAttendanceClass();
@@ -24531,9 +25081,7 @@ if (facultyDashboardName) {
       const internalMarksAcademicYear = `${academicYearStart}-${String(academicYearStart + 1).slice(-2)}`;
 
       // Real sections this faculty actually teaches this subject in, sourced from the same
-      // department-uploaded class_timetable data Today's Schedule/My Timetable already use - not
-      // the stale hardcoded roster (facultyRoster/rosterBySection) Attendance Marking still falls
-      // back to. Marks are higher-stakes than demo attendance, so this uses real data throughout.
+      // department-uploaded class_timetable data Today's Schedule/My Timetable already use.
       const internalMarksSections = [...new Set(facultyTimetableSlots.map((slot) => slot.section).filter(Boolean))];
       if (!internalMarksSections.length) internalMarksSections.push("-");
       if (internalMarksClassSelect) {
@@ -25104,7 +25652,7 @@ if (facultyDashboardName) {
       if (submissionsPanelTitle) submissionsPanelTitle.textContent = `Submissions - ${assignment.title}`;
       const submissions = getAssignmentSubmissions().filter((submission) => submission.assignmentId === assignment.id);
       const submittedIds = new Set(submissions.map((submission) => submission.studentId));
-      const pendingStudents = facultyRoster.filter((student) => !submittedIds.has(student.studentId));
+      const pendingStudents = buildFacultySubjectRoster().filter((student) => !submittedIds.has(student.studentId));
 
       const submittedRows = submissions
         .map(
@@ -25211,6 +25759,7 @@ if (facultyDashboardName) {
       const assignments = getAssignments().filter((assignment) => assignment.subjectCode === facultySubjectCode);
       assignmentListEmpty?.classList.toggle("is-hidden", assignments.length > 0);
       const submissions = getAssignmentSubmissions();
+      const subjectRosterSize = buildFacultySubjectRoster().length;
 
       assignmentListBody.innerHTML = assignments
         .map((assignment) => {
@@ -25224,7 +25773,7 @@ if (facultyDashboardName) {
                   ? `<button type="button" class="notice-download" title="${assignment.document.name}" data-download-assignment-doc="${assignment.id}">View Document</button>`
                   : "-"
               }</td>
-              <td>${submissionCount} / ${facultyRoster.length}</td>
+              <td>${submissionCount} / ${subjectRosterSize}</td>
               <td>
                 <div class="action-cell">
                   <button type="button" class="uniform-btn" data-view-submissions="${assignment.id}">View Submissions</button>
@@ -26987,7 +27536,8 @@ if (mapSdkProviderInput) {
   });
 }
 
-const GPREC_CONFIG_SAVE_ENDPOINT = "http://127.0.0.1:8765/admin-config";
+// See GPREC_UPLOAD_ENDPOINT's comment above - same hostname-relative, protocol-matching fix.
+const GPREC_CONFIG_SAVE_ENDPOINT = `${window.location.protocol}//${window.location.hostname}:8765/admin-config`;
 
 const getCurrentIntegrationConfig = () => ({
   googleClientId: document.querySelector("#googleClientIdInput")?.value.trim() || defaultAdminConfig.googleClientId || "",
@@ -30152,6 +30702,345 @@ if (webPageSelect) {
       field?.addEventListener("input", saveAboutRdFields);
     });
   }
+
+  const aboutUsPara1Input = document.querySelector("#aboutUsPara1Input");
+  if (aboutUsPara1Input) {
+    const aboutUsPara2Input = document.querySelector("#aboutUsPara2Input");
+    const introContent = getAboutUsIntroContent();
+    aboutUsPara1Input.value = introContent.paragraph1;
+    if (aboutUsPara2Input) aboutUsPara2Input.value = introContent.paragraph2;
+
+    const saveAboutUsIntroFields = () => {
+      saveAboutUsIntroContent({
+        paragraph1: aboutUsPara1Input.value.trim(),
+        paragraph2: aboutUsPara2Input?.value.trim() || ""
+      });
+      const feedback = document.querySelector("#aboutUsIntroSaveFeedback");
+      if (feedback) { feedback.textContent = "Saved."; feedback.classList.add("success"); }
+    };
+    document.querySelector("#aboutUsIntroSaveButton")?.addEventListener("click", saveAboutUsIntroFields);
+    [aboutUsPara1Input, aboutUsPara2Input].forEach((field) => {
+      field?.addEventListener("input", saveAboutUsIntroFields);
+    });
+  }
+
+  const historyPara1Input = document.querySelector("#historyPara1Input");
+  if (historyPara1Input) {
+    const historyPara2Input = document.querySelector("#historyPara2Input");
+    const historyPara3Input = document.querySelector("#historyPara3Input");
+    const historyContent = getAboutHistoryTextContent();
+    historyPara1Input.value = historyContent.paragraph1;
+    if (historyPara2Input) historyPara2Input.value = historyContent.paragraph2;
+    if (historyPara3Input) historyPara3Input.value = historyContent.paragraph3;
+
+    const saveHistoryTextFields = () => {
+      saveAboutHistoryTextContent({
+        paragraph1: historyPara1Input.value.trim(),
+        paragraph2: historyPara2Input?.value.trim() || "",
+        paragraph3: historyPara3Input?.value.trim() || ""
+      });
+      const feedback = document.querySelector("#historyTextSaveFeedback");
+      if (feedback) { feedback.textContent = "Saved."; feedback.classList.add("success"); }
+    };
+    document.querySelector("#historyTextSaveButton")?.addEventListener("click", saveHistoryTextFields);
+    [historyPara1Input, historyPara2Input, historyPara3Input].forEach((field) => {
+      field?.addEventListener("input", saveHistoryTextFields);
+    });
+  }
+
+  const aboutVisionInput = document.querySelector("#aboutVisionInput");
+  if (aboutVisionInput) {
+    const aboutMissionInput = document.querySelector("#aboutMissionInput");
+    const aboutQualityInput = document.querySelector("#aboutQualityInput");
+    const vmqContent = getAboutVmqContent();
+    aboutVisionInput.value = vmqContent.vision;
+    if (aboutMissionInput) aboutMissionInput.value = vmqContent.mission;
+    if (aboutQualityInput) aboutQualityInput.value = vmqContent.quality;
+
+    const saveAboutVmqFields = () => {
+      saveAboutVmqContent({
+        vision: aboutVisionInput.value.trim(),
+        mission: aboutMissionInput?.value.trim() || "",
+        quality: aboutQualityInput?.value.trim() || ""
+      });
+      const feedback = document.querySelector("#aboutVmqSaveFeedback");
+      if (feedback) { feedback.textContent = "Saved."; feedback.classList.add("success"); }
+    };
+    document.querySelector("#aboutVmqSaveButton")?.addEventListener("click", saveAboutVmqFields);
+    [aboutVisionInput, aboutMissionInput, aboutQualityInput].forEach((field) => {
+      field?.addEventListener("input", saveAboutVmqFields);
+    });
+  }
+
+  const aboutServiceRulesTextInput = document.querySelector("#aboutServiceRulesTextInput");
+  if (aboutServiceRulesTextInput) {
+    const aboutServiceRulesLinkInput = document.querySelector("#aboutServiceRulesLinkInput");
+    const serviceRulesContent = getAboutServiceRulesContent();
+    aboutServiceRulesTextInput.value = serviceRulesContent.description;
+    if (aboutServiceRulesLinkInput) aboutServiceRulesLinkInput.value = serviceRulesContent.pdfUrl;
+
+    const saveAboutServiceRulesFields = () => {
+      saveAboutServiceRulesContent({
+        description: aboutServiceRulesTextInput.value.trim(),
+        pdfUrl: aboutServiceRulesLinkInput?.value.trim() || ""
+      });
+      const feedback = document.querySelector("#aboutServiceRulesSaveFeedback");
+      if (feedback) { feedback.textContent = "Saved."; feedback.classList.add("success"); }
+    };
+    document.querySelector("#aboutServiceRulesSaveButton")?.addEventListener("click", saveAboutServiceRulesFields);
+    [aboutServiceRulesTextInput, aboutServiceRulesLinkInput].forEach((field) => {
+      field?.addEventListener("input", saveAboutServiceRulesFields);
+    });
+  }
+
+  // "Name | Role" one per line <-> [{name, role}], for the About Us Management groups below.
+  const parseNameRoleLines = (text) => (text || "")
+    .split("\n")
+    .map((line) => line.split("|").map((part) => part.trim()))
+    .filter(([name]) => name)
+    .map(([name, role]) => ({ name, role: role || "" }));
+  const formatNameRoleLines = (items) => (items || []).map((item) => `${item.name} | ${item.role}`).join("\n");
+
+  const aboutManagementPara1Input = document.querySelector("#aboutManagementPara1Input");
+  if (aboutManagementPara1Input) {
+    const aboutManagementPara2Input = document.querySelector("#aboutManagementPara2Input");
+    const aboutManagementFounderTrusteesInput = document.querySelector("#aboutManagementFounderTrusteesInput");
+    const aboutManagementCurrentTrustInput = document.querySelector("#aboutManagementCurrentTrustInput");
+    const aboutManagementProfessionalCollegesInput = document.querySelector("#aboutManagementProfessionalCollegesInput");
+    const aboutManagementOtherInstitutesInput = document.querySelector("#aboutManagementOtherInstitutesInput");
+    const aboutManagementServiceOrgsInput = document.querySelector("#aboutManagementServiceOrgsInput");
+    const managementContent = getAboutManagementContent();
+    aboutManagementPara1Input.value = managementContent.paragraph1;
+    if (aboutManagementPara2Input) aboutManagementPara2Input.value = managementContent.paragraph2;
+    if (aboutManagementFounderTrusteesInput) aboutManagementFounderTrusteesInput.value = formatNameRoleLines(managementContent.founderTrustees);
+    if (aboutManagementCurrentTrustInput) aboutManagementCurrentTrustInput.value = formatNameRoleLines(managementContent.currentTrust);
+    if (aboutManagementProfessionalCollegesInput) aboutManagementProfessionalCollegesInput.value = formatNameRoleLines(managementContent.professionalColleges);
+    if (aboutManagementOtherInstitutesInput) aboutManagementOtherInstitutesInput.value = formatNameRoleLines(managementContent.otherInstitutes);
+    if (aboutManagementServiceOrgsInput) aboutManagementServiceOrgsInput.value = formatNameRoleLines(managementContent.serviceOrgs);
+
+    const saveAboutManagementFields = () => {
+      saveAboutManagementContent({
+        paragraph1: aboutManagementPara1Input.value.trim(),
+        paragraph2: aboutManagementPara2Input?.value.trim() || "",
+        founderTrustees: parseNameRoleLines(aboutManagementFounderTrusteesInput?.value),
+        currentTrust: parseNameRoleLines(aboutManagementCurrentTrustInput?.value),
+        professionalColleges: parseNameRoleLines(aboutManagementProfessionalCollegesInput?.value),
+        otherInstitutes: parseNameRoleLines(aboutManagementOtherInstitutesInput?.value),
+        serviceOrgs: parseNameRoleLines(aboutManagementServiceOrgsInput?.value)
+      });
+      const feedback = document.querySelector("#aboutManagementSaveFeedback");
+      if (feedback) { feedback.textContent = "Saved."; feedback.classList.add("success"); }
+    };
+    document.querySelector("#aboutManagementSaveButton")?.addEventListener("click", saveAboutManagementFields);
+    [
+      aboutManagementPara1Input, aboutManagementPara2Input, aboutManagementFounderTrusteesInput,
+      aboutManagementCurrentTrustInput, aboutManagementProfessionalCollegesInput,
+      aboutManagementOtherInstitutesInput, aboutManagementServiceOrgsInput
+    ].forEach((field) => {
+      field?.addEventListener("input", saveAboutManagementFields);
+    });
+  }
+
+  // "Name | Designation | Position" one per line <-> [{name, role, position}] - Governing Body
+  // members need a 3rd field (Position: Chairman/Member), unlike Management's plain name+role.
+  const parseNameRolePositionLines = (text) => (text || "")
+    .split("\n")
+    .map((line) => line.split("|").map((part) => part.trim()))
+    .filter(([name]) => name)
+    .map(([name, role, position]) => ({ name, role: role || "", position: position || "Member" }));
+  const formatNameRolePositionLines = (items) => (items || [])
+    .map((item) => `${item.name} | ${item.role} | ${item.position || "Member"}`)
+    .join("\n");
+
+  const governingBodyManagementInput = document.querySelector("#governingBodyManagementInput");
+  if (governingBodyManagementInput) {
+    const governingBodyFacultyInput = document.querySelector("#governingBodyFacultyInput");
+    const governingBodyExternalInput = document.querySelector("#governingBodyExternalInput");
+    const governingBodyNomineesInput = document.querySelector("#governingBodyNomineesInput");
+    const governingBodyLeadershipInput = document.querySelector("#governingBodyLeadershipInput");
+    const governingBodyContent = getAboutGoverningBodyContent();
+    governingBodyManagementInput.value = formatNameRolePositionLines(governingBodyContent.management);
+    if (governingBodyFacultyInput) governingBodyFacultyInput.value = formatNameRolePositionLines(governingBodyContent.faculty);
+    if (governingBodyExternalInput) governingBodyExternalInput.value = formatNameRolePositionLines(governingBodyContent.external);
+    if (governingBodyNomineesInput) governingBodyNomineesInput.value = formatNameRolePositionLines(governingBodyContent.nominees);
+    if (governingBodyLeadershipInput) governingBodyLeadershipInput.value = formatNameRolePositionLines(governingBodyContent.leadership);
+
+    const saveGoverningBodyFields = () => {
+      saveAboutGoverningBodyContent({
+        management: parseNameRolePositionLines(governingBodyManagementInput.value),
+        faculty: parseNameRolePositionLines(governingBodyFacultyInput?.value),
+        external: parseNameRolePositionLines(governingBodyExternalInput?.value),
+        nominees: parseNameRolePositionLines(governingBodyNomineesInput?.value),
+        leadership: parseNameRolePositionLines(governingBodyLeadershipInput?.value)
+      });
+      const feedback = document.querySelector("#governingBodySaveFeedback");
+      if (feedback) { feedback.textContent = "Saved."; feedback.classList.add("success"); }
+    };
+    document.querySelector("#governingBodySaveButton")?.addEventListener("click", saveGoverningBodyFields);
+    [
+      governingBodyManagementInput, governingBodyFacultyInput, governingBodyExternalInput,
+      governingBodyNomineesInput, governingBodyLeadershipInput
+    ].forEach((field) => {
+      field?.addEventListener("input", saveGoverningBodyFields);
+    });
+  }
+
+  const academicCouncilChairmanInput = document.querySelector("#academicCouncilChairmanInput");
+  if (academicCouncilChairmanInput) {
+    const academicCouncilSecretaryInput = document.querySelector("#academicCouncilSecretaryInput");
+    const academicCouncilDeansHeadsInput = document.querySelector("#academicCouncilDeansHeadsInput");
+    const academicCouncilFacultyCadresInput = document.querySelector("#academicCouncilFacultyCadresInput");
+    const academicCouncilWomanFacultyInput = document.querySelector("#academicCouncilWomanFacultyInput");
+    const academicCouncilExpertsInput = document.querySelector("#academicCouncilExpertsInput");
+    const academicCouncilJntuaNomineesInput = document.querySelector("#academicCouncilJntuaNomineesInput");
+    const academicCouncilContent = getAboutAcademicCouncilContent();
+    academicCouncilChairmanInput.value = formatNameRoleLines(academicCouncilContent.chairman);
+    if (academicCouncilSecretaryInput) academicCouncilSecretaryInput.value = formatNameRoleLines(academicCouncilContent.secretary);
+    if (academicCouncilDeansHeadsInput) academicCouncilDeansHeadsInput.value = formatNameRoleLines(academicCouncilContent.deansHeads);
+    if (academicCouncilFacultyCadresInput) academicCouncilFacultyCadresInput.value = formatNameRoleLines(academicCouncilContent.facultyCadres);
+    if (academicCouncilWomanFacultyInput) academicCouncilWomanFacultyInput.value = formatNameRoleLines(academicCouncilContent.womanFaculty);
+    if (academicCouncilExpertsInput) academicCouncilExpertsInput.value = formatNameRoleLines(academicCouncilContent.experts);
+    if (academicCouncilJntuaNomineesInput) academicCouncilJntuaNomineesInput.value = formatNameRoleLines(academicCouncilContent.jntuaNominees);
+
+    const saveAcademicCouncilFields = () => {
+      saveAboutAcademicCouncilContent({
+        chairman: parseNameRoleLines(academicCouncilChairmanInput.value),
+        secretary: parseNameRoleLines(academicCouncilSecretaryInput?.value),
+        deansHeads: parseNameRoleLines(academicCouncilDeansHeadsInput?.value),
+        facultyCadres: parseNameRoleLines(academicCouncilFacultyCadresInput?.value),
+        womanFaculty: parseNameRoleLines(academicCouncilWomanFacultyInput?.value),
+        experts: parseNameRoleLines(academicCouncilExpertsInput?.value),
+        jntuaNominees: parseNameRoleLines(academicCouncilJntuaNomineesInput?.value)
+      });
+      const feedback = document.querySelector("#academicCouncilSaveFeedback");
+      if (feedback) { feedback.textContent = "Saved."; feedback.classList.add("success"); }
+    };
+    document.querySelector("#academicCouncilSaveButton")?.addEventListener("click", saveAcademicCouncilFields);
+    [
+      academicCouncilChairmanInput, academicCouncilSecretaryInput, academicCouncilDeansHeadsInput,
+      academicCouncilFacultyCadresInput, academicCouncilWomanFacultyInput, academicCouncilExpertsInput,
+      academicCouncilJntuaNomineesInput
+    ].forEach((field) => {
+      field?.addEventListener("input", saveAcademicCouncilFields);
+    });
+  }
+
+  // Bio textarea <-> stored string: a blank line between paragraphs, same convention as the
+  // public-page renderer (renderAboutLeaderBio splits on "\n\n").
+  const formatBioParagraphs = (text) => (text || "")
+    .split(/\n\s*\n/)
+    .map((para) => para.trim())
+    .filter(Boolean)
+    .join("\n\n");
+
+  const adminPrincipalNameInput = document.querySelector("#adminPrincipalNameInput");
+  if (adminPrincipalNameInput) {
+    const adminPrincipalDesignationInput = document.querySelector("#adminPrincipalDesignationInput");
+    const adminPrincipalBioInput = document.querySelector("#adminPrincipalBioInput");
+    const principalContent = getAboutAdministrationContent();
+    adminPrincipalNameInput.value = principalContent.principal.name;
+    if (adminPrincipalDesignationInput) adminPrincipalDesignationInput.value = principalContent.principal.designation;
+    if (adminPrincipalBioInput) adminPrincipalBioInput.value = principalContent.principal.bio;
+
+    const savePrincipalFields = () => {
+      saveAboutAdministrationContent({
+        ...getAboutAdministrationContent(),
+        principal: {
+          name: adminPrincipalNameInput.value.trim(),
+          designation: adminPrincipalDesignationInput?.value.trim() || "",
+          bio: formatBioParagraphs(adminPrincipalBioInput?.value)
+        }
+      });
+      const feedback = document.querySelector("#adminPrincipalSaveFeedback");
+      if (feedback) { feedback.textContent = "Saved."; feedback.classList.add("success"); }
+    };
+    document.querySelector("#adminPrincipalSaveButton")?.addEventListener("click", savePrincipalFields);
+  }
+
+  const adminVicePrincipalNameInput = document.querySelector("#adminVicePrincipalNameInput");
+  if (adminVicePrincipalNameInput) {
+    const adminVicePrincipalDesignationInput = document.querySelector("#adminVicePrincipalDesignationInput");
+    const adminVicePrincipalBioInput = document.querySelector("#adminVicePrincipalBioInput");
+    const vicePrincipalContent = getAboutAdministrationContent();
+    adminVicePrincipalNameInput.value = vicePrincipalContent.vicePrincipal.name;
+    if (adminVicePrincipalDesignationInput) adminVicePrincipalDesignationInput.value = vicePrincipalContent.vicePrincipal.designation;
+    if (adminVicePrincipalBioInput) adminVicePrincipalBioInput.value = vicePrincipalContent.vicePrincipal.bio;
+
+    const saveVicePrincipalFields = () => {
+      saveAboutAdministrationContent({
+        ...getAboutAdministrationContent(),
+        vicePrincipal: {
+          name: adminVicePrincipalNameInput.value.trim(),
+          designation: adminVicePrincipalDesignationInput?.value.trim() || "",
+          bio: formatBioParagraphs(adminVicePrincipalBioInput?.value)
+        }
+      });
+      const feedback = document.querySelector("#adminVicePrincipalSaveFeedback");
+      if (feedback) { feedback.textContent = "Saved."; feedback.classList.add("success"); }
+    };
+    document.querySelector("#adminVicePrincipalSaveButton")?.addEventListener("click", saveVicePrincipalFields);
+  }
+
+  const adminDeansManagerBody = document.querySelector("#adminDeansManagerBody");
+  if (adminDeansManagerBody) {
+    const adminDeansManagerEmpty = document.querySelector("#adminDeansManagerEmpty");
+    const renderAdminDeansManager = () => {
+      const deans = getAboutAdministrationContent().deans || [];
+      adminDeansManagerBody.innerHTML = deans
+        .map(
+          (dean, index) => `
+            <tr>
+              <td>${escapeHtml(dean.position)}</td>
+              <td>${escapeHtml(dean.name)}</td>
+              <td>${escapeHtml(dean.department)}</td>
+              <td>${escapeHtml(dean.email)}</td>
+              <td>${escapeHtml(dean.phone)}</td>
+              <td><button type="button" class="icon-btn-delete" data-remove-dean="${index}" aria-label="Remove" title="Remove">${deleteIconSvg}</button></td>
+            </tr>`
+        )
+        .join("");
+      if (adminDeansManagerEmpty) adminDeansManagerEmpty.classList.toggle("is-hidden", deans.length > 0);
+    };
+    renderAdminDeansManager();
+
+    document.querySelector("#adminDeanAddButton")?.addEventListener("click", () => {
+      const position = document.querySelector("#adminDeanPositionInput")?.value.trim() || "";
+      const name = document.querySelector("#adminDeanNameInput")?.value.trim() || "";
+      const department = document.querySelector("#adminDeanDepartmentInput")?.value.trim() || "";
+      const email = document.querySelector("#adminDeanEmailInput")?.value.trim() || "";
+      const phone = document.querySelector("#adminDeanPhoneInput")?.value.trim() || "";
+      const feedback = document.querySelector("#adminDeanAddFeedback");
+      if (!position || !name) {
+        if (feedback) { feedback.textContent = "Enter at least a position and name."; feedback.classList.remove("success"); }
+        return;
+      }
+      const current = getAboutAdministrationContent();
+      saveAboutAdministrationContent({
+        ...current,
+        deans: [...(current.deans || []), { position, name, department, email, phone }]
+      });
+      renderAdminDeansManager();
+      ["#adminDeanPositionInput", "#adminDeanNameInput", "#adminDeanDepartmentInput", "#adminDeanEmailInput", "#adminDeanPhoneInput"].forEach((sel) => {
+        const field = document.querySelector(sel);
+        if (field) field.value = "";
+      });
+      if (feedback) { feedback.textContent = "Dean added."; feedback.classList.add("success"); }
+    });
+
+    adminDeansManagerBody.addEventListener("click", (event) => {
+      const button = event.target.closest("[data-remove-dean]");
+      if (!button) return;
+      const index = Number(button.dataset.removeDean);
+      const current = getAboutAdministrationContent();
+      saveAboutAdministrationContent({
+        ...current,
+        deans: (current.deans || []).filter((_, i) => i !== index)
+      });
+      renderAdminDeansManager();
+      showFeedToast("Dean removed.");
+    });
+  }
+
 
   const admissionsBtechCategoryAInput = document.querySelector("#admissionsBtechCategoryAInput");
   if (admissionsBtechCategoryAInput) {
