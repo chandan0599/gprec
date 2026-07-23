@@ -29872,6 +29872,106 @@ if (contactMessageForm) {
   });
 }
 
+// Campus Life page's Grievance Cell form (pages/campus-life.html) - field set per complainant
+// type mirrors examcell.gprec.ac.in/Grievance.aspx (Student/Parent/Faculty/Alumni each show a
+// different set of fields there too), just styled to match this site instead of the ASP.NET
+// portal. No dedicated grievances table/backend yet - like contactMessageForm above, this opens
+// the visitor's own mail client addressed to the college so the grievance is still actually sent.
+const grievanceForm = document.querySelector("#grievanceForm");
+if (grievanceForm) {
+  const grievanceComplainantType = document.querySelector("#grievanceComplainantType");
+  const grievanceFieldGroups = grievanceForm.querySelectorAll("[data-grievance-fields]");
+  const grievanceCommonFields = grievanceForm.querySelector("[data-grievance-fields-common]");
+
+  grievanceComplainantType?.addEventListener("change", () => {
+    const type = grievanceComplainantType.value;
+    grievanceFieldGroups.forEach((group) => {
+      group.classList.toggle("is-hidden", group.dataset.grievanceFields !== type);
+    });
+    grievanceCommonFields?.classList.toggle("is-hidden", !type);
+  });
+
+  grievanceForm.addEventListener("submit", (event) => {
+    event.preventDefault();
+    const type = grievanceComplainantType?.value || "";
+    const feedback = document.querySelector("#grievanceFeedback");
+    const fail = (message) => {
+      if (feedback) {
+        feedback.textContent = message;
+        feedback.classList.remove("success");
+      }
+    };
+    if (!type) {
+      fail("Select who the grievance is from.");
+      return;
+    }
+    const grievanceBody = document.querySelector("#grievanceBody")?.value.trim() || "";
+    if (!grievanceBody) {
+      fail("Describe the grievance before submitting.");
+      return;
+    }
+
+    // Only this type's fields were ever un-hidden, so only they can have real values -
+    // reading every field regardless of type would pull in stale input from a previously
+    // selected (then hidden) complainant type.
+    const fieldsByType = {
+      Student: {
+        "Student Name": "#grievanceStudentName",
+        Phone: "#grievanceStudentPhone",
+        "Roll No.": "#grievanceStudentRollNo",
+        Email: "#grievanceStudentEmail",
+        "Year of Study": "#grievanceStudentYear"
+      },
+      Parent: {
+        "Parent Name": "#grievanceParentName",
+        "Parent Phone": "#grievanceParentPhone",
+        "Student Name": "#grievanceParentStudentName",
+        "Student Phone": "#grievanceParentStudentPhone",
+        "Roll No.": "#grievanceParentRollNo",
+        Email: "#grievanceParentEmail",
+        "Year of Study": "#grievanceParentYear"
+      },
+      Faculty: {
+        Name: "#grievanceFacultyName",
+        Phone: "#grievanceFacultyPhone",
+        ID: "#grievanceFacultyId",
+        Email: "#grievanceFacultyEmail",
+        Designation: "#grievanceFacultyDesignation",
+        Department: "#grievanceFacultyDepartment"
+      },
+      Alumni: {
+        Name: "#grievanceAlumniName",
+        Phone: "#grievanceAlumniPhone",
+        ID: "#grievanceAlumniId",
+        Email: "#grievanceAlumniEmail",
+        "Year of Passing": "#grievanceAlumniYear"
+      }
+    };
+    const fields = fieldsByType[type] || {};
+    const lines = [`Complainant: ${type}`];
+    let contactEmail = "";
+    Object.entries(fields).forEach(([label, selector]) => {
+      const field = document.querySelector(selector);
+      const value = field?.value.trim() || "";
+      if (value) lines.push(`${label}: ${value}`);
+      if (field?.type === "email" && value) contactEmail = value;
+    });
+    lines.push("", "Grievance:", grievanceBody);
+
+    const mailtoUrl = `mailto:info@gprec.ac.in?subject=${encodeURIComponent(`Grievance - ${type}`)}&body=${encodeURIComponent(lines.join("\n"))}${contactEmail ? `&cc=${encodeURIComponent(contactEmail)}` : ""}`;
+    window.location.href = mailtoUrl;
+
+    grievanceForm.reset();
+    grievanceFieldGroups.forEach((group) => group.classList.add("is-hidden"));
+    grievanceCommonFields?.classList.add("is-hidden");
+    if (feedback) {
+      feedback.textContent = "Your email app should now open, addressed to the college - send it from there to actually deliver the grievance.";
+      feedback.classList.add("success");
+    }
+    showFeedToast("Grievance ready to send.");
+  });
+}
+
 const contactMessagesBody = document.querySelector("#contactMessagesBody");
 if (contactMessagesBody) {
   const contactMessagesEmpty = document.querySelector("#contactMessagesEmpty");

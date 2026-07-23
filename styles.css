@@ -11781,6 +11781,13 @@ img.student-user-avatar {
   min-height: 0;
 }
 
+.contact-form [data-grievance-fields],
+.contact-form [data-grievance-fields-common] {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
 .contact-form label {
   display: grid;
   gap: 6px;
@@ -11797,6 +11804,7 @@ img.student-user-avatar {
 }
 
 .contact-form input,
+.contact-form select,
 .contact-form textarea {
   padding: 11px 12px;
   color: var(--navy);
@@ -11814,6 +11822,7 @@ img.student-user-avatar {
 }
 
 .contact-form input:focus,
+.contact-form select:focus,
 .contact-form textarea:focus {
   border-color: rgba(255, 129, 0, 0.5);
   box-shadow: 0 0 0 3px rgba(255, 129, 0, 0.14);
