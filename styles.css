@@ -3634,7 +3634,7 @@ a {
   gap: 16px;
   padding: 20px 22px;
   border: 1px solid var(--line);
-  border-radius: 999px;
+  border-radius: 12px;
   background: var(--white);
   box-shadow: 0 12px 32px rgba(17, 24, 39, 0.06);
   transition: transform 180ms ease, box-shadow 180ms ease;
