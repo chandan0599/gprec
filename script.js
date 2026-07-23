@@ -708,7 +708,7 @@ const defaultAdminConfig = {
   googleCalendarApiKey: "",
   payuPaymentLink: "",
   aiSettings: { provider: "", model: "", apiKey: "", baseUrl: "" },
-  mapSdkSettings: { provider: "mappls", sdkUrl: "", version: "3.0", accessToken: "", plugins: "", layer: "vector" },
+  mapSdkSettings: { provider: "mappls", sdkUrl: "https://sdk.mappls.com/map/sdk/web", version: "3.0", accessToken: "qdonytuzqbpashwfsfqkvbgltqqvyaxqnokk", plugins: "", layer: "vector" },
   libraryApiConfig: { baseUrl: "", apiKey: "" },
   databaseApiConfig: { type: "", baseUrl: "", apiKey: "", username: "", password: "", host: "", port: "", database: "" },
   smsSettings: {
@@ -738,6 +738,7 @@ const adminConfigFieldsLoaded = {
   googleCalendarApiKey: false,
   payuPaymentLink: false,
   aiSettings: false,
+  mapSdkSettings: false,
   libraryApiConfig: false,
   databaseApiConfig: false,
   smsSettings: false,
@@ -772,6 +773,10 @@ fetch(gprecRootPrefix + "admin-config.json")
     if (config.aiSettings) {
       defaultAdminConfig.aiSettings = { ...defaultAdminConfig.aiSettings, ...config.aiSettings };
       adminConfigFieldsLoaded.aiSettings = true;
+    }
+    if (config.mapSdkSettings) {
+      defaultAdminConfig.mapSdkSettings = { ...defaultAdminConfig.mapSdkSettings, ...config.mapSdkSettings };
+      adminConfigFieldsLoaded.mapSdkSettings = true;
     }
     if (config.libraryApiConfig) {
       defaultAdminConfig.libraryApiConfig = { ...defaultAdminConfig.libraryApiConfig, ...config.libraryApiConfig };
@@ -18115,17 +18120,37 @@ const getVisitorTickerMessages = () => {
 };
 const saveVisitorTickerMessages = (messages) => saveSiteContent("visitorTickerMessages", messages);
 
+const defaultVisitorZoneMap = [
+  { label: "1", title: "Registration", icon: "📋", color: "#8888AA", current: "Open - Walk In", next: "Closes at 9:00 PM", capacity: 50, note: "Info & Help · main gate · helpdesk", lat: 15.7730, lng: 78.0571, crowd: 12, status: "live" },
+  { label: "2", title: "Food Court", icon: "🍔", color: "#FFB800", current: "20+ Stalls Open", next: "Late Night Special · 10 PM", capacity: 300, note: "Food & Drinks · biryani, momos, rolls, chaat", lat: 15.7731, lng: 78.0562, crowd: 65, status: "live" },
+  { label: "3", title: "Workshop Hall", icon: "🔧", color: "#FF8A00", current: "", next: "Robotics Workshop · 6:30 PM", capacity: 80, note: "Workshop · robotics and design sessions", lat: 15.7739, lng: 78.0556, crowd: 8, status: "soon" },
+  { label: "4", title: "Tech Hub", icon: "💻", color: "#00E5B4", current: "Hackathon - Round 2", next: "AI Showcase · 7:00 PM", capacity: 200, note: "Competition · hackathons and coding contests", lat: 15.7742, lng: 78.0561, crowd: 72, status: "live" },
+  { label: "5", title: "Gaming Arena", icon: "🎮", color: "#00AEEF", current: "", next: "BGMI Tournament · 5:30 PM", capacity: 250, note: "Esports · tournaments, retro gaming, VR", lat: 15.7747, lng: 78.0559, crowd: 31, status: "soon" },
+  { label: "6", title: "Open Mic Corner", icon: "🎤", color: "#C2185B", current: "", next: "Poetry Slam · 7:30 PM", capacity: 100, note: "Performance · poets, comedy, musicians", lat: 15.7749, lng: 78.0568, crowd: 20, status: "ended" },
+  { label: "7", title: "Main Stage", icon: "🎵", color: "#8B2EFF", current: "DJ Aarav - Live Set", next: "Battle of Bands · 8:30 PM", capacity: 500, note: "Performance · Open Air Theatre main stage", lat: 15.7752, lng: 78.0564, crowd: 87, status: "live" },
+  { label: "8", title: "Art Zone", icon: "🎨", color: "#FF2D5C", current: "Canvas Installation Open", next: "Live Mural Contest · 6 PM", capacity: 150, note: "Exhibition · murals and photography", lat: 15.7742, lng: 78.0577, crowd: 43, status: "live" }
+];
 const getVisitorZoneMap = () => {
   const saved = getSiteContent("visitorZoneMap", null);
-  return Array.isArray(saved) && saved.length
-    ? saved
-    : [
-        { label: "N", title: "Technical Zone", note: "CSE Block · labs · coding rounds" },
-        { label: "E", title: "Cultural Zone", note: "Main Auditorium · stage · music" },
-        { label: "S", title: "Sports Zone", note: "Grounds · arena · team events" },
-        { label: "W", title: "Workshop Zone", note: "Innovation Lab · hands-on sessions" },
-        { label: "?", title: "Help Desk", note: "Passes · payments · venue support" }
-      ];
+  const oldFiveZoneTitles = ["Technical Zone", "Cultural Zone", "Food Court", "Workshop Zone", "Help Desk"];
+  if (!Array.isArray(saved) || !saved.length) return defaultVisitorZoneMap;
+  if (saved.length === 5 && saved.every((zone, index) => zone?.title === oldFiveZoneTitles[index])) return defaultVisitorZoneMap;
+  return saved.map((zone, index) => {
+    const fallback = defaultVisitorZoneMap[index] || {};
+    const hasLat = Number.isFinite(Number(zone.lat));
+    const hasLng = Number.isFinite(Number(zone.lng));
+    return {
+      ...fallback,
+      ...zone,
+      label: zone.label || fallback.label || String(index + 1),
+      lat: hasLat ? Number(zone.lat) : fallback.lat,
+      lng: hasLng ? Number(zone.lng) : fallback.lng,
+      color: zone.color || fallback.color || "#FFB15C",
+      icon: zone.icon || fallback.icon || "📍",
+      status: zone.status || fallback.status || "info",
+      crowd: Number.isFinite(Number(zone.crowd)) ? Number(zone.crowd) : (fallback.crowd || 0)
+    };
+  });
 };
 const saveVisitorZoneMap = (zones) => saveSiteContent("visitorZoneMap", zones);
 
@@ -19483,14 +19508,14 @@ const renderA4DocViaNativePdf = async (html, css, rootSelector, title, backgroun
 // ticket-stub family: Event/Bus/Vehicle/Hostel passes) - hits /render-png, which uses Playwright
 // element.screenshot() instead of page.pdf(). Returns null (not a throw) on any failure so callers
 // fall back to html2canvas cleanly.
-const renderA4DocViaNativePng = async (html, css, rootSelector, width, scale) => {
+const renderA4DocViaNativePng = async (html, css, rootSelector, width, scale, options = {}) => {
   try {
     const controller = new AbortController();
-    const timeout = setTimeout(() => controller.abort(), 5000);
+    const timeout = setTimeout(() => controller.abort(), options.timeoutMs || 5000);
     const response = await fetch("http://localhost:8767/render-png", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ html, css, width, scale, rootSelector }),
+      body: JSON.stringify({ html, css, width, scale, rootSelector, waitForSelector: options.waitForSelector, waitMs: options.waitMs }),
       signal: controller.signal
     });
     clearTimeout(timeout);
@@ -26738,6 +26763,57 @@ if (webinarManagerBody) {
 // Not wired to make live API calls - a static frontend cannot hold a paid API key securely.
 const defaultAiSettings = { provider: "", model: "", apiKey: "", baseUrl: "" };
 
+const hideMapSdkAttribution = (() => {
+  let observer = null;
+  const attributionSelector = [
+    ".maplibregl-ctrl-attrib",
+    ".mapboxgl-ctrl-attrib",
+    ".leaflet-control-attribution",
+    "[class*='attribution' i]",
+    "[class*='copyright' i]",
+    "[class*='watermark' i]",
+    "a[href*='mappls' i]",
+    "a[href*='mapmyindia' i]",
+    "img[src*='mappls' i]",
+    "img[src*='mapmyindia' i]",
+    "img[alt*='mappls' i]",
+    "img[alt*='mapmyindia' i]"
+  ].join(",");
+  const shouldHideNode = (node) => {
+    if (!node || node.nodeType !== 1) return false;
+    const element = node;
+    if (element.matches?.(attributionSelector)) return true;
+    const ownText = Array.from(element.childNodes || [])
+      .filter((child) => child.nodeType === 3)
+      .map((child) => child.textContent || "")
+      .join(" ")
+      .trim()
+      .toLowerCase();
+    return Boolean(ownText) && /map data|mapmyindia|mappls|report/.test(ownText) && element.children.length <= 2;
+  };
+  const hideInRoot = (root = document) => {
+    const scope = root.querySelectorAll ? root : document;
+    scope.querySelectorAll?.(`.visitor-zone-sdk-map ${attributionSelector}, .admin-zone-sdk-stage ${attributionSelector}, .visitor-zone-sdk-map *, .admin-zone-sdk-stage *`).forEach((element) => {
+      if (shouldHideNode(element)) element.style.setProperty("display", "none", "important");
+    });
+  };
+  return () => {
+    hideInRoot();
+    if (observer) return;
+    observer = new MutationObserver((mutations) => {
+      mutations.forEach((mutation) => {
+        mutation.addedNodes.forEach((node) => {
+          if (shouldHideNode(node)) {
+            node.style?.setProperty("display", "none", "important");
+          }
+          hideInRoot(node);
+        });
+      });
+    });
+    observer.observe(document.body, { childList: true, subtree: true });
+  };
+})();
+
 const getAiSettings = () => {
   if (adminConfigFieldsLoaded.aiSettings) {
     return { ...defaultAiSettings, ...defaultAdminConfig.aiSettings };
@@ -26757,14 +26833,19 @@ const saveAiSettings = (settings) => {
 
 // Map SDK settings (Mappls, used by the admin/visitor event zone map) - same
 // admin-config-server-backed pattern as AI Settings above.
-const defaultMapSdkSettings = { provider: "mappls", sdkUrl: "https://sdk.mappls.com/map/sdk/web", version: "3.0", accessToken: "", plugins: "", layer: "vector" };
+const defaultMapSdkSettings = { provider: "mappls", sdkUrl: "https://sdk.mappls.com/map/sdk/web", version: "3.0", accessToken: "qdonytuzqbpashwfsfqkvbgltqqvyaxqnokk", plugins: "", layer: "vector" };
 
 const getMapSdkSettings = () => {
   if (adminConfigFieldsLoaded.mapSdkSettings) {
     return { ...defaultMapSdkSettings, ...defaultAdminConfig.mapSdkSettings };
   }
   try {
-    return JSON.parse(localStorage.getItem("gprecMapSdkSettings") || "null") || defaultMapSdkSettings;
+    const storedSettings = JSON.parse(localStorage.getItem("gprecMapSdkSettings") || "null");
+    if (!storedSettings) return defaultMapSdkSettings;
+    const mergedSettings = { ...defaultMapSdkSettings, ...storedSettings };
+    if (!mergedSettings.accessToken) mergedSettings.accessToken = defaultMapSdkSettings.accessToken;
+    if (!mergedSettings.sdkUrl) mergedSettings.sdkUrl = defaultMapSdkSettings.sdkUrl;
+    return mergedSettings;
   } catch {
     return defaultMapSdkSettings;
   }

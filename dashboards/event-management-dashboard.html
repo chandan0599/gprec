@@ -6,7 +6,7 @@
     <title>Event Management Dashboard | GPREC</title>
     <meta name="description" content="GPREC college fest event management dashboard for admins, faculty coordinators, and student volunteers.">
     <link rel="icon" href="https://www.gprec.ac.in/wp-content/uploads/2017/08/fav.png" sizes="32x32">
-    <link rel="stylesheet" href="../styles.css?v=20260722-31">
+    <link rel="stylesheet" href="../styles.css?v=20260723-86">
   </head>
   <body class="admin-dashboard-page">
     <header class="student-topbar admin-topbar">
@@ -398,7 +398,7 @@
     </main>
 
     <script src="../html2canvas.min.js"></script>
-    <script src="../script.js?v=20260722-31"></script>
+    <script src="../script.js?v=20260723-86"></script>
     <script>
       (() => {
         const role = localStorage.getItem("gprecActiveRole");
@@ -806,6 +806,7 @@
             let adminZoneMapReady = false;
             let adminZoneMapScriptLoading = false;
             let adminZoneFullscreenWired = false;
+            let adminZonePreviewCameraSnapshot = null;
             const statusText = (status) => ({ live: "Live Now", soon: "Starting Soon", info: "Info", ended: "Ended" }[status] || "Info");
             const readMapSettingsForm = () => {
               const nextSettings = {};
@@ -889,6 +890,9 @@
                   <div class="admin-zone-sdk-stage">
                     <div class="admin-zone-sdk-map" id="adminZoneSdkMap"></div>
                     <div class="admin-zone-sdk-pins" id="adminZoneSdkPins"></div>
+                    <button type="button" class="zone-map-fullscreen-button" id="adminZoneFullscreenButton" title="Open fullscreen" aria-label="Open fullscreen">
+                      <span aria-hidden="true">⛶</span>
+                    </button>
                     <div class="admin-zone-map-heading">
                       <img src="../gprec-logo-enhanced.png" alt="">
                       <span>GPREC Event Zone Map</span>
@@ -897,33 +901,106 @@
                   </div>
                 `;
               }
+              const stage = previewEl.querySelector(".admin-zone-sdk-stage");
+              if (stage && !stage.querySelector("#adminZoneFullscreenButton")) {
+                const button = document.createElement("button");
+                button.type = "button";
+                button.className = "zone-map-fullscreen-button";
+                button.id = "adminZoneFullscreenButton";
+                button.title = "Open fullscreen";
+                button.setAttribute("aria-label", "Open fullscreen");
+                button.innerHTML = '<span aria-hidden="true">⛶</span>';
+                stage.appendChild(button);
+              }
+            };
+            const readAdminZoneCameraSnapshot = () => {
+              if (!adminZoneMapInstance) return null;
+              try {
+                const center = adminZoneMapInstance.getCenter?.();
+                const lat = Number(center?.lat ?? center?.latitude ?? (Array.isArray(center) ? center[1] : NaN));
+                const lng = Number(center?.lng ?? center?.lon ?? center?.longitude ?? (Array.isArray(center) ? center[0] : NaN));
+                const zoom = Number(adminZoneMapInstance.getZoom?.());
+                const bearing = Number(adminZoneMapInstance.getBearing?.() ?? 0);
+                const pitch = Number(adminZoneMapInstance.getPitch?.() ?? 0);
+                if (!Number.isFinite(lat) || !Number.isFinite(lng) || !Number.isFinite(zoom)) return null;
+                return { center: { lat, lng }, zoom, bearing: Number.isFinite(bearing) ? bearing : 0, pitch: Number.isFinite(pitch) ? pitch : 0 };
+              } catch (error) {
+                return null;
+              }
+            };
+            const restoreAdminZonePreviewCamera = () => {
+              if (!adminZoneMapInstance) return;
+              const snapshot = adminZonePreviewCameraSnapshot;
+              try { adminZoneMapInstance.resize?.(); } catch (error) {}
+              if (snapshot) {
+                try {
+                  adminZoneMapInstance.jumpTo?.({
+                    center: snapshot.center,
+                    zoom: snapshot.zoom,
+                    pitch: snapshot.pitch,
+                    bearing: snapshot.bearing
+                  });
+                } catch (error) {
+                  try {
+                    adminZoneMapInstance.flyTo?.({
+                      center: snapshot.center,
+                      zoom: snapshot.zoom,
+                      pitch: snapshot.pitch,
+                      bearing: snapshot.bearing,
+                      duration: 0,
+                      essential: true
+                    });
+                  } catch (innerError) {}
+                }
+              } else {
+                fitAdminZoneBannerView();
+              }
+              positionAdminZoneMapLabels();
+              setTimeout(positionAdminZoneMapLabels, 160);
             };
             const syncAdminZoneFullscreen = () => {
-              setTimeout(() => {
+              const stage = document.querySelector(".admin-zone-sdk-stage");
+              const isFullscreen = document.fullscreenElement === stage;
+              stage?.classList.toggle("is-fullscreen", isFullscreen);
+              const button = document.querySelector("#adminZoneFullscreenButton");
+              if (button) {
+                button.classList.toggle("is-active", isFullscreen);
+                button.title = isFullscreen ? "Close fullscreen" : "Open fullscreen";
+                button.setAttribute("aria-label", button.title);
+                button.querySelector("span").textContent = isFullscreen ? "×" : "⛶";
+              }
+              const restoreDelays = isFullscreen ? [80, 220, 520] : [120, 360, 760, 1200];
+              restoreDelays.forEach((delay) => setTimeout(() => {
                 try { adminZoneMapInstance?.resize?.(); } catch (error) {}
+                if (!isFullscreen && adminZoneMapInstance && delay >= 220) {
+                  restoreAdminZonePreviewCamera();
+                } else if (adminZoneMapInstance && delay >= 220) {
+                  fitAdminZoneBannerView();
+                  setTimeout(positionAdminZoneMapLabels, 160);
+                }
                 positionAdminZoneMapLabels();
-              }, 180);
+              }, delay));
             };
             const wireAdminZoneNativeFullscreen = () => {
               if (adminZoneFullscreenWired) return;
               const stage = document.querySelector(".admin-zone-sdk-stage");
               if (!stage) return;
               adminZoneFullscreenWired = true;
-              stage.addEventListener("click", async (event) => {
-                const control = event.target?.closest?.("button, a");
-                if (!control || control.closest(".admin-zone-sdk-pins")) return;
-                const meta = `${control.className || ""} ${control.getAttribute("aria-label") || ""} ${control.getAttribute("title") || ""}`.toLowerCase();
-                const isFullscreenControl = meta.includes("fullscreen") || meta.includes("full screen") || meta.includes("ctrl-fullscreen");
-                if (!isFullscreenControl) return;
+              const button = document.querySelector("#adminZoneFullscreenButton");
+              button?.addEventListener("click", async (event) => {
                 event.preventDefault();
                 event.stopPropagation();
                 try {
                   if (document.fullscreenElement === stage) await document.exitFullscreen();
-                  else await stage.requestFullscreen();
+                  else {
+                    adminZonePreviewCameraSnapshot = readAdminZoneCameraSnapshot();
+                    await stage.requestFullscreen();
+                  }
                   syncAdminZoneFullscreen();
                 } catch (error) {}
-              }, true);
+              });
               document.addEventListener("fullscreenchange", syncAdminZoneFullscreen);
+              syncAdminZoneFullscreen();
             };
             const positionAdminZoneMapLabels = () => {
               const pinsEl = document.querySelector("#adminZoneSdkPins");
@@ -981,17 +1058,17 @@
               const lngs = points.map((point) => Number(point.lng)).filter(Number.isFinite);
               const lats = points.map((point) => Number(point.lat)).filter(Number.isFinite);
               if (!lngs.length || !lats.length) return;
-              const minLng = Math.min(...lngs) - 0.00035;
-              const maxLng = Math.max(...lngs) + 0.00035;
-              const minLat = Math.min(...lats) - 0.00035;
-              const maxLat = Math.max(...lats) + 0.00035;
+              const minLng = Math.min(...lngs) - 0.00215;
+              const maxLng = Math.max(...lngs) + 0.00235;
+              const minLat = Math.min(...lats) - 0.00155;
+              const maxLat = Math.max(...lats) + 0.00135;
               const camera = getAdminZone2dCamera();
               try {
                 adminZoneMapInstance.fitBounds?.([[minLng, minLat], [maxLng, maxLat]], {
-                  padding: { top: 122, right: 84, bottom: 178, left: 84 },
+                  padding: { top: 96, right: 68, bottom: 146, left: 68 },
                   pitch: 0,
                   bearing: camera.bearing,
-                  duration: 800,
+                  duration: 650,
                   essential: true
                 });
               } catch (error) {}
@@ -1129,102 +1206,252 @@
                 positionAdminZoneMapLabels();
               }, 650);
             };
-            const buildPrintableZoneMapSvg = () => {
-              const zones = getVisitorZoneMap();
-              const currentSettings = getVisitorZoneMapSettings();
-              const width = 1200;
-              const height = 760;
-              const allPoints = [
-                { lat: currentSettings.entranceLat, lng: currentSettings.entranceLng },
-                { lat: currentSettings.theatreLat, lng: currentSettings.theatreLng },
-                { lat: currentSettings.seatingLat, lng: currentSettings.seatingLng },
-                ...zones
-              ].filter((point) => Number.isFinite(Number(point.lat)) && Number.isFinite(Number(point.lng)));
-              const lats = allPoints.map((point) => Number(point.lat));
-              const lngs = allPoints.map((point) => Number(point.lng));
-              const minLat = Math.min(...lats) - 0.0008;
-              const maxLat = Math.max(...lats) + 0.0008;
-              const minLng = Math.min(...lngs) - 0.0008;
-              const maxLng = Math.max(...lngs) + 0.0008;
-              const project = (lat, lng) => ({
-                x: 86 + ((Number(lng) - minLng) / Math.max(0.00001, maxLng - minLng)) * (width - 172),
-                y: 104 + ((maxLat - Number(lat)) / Math.max(0.00001, maxLat - minLat)) * (height - 208)
-              });
-              const roads = [
-                "M90 610 C260 560 410 585 560 520 S850 470 1100 420",
-                "M210 130 C370 240 470 360 620 650",
-                "M470 90 C570 260 720 390 1060 650",
-                "M130 365 H1085",
-                "M300 690 C460 560 620 470 880 180"
-              ];
-              const zoneNodes = zones.map((zone, index) => {
-                const point = project(zone.lat, zone.lng);
-                const color = zone.color || "#FFB15C";
-                const label = String(index + 1);
-                return `
-                  <g class="print-zone" transform="translate(${point.x.toFixed(1)} ${point.y.toFixed(1)})">
-                    <circle r="30" fill="${escapeHtmlSafe(color)}" stroke="#ffffff" stroke-width="4"/>
-                    <text y="7" text-anchor="middle" font-size="22" font-weight="900" fill="#06203A">${escapeHtmlSafe(label)}</text>
-                    <rect x="-92" y="-80" width="184" height="38" rx="18" fill="#071B33" stroke="${escapeHtmlSafe(color)}" stroke-width="2"/>
-                    <text y="-56" text-anchor="middle" font-size="16" font-weight="900" fill="#ffffff">${escapeHtmlSafe(zone.icon || "•")} ${escapeHtmlSafe(zone.title || "Zone")}</text>
-                  </g>
-                `;
-              }).join("");
-              const entrance = project(currentSettings.entranceLat, currentSettings.entranceLng);
-              const theatre = project(currentSettings.theatreLat, currentSettings.theatreLng);
-              const seating = project(currentSettings.seatingLat, currentSettings.seatingLng);
-              const legend = zones.map((zone, index) => `
-                <g transform="translate(${80 + (index % 4) * 270} ${height - 88 + Math.floor(index / 4) * 34})">
-                  <circle r="12" fill="${escapeHtmlSafe(zone.color || "#FFB15C")}"/>
-                  <text x="22" y="5" font-size="15" font-weight="800" fill="#10243D">${index + 1}. ${escapeHtmlSafe(zone.title || "Zone")} · ${escapeHtmlSafe(statusText(zone.status))}</text>
-                </g>
-              `).join("");
-              const markerLegendY = height - 154;
-              return `
-                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${width} ${height}" role="img" aria-label="Printable GPREC event zone map">
-                  <rect width="${width}" height="${height}" fill="#F5F7FB"/>
-                  <rect x="28" y="28" width="${width - 56}" height="${height - 56}" rx="24" fill="#E8EDF4" stroke="#D1DBE8" stroke-width="2"/>
-                  <g opacity="0.68">${roads.map((road) => `<path d="${road}" fill="none" stroke="#B8C3D1" stroke-width="22" stroke-linecap="round"/><path d="${road}" fill="none" stroke="#FFFFFF" stroke-width="8" stroke-linecap="round"/>`).join("")}</g>
-                  <text x="60" y="72" font-size="30" font-weight="950" fill="#04284A">GPREC Event Zone Map</text>
-                  <text x="60" y="100" font-size="16" font-weight="800" fill="#E85D04">Bird's-eye printable display map</text>
-                  <g transform="translate(${entrance.x.toFixed(1)} ${entrance.y.toFixed(1)})">
-                    <circle r="28" fill="#00C853" stroke="#ffffff" stroke-width="4"/>
-                    <text y="6" text-anchor="middle" font-size="14" font-weight="950" fill="#06203A">IN</text>
-                    <text x="38" y="6" font-size="16" font-weight="900" fill="#06203A">Entrance</text>
-                  </g>
-                  <g transform="translate(${theatre.x.toFixed(1)} ${theatre.y.toFixed(1)})">
-                    <circle r="32" fill="#8B2EFF" stroke="#ffffff" stroke-width="4"/>
-                    <text y="6" text-anchor="middle" font-size="13" font-weight="950" fill="#ffffff">OAT</text>
-                    <text x="42" y="6" font-size="16" font-weight="900" fill="#06203A">Open Air Theatre</text>
-                  </g>
-                  <g transform="translate(${seating.x.toFixed(1)} ${seating.y.toFixed(1)})">
-                    <rect x="-32" y="-20" width="64" height="40" rx="18" fill="#4CAF50" stroke="#ffffff" stroke-width="4"/>
-                    <text y="5" text-anchor="middle" font-size="12" font-weight="950" fill="#06203A">SEAT</text>
-                  </g>
-                  ${zoneNodes}
-                  <rect x="48" y="${height - 190}" width="${width - 96}" height="154" rx="18" fill="#FFFFFF" stroke="#D7E0EC"/>
-                  <text x="76" y="${markerLegendY}" font-size="17" font-weight="950" fill="#04284A">Legend</text>
-                  <g transform="translate(170 ${markerLegendY - 5})">
-                    <circle r="11" fill="#00C853"/><text x="20" y="5" font-size="14" font-weight="800" fill="#10243D">IN Entrance</text>
-                  </g>
-                  <g transform="translate(330 ${markerLegendY - 5})">
-                    <circle r="11" fill="#8B2EFF"/><text x="20" y="5" font-size="14" font-weight="800" fill="#10243D">OAT Open Air Theatre</text>
-                  </g>
-                  <g transform="translate(575 ${markerLegendY - 5})">
-                    <rect x="-12" y="-9" width="24" height="18" rx="8" fill="#4CAF50"/><text x="20" y="5" font-size="14" font-weight="800" fill="#10243D">SEAT Seating</text>
-                  </g>
-                  <g transform="translate(760 ${markerLegendY - 5})">
-                    <circle r="8" fill="#00E5B4"/><text x="16" y="5" font-size="14" font-weight="800" fill="#10243D">Live</text>
-                    <circle cx="82" r="8" fill="#7DD3FC"/><text x="98" y="5" font-size="14" font-weight="800" fill="#10243D">Soon</text>
-                    <circle cx="172" r="8" fill="#8888AA"/><text x="188" y="5" font-size="14" font-weight="800" fill="#10243D">Info</text>
-                    <circle cx="258" r="8" fill="#4B5563"/><text x="274" y="5" font-size="14" font-weight="800" fill="#10243D">Ended</text>
-                  </g>
-                  ${legend}
-                </svg>
-              `;
-            };
             const renderPrintableZoneMap = () => {
               refreshAdminZoneSdkPreview();
+            };
+            const buildAdminZoneSdkExportDocument = () => {
+              const currentSettings = getPreviewMapSettings();
+              const sdkSettings = typeof getMapSdkSettings === "function" ? getMapSdkSettings() : {};
+              const points = getAdminZonePoints();
+              const lngs = points.map((point) => Number(point.lng)).filter(Number.isFinite);
+              const lats = points.map((point) => Number(point.lat)).filter(Number.isFinite);
+              const bounds = {
+                minLng: Math.min(...lngs) - 0.00215,
+                maxLng: Math.max(...lngs) + 0.00235,
+                minLat: Math.min(...lats) - 0.00155,
+                maxLat: Math.max(...lats) + 0.00135
+              };
+              const legendItems = [
+                { color: "#00C853", label: "Entrance" },
+                { color: "#8B2EFF", label: "OAT" },
+                { color: "#4CAF50", label: "Seating" },
+                ...points.filter((point) => point.type === "zone").map((point) => ({ color: point.color, label: `${point.label} ${point.title}` }))
+              ];
+              const rgbaFromHex = (hex, alpha = 0.18) => {
+                const clean = String(hex || "").replace("#", "").trim();
+                const full = clean.length === 3 ? clean.split("").map((char) => char + char).join("") : clean;
+                if (!/^[0-9a-fA-F]{6}$/.test(full)) return `rgba(255, 177, 92, ${alpha})`;
+                const value = parseInt(full, 16);
+                return `rgba(${(value >> 16) & 255}, ${(value >> 8) & 255}, ${value & 255}, ${alpha})`;
+              };
+              const sdkParams = new URLSearchParams({
+                v: sdkSettings.version || "3.0",
+                access_token: sdkSettings.accessToken || "",
+                layer: sdkSettings.layer || "vector",
+                callback: "initZoneExportMap"
+              });
+              if (sdkSettings.plugins) sdkParams.set("plugins", sdkSettings.plugins);
+              const sdkSrc = `${sdkSettings.sdkUrl || "https://sdk.mappls.com/map/sdk/web"}?${sdkParams.toString()}`;
+              const logoSrc = new URL("../gprec-logo-enhanced.png", window.location.href).href;
+              const css = `
+                html, body { margin: 0; padding: 0; background: #eef2f7; }
+                .zone-export-stage {
+                  position: relative;
+                  width: 1600px;
+                  height: 900px;
+                  overflow: hidden;
+                  background: #eef2f7;
+                  color: #10243D;
+                  font-family: Arial, Helvetica, sans-serif;
+                  line-height: normal;
+                }
+                .zone-export-stage, .zone-export-stage * { box-sizing: border-box; }
+                .zone-export-map { position: absolute; inset: 0; }
+                .zone-export-map canvas,
+                .zone-export-map img,
+                .zone-export-map .maplibregl-canvas,
+                .zone-export-map .mapboxgl-canvas {
+                  filter: brightness(1.12) saturate(0.74) contrast(0.95);
+                }
+                .zone-export-stage .maplibregl-ctrl-attrib,
+                .zone-export-stage .mapboxgl-ctrl-attrib,
+                .zone-export-stage .leaflet-control-attribution,
+                .zone-export-stage [class*="attribution" i],
+                .zone-export-stage [class*="copyright" i],
+                .zone-export-stage [class*="watermark" i],
+                .zone-export-stage a[href*="mappls" i],
+                .zone-export-stage a[href*="mapmyindia" i],
+                .zone-export-stage img[src*="mappls" i],
+                .zone-export-stage img[src*="mapmyindia" i],
+                .zone-export-stage img[alt*="mappls" i],
+                .zone-export-stage img[alt*="mapmyindia" i] { display: none !important; }
+                .zone-export-heading {
+                  position: absolute;
+                  top: 22px;
+                  left: 50%;
+                  z-index: 6;
+                  display: flex;
+                  align-items: center;
+                  justify-content: center;
+                  gap: 18px;
+                  width: 810px;
+                  min-height: 72px;
+                  padding: 10px 28px;
+                  border-radius: 14px;
+                  background: rgba(255, 255, 255, 0.94);
+                  box-shadow: 0 18px 36px rgba(4, 40, 74, 0.13);
+                  transform: translateX(-50%);
+                }
+                .zone-export-heading img { width: 122px; height: 40px; object-fit: contain; }
+                .zone-export-heading span { color: #04284A; font-size: 31px; font-weight: 950; white-space: nowrap; }
+                .zone-export-pins { position: absolute; inset: 0; z-index: 5; pointer-events: none; }
+                .zone-export-pin {
+                  position: absolute;
+                  left: 50%;
+                  top: 50%;
+                  width: 56px;
+                  height: 64px;
+                  color: #071024;
+                  transform: translate(-50%, -100%);
+                  opacity: 0;
+                }
+                .zone-export-pin-dot {
+                  position: relative;
+                  z-index: 2;
+                  display: grid;
+                  width: 48px;
+                  height: 48px;
+                  margin: 0 auto;
+                  place-items: center;
+                  border: 3px solid rgba(255, 255, 255, 0.95);
+                  border-radius: 50%;
+                  background: var(--zone-color);
+                  box-shadow: 0 0 0 12px var(--zone-halo), 0 14px 28px rgba(0, 0, 0, 0.22);
+                  font: 950 15px/1 "Courier New", monospace;
+                }
+                .zone-export-pin-dot::after {
+                  position: absolute;
+                  left: 50%;
+                  top: calc(100% - 3px);
+                  width: 0;
+                  height: 0;
+                  content: "";
+                  border-top: 14px solid var(--zone-color);
+                  border-right: 10px solid transparent;
+                  border-left: 10px solid transparent;
+                  transform: translateX(-50%);
+                }
+                .zone-export-pin[data-long-label="true"] .zone-export-pin-dot { font-size: 10px; }
+                .zone-export-legend {
+                  position: absolute;
+                  left: 26px;
+                  right: 26px;
+                  bottom: 24px;
+                  z-index: 6;
+                  display: grid;
+                  grid-template-columns: repeat(4, minmax(170px, max-content));
+                  gap: 12px 28px;
+                  align-items: center;
+                  padding: 18px 24px 20px;
+                  border: 1px solid rgba(4, 40, 74, 0.08);
+                  border-radius: 12px;
+                  background: rgba(255, 255, 255, 0.9);
+                  box-shadow: 0 12px 24px rgba(4, 40, 74, 0.12);
+                  color: #10243D;
+                  font-size: 16px;
+                  font-weight: 850;
+                }
+                .zone-export-legend strong {
+                  grid-column: 1 / -1;
+                  color: #04284A;
+                  font-size: 17px;
+                  font-weight: 950;
+                  letter-spacing: 0.06em;
+                  text-transform: uppercase;
+                }
+                .zone-export-legend span { display: inline-flex; align-items: center; gap: 9px; white-space: nowrap; }
+                .zone-export-legend i {
+                  display: inline-block;
+                  width: 13px;
+                  height: 13px;
+                  flex: 0 0 auto;
+                  border: 2px solid #ffffff;
+                  border-radius: 999px;
+                  box-shadow: 0 2px 6px rgba(4, 40, 74, 0.16);
+                }
+              `;
+              const html = `
+                <div class="zone-export-stage">
+                  <div class="zone-export-map" id="zoneExportMap"></div>
+                  <div class="zone-export-pins" id="zoneExportPins">
+                    ${points.map((point) => `
+                      <div class="zone-export-pin" data-zone-key="${escapeHtmlSafe(point.key)}" data-long-label="${String(point.label || "").length > 3 ? "true" : "false"}" style="--zone-color:${escapeHtmlSafe(point.color)}; --zone-halo:${escapeHtmlSafe(rgbaFromHex(point.color || "#FFB15C", 0.18))}">
+                        <span class="zone-export-pin-dot">${escapeHtmlSafe(point.label)}</span>
+                      </div>
+                    `).join("")}
+                  </div>
+                  <div class="zone-export-heading">
+                    <img src="${escapeHtmlSafe(logoSrc)}" alt="">
+                    <span>GPREC Event Zone Map</span>
+                  </div>
+                  <div class="zone-export-legend">
+                    <strong>Legend</strong>
+                    ${legendItems.map((item) => `<span><i style="background:${escapeHtmlSafe(item.color)}"></i>${escapeHtmlSafe(item.label)}</span>`).join("")}
+                  </div>
+                  <script>
+                    const exportPoints = ${JSON.stringify(points)};
+                    const exportBounds = ${JSON.stringify(bounds)};
+                    const exportSettings = ${JSON.stringify(currentSettings)};
+                    const hideAttribution = () => {
+                      document.querySelectorAll('[class*="attribution" i], [class*="copyright" i], [class*="watermark" i], a[href*="mappls" i], a[href*="mapmyindia" i], img[src*="mappls" i], img[src*="mapmyindia" i]').forEach((element) => element.style.setProperty("display", "none", "important"));
+                    };
+                    const positionPins = (map) => {
+                      exportPoints.forEach((point) => {
+                        const pin = document.querySelector('[data-zone-key="' + point.key + '"]');
+                        if (!pin) return;
+                        try {
+                          const px = map.project([Number(point.lng), Number(point.lat)]);
+                          pin.style.left = px.x + "px";
+                          pin.style.top = px.y + "px";
+                          pin.style.opacity = "1";
+                        } catch (error) {}
+                      });
+                    };
+                    window.initZoneExportMap = () => {
+                      try {
+                        const map = new mappls.Map("zoneExportMap", {
+                          center: { lat: Number(exportSettings.centerLat) || 15.7741, lng: Number(exportSettings.centerLng) || 78.0565 },
+                          zoom: Number(exportSettings.zoom) || 16.5,
+                          tilt: 0,
+                          heading: 0,
+                          pitch: 0,
+                          bearing: exportSettings.rotationEnabled ? (Number(exportSettings.bearing) || 0) : 0,
+                          traffic: false,
+                          geolocation: false,
+                          zoomControl: true,
+                          mapType: exportSettings.style || "whiteboard",
+                          clickableIcons: false,
+                          preserveDrawingBuffer: true
+                        });
+                        const finish = () => {
+                          try { mappls.setStyle(map, exportSettings.style || "whiteboard"); } catch (error) {}
+                          try {
+                            map.fitBounds([[exportBounds.minLng, exportBounds.minLat], [exportBounds.maxLng, exportBounds.maxLat]], {
+                              padding: { top: 96, right: 68, bottom: 150, left: 68 },
+                              pitch: 0,
+                              bearing: exportSettings.rotationEnabled ? (Number(exportSettings.bearing) || 0) : 0,
+                              duration: 0,
+                              essential: true
+                            });
+                          } catch (error) {}
+                          setTimeout(() => {
+                            hideAttribution();
+                            positionPins(map);
+                            document.querySelector(".zone-export-stage")?.classList.add("is-ready");
+                          }, 900);
+                        };
+                        map.addListener?.("load", finish);
+                        ["move", "zoom", "resize"].forEach((eventName) => map.addListener?.(eventName, () => positionPins(map)));
+                        setTimeout(finish, 1400);
+                      } catch (error) {
+                        document.querySelector(".zone-export-stage")?.classList.add("is-ready");
+                      }
+                    };
+                  <\/script>
+                  <script src="${escapeHtmlSafe(sdkSrc)}" defer><\/script>
+                </div>
+              `;
+              return { html, css };
             };
             Object.entries(fields).forEach(([key, id]) => {
               const input = document.querySelector(`#${id}`);
@@ -1299,293 +1526,67 @@
                   recordActivity("Downloaded visitor zone display map HD image", "College Fest");
                 }, "image/png", 1);
               };
-              const downloadPrintableFallback = () => {
-                const svg = buildPrintableZoneMapSvg();
-                const blob = new Blob([svg], { type: "image/svg+xml;charset=utf-8" });
-                const url = URL.createObjectURL(blob);
-                const image = new Image();
-                image.onload = () => {
-                  const canvas = document.createElement("canvas");
-                  canvas.width = 2400;
-                  canvas.height = 1520;
-                  const context = canvas.getContext("2d");
-                  context.fillStyle = "#ffffff";
-                  context.fillRect(0, 0, canvas.width, canvas.height);
-                  context.drawImage(image, 0, 0, canvas.width, canvas.height);
-                  URL.revokeObjectURL(url);
-                  downloadCanvas(canvas);
-                };
-                image.onerror = () => {
-                  URL.revokeObjectURL(url);
-                  if (feedback) {
-                    feedback.textContent = "Could not generate the HD image. Please try again.";
-                    feedback.classList.remove("success");
-                  }
-                };
-                image.src = url;
-              };
-              // Captures the live preview stage itself - not a rebuild of it - so the download
-              // matches whatever is actually on screen. html2canvas can't parse/lay out a handful
-              // of specific things this page uses, so those are neutralized on a *clone* only
-              // (the real page is never touched):
-              //  - color-mix() (pin glow/pulse) -> html2canvas's CSS parser predates it and throws;
-              //    swapped for the equivalent plain rgba() (X P%-mixed-with-transparent == X at
-              //    alpha=P%).
-              //  - the pulse ring's CSS animation -> frozen mid-frame it reads as a blurry blob, so
-              //    it's hidden for the capture.
-              //  - the map SDK's zoom/3D/fullscreen control widget -> UI chrome, not map content.
-              //  - object-fit: contain on the logo -> html2canvas ignores it and stretches the raw
-              //    image; pre-computed contain-fit width/height is set explicitly instead.
-              //  - flexbox align-items:center (heading row, legend dot+label) -> html2canvas's
-              //    support is weak enough that children land uncentered; positions are measured
-              //    from the real live elements just before capture and replayed as plain absolute
-              //    offsets, which it does handle reliably.
-              //  - font-weight:950 (Inter) -> no real file at that weight, so the browser
-              //    synthesizes it, and html2canvas paints that synthetic bold as a doubled/blurry
-              //    stroke; capped to a real weight (700) on a safe system font with no network
-              //    fetch (an earlier attempt to fix this via @font-face raced html2canvas's paint
-              //    against the font finishing loading and intermittently clipped the heading).
-              //  - the pin number/letter labels -> html2canvas re-implements text shaping in JS
-              //    instead of using the browser's, so this bold monospace label doesn't center
-              //    right ("IN" read almost like "TN"); swapped for SVG <text>, rendered as vector
-              //    geometry instead of shaped text.
               const stage = document.querySelector(".admin-zone-sdk-stage");
-              if (!stage || !adminZoneMapInstance || typeof html2canvas !== "function") {
-                downloadPrintableFallback();
+              if (!stage) {
+                if (feedback) {
+                  feedback.textContent = "Map preview is not ready yet. Please wait and try again.";
+                  feedback.classList.remove("success");
+                }
                 return;
               }
-              const hexToRgba = (hex, alpha) => {
-                const clean = (hex || "").trim().replace("#", "");
-                const full = clean.length === 3 ? clean.split("").map((c) => c + c).join("") : clean;
-                const r = parseInt(full.slice(0, 2), 16) || 0;
-                const g = parseInt(full.slice(2, 4), 16) || 0;
-                const b = parseInt(full.slice(4, 6), 16) || 0;
-                return `rgba(${r}, ${g}, ${b}, ${alpha})`;
-              };
-              // html2canvas can drop the logo or clip the heading text, so the export hides the
-              // fragile DOM heading and draws the finished header directly on the output canvas.
-              let exportStageRect = null;
-              const loadExportLogo = (src) => new Promise((resolve) => {
-                const image = new Image();
-                image.onload = () => resolve(image);
-                image.onerror = () => resolve(null);
-                image.src = src;
-              });
-              const roundRectPath = (context, x, y, width, height, radius) => {
-                const r = Math.min(radius, width / 2, height / 2);
-                context.beginPath();
-                context.moveTo(x + r, y);
-                context.lineTo(x + width - r, y);
-                context.quadraticCurveTo(x + width, y, x + width, y + r);
-                context.lineTo(x + width, y + height - r);
-                context.quadraticCurveTo(x + width, y + height, x + width - r, y + height);
-                context.lineTo(x + r, y + height);
-                context.quadraticCurveTo(x, y + height, x, y + height - r);
-                context.lineTo(x, y + r);
-                context.quadraticCurveTo(x, y, x + r, y);
-                context.closePath();
-              };
-              const drawHdExportHeader = async (sourceCanvas) => {
-                const output = document.createElement("canvas");
-                output.width = sourceCanvas.width;
-                output.height = sourceCanvas.height;
-                const context = output.getContext("2d");
-                context.drawImage(sourceCanvas, 0, 0);
-                const logo = await loadExportLogo(typeof gprecLogoUrl === "string" ? gprecLogoUrl : "../gprec-logo-enhanced.png");
-                const headerWidth = Math.round(output.width * 0.78);
-                const headerX = Math.round((output.width - headerWidth) / 2);
-                const headerY = Math.round(output.height * 0.03);
-                const headerHeight = Math.round(output.height * 0.115);
-                const radius = Math.round(headerHeight * 0.2);
-                context.save();
-                context.shadowColor = "rgba(4, 40, 74, 0.16)";
-                context.shadowBlur = Math.round(output.width * 0.018);
-                context.shadowOffsetY = Math.round(output.height * 0.012);
-                roundRectPath(context, headerX, headerY, headerWidth, headerHeight, radius);
-                context.fillStyle = "rgba(255, 255, 255, 0.94)";
-                context.fill();
-                context.restore();
-                context.lineWidth = Math.max(1, output.width * 0.001);
-                context.strokeStyle = "rgba(4, 40, 74, 0.10)";
-                roundRectPath(context, headerX, headerY, headerWidth, headerHeight, radius);
-                context.stroke();
-                const fontSize = Math.round(Math.min(54, Math.max(34, output.width * 0.026)));
-                context.font = `900 ${fontSize}px Arial, Helvetica, sans-serif`;
-                context.fillStyle = "#04284A";
-                context.textBaseline = "middle";
-                const title = "GPREC Event Zone Map";
-                const titleWidth = context.measureText(title).width;
-                const logoHeight = Math.round(Math.min(headerHeight * 0.48, fontSize * 1.04));
-                const logoWidth = Math.round(logoHeight * 3.65);
-                const gap = Math.round(output.width * 0.018);
-                const groupWidth = logoWidth + gap + titleWidth;
-                const logoX = Math.round(headerX + (headerWidth - groupWidth) / 2);
-                const titleX = Math.round(logoX + logoWidth + gap);
-                const centerY = headerY + headerHeight / 2;
-                if (logo) {
-                  context.drawImage(logo, logoX, centerY - logoHeight / 2, logoWidth, logoHeight);
-                }
-                context.fillText(title, titleX, centerY + Math.round(fontSize * 0.02));
-                const points = getAdminZonePoints();
-                const legendItems = [
-                  { label: "Entrance", color: "#00C853" },
-                  { label: "OAT", color: "#8B2EFF" },
-                  { label: "Seating", color: "#4CAF50" },
-                  ...points.filter((point) => point.type === "zone").map((point) => ({
-                    label: `${point.label} ${point.title}`,
-                    color: point.color || "#FFB15C"
-                  }))
-                ];
-                const legendWidth = Math.round(output.width * 0.94);
-                const legendX = Math.round((output.width - legendWidth) / 2);
-                const legendHeight = Math.round(output.height * 0.155);
-                const legendY = Math.round(output.height - legendHeight - output.height * 0.022);
-                const legendRadius = Math.round(legendHeight * 0.13);
-                context.save();
-                context.shadowColor = "rgba(4, 40, 74, 0.12)";
-                context.shadowBlur = Math.round(output.width * 0.012);
-                context.shadowOffsetY = Math.round(output.height * 0.008);
-                roundRectPath(context, legendX, legendY, legendWidth, legendHeight, legendRadius);
-                context.fillStyle = "rgba(255, 255, 255, 0.92)";
-                context.fill();
-                context.restore();
-                context.lineWidth = Math.max(1, output.width * 0.001);
-                context.strokeStyle = "rgba(4, 40, 74, 0.10)";
-                roundRectPath(context, legendX, legendY, legendWidth, legendHeight, legendRadius);
-                context.stroke();
-                const legendPadX = Math.round(legendWidth * 0.022);
-                const legendPadY = Math.round(legendHeight * 0.24);
-                const legendTitleSize = Math.round(Math.max(18, output.width * 0.012));
-                const legendTextSize = Math.round(Math.max(18, output.width * 0.011));
-                const dotRadius = Math.round(Math.max(8, output.width * 0.005));
-                context.fillStyle = "#04284A";
-                context.font = `900 ${legendTitleSize}px Arial, Helvetica, sans-serif`;
-                context.textBaseline = "alphabetic";
-                context.fillText("LEGEND", legendX + legendPadX, legendY + legendPadY);
-                context.font = `800 ${legendTextSize}px Arial, Helvetica, sans-serif`;
-                context.textBaseline = "middle";
-                const columns = 4;
-                const columnWidth = Math.round(output.width * 0.145);
-                const firstRowY = legendY + legendPadY + Math.round(legendHeight * 0.29);
-                const rowGap = Math.round(legendHeight * 0.31);
-                legendItems.forEach((item, index) => {
-                  const column = index % columns;
-                  const row = Math.floor(index / columns);
-                  const x = legendX + legendPadX + column * columnWidth;
-                  const y = firstRowY + row * rowGap;
-                  context.beginPath();
-                  context.arc(x + dotRadius, y, dotRadius, 0, Math.PI * 2);
-                  context.fillStyle = item.color;
-                  context.fill();
-                  context.fillStyle = "#10243D";
-                  context.fillText(item.label, x + dotRadius * 2 + Math.round(output.width * 0.007), y + 1);
-                });
-                return output;
-              };
-              const sanitizeClonedZoneMap = (clonedDoc) => {
-                const exportWidth = Math.max(900, exportStageRect?.width || stage.getBoundingClientRect().width || 1200);
-                const exportHeight = Math.max(560, exportStageRect?.height || stage.getBoundingClientRect().height || 760);
-                const pinSize = Math.max(30, exportWidth * 0.024);
-                const pinDotSize = Math.max(24, exportWidth * 0.019);
-                const pinFontSize = Math.max(9, pinDotSize * 0.36);
-                clonedDoc.querySelectorAll(".visitor-zone-pin").forEach((pin) => {
-                  const zoneColor = pin.style.getPropertyValue("--zone-color") || "#FFB15C";
-                  pin.style.width = `${pinSize}px`;
-                  pin.style.height = `${pinSize}px`;
-                  const dot = pin.querySelector(".visitor-zone-pin-dot");
-                  if (dot) {
-                    dot.style.width = `${pinDotSize}px`;
-                    dot.style.height = `${pinDotSize}px`;
-                    dot.style.borderWidth = "2px";
-                    dot.style.boxShadow = `0 0 0 8px ${hexToRgba(zoneColor, 0.18)}, 0 8px 18px rgba(4, 40, 74, 0.22)`;
-                    const label = (dot.textContent || "").trim();
-                    const size = pinDotSize;
-                    // Replacing the dot's children also breaks its ::after pointer triangle (still
-                    // present in computed style, just doesn't paint) - add the tail back as a real
-                    // element instead of relying on the pseudo-element.
-                    dot.textContent = "";
-                    dot.innerHTML = `
-                      <svg width="${size}" height="${size}" viewBox="0 0 ${size} ${size}"><text x="50%" y="52%" text-anchor="middle" dominant-baseline="middle" font-family="'Courier New', monospace" font-weight="950" font-size="${pinFontSize}" fill="#071024">${escapeHtmlSafe(label)}</text></svg>
-                      <span style="position:absolute; left:50%; top:calc(100% - 3px); width:0; height:0; transform:translateX(-50%); border-top:${Math.max(8, pinDotSize * 0.34)}px solid ${escapeHtmlSafe(zoneColor)}; border-right:${Math.max(6, pinDotSize * 0.23)}px solid transparent; border-left:${Math.max(6, pinDotSize * 0.23)}px solid transparent;"></span>
-                    `;
-                  }
-                  const pulse = pin.querySelector(".visitor-zone-pin-pulse");
-                  if (pulse) {
-                    pulse.style.background = "transparent";
-                    pulse.style.display = "none";
-                  }
-                });
-                clonedDoc.querySelectorAll(".maplibregl-control-container, .map-control").forEach((el) => {
-                  el.style.setProperty("display", "none", "important");
-                });
-                const headingRow = clonedDoc.querySelector(".admin-zone-map-heading");
-                if (headingRow) {
-                  headingRow.style.display = "none";
-                }
-                const legendEl = clonedDoc.querySelector(".admin-zone-sdk-legend");
-                if (legendEl) {
-                  legendEl.style.display = "none";
-                }
-                // Leave the legend spans' own `display` untouched (inline-flex) - the legend
-                // grid's column widths are minmax(130px, max-content), and switching display type
-                // here throws off html2canvas's max-content sizing and wraps the label.
-                clonedDoc.querySelectorAll(".admin-zone-sdk-legend span").forEach((span) => {
-                  const dot = span.querySelector("i");
-                  if (!dot) return;
-                  span.style.display = "inline-flex";
-                  span.style.alignItems = "center";
-                  span.style.gap = "8px";
-                  span.style.paddingLeft = "0";
-                  span.style.lineHeight = "1";
-                  dot.style.position = "static";
-                  dot.style.width = "12px";
-                  dot.style.height = "12px";
-                  dot.style.margin = "0";
-                  dot.style.transform = "none";
-                });
-                clonedDoc.querySelectorAll(".admin-zone-map-heading, .admin-zone-sdk-legend").forEach((el) => {
-                  el.style.fontFamily = "Arial, Helvetica, sans-serif";
-                  el.style.fontWeight = "700";
-                });
-              };
-              try {
-                // The Download button sits above the preview box in the page, so clicking it
-                // without scrolling further down leaves most (or all) of the stage below the
-                // fold. html2canvas only paints what's actually in the visible viewport in that
-                // case - scroll the stage fully into view first so the whole thing is on-screen.
-                stage.scrollIntoView({ block: "center", behavior: "instant" });
-                await new Promise((resolve) => requestAnimationFrame(() => requestAnimationFrame(resolve)));
-                let stageRect = stage.getBoundingClientRect();
-                if (stageRect.height < 300 || stageRect.width < 300) {
-                  // The box hasn't finished laying out yet - force a reflow and give it another
-                  // frame rather than capture a broken sliver of just the heading.
-                  void stage.offsetHeight;
-                  await new Promise((resolve) => requestAnimationFrame(() => requestAnimationFrame(resolve)));
-                  stageRect = stage.getBoundingClientRect();
-                }
-                if (stageRect.height < 300 || stageRect.width < 300) {
-                  downloadPrintableFallback();
+              if (typeof renderA4DocViaNativePng === "function") {
+                const exportDocument = buildAdminZoneSdkExportDocument();
+                const nativePng = await renderA4DocViaNativePng(
+                  exportDocument.html,
+                  exportDocument.css,
+                  ".zone-export-stage",
+                  1600,
+                  1.6,
+                  { waitForSelector: ".zone-export-stage.is-ready", waitMs: 12000, timeoutMs: 18000 }
+                );
+                if (nativePng) {
+                  const link = document.createElement("a");
+                  link.href = URL.createObjectURL(nativePng);
+                  link.download = "gprec-zone-map-display-hd.png";
+                  link.click();
+                  URL.revokeObjectURL(link.href);
+                  recordActivity("Downloaded visitor zone display map HD image", "College Fest");
                   return;
                 }
-                exportStageRect = stageRect;
-                // The map flies to fit all zones on load (800ms animation). Clicking Download
-                // during that flight can catch one pin's on-screen position mid-transition while
-                // the map's own camera has already moved on - wait it out, then force one last
-                // re-sync so every pin matches where it's actually shown at rest.
-                await new Promise((resolve) => setTimeout(resolve, 500));
-                try { positionAdminZoneMapLabels(); } catch (error) {}
-                const hdScale = Math.max(2, 2000 / Math.max(1, stageRect.width));
+              }
+              if (typeof html2canvas !== "function") {
+                if (feedback) {
+                  feedback.textContent = "Could not generate the HD image. Start the local render server and try again.";
+                  feedback.classList.remove("success");
+                }
+                return;
+              }
+              try {
+                try { adminZoneMapInstance?.resize?.(); } catch (error) {}
+                if (typeof hideMapSdkAttribution === "function") hideMapSdkAttribution();
+                renderAdminZoneMapOverlays();
+                positionAdminZoneMapLabels();
+                stage.classList.add("is-exporting");
+                await new Promise((resolve) => requestAnimationFrame(() => requestAnimationFrame(resolve)));
                 const canvas = await html2canvas(stage, {
-                  backgroundColor: "#ffffff",
-                  scale: hdScale,
+                  scale: 2,
+                  backgroundColor: "#eef2f7",
                   useCORS: true,
                   allowTaint: true,
-                  logging: false,
-                  onclone: sanitizeClonedZoneMap
+                  width: stage.offsetWidth,
+                  height: stage.offsetHeight,
+                  windowWidth: Math.max(document.documentElement.clientWidth, stage.offsetWidth),
+                  windowHeight: Math.max(document.documentElement.clientHeight, stage.offsetHeight),
+                  logging: false
                 });
-                downloadCanvas(await drawHdExportHeader(canvas));
+                downloadCanvas(canvas);
               } catch (error) {
-                downloadPrintableFallback();
+                if (feedback) {
+                  feedback.textContent = "Could not generate the HD image. Please try again.";
+                  feedback.classList.remove("success");
+                }
+              } finally {
+                stage.classList.remove("is-exporting");
               }
             });
             window.addEventListener("visitorZoneMapChanged", () => {

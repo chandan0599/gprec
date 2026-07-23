@@ -6,7 +6,7 @@
     <title>My Event Registrations | GPREC</title>
     <meta name="description" content="View your GPREC public event registrations, passes, and receipts.">
     <link rel="icon" href="https://www.gprec.ac.in/wp-content/uploads/2017/08/fav.png" sizes="32x32">
-    <link rel="stylesheet" href="../styles.css?v=20260722-31">
+    <link rel="stylesheet" href="../styles.css?v=20260723-86">
   </head>
   <body class="login-page event-visitor-page">
     <svg class="icon-sprite" aria-hidden="true" focusable="false">
@@ -311,6 +311,9 @@
               <div class="visitor-zone-map-stage">
                 <div class="visitor-zone-sdk-map" id="visitorZoneSdkMap"></div>
                 <div class="visitor-zone-map-pins" id="visitorZoneMapPins"></div>
+                <button type="button" class="zone-map-fullscreen-button" id="visitorZoneFullscreenButton" title="Open fullscreen" aria-label="Open fullscreen">
+                  <span aria-hidden="true">⛶</span>
+                </button>
                 <div class="visitor-zone-map-controls" aria-label="Map controls">
                   <div class="visitor-zone-control-group">
                     <button type="button" id="visitorZoneLiveNavButton" title="Live navigation" aria-label="Live navigation">NAV</button>
@@ -523,7 +526,7 @@
     </footer>
 
     <script src="../qrcode-generator.js"></script>
-    <script src="../script.js?v=20260722-31"></script>
+    <script src="../script.js?v=20260723-86"></script>
     <script>
       (() => {
         const festName = getFestName();
@@ -752,6 +755,7 @@
         let visitorZoneIntroDone = false;
         let visitorZoneIntroTimers = [];
         let visitorZoneTheatreStarted = false;
+        let visitorZoneIntroStarted = false;
         let visitorZoneUserLocation = null;
         let visitorZoneLiveNavEnabled = false;
         let visitorZoneRouteTimer = null;
@@ -853,6 +857,29 @@
             }
           }
         };
+        const moveVisitorZoneCamera = (target, options = {}) => {
+          if (!visitorZoneMapInstance || !target) return false;
+          const zoom = Number(options.zoom) || visitorZoneDefaultZoom;
+          try {
+            visitorZoneMapInstance.flyTo({
+              center: { lat: target.lat, lng: target.lng },
+              zoom,
+              pitch: Number(options.pitch ?? visitorZoneDefaultPitch),
+              bearing: Number(options.bearing ?? visitorZoneDefaultBearing),
+              duration: Number(options.duration) || 900,
+              essential: true
+            });
+            return true;
+          } catch (error) {
+            try {
+              visitorZoneMapInstance.setCenter({ lat: target.lat, lng: target.lng });
+              visitorZoneMapInstance.setZoom(zoom);
+              return true;
+            } catch (innerError) {
+              return false;
+            }
+          }
+        };
         const finishVisitorZoneIntro = () => {
           visitorZoneIntroDone = true;
           visitorZoneIntroTimers.forEach(clearTimeout);
@@ -863,18 +890,26 @@
             label.classList.remove("is-visible");
             setTimeout(() => { label.textContent = ""; }, 250);
           }
-          try {
-            visitorZoneMapInstance?.flyTo({ center: visitorZoneMapCenter, zoom: visitorZoneDefaultZoom, pitch: visitorZoneDefaultPitch, bearing: visitorZoneDefaultBearing, duration: 1600, essential: true });
-          } catch (error) {}
+          moveVisitorZoneCamera(visitorZoneMapCenter, { zoom: visitorZoneDefaultZoom, pitch: visitorZoneDefaultPitch, bearing: visitorZoneDefaultBearing, duration: 1800 });
+          if (visitorZoneSettings.theatreEnabled !== false) {
+            setTimeout(startVisitorTheatreAnimation, 300);
+          }
         };
         const startVisitorZoneIntro = () => {
-          if (visitorZoneIntroDone || !visitorZoneMapInstance || document.fullscreenElement || window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+          if (visitorZoneIntroDone || visitorZoneIntroStarted || document.fullscreenElement || window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+          if (!visitorZoneMapInstance || !visitorZoneMapReady) {
+            visitorZoneIntroTimers.push(setTimeout(startVisitorZoneIntro, 300));
+            return;
+          }
           const zones = getVisitorZoneMap();
           const label = document.querySelector("#visitorZoneTourLabel");
           const skip = document.querySelector("#visitorZoneTourSkip");
           if (!label || !skip) return;
+          visitorZoneIntroStarted = true;
           skip.classList.add("is-visible");
           skip.onclick = finishVisitorZoneIntro;
+          const flyDuration = 500;
+          const holdDuration = 400;
           const stops = [
             { title: "START · Entrance", lat: visitorZoneEntrance.lat, lng: visitorZoneEntrance.lng, icon: "🚩", color: "#00C853" },
             ...zones.map((zone, index) => ({ title: `${index + 1}. ${zone.title}`, lat: zone.lat, lng: zone.lng, icon: zone.icon || "📍", color: zone.color || "#FFB15C" }))
@@ -891,14 +926,12 @@
             label.style.borderColor = stop.color;
             label.style.boxShadow = `0 0 20px ${stop.color}88`;
             label.classList.add("is-visible");
-            try {
-              visitorZoneMapInstance.flyTo({ center: { lat: stop.lat, lng: stop.lng }, zoom: 18.5, pitch: 60, bearing: 330, duration: 950, essential: true });
-            } catch (error) {}
+            moveVisitorZoneCamera(stop, { zoom: 18.5, pitch: 60, bearing: visitorZoneDefaultBearing || 330, duration: flyDuration });
             index += 1;
             visitorZoneIntroTimers.push(setTimeout(() => {
               label.classList.remove("is-visible");
-              visitorZoneIntroTimers.push(setTimeout(flyNext, 120));
-            }, 1500));
+              visitorZoneIntroTimers.push(setTimeout(flyNext, 100));
+            }, flyDuration + holdDuration));
           };
           flyNext();
         };
@@ -917,35 +950,87 @@
           crowdLayer.className = "visitor-zone-crowd-layer";
           stage.appendChild(crowdLayer);
           const beams = [
-            { lng: 78.05671082150171, lat: 15.775655057197282, speed: 1.2, range: 0.35 },
-            { lng: 78.05666723544276, lat: 15.775810573181909, speed: -1.2, range: 0.35 }
+            { lng: 78.05671082150171, lat: 15.775655057197282, speed: 1.2, range: 0.35, r: 255, g: 200, b: 0, len: 290, width: 0.09 },
+            { lng: 78.05666723544276, lat: 15.775810573181909, speed: -1.2, range: 0.35, r: 255, g: 200, b: 0, len: 290, width: 0.09 }
           ];
           beams.forEach((beam) => {
             const el = document.createElement("span");
             el.className = "visitor-zone-beam-fixture";
+            el.innerHTML = '<svg width="10" height="10" viewBox="0 0 10 10" aria-hidden="true"><circle cx="5" cy="5" r="4.5" fill="#1e1e1e" stroke="#111" stroke-width="0.8"/><circle cx="5" cy="5" r="2.5" fill="rgba(255,200,0,0.95)"/><circle cx="3.5" cy="3.5" r="0.8" fill="rgba(255,255,255,0.5)"/></svg>';
             fixtures.appendChild(el);
             beam.el = el;
           });
-          const dancers = Array.from({ length: 42 }, (_, index) => {
-            const ring = Math.floor(index / 9);
-            const angle = index * 0.92;
-            return { dx: Math.cos(angle) * (14 + ring * 13), dy: Math.sin(angle) * (8 + ring * 8), phase: index * 0.55 };
-          });
+          const audienceColors = [[255, 80, 120], [255, 200, 0], [80, 200, 255], [180, 80, 255], [0, 230, 150], [255, 120, 40]];
+          const audienceAnchor = { lng: 78.05720, lat: 15.77586 };
+          const dancers = (() => {
+            const crowd = [];
+            let index = 0;
+            const rings = [
+              { radius: 0, count: 1 },
+              { radius: 13, count: 6 },
+              { radius: 26, count: 10 },
+              { radius: 39, count: 14 }
+            ];
+            rings.forEach((ring, ringIndex) => {
+              const startAngle = ringIndex % 2 ? Math.PI / ring.count : 0;
+              for (let seat = 0; seat < ring.count; seat += 1) {
+                const angle = startAngle + (Math.PI * 2 * seat) / ring.count;
+                const dx = Math.cos(angle) * ring.radius;
+                const dy = Math.sin(angle) * ring.radius;
+                const color = audienceColors[index % audienceColors.length];
+                crowd.push({
+                  dx,
+                  dy,
+                  phase: index * 0.63,
+                  speed: 0.9 + (index % 7) * 0.09,
+                  r: color[0],
+                  g: color[1],
+                  b: color[2]
+                });
+                index += 1;
+              }
+            });
+            return crowd;
+          })();
+          const dancerSilhouettes = [
+            '<g fill="currentColor"><circle cx="10" cy="4" r="2.2"/><path d="M8.7 6.3c1.4-.6 2.8-.3 3.7.8l2.1 2.7-1.7 1.1-1.8-2.2-.5 4.1 3.1 6.7-2.2.9-2.5-5-3 5.3-2-.9 3.6-7 .6-4.8-2.3 2.5-1.5-1.3 3.1-3.3c.4-.4.8-.6 1.3-.6Z"/></g>',
+            '<g fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round"><circle cx="10" cy="4" r="2.1" fill="currentColor" stroke="none"/><path d="M10 6.5v6.4M10.1 7.4 6.3 3.3M10.2 7.5l3.9-4.1M10 12.6l-3.5 6.2M10.2 12.6l4 5.8"/></g>',
+            '<g fill="currentColor"><circle cx="9" cy="4" r="2.1"/><path d="M7.8 6.4c1.8-.7 3.7.1 4.1 1.9l.7 3.5 4.1 1.4-.8 2-5.2-1.8-.5-2.1-1.1 2.8 3.6 4.6-1.8 1.5-4.1-5-3.4 3.6-1.7-1.5 4.8-5.3.9-3.7-3 1.2-.8-1.9 4.2-1.8Z"/></g>',
+            '<g fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="9.6" cy="4" r="2.1" fill="currentColor" stroke="none"/><path d="M9.5 6.6 7.4 12l-4.1 2M8.9 7.2l4.5 2.2M7.6 12l1 6.9M7.6 12l5.5 5.3"/></g>',
+            '<g fill="currentColor"><circle cx="10.6" cy="4.2" r="2"/><path d="M9.2 6.4c2.1-.4 3.8.8 4.1 2.8l.3 2 3.4-2.1 1.1 1.7-4.2 2.8-2.3-.9-.3 2.2 2.8 4.9-2 1.1-3.3-5.4-4.8 3.1-1.2-1.9 5.5-3.6.4-4-3.7 2-.9-1.8 5.1-2.8Z"/></g>'
+          ];
           const syncDancers = () => {
             let anchor;
-            try { anchor = visitorZoneMapInstance.project([78.05720, 15.77586]); } catch (error) { return; }
+            try {
+              anchor = visitorZoneMapInstance.project([audienceAnchor.lng, audienceAnchor.lat]);
+            } catch (error) { return; }
             dancers.forEach((dancer, index) => {
               if (!dancer.el) {
                 const el = document.createElement("span");
                 el.className = "visitor-zone-dancer";
                 el.style.setProperty("--i", index);
+                el.style.color = `rgb(${dancer.r}, ${dancer.g}, ${dancer.b})`;
+                const pose = dancerSilhouettes[index % dancerSilhouettes.length];
+                el.innerHTML = `
+                  <svg width="18" height="24" viewBox="0 0 18 24" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+                    ${pose}
+                  </svg>
+                `;
                 crowdLayer.appendChild(el);
                 dancer.el = el;
               }
-              dancer.el.style.left = `${anchor.x + dancer.dx}px`;
-              dancer.el.style.top = `${anchor.y + dancer.dy}px`;
+              dancer.el.style.left = `${Math.round(anchor.x + dancer.dx)}px`;
+              dancer.el.style.top = `${Math.round(anchor.y + dancer.dy)}px`;
             });
           };
+          let previousFrame = 0;
+          let sparkTick = 0;
+          let sparks = [];
+          let theatreEffectScale = 1;
+          let concertFrameId = null;
+          let concertRunning = true;
+          const sparkColors = [[255, 45, 92], [255, 184, 0], [255, 107, 43], [255, 255, 255], [139, 46, 255], [0, 229, 180]];
+          const rgba = (r, g, b, alpha) => `rgba(${r},${g},${b},${alpha.toFixed(3)})`;
           const resizeCanvas = () => {
             const rect = stage.getBoundingClientRect();
             const dpr = window.devicePixelRatio || 1;
@@ -956,7 +1041,9 @@
             return { rect, dpr };
           };
           const draw = (now) => {
-            requestAnimationFrame(draw);
+            if (!concertRunning) return;
+            concertFrameId = requestAnimationFrame(draw);
+            if (document.body.classList.contains("export-preview") || document.body.classList.contains("print-mode")) return;
             if (!visitorZoneMapInstance) return;
             const { dpr } = resizeCanvas();
             const ctx = canvas.getContext("2d");
@@ -965,13 +1052,43 @@
             let theatre;
             try { theatre = visitorZoneMapInstance.project([visitorOpenAirTheatre.lng, visitorOpenAirTheatre.lat]); } catch (error) { return; }
             const t = now * 0.001;
-            const haze = ctx.createRadialGradient(theatre.x, theatre.y, 0, theatre.x, theatre.y, 72);
-            haze.addColorStop(0, "rgba(139,46,255,0.28)");
-            haze.addColorStop(1, "rgba(139,46,255,0)");
+            const delta = previousFrame ? (now - previousFrame) * 0.001 : 0;
+            previousFrame = now;
+            sparkTick += delta;
+            let pxPerMeter = 0.4;
+            try {
+              const pa = visitorZoneMapInstance.project([visitorOpenAirTheatre.lng, visitorOpenAirTheatre.lat]);
+              const pb = visitorZoneMapInstance.project([visitorOpenAirTheatre.lng, visitorOpenAirTheatre.lat + 0.001]);
+              pxPerMeter = Math.abs(pb.y - pa.y) / 111;
+            } catch (error) {}
+            const scaledLen = Math.max(5, Math.min(280, 220 * pxPerMeter));
+            const hazeRadius = Math.max(3, Math.min(70, 50 * pxPerMeter));
+            const haze = ctx.createRadialGradient(theatre.x, theatre.y, 0, theatre.x, theatre.y, hazeRadius);
+            haze.addColorStop(0, "rgba(140,40,255,0.30)");
+            haze.addColorStop(0.5, "rgba(60,10,160,0.10)");
+            haze.addColorStop(1, "rgba(0,0,0,0)");
             ctx.fillStyle = haze;
             ctx.beginPath();
-            ctx.arc(theatre.x, theatre.y, 72, 0, Math.PI * 2);
+            ctx.arc(theatre.x, theatre.y, hazeRadius, 0, Math.PI * 2);
             ctx.fill();
+            if (sparkTick > 0.5) {
+              sparkTick = 0;
+              for (let i = 0; i < 8; i += 1) {
+                const color = sparkColors[Math.floor(Math.random() * sparkColors.length)];
+                sparks.push({
+                  x: theatre.x + (Math.random() - 0.5) * 40,
+                  y: theatre.y,
+                  vx: (Math.random() - 0.5) * 2.8,
+                  vy: -(Math.random() * 4.5 + 2),
+                  life: 1,
+                  decay: 0.022 + Math.random() * 0.01,
+                  radius: Math.random() * 2 + 0.8,
+                  r: color[0],
+                  g: color[1],
+                  b: color[2]
+                });
+              }
+            }
             beams.forEach((beam) => {
               let origin;
               try { origin = visitorZoneMapInstance.project([beam.lng, beam.lat]); } catch (error) { return; }
@@ -979,24 +1096,80 @@
                 beam.el.style.left = `${origin.x}px`;
                 beam.el.style.top = `${origin.y}px`;
               }
+              if (theatreEffectScale < 0.5) return;
               const angle = Math.sin(t * beam.speed) * beam.range;
-              const len = 220;
-              const spread = 0.18;
-              const grad = ctx.createLinearGradient(origin.x, origin.y, origin.x + Math.sin(angle) * len, origin.y - Math.cos(angle) * len);
-              grad.addColorStop(0, "rgba(255,200,0,0.72)");
-              grad.addColorStop(1, "rgba(255,200,0,0)");
-              ctx.fillStyle = grad;
+              const len = scaledLen * theatreEffectScale;
+              const flicker = 0.6 + 0.4 * Math.abs(Math.sin(t * 5));
+              const targetX = origin.x + Math.sin(angle) * len;
+              const targetY = origin.y - Math.cos(angle) * len;
+              const outerGradient = ctx.createLinearGradient(origin.x, origin.y, targetX, targetY);
+              outerGradient.addColorStop(0, rgba(beam.r, beam.g, beam.b, 0.28 * flicker));
+              outerGradient.addColorStop(0.5, rgba(beam.r, beam.g, beam.b, 0.10 * flicker));
+              outerGradient.addColorStop(1, rgba(beam.r, beam.g, beam.b, 0));
               ctx.beginPath();
               ctx.moveTo(origin.x, origin.y);
-              ctx.lineTo(origin.x + Math.sin(angle - spread) * len, origin.y - Math.cos(angle - spread) * len);
-              ctx.lineTo(origin.x + Math.sin(angle + spread) * len, origin.y - Math.cos(angle + spread) * len);
+              ctx.lineTo(origin.x + Math.sin(angle - beam.width * 2.4) * len, origin.y - Math.cos(angle - beam.width * 2.4) * len);
+              ctx.lineTo(origin.x + Math.sin(angle + beam.width * 2.4) * len, origin.y - Math.cos(angle + beam.width * 2.4) * len);
               ctx.closePath();
+              ctx.fillStyle = outerGradient;
+              ctx.fill();
+              const innerGradient = ctx.createLinearGradient(origin.x, origin.y, targetX, targetY);
+              innerGradient.addColorStop(0, rgba(beam.r, beam.g, beam.b, 0.92 * flicker));
+              innerGradient.addColorStop(0.4, rgba(beam.r, beam.g, beam.b, 0.40 * flicker));
+              innerGradient.addColorStop(1, rgba(beam.r, beam.g, beam.b, 0));
+              ctx.beginPath();
+              ctx.moveTo(origin.x, origin.y);
+              ctx.lineTo(origin.x + Math.sin(angle - beam.width) * len, origin.y - Math.cos(angle - beam.width) * len);
+              ctx.lineTo(origin.x + Math.sin(angle + beam.width) * len, origin.y - Math.cos(angle + beam.width) * len);
+              ctx.closePath();
+              ctx.fillStyle = innerGradient;
+              ctx.fill();
+            });
+            sparks = theatreEffectScale < 0.5 ? [] : sparks.filter((spark) => spark.life > 0);
+            sparks.forEach((spark) => {
+              spark.x += spark.vx;
+              spark.y += spark.vy;
+              spark.vy += 0.2;
+              spark.life -= spark.decay;
+              ctx.beginPath();
+              ctx.arc(spark.x, spark.y, Math.max(0.1, spark.radius * spark.life), 0, Math.PI * 2);
+              ctx.fillStyle = rgba(spark.r, spark.g, spark.b, Math.max(0, spark.life) * 0.9);
               ctx.fill();
             });
             syncDancers();
+            dancers.forEach((dancer) => {
+              if (!dancer.el) return;
+              const bounce = Math.sin(t * dancer.speed * 3 + dancer.phase) * 3.2;
+              const sway = Math.sin(t * dancer.speed * 2 + dancer.phase) * 2.2;
+              dancer.el.style.transform = `translate(-50%, calc(-50% + ${bounce.toFixed(1)}px))`;
+              dancer.el.style.marginLeft = `${sway.toFixed(1)}px`;
+            });
           };
           ["move", "zoom", "rotate", "pitch", "resize"].forEach((eventName) => visitorZoneMapInstance.addListener?.(eventName, syncDancers));
-          requestAnimationFrame(draw);
+          window._visitorConcertStop = () => {
+            concertRunning = false;
+            if (concertFrameId) cancelAnimationFrame(concertFrameId);
+            concertFrameId = null;
+            canvas.style.display = "none";
+            fixtures.style.display = "none";
+            crowdLayer.style.display = "none";
+          };
+          window._visitorConcertStart = () => {
+            canvas.style.display = "";
+            fixtures.style.display = "";
+            crowdLayer.style.display = "";
+            if (concertRunning && concertFrameId) return;
+            concertRunning = true;
+            previousFrame = 0;
+            concertFrameId = requestAnimationFrame(draw);
+          };
+          window.addEventListener("beforeprint", window._visitorConcertStop);
+          window.addEventListener("afterprint", window._visitorConcertStart);
+          document.addEventListener("visibilitychange", () => {
+            if (document.hidden) window._visitorConcertStop?.();
+            else window._visitorConcertStart?.();
+          });
+          window._visitorConcertStart();
         };
         const resetVisitorZoneMapView = () => {
           try {
@@ -1040,22 +1213,30 @@
         };
         let visitorZoneFullscreenWired = false;
         const syncVisitorZoneFullscreen = () => {
-          setTimeout(() => {
+          const stage = document.querySelector(".visitor-zone-map-stage");
+          const isFullscreen = document.fullscreenElement === stage;
+          stage?.classList.toggle("is-fullscreen", isFullscreen);
+          const button = document.querySelector("#visitorZoneFullscreenButton");
+          if (button) {
+            button.classList.toggle("is-active", isFullscreen);
+            button.title = isFullscreen ? "Close fullscreen" : "Open fullscreen";
+            button.setAttribute("aria-label", button.title);
+            button.querySelector("span").textContent = isFullscreen ? "×" : "⛶";
+          }
+          [80, 220, 520].forEach((delay) => setTimeout(() => {
             try { visitorZoneMapInstance?.resize?.(); } catch (error) {}
+            if (isFullscreen) window._visitorConcertStart?.();
             positionVisitorZoneLabels();
-          }, 180);
+            if (delay >= 220 && visitorZoneSettings.theatreEnabled !== false) startVisitorTheatreAnimation();
+          }, delay));
         };
         const wireVisitorZoneNativeFullscreen = () => {
           if (visitorZoneFullscreenWired) return;
           const stage = document.querySelector(".visitor-zone-map-stage");
           if (!stage) return;
           visitorZoneFullscreenWired = true;
-          stage.addEventListener("click", async (event) => {
-            const control = event.target?.closest?.("button, a");
-            if (!control || control.closest(".visitor-zone-map-controls")) return;
-            const meta = `${control.className || ""} ${control.getAttribute("aria-label") || ""} ${control.getAttribute("title") || ""}`.toLowerCase();
-            const isFullscreenControl = meta.includes("fullscreen") || meta.includes("full screen") || meta.includes("ctrl-fullscreen");
-            if (!isFullscreenControl) return;
+          const button = document.querySelector("#visitorZoneFullscreenButton");
+          button?.addEventListener("click", async (event) => {
             event.preventDefault();
             event.stopPropagation();
             try {
@@ -1066,8 +1247,9 @@
               }
               syncVisitorZoneFullscreen();
             } catch (error) {}
-          }, true);
+          });
           document.addEventListener("fullscreenchange", syncVisitorZoneFullscreen);
+          syncVisitorZoneFullscreen();
         };
         const initVisitorZoneMapSdk = () => {
           const mapEl = document.querySelector("#visitorZoneSdkMap");
@@ -1088,14 +1270,17 @@
               zoomControl: true,
               clickableIcons: false
             });
+            let readyHandled = false;
             const onReady = () => {
+              if (readyHandled) return;
+              readyHandled = true;
               visitorZoneMapReady = true;
               try { mappls.setStyle(visitorZoneMapInstance, visitorZoneSettings.style || "whiteboard"); } catch (error) {}
               if (typeof hideMapSdkAttribution === "function") hideMapSdkAttribution();
               setTimeout(positionVisitorZoneLabels, 250);
               setTimeout(() => { if (visitorZoneSelectedIndex !== null) setActiveVisitorZone(visitorZoneSelectedIndex, false); }, 350);
-              if (visitorZoneSettings.introEnabled !== false) setTimeout(startVisitorZoneIntro, 450);
-              if (visitorZoneSettings.theatreEnabled !== false) setTimeout(startVisitorTheatreAnimation, 500);
+              if (visitorZoneSettings.theatreEnabled !== false) setTimeout(startVisitorTheatreAnimation, 450);
+              if (visitorZoneSettings.introEnabled !== false) setTimeout(startVisitorZoneIntro, 850);
               setTimeout(wireVisitorZoneNativeFullscreen, 300);
             };
             visitorZoneMapInstance.addListener?.("load", onReady);
@@ -1111,6 +1296,11 @@
           const settings = getMapSdkSettings();
           if (!mapEl) return;
           if (!settings.accessToken) {
+            if (typeof onAdminConfigLoaded === "function" && (typeof adminConfigHasLoaded === "undefined" || !adminConfigHasLoaded)) {
+              mapEl.innerHTML = '<div class="visitor-zone-map-error">Loading Map SDK settings...</div>';
+              onAdminConfigLoaded(loadVisitorZoneMapSdk);
+              return;
+            }
             mapEl.innerHTML = '<div class="visitor-zone-map-error">Map SDK token is not configured in Admin Dashboard &gt; Data Integrations &gt; Map SDK.</div>';
             return;
           }
@@ -1177,13 +1367,13 @@
           listEl.innerHTML = `
             <article class="visitor-zone-map-list-entrance">
               <span style="--zone-color:#00C853">IN</span>
-              <div><strong>Entrance</strong><small>Main campus entry and first help point.</small></div>
+              <div class="visitor-zone-list-copy"><strong>Entrance</strong><small>Main campus entry and first help point.</small></div>
               <em>Start Here</em>
             </article>
           ` + zones.map((zone, index) => `
             <article data-zone-list-index="${index}">
               <span style="--zone-color:${escapeHtml(zone.color || "#FFB15C")}">${escapeHtml(String(index + 1))}</span>
-              <div><strong>${escapeHtml(zone.icon || "📍")} ${escapeHtml(zone.title || "")}</strong><small>${escapeHtml(zone.note || "")}</small><b><i style="width:${Number(zone.crowd) || 0}%"></i></b></div>
+              <div class="visitor-zone-list-copy"><strong>${escapeHtml(zone.icon || "📍")} ${escapeHtml(zone.title || "")}</strong><small>${escapeHtml(zone.note || "")}</small><b><i style="width:${Number(zone.crowd) || 0}%"></i></b></div>
               <em>${escapeHtml(statusText(zone.status))}</em>
             </article>
           `).join("");
