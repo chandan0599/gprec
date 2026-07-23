@@ -11104,6 +11104,215 @@ img.student-user-avatar {
   box-shadow: var(--shadow);
 }
 
+/* Women's Cell Dashboard (dashboards/women-cell-dashboard.html) - overriding --orange locally
+   re-tints every component that already reads it (eyebrows, .notice-download pills, inline
+   `style="color:var(--orange)"` links) to a magenta/pink instead, without touching any other
+   page's colors or duplicating those component rules. The shared admin-shell/sidebar chrome is
+   left alone (many of its accent colors are hardcoded rgba(255,129,0,...) tints, not
+   var(--orange)) so it still looks and works like every other dashboard - only this page's own
+   panel content is re-themed. */
+.women-cell-dashboard-page {
+  --orange: #d6336c;
+}
+
+.women-cell-dashboard-banner {
+  padding: 28px 32px;
+  margin-bottom: 20px;
+  border-radius: 12px;
+  background: linear-gradient(135deg, #d6336c, #ff8fab);
+  box-shadow: var(--shadow);
+}
+
+.women-cell-dashboard-banner h2 {
+  margin: 0 0 6px;
+  color: var(--white);
+  font-size: 1.6rem;
+}
+
+.women-cell-dashboard-banner p {
+  margin: 0 0 16px;
+  color: rgba(255, 255, 255, 0.92);
+  font-size: 0.95rem;
+}
+
+.women-cell-dashboard-banner-link {
+  display: inline-block;
+  padding: 10px 22px;
+  color: #d6336c;
+  border-radius: 999px;
+  background: var(--white);
+  font-size: 0.85rem;
+  font-weight: 900;
+  text-decoration: none;
+  transition: transform 150ms ease;
+}
+
+.women-cell-dashboard-banner-link:hover {
+  transform: translateY(-2px);
+}
+
+/* Campus Life page's Women's Cell hero banner - dark editorial treatment (distinct from the
+   simpler .women-cell-dashboard-banner used inside the dashboard itself) with a glowing sun
+   graphic, matching the reference design the user provided. */
+.women-cell-hero-banner {
+  position: relative;
+  min-height: 190px;
+  overflow: hidden;
+  background: linear-gradient(160deg, #050a14, #0c1526 60%, #10182b);
+  animation: gprec-fade-slide-up 480ms cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.women-cell-hero-banner-sun {
+  position: absolute;
+  top: 50%;
+  right: -80px;
+  display: grid;
+  width: 240px;
+  height: 240px;
+  place-items: center;
+  border-radius: 999px;
+  background: radial-gradient(circle at 35% 35%, #ffb02e, var(--orange) 55%, #c2410c 100%);
+  box-shadow: 0 0 80px rgba(255, 135, 2, 0.45);
+  transform: translateY(-50%);
+  animation: women-cell-sun-pulse 3.2s ease-in-out infinite;
+}
+
+.women-cell-hero-banner-sun::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: 999px;
+  border: 1px dashed rgba(255, 255, 255, 0.2);
+  transform: scale(1.28);
+  animation: women-cell-sun-ring-spin 18s linear infinite;
+}
+
+.women-cell-hero-banner-icon {
+  position: relative;
+  z-index: 1;
+  width: 46px;
+  height: 46px;
+  stroke: rgba(255, 255, 255, 0.92);
+  stroke-width: 1.6;
+  fill: none;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  filter: drop-shadow(0 2px 6px rgba(0, 0, 0, 0.25));
+}
+
+@keyframes women-cell-sun-pulse {
+  0%, 100% {
+    box-shadow: 0 0 80px rgba(255, 135, 2, 0.45);
+    transform: translateY(-50%) scale(1);
+  }
+  50% {
+    box-shadow: 0 0 120px rgba(255, 135, 2, 0.7);
+    transform: translateY(-50%) scale(1.04);
+  }
+}
+
+@keyframes women-cell-sun-ring-spin {
+  from {
+    transform: scale(1.28) rotate(0deg);
+  }
+  to {
+    transform: scale(1.28) rotate(360deg);
+  }
+}
+
+.women-cell-hero-banner-content {
+  position: relative;
+  z-index: 1;
+  max-width: 600px;
+  padding: 30px 36px;
+}
+
+.women-cell-hero-banner-eyebrow {
+  margin: 0 0 10px;
+  color: rgba(255, 178, 102, 0.9);
+  font-size: 0.74rem;
+  font-weight: 900;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+.women-cell-hero-banner-content h2 {
+  margin: 0;
+  color: var(--white);
+  font-size: clamp(1.5rem, 3vw, 2.1rem);
+  font-weight: 950;
+  line-height: 1.08;
+  text-transform: uppercase;
+}
+
+.women-cell-hero-banner-content h2 span {
+  background: linear-gradient(90deg, #ffcf8f, var(--orange));
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+
+.women-cell-hero-banner-rule {
+  display: block;
+  width: 52px;
+  height: 3px;
+  margin: 12px 0;
+  background: var(--orange);
+  border-radius: 2px;
+}
+
+.women-cell-hero-banner-content > p {
+  max-width: 420px;
+  margin: 0 0 18px;
+  color: rgba(255, 255, 255, 0.72);
+  font-size: 0.88rem;
+  line-height: 1.5;
+}
+
+.women-cell-hero-banner-meta {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 16px;
+}
+
+.women-cell-hero-banner-meta > span {
+  color: rgba(255, 255, 255, 0.6);
+  font-size: 0.85rem;
+}
+
+.women-cell-hero-banner-meta > span strong {
+  color: var(--white);
+}
+
+.women-cell-hero-banner-link {
+  display: inline-block;
+  padding: 10px 22px;
+  color: var(--navy);
+  border-radius: 999px;
+  background: var(--white);
+  font-size: 0.82rem;
+  font-weight: 900;
+  text-decoration: none;
+  transition: transform 150ms ease, filter 150ms ease;
+}
+
+.women-cell-hero-banner-link:hover {
+  filter: brightness(0.96);
+  transform: translateY(-2px);
+}
+
+@media (max-width: 760px) {
+  .women-cell-hero-banner-sun {
+    right: -110px;
+    opacity: 0.6;
+  }
+
+  .women-cell-hero-banner-content {
+    padding: 26px 22px;
+  }
+}
+
 .about-subheading {
   margin: 0 0 16px;
   color: var(--navy);
