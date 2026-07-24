@@ -3,17 +3,26 @@
   <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>Women's Cell Dashboard | GPREC</title>
-    <meta name="description" content="GPREC Women's Cell dashboard - committee, reports, and resources.">
+    <title>Women's Cell | GPREC</title>
+    <meta name="description" content="GPREC Women's Cell - vision, committee, activities, reports, and resources. Open access, no login required.">
     <link rel="icon" href="https://www.gprec.ac.in/wp-content/uploads/2017/08/fav.png" sizes="32x32">
-    <link rel="stylesheet" href="../styles.css?v=20260722-31">
+    <link rel="stylesheet" href="../styles.css?v=20260722-33">
   </head>
-  <body class="admin-dashboard-page women-cell-dashboard-page">
-    <header class="student-topbar admin-topbar">
-      <a class="student-brand" href="../index.html">
+  <body class="wc-page">
+    <header class="wc-nav">
+      <a class="wc-nav-brand" href="../index.html">
         <img src="../gprec-logo-enhanced.png" alt="G Pulla Reddy Engineering College">
       </a>
-      <div class="student-user">
+      <nav class="wc-nav-links" aria-label="Section navigation">
+        <a href="#wc-vision">Vision</a>
+        <a href="#wc-committee">Committee</a>
+        <a href="#wc-activities">Activities</a>
+        <a href="#wc-reports">Reports</a>
+        <a href="#wc-resources">Resources</a>
+        <a href="#wc-grievance">Grievance</a>
+        <a href="#wc-contact">Contact</a>
+      </nav>
+      <div class="wc-nav-actions">
         <div class="notification-bell-wrap">
           <button type="button" class="notification-bell" id="notificationBellButton" aria-label="Notifications">
             <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 8a6 6 0 1 1 12 0c0 4 1.5 5.5 2 6H4c.5-.5 2-2 2-6Z"/><path d="M10 20a2 2 0 0 0 4 0"/></svg>
@@ -24,134 +33,319 @@
             <div id="notificationList"></div>
           </div>
         </div>
-        <div class="student-user-menu">
-          <span class="student-user-avatar">WC</span>
-          <span class="student-user-name-block">
-            <strong>Women's Cell</strong>
-            <small>Open access - no login required</small>
-          </span>
-        </div>
+        <a class="wc-nav-home" href="../pages/campus-life.html#women-cell">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m3 11 9-8 9 8M5 10v11h14V10M9 21v-6h6v6"/></svg>
+          Home
+        </a>
       </div>
     </header>
 
-    <main class="admin-shell">
-      <aside class="admin-sidebar">
-        <div class="student-menu-title">
-          <strong>Women's Cell Console</strong>
-          <button type="button" class="menu-collapse-toggle" id="menuCollapseToggle" aria-label="Collapse menu">
-            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M15 5 9 12l6 7"/></svg>
-          </button>
+    <nav class="wc-rail" aria-label="Page progress">
+      <a href="#wc-hero" data-rail-target="wc-hero"><span></span></a>
+      <a href="#wc-gallery" data-rail-target="wc-gallery"><span></span></a>
+      <a href="#wc-vision" data-rail-target="wc-vision"><span></span></a>
+      <a href="#wc-objectives" data-rail-target="wc-objectives"><span></span></a>
+      <a href="#wc-committee" data-rail-target="wc-committee"><span></span></a>
+      <a href="#wc-activities" data-rail-target="wc-activities"><span></span></a>
+      <a href="#wc-reports" data-rail-target="wc-reports"><span></span></a>
+      <a href="#wc-resources" data-rail-target="wc-resources"><span></span></a>
+      <a href="#wc-notices" data-rail-target="wc-notices"><span></span></a>
+      <a href="#wc-grievance" data-rail-target="wc-grievance"><span></span></a>
+      <a href="#wc-contact" data-rail-target="wc-contact"><span></span></a>
+    </nav>
+
+    <main>
+      <section class="wc-hero" id="wc-hero">
+        <span class="wc-hero-ghost" aria-hidden="true">2007</span>
+        <img class="wc-hero-illustration" src="../uploads/women-cell/logo.png" alt="" aria-hidden="true">
+        <div class="wc-hero-copy">
+          <p class="wc-eyebrow">GPREC &middot; Women's Cell &middot; open access, no login</p>
+          <h1>SHE RISES.<br><span>SHE LEADS.</span></h1>
+          <p class="wc-hero-lede">A safe, supportive environment for every woman at GPREC &mdash; students, faculty, and staff &mdash; established 6th January 2007 pursuant to the directives of the Supreme Court of India.</p>
         </div>
-        <div class="admin-nav active" data-admin-target="#women-cell-overview" title="Overview" role="button" tabindex="0"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="3" width="8" height="8" rx="1"/><rect x="13" y="3" width="8" height="8" rx="1"/><rect x="3" y="13" width="8" height="8" rx="1"/><rect x="13" y="13" width="8" height="8" rx="1"/></svg><span class="admin-nav-text">Overview</span></div>
-        <div class="admin-nav" data-admin-target="#women-cell-committee" title="Committee" role="button" tabindex="0"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="9" cy="8" r="3"/><path d="M3 21c.7-3.2 3-5 6-5s5.3 1.8 6 5"/><circle cx="17" cy="8" r="2.4"/><path d="M15.5 13.2c2.2.4 3.8 1.9 4.5 4.8"/></svg><span class="admin-nav-text">Committee</span></div>
-        <div class="admin-nav" data-admin-target="#women-cell-reports" title="Reports" role="button" tabindex="0"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 2h9l5 5v15H6Z"/><path d="M15 2v5h5M9 13h6M9 17h4"/></svg><span class="admin-nav-text">Reports</span></div>
-        <div class="admin-nav" data-admin-target="#women-cell-resources" title="Rights &amp; Resources" role="button" tabindex="0"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 5.5A2.5 2.5 0 0 1 6.5 3H20v16H6.5A2.5 2.5 0 0 0 4 21.5zM4 5.5v16M8 7h8"/></svg><span class="admin-nav-text">Rights &amp; Resources</span></div>
-        <div class="admin-nav" data-admin-target="#women-cell-notices" title="Notices" role="button" tabindex="0"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M18 8a6 6 0 0 0-12 0c0 7-3 7-3 9h18c0-2-3-2-3-9ZM10 21h4"/></svg><span class="admin-nav-text">Notices</span></div>
-      </aside>
-
-      <section class="admin-workspace">
-        <section class="admin-panel is-active" id="women-cell-overview">
-          <div class="women-cell-dashboard-banner">
-            <h2>Women's Cell</h2>
-            <p>A safe, supportive environment for every woman at GPREC - students, faculty, and staff.</p>
-          </div>
-          <div class="admin-section-head">
-            <div><p class="eyebrow">Overview</p><h2>Women's Cell activity at a glance.</h2></div>
-          </div>
-          <div class="admin-metric-grid">
-            <article><strong id="womenCellCommitteeCount">10</strong><span>Committee members</span></article>
-            <article><strong id="womenCellReportCount">2</strong><span>Annual reports on file</span></article>
-            <article><strong id="womenCellResourceCount">4</strong><span>Rights &amp; resource documents</span></article>
-            <article><strong id="womenCellNewsletterCount">3</strong><span>"She Voice" newsletters</span></article>
-          </div>
-          <p class="about-justify">Established 6th January 2007, pursuant to the directives of the Supreme Court of India, to ensure a safe and secure environment for women at G. Pulla Reddy Engineering College. All female faculty, staff, and students are members of the Women's Cell.</p>
-        </section>
-
-        <section class="admin-panel" id="women-cell-committee">
-          <div class="admin-section-head">
-            <div><p class="eyebrow">Committee</p><h2>Women's Cell committee roster.</h2></div>
-          </div>
-          <div class="admin-table-card">
-            <table>
-              <thead><tr><th>Name</th><th>Role</th></tr></thead>
-              <tbody>
-                <tr><td>Dr. K. Devaki Devi</td><td>Convener (Associate Professor, ME)</td></tr>
-                <tr><td>Smt. K. Gayathri</td><td>Member (Assistant Professor, CSE)</td></tr>
-                <tr><td>Dr. K. Subhashini</td><td>Member (Associate Professor, Mathematics)</td></tr>
-                <tr><td>Dr. K.V.S. Gopala Krishna Sastry</td><td>Member (Professor, CE)</td></tr>
-                <tr><td>Dr. S. Naga Raja Rao</td><td>Member (Professor and Head, ECE)</td></tr>
-                <tr><td>Dr. V. Anantha Lakshmi</td><td>Member (Associate Professor, EEE)</td></tr>
-                <tr><td>Smt. Sowjanya</td><td>Member (Assistant Professor, CE)</td></tr>
-                <tr><td>Smt. T. Swathi</td><td>Member (Assistant Professor, ECE)</td></tr>
-                <tr><td>Smt. K. Asha Rani</td><td>Member (Assistant Professor, CSE)</td></tr>
-                <tr><td>Dr. S. Sailaja</td><td>Member (Assistant Professor, HBS)</td></tr>
-              </tbody>
-            </table>
-          </div>
-        </section>
-
-        <section class="admin-panel" id="women-cell-reports">
-          <div class="admin-section-head">
-            <div><p class="eyebrow">Reports</p><h2>Annual event reports.</h2></div>
-          </div>
-          <div class="admin-table-card">
-            <table>
-              <thead><tr><th>Year</th><th></th></tr></thead>
-              <tbody>
-                <tr><td>2023-24</td><td><a class="notice-download" href="http://womencell.gprec.ac.in/documents/report23.docx" target="_blank" rel="noreferrer">Download</a></td></tr>
-                <tr><td>2024-25</td><td><a class="notice-download" href="http://womencell.gprec.ac.in/documents/report24.docx" target="_blank" rel="noreferrer">Download</a></td></tr>
-                <tr><td>2025-26</td><td>Update soon</td></tr>
-              </tbody>
-            </table>
-          </div>
-        </section>
-
-        <section class="admin-panel" id="women-cell-resources">
-          <div class="admin-section-head">
-            <div><p class="eyebrow">Rights &amp; Resources</p><h2>Reference documents and newsletters.</h2></div>
-          </div>
-          <div class="admin-table-card">
-            <h3>Rights &amp; Resources</h3>
-            <table>
-              <thead><tr><th>Document</th><th></th></tr></thead>
-              <tbody>
-                <tr><td>Handbook on Sexual Harassment of Women at Workplace</td><td><a class="notice-download" href="http://womencell.gprec.ac.in/documents/handbook.pdf" target="_blank" rel="noreferrer">Download</a></td></tr>
-                <tr><td>Women Constitution &amp; Legal Rights</td><td><a class="notice-download" href="http://womencell.gprec.ac.in/documents/ConstitutionalLegalRights.pdf" target="_blank" rel="noreferrer">Download</a></td></tr>
-                <tr><td>Women Acts</td><td><a class="notice-download" href="http://womencell.gprec.ac.in/documents/WomenActs.pdf" target="_blank" rel="noreferrer">Download</a></td></tr>
-                <tr><td>Women's Cell Process Document</td><td><a class="notice-download" href="http://womencell.gprec.ac.in/documents/WomenCellProcess.pdf" target="_blank" rel="noreferrer">Download</a></td></tr>
-              </tbody>
-            </table>
-          </div>
-          <div class="admin-table-card">
-            <h3>"She Voice" Newsletters</h3>
-            <table>
-              <thead><tr><th>Edition</th><th></th></tr></thead>
-              <tbody>
-                <tr><td>She Voice 2017</td><td><a class="notice-download" href="http://womencell.gprec.ac.in/documents/she-voice2017.pdf" target="_blank" rel="noreferrer">Download</a></td></tr>
-                <tr><td>She Voice 2018</td><td><a class="notice-download" href="http://womencell.gprec.ac.in/documents/she-voice2018.pdf" target="_blank" rel="noreferrer">Download</a></td></tr>
-                <tr><td>She Voice 2019</td><td><a class="notice-download" href="http://womencell.gprec.ac.in/documents/she-voice2019.pdf" target="_blank" rel="noreferrer">Download</a></td></tr>
-              </tbody>
-            </table>
-          </div>
-        </section>
-
-        <section class="admin-panel" id="women-cell-notices">
-          <div class="admin-section-head">
-            <div><p class="eyebrow">Notices</p><h2>Events and announcements.</h2></div>
-          </div>
-          <div class="admin-table-card">
-            <table>
-              <thead><tr><th>Event</th><th>Details</th></tr></thead>
-              <tbody>
-                <tr><td>Swashakthi 2024</td><td>The Swashakthi 2024 Women Congress concluded on a high note at GPREC on December 7th, 2024.</td></tr>
-              </tbody>
-            </table>
-            <p class="lookup-empty">More events are posted on the public Women's Cell page.</p>
-          </div>
-        </section>
+        <div class="wc-hero-stats">
+          <article><strong id="womenCellCommitteeCount">10</strong><span>Committee members</span></article>
+          <article><strong id="womenCellReportCount">2</strong><span>Annual reports</span></article>
+          <article><strong id="womenCellResourceCount">4</strong><span>Rights &amp; resources</span></article>
+          <article><strong id="womenCellNewsletterCount">3</strong><span>"She Voice" issues</span></article>
+        </div>
       </section>
+
+      <section class="wc-band wc-band-dark" id="wc-gallery">
+        <p class="wc-index">01</p>
+        <div class="wc-band-head">
+          <p class="wc-eyebrow">Gallery</p>
+          <h2>Moments from Women's Cell events.</h2>
+        </div>
+        <div class="wc-gallery-frame facility-carousel" data-facility-carousel data-photos='["../uploads/women-cell/event-1.jpg", "../uploads/women-cell/event-2.jpg", "../uploads/women-cell/event-3.jpg", "../uploads/women-cell/event-4.jpg", "../uploads/women-cell/event-5.jpg", "../uploads/women-cell/event-6.jpg"]'>
+          <img src="../uploads/women-cell/event-1.jpg" alt="Women's Cell event at GPREC" loading="lazy" data-facility-carousel-img>
+          <button type="button" class="facility-carousel-nav facility-carousel-prev" data-facility-carousel-prev aria-label="Previous photo">&#10094;</button>
+          <button type="button" class="facility-carousel-nav facility-carousel-next" data-facility-carousel-next aria-label="Next photo">&#10095;</button>
+        </div>
+      </section>
+
+      <div class="wc-quote">
+        <p>&ldquo;A safe space isn&rsquo;t given. It&rsquo;s built &mdash; one policy, one voice, one year at a time.&rdquo;</p>
+        <span>Women's Cell, GPREC &middot; since 2007</span>
+      </div>
+
+      <section class="wc-band" id="wc-vision">
+        <p class="wc-index">02</p>
+        <div class="wc-editorial-split">
+          <div>
+            <p class="wc-eyebrow">Vision</p>
+            <h2>A space where women realize their potential.</h2>
+            <p>To create a conducive atmosphere for women to realize their potential and help them pursue their natural interests.</p>
+          </div>
+          <div>
+            <p class="wc-eyebrow">Mission</p>
+            <h2>Safety, equity, and confidence.</h2>
+            <p>Provide a safe working and studying environment free from threats to safety; work towards a gender-sensitive community with equal opportunities for men and women; and generate the confidence for women to carve out a niche for themselves.</p>
+          </div>
+        </div>
+      </section>
+
+      <section class="wc-band wc-band-dark" id="wc-objectives">
+        <p class="wc-index">03</p>
+        <div class="wc-band-head">
+          <p class="wc-eyebrow">Objectives</p>
+          <h2>What the cell is here to do.</h2>
+        </div>
+        <ol class="wc-manifesto">
+          <li><span>01</span><div><strong>Redress harassment</strong><p>Deal with cases of sexual, psychological, or emotional harassment in a timely, appropriate, and just manner.</p></div></li>
+          <li><span>02</span><div><strong>Address concerns</strong><p>Address the issues and concerns of all women and girls working or studying at the institute.</p></div></li>
+          <li><span>03</span><div><strong>Raise awareness</strong><p>Create social awareness about the problems of women and, in particular, gender discrimination.</p></div></li>
+          <li><span>04</span><div><strong>Sensitize &amp; guide</strong><p>Sensitize women about the various avenues that are open to them.</p></div></li>
+        </ol>
+      </section>
+
+      <section class="wc-band" id="wc-committee">
+        <p class="wc-index">04</p>
+        <div class="wc-band-head">
+          <p class="wc-eyebrow">Committee</p>
+          <h2>The people behind the cell.</h2>
+        </div>
+        <div class="wc-portrait-wall">
+          <figure><img src="../uploads/women-cell/committee-devaki.png" alt="Dr. K. Devaki Devi" loading="lazy"><figcaption><strong>Dr. K. Devaki Devi</strong><span>Convener &middot; ME</span></figcaption></figure>
+          <figure><img src="../uploads/women-cell/committee-gayathri.jpg" alt="Smt. K. Gayathri" loading="lazy"><figcaption><strong>Smt. K. Gayathri</strong><span>Member &middot; CSE</span></figcaption></figure>
+          <figure><img src="../uploads/women-cell/committee-subhashini.jpg" alt="Dr. K. Subhashini" loading="lazy"><figcaption><strong>Dr. K. Subhashini</strong><span>Member &middot; Mathematics</span></figcaption></figure>
+          <figure><img src="../uploads/women-cell/committee-gopala.png" alt="Dr. K.V.S. Gopala Krishna Sastry" loading="lazy"><figcaption><strong>Dr. K.V.S. Gopala Krishna Sastry</strong><span>Member &middot; CE</span></figcaption></figure>
+          <figure><img src="../uploads/women-cell/committee-naga.jpg" alt="Dr. S. Naga Raja Rao" loading="lazy"><figcaption><strong>Dr. S. Naga Raja Rao</strong><span>Member &middot; ECE</span></figcaption></figure>
+          <figure><img src="../uploads/women-cell/committee-anantha.png" alt="Dr. V. Anantha Lakshmi" loading="lazy"><figcaption><strong>Dr. V. Anantha Lakshmi</strong><span>Member &middot; EEE</span></figcaption></figure>
+          <figure><img src="../uploads/women-cell/committee-sowjanya.png" alt="Smt. Sowjanya" loading="lazy"><figcaption><strong>Smt. Sowjanya</strong><span>Member &middot; CE</span></figcaption></figure>
+          <figure><img src="../uploads/women-cell/committee-swathi.jpg" alt="Smt. T. Swathi" loading="lazy"><figcaption><strong>Smt. T. Swathi</strong><span>Member &middot; ECE</span></figcaption></figure>
+          <figure><img src="../uploads/women-cell/committee-asharani.png" alt="Smt. K. Asha Rani" loading="lazy"><figcaption><strong>Smt. K. Asha Rani</strong><span>Member &middot; CSE</span></figcaption></figure>
+          <figure><img src="../uploads/women-cell/committee-sailaja.jpg" alt="Dr. S. Sailaja" loading="lazy"><figcaption><strong>Dr. S. Sailaja</strong><span>Member &middot; HBS</span></figcaption></figure>
+        </div>
+      </section>
+
+      <section class="wc-band wc-band-dark" id="wc-activities">
+        <p class="wc-index">05</p>
+        <div class="wc-band-head">
+          <p class="wc-eyebrow">Activities</p>
+          <h2>What the cell runs through the year.</h2>
+        </div>
+        <ol class="wc-timeline">
+          <li><span></span><strong>Gender sensitization</strong><p>Lectures and workshops by eminent personalities.</p></li>
+          <li><span></span><strong>Gender-theme competitions</strong><p>Competitions on gender themes to make students think about gender issues.</p></li>
+          <li><span></span><strong>Awards</strong><p>Lectures and institution of awards to female students, including the Best Girl Student Award and Gender Championship.</p></li>
+          <li><span></span><strong>International Women's Day</strong><p>Celebration held every year across the campus.</p></li>
+          <li><span></span><strong>"She Voice"</strong><p>Release of the Women's Cell annual magazine, a collection of students' articles.</p></li>
+          <li><span></span><strong>Outreach</strong><p>Addressing girl students in smaller groups once every semester.</p></li>
+        </ol>
+      </section>
+
+      <section class="wc-band" id="wc-reports">
+        <p class="wc-index">06</p>
+        <div class="wc-band-head">
+          <p class="wc-eyebrow">Reports</p>
+          <h2>Annual event reports.</h2>
+        </div>
+        <ul class="wc-index-list" id="wcReportsList">
+          <li><span class="wc-index-list-num">2023&ndash;24</span><span class="wc-index-list-title">Annual Report</span><a class="wc-index-list-action" href="http://womencell.gprec.ac.in/documents/report23.docx" target="_blank" rel="noreferrer">Download</a></li>
+          <li><span class="wc-index-list-num">2024&ndash;25</span><span class="wc-index-list-title">Annual Report</span><a class="wc-index-list-action" href="http://womencell.gprec.ac.in/documents/report24.docx" target="_blank" rel="noreferrer">Download</a></li>
+          <li><span class="wc-index-list-num">2025&ndash;26</span><span class="wc-index-list-title">Annual Report</span><span class="wc-index-list-soon">Update soon</span></li>
+        </ul>
+      </section>
+
+      <section class="wc-band wc-band-dark" id="wc-resources">
+        <p class="wc-index">07</p>
+        <div class="wc-band-head">
+          <p class="wc-eyebrow">Rights &amp; Resources</p>
+          <h2>Reference documents and newsletters.</h2>
+        </div>
+        <div class="wc-editorial-split">
+          <div>
+            <h3 class="wc-sub-head">Rights</h3>
+            <ul class="wc-index-list" id="wcResourcesList">
+              <li><span class="wc-index-list-title">Handbook on Sexual Harassment of Women at Workplace</span><a class="wc-index-list-action" href="http://womencell.gprec.ac.in/documents/handbook.pdf" target="_blank" rel="noreferrer">Download</a></li>
+              <li><span class="wc-index-list-title">Women Constitution &amp; Legal Rights</span><a class="wc-index-list-action" href="http://womencell.gprec.ac.in/documents/ConstitutionalLegalRights.pdf" target="_blank" rel="noreferrer">Download</a></li>
+              <li><span class="wc-index-list-title">Women Acts</span><a class="wc-index-list-action" href="http://womencell.gprec.ac.in/documents/WomenActs.pdf" target="_blank" rel="noreferrer">Download</a></li>
+              <li><span class="wc-index-list-title">Women's Cell Process Document</span><a class="wc-index-list-action" href="http://womencell.gprec.ac.in/documents/WomenCellProcess.pdf" target="_blank" rel="noreferrer">Download</a></li>
+            </ul>
+          </div>
+          <div>
+            <h3 class="wc-sub-head">"She Voice" Newsletters</h3>
+            <ul class="wc-index-list" id="wcNewslettersList">
+              <li><span class="wc-index-list-title">She Voice 2017</span><a class="wc-index-list-action" href="http://womencell.gprec.ac.in/documents/she-voice2017.pdf" target="_blank" rel="noreferrer">Download</a></li>
+              <li><span class="wc-index-list-title">She Voice 2018</span><a class="wc-index-list-action" href="http://womencell.gprec.ac.in/documents/she-voice2018.pdf" target="_blank" rel="noreferrer">Download</a></li>
+              <li><span class="wc-index-list-title">She Voice 2019</span><a class="wc-index-list-action" href="http://womencell.gprec.ac.in/documents/she-voice2019.pdf" target="_blank" rel="noreferrer">Download</a></li>
+            </ul>
+          </div>
+        </div>
+      </section>
+
+      <section class="wc-band" id="wc-notices">
+        <p class="wc-index">08</p>
+        <div class="wc-band-head">
+          <p class="wc-eyebrow">Notices</p>
+          <h2>Events and announcements.</h2>
+        </div>
+        <ul class="wc-index-list" id="wcNoticesList">
+          <li><span class="wc-index-list-title"><strong>Swashakthi 2024</strong> &mdash; The Swashakthi 2024 Women Congress concluded on a high note at GPREC on December 7th, 2024.</span></li>
+        </ul>
+        <p class="lookup-empty is-hidden" id="wcNoticesEmpty">No notices posted yet.</p>
+        <p class="wc-muted-note">More events are posted on the public Women's Cell page.</p>
+      </section>
+
+      <section class="wc-band wc-band-dark" id="wc-grievance">
+        <p class="wc-index">09</p>
+        <div class="wc-band-head">
+          <p class="wc-eyebrow">Grievance</p>
+          <h2>Women's Grievance form.</h2>
+          <p>Same fields as the college's official Women's Grievance form &mdash; submitting opens your email app addressed to the Women's Cell, since this page has no backend of its own to receive it directly.</p>
+        </div>
+        <div class="wc-grievance-layout">
+          <form class="contact-form wc-grievance-form" id="wcGrievanceForm">
+            <div class="wc-grievance-grid">
+              <label>Student Name<input type="text" id="wcGrievanceName" required></label>
+              <label>Phone<input type="tel" id="wcGrievancePhone"></label>
+              <label>Roll No.<input type="text" id="wcGrievanceRoll"></label>
+              <label>Email ID<input type="email" id="wcGrievanceEmail"></label>
+              <label>Year of Study
+                <select id="wcGrievanceYear">
+                  <option value="">Sem</option>
+                  <option value="I-Sem">I-Sem</option>
+                  <option value="II-Sem">II-Sem</option>
+                  <option value="III-Sem">III-Sem</option>
+                  <option value="IV-Sem">IV-Sem</option>
+                  <option value="V-Sem">V-Sem</option>
+                  <option value="VI-Sem">VI-Sem</option>
+                  <option value="VII-Sem">VII-Sem</option>
+                  <option value="VIII-Sem">VIII-Sem</option>
+                </select>
+              </label>
+            </div>
+            <label>Grievance<textarea id="wcGrievanceBody" rows="4" required></textarea></label>
+            <button type="submit" class="contact-form-submit">Submit</button>
+            <p class="admin-add-feedback" id="wcGrievanceFeedback" aria-live="polite"></p>
+          </form>
+          <aside class="wc-grievance-aside">
+            <p class="wc-eyebrow">What happens next</p>
+            <ol>
+              <li>Your email app opens with the grievance pre-filled, addressed to the Women's Cell.</li>
+              <li>Send it from your own inbox &mdash; that's what actually delivers it.</li>
+              <li>The Convener reviews every grievance and routes it to the concerned committee.</li>
+            </ol>
+            <p class="wc-grievance-aside-note">Prefer not to use email? Reach the cell directly at <a href="mailto:womenscell@gprec.ac.in">womenscell@gprec.ac.in</a>.</p>
+          </aside>
+        </div>
+      </section>
+
+      <section class="wc-close" id="wc-contact">
+        <p class="wc-index">10</p>
+        <div class="wc-editorial-split">
+          <div>
+            <p class="wc-eyebrow">Contact</p>
+            <h2>Reach the Women's Cell.</h2>
+            <p class="wc-close-body">G Pulla Reddy Engineering College, Kurnool</p>
+            <a class="wc-close-link" href="mailto:womenscell@gprec.ac.in">womenscell@gprec.ac.in</a>
+          </div>
+          <div>
+            <p class="wc-eyebrow">Quick Links</p>
+            <ul class="wc-quick-links">
+              <li><a href="#wc-gallery">Gallery</a></li>
+              <li><a href="#wc-committee">Committee</a></li>
+              <li><a href="#wc-reports">Annual Reports</a></li>
+              <li><a href="#wc-resources">Rights &amp; Resources</a></li>
+              <li><a href="#wc-grievance">Grievance Form</a></li>
+              <li><a href="../pages/campus-life.html#women-cell">Campus Life</a></li>
+            </ul>
+          </div>
+        </div>
+      </section>
+
+      <footer class="wc-footer">
+        <span>GPREC Women's Cell &middot; established 2007</span>
+        <a href="../pages/campus-life.html#women-cell">Back to Campus Life</a>
+      </footer>
     </main>
 
-    <script src="../script.js?v=20260722-31"></script>
+    <script src="../script.js?v=20260722-33"></script>
+    <script>
+      (() => {
+        const nextButton = document.querySelector(".wc-gallery-frame [data-facility-carousel-next]");
+        if (nextButton) setInterval(() => nextButton.click(), 4000);
+
+        const railLinks = document.querySelectorAll("[data-rail-target]");
+        const sections = [...railLinks].map((link) => document.getElementById(link.dataset.railTarget)).filter(Boolean);
+        if (!railLinks.length || !sections.length) return;
+        const setActive = (id) => {
+          railLinks.forEach((link) => link.classList.toggle("is-active", link.dataset.railTarget === id));
+        };
+        const observer = new IntersectionObserver((entries) => {
+          entries.forEach((entry) => {
+            if (entry.isIntersecting) setActive(entry.target.id);
+          });
+        }, { rootMargin: "-45% 0px -45% 0px", threshold: 0 });
+        sections.forEach((section) => observer.observe(section));
+      })();
+
+      (() => {
+        // Same field set as the college's official Women's Grievance form (GrievanceWomen.aspx) -
+        // there's no backend here to receive it directly, so submitting composes a mailto: to the
+        // Women's Cell instead, matching the pattern used by the other grievance forms on this site.
+        const form = document.querySelector("#wcGrievanceForm");
+        if (!form) return;
+        const feedback = document.querySelector("#wcGrievanceFeedback");
+        const fail = (message) => {
+          if (!feedback) return;
+          feedback.textContent = message;
+          feedback.classList.remove("success");
+        };
+        form.addEventListener("submit", (event) => {
+          event.preventDefault();
+          const get = (id) => document.querySelector(`#${id}`)?.value.trim() || "";
+          const name = get("wcGrievanceName");
+          const grievance = get("wcGrievanceBody");
+          if (!name) {
+            fail("Enter your name before submitting.");
+            return;
+          }
+          if (!grievance) {
+            fail("Describe the grievance before submitting.");
+            return;
+          }
+          const email = get("wcGrievanceEmail");
+          const lines = [
+            `Student Name: ${name}`,
+            `Phone: ${get("wcGrievancePhone")}`,
+            `Roll No.: ${get("wcGrievanceRoll")}`,
+            `Email ID: ${email}`,
+            `Year of Study: ${get("wcGrievanceYear")}`,
+            "",
+            "Grievance:",
+            grievance,
+          ];
+          const mailtoUrl = `mailto:womenscell@gprec.ac.in?subject=${encodeURIComponent("Women's Grievance")}&body=${encodeURIComponent(lines.join("\n"))}${email ? `&cc=${encodeURIComponent(email)}` : ""}`;
+          window.location.href = mailtoUrl;
+          form.reset();
+          if (feedback) {
+            feedback.textContent = "Your email app should now open, addressed to the Women's Cell - send it from there to actually deliver the grievance.";
+            feedback.classList.add("success");
+          }
+        });
+      })();
+    </script>
   </body>
 </html>

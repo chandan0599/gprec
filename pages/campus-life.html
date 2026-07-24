@@ -8,7 +8,7 @@
     <link rel="icon" href="https://www.gprec.ac.in/wp-content/uploads/2017/08/fav.png" sizes="32x32">
     <link rel="stylesheet" href="../styles.css?v=20260722-31">
   </head>
-  <body class="internal-page">
+  <body class="internal-page panel-redesign">
     <svg class="icon-sprite" aria-hidden="true" focusable="false">
       <symbol id="icon-lightbulb" viewBox="0 0 24 24"><path d="M9 21h6M10 17h4M8.2 14.2a6 6 0 1 1 7.6 0c-.9.7-1.3 1.6-1.4 2.8H9.6c-.1-1.2-.5-2.1-1.4-2.8Z"/></symbol>
       <symbol id="icon-campus" viewBox="0 0 24 24"><path d="M3 21h18M5 21V9l7-4 7 4v12M9 21v-7h6v7M8 10h.01M12 10h.01M16 10h.01"/></symbol>
@@ -28,7 +28,9 @@
       <symbol id="icon-award" viewBox="0 0 24 24"><path d="M12 15a6 6 0 1 0 0-12 6 6 0 0 0 0 12ZM9 14l-2 7 5-3 5 3-2-7"/></symbol>
       <symbol id="icon-mail" viewBox="0 0 24 24"><path d="M4 6h16v12H4zM4 7l8 6 8-6"/></symbol>
       <symbol id="icon-video" viewBox="0 0 24 24"><path d="M4 6h12v12H4zM16 10l5-3v10l-5-3z"/></symbol>
-    </svg>
+    <symbol id="icon-bus" viewBox="0 0 24 24"><path d="M4 16V6a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2v10M4 16a2 2 0 0 0 2 2h.5M4 16h16M20 16a2 2 0 0 1-2 2h-.5M6.5 18a1.5 1.5 0 1 0 3 0m5 0a1.5 1.5 0 1 0 3 0M7 6v6M17 6v6"/></symbol>
+  <symbol id="icon-shield" viewBox="0 0 24 24"><path d="M12 3 5 6v6c0 4.5 3 7.7 7 9 4-1.3 7-4.5 7-9V6Z"/><path d="m9.5 12 2 2 3.5-4"/></symbol>
+  </svg>
     <header class="site-header">
       <div class="utility">
         <div class="wrap utility-inner">
@@ -108,6 +110,26 @@
           </div>
         </div>
 
+        <nav class="campus-jump-nav" aria-label="Campus Life section jump menu">
+          <a href="#about" data-jump-target="about">About</a>
+          <a href="#facilities" data-jump-target="facilities">Facilities</a>
+          <a href="#general-amenities" data-jump-target="general-amenities">Amenities</a>
+          <a href="#teaching-learning-practices" data-jump-target="teaching-learning-practices">Teaching</a>
+          <a href="#e-content-modules" data-jump-target="e-content-modules">E-Content</a>
+          <a href="#student-clubs" data-jump-target="student-clubs">Clubs</a>
+          <a href="#student-affairs" data-jump-target="student-affairs">Affairs</a>
+          <a href="#women-cell" data-jump-target="women-cell">Women's Cell</a>
+          <a href="#hostels" data-jump-target="hostels">Hostels</a>
+          <a href="#transportation" data-jump-target="transportation">Transport</a>
+          <a href="#sports-facilities" data-jump-target="sports-facilities">Sports</a>
+          <a href="#caa-cell" data-jump-target="caa-cell">CAA Cell</a>
+          <a href="#grievance-cell" data-jump-target="grievance-cell">Grievance</a>
+          <a href="#sc-st-grievance-cell" data-jump-target="sc-st-grievance-cell">SC/ST Grievance</a>
+          <a href="#anti-ragging" data-jump-target="anti-ragging">Anti-Ragging</a>
+          <a href="#national-innovation-policy" data-jump-target="national-innovation-policy">NISP</a>
+          <a href="#gprec-blog" data-jump-target="gprec-blog">Blog</a>
+        </nav>
+
         <div class="page-content-grid">
           <nav class="page-quick-nav" aria-label="Quick page navigation">
             <a href="../index.html">Home</a>
@@ -134,13 +156,23 @@
 
           <div class="page-content-main">
             <article class="about-panel" id="about">
-              <h2 class="about-subheading">About Campus Life</h2>
+              <div class="panel-head">
+                <span class="panel-head-icon"><svg><use href="#icon-info"></use></svg></span>
+                <span class="panel-head-number">01</span>
+                <h2 class="about-subheading">About Campus Life</h2>
+              </div>
+              <div id="campusLifeAboutBody">
               <p class="about-justify">GPREC attracts top students from across the country, and the college recognizes that the true potential of such students cannot be realized through academics alone. Students engage in literary, cultural, and sports activities through college clubs, youth festivals, and technical competitions, gaining self-management skills and core values through experiential learning.</p>
               <p class="about-justify">Students are also represented on administrative committees - the Hostel Governing Body, Canteen Committee, Course Monitoring Committee, and Discipline Committee - giving them hands-on management science experience through real organizational responsibilities.</p>
+              </div>
             </article>
 
             <article class="about-panel" id="facilities">
-              <h2 class="about-subheading">Campus Facilities</h2>
+              <div class="panel-head">
+                <span class="panel-head-icon"><svg><use href="#icon-building"></use></svg></span>
+                <span class="panel-head-number">02</span>
+                <h2 class="about-subheading">Campus Facilities</h2>
+              </div>
               <div class="internal-grid">
                 <a>
                   <div class="facility-carousel" data-facility-carousel data-photos='["https://www.gprec.ac.in/wp-content/uploads/2019/04/1b.jpg","https://www.gprec.ac.in/wp-content/uploads/2019/04/2b.jpg","https://www.gprec.ac.in/wp-content/uploads/2019/04/3b.jpg"]'>
@@ -206,7 +238,12 @@
             </article>
 
             <article class="about-panel" id="general-amenities">
-              <h2 class="about-subheading">General Amenities</h2>
+              <div class="panel-head">
+                <span class="panel-head-icon"><svg><use href="#icon-map"></use></svg></span>
+                <span class="panel-head-number">03</span>
+                <h2 class="about-subheading">General Amenities</h2>
+              </div>
+              <div id="campusLifeAmenitiesBody">
               <p class="about-justify">The campus provides several communication and commercial services, including STD/ISD pay phones, a courier service, a bookstore for textbooks and stationery, copier facilities, and Andhra Bank and ATM facilities within the campus.</p>
               <p class="about-justify">A canteen facility is available to cater snacks, coffee, tea, and other refreshments to students and staff throughout college hours.</p>
               <p class="about-justify">The campus has an exclusive Health Centre, open to all students and staff from 9 AM to 5 PM, staffed by a qualified Medical Officer and three nursing staff.</p>
@@ -218,10 +255,16 @@
                 <li>Post Office</li>
                 <li>Stationery Shop</li>
               </ul>
+              </div>
             </article>
 
             <article class="about-panel" id="teaching-learning-practices">
-              <h2 class="about-subheading">Teaching Learning Practices</h2>
+              <div class="panel-head">
+                <span class="panel-head-icon"><svg><use href="#icon-book"></use></svg></span>
+                <span class="panel-head-number">04</span>
+                <h2 class="about-subheading">Teaching Learning Practices</h2>
+              </div>
+              <div id="campusLifeTeachingPracticesBody">
               <p class="about-justify">GPREC implements pedagogical innovations across all programs through modern infrastructure, online learning platforms, research initiatives, and co-curricular activities.</p>
 
               <h3 class="about-subheading-sm">Infrastructure &amp; Technology</h3>
@@ -246,10 +289,16 @@
 
               <h3 class="about-subheading-sm">Co-curricular Activities</h3>
               <p class="about-justify">Programs conducted regularly include webinars, aptitude training, social awareness initiatives, entrepreneurship development, critical thinking workshops, group discussions, and professional ethics education - designed to cultivate problem-solving, leadership, teamwork, and interdisciplinary competencies.</p>
+              </div>
             </article>
 
             <article class="about-panel" id="e-content-modules">
-              <h2 class="about-subheading">GPREC E-Content Modules</h2>
+              <div class="panel-head">
+                <span class="panel-head-icon"><svg><use href="#icon-video"></use></svg></span>
+                <span class="panel-head-number">05</span>
+                <h2 class="about-subheading">GPREC E-Content Modules</h2>
+              </div>
+              <div id="campusLifeEContentBody">
               <p class="about-justify">Faculty-created video content organized by department, published as YouTube playlists.</p>
 
               <h3 class="about-subheading-sm">Civil Engineering (CE)</h3>
@@ -351,43 +400,187 @@
                   </tbody>
                 </table>
               </div>
+              </div>
             </article>
 
             <article class="about-panel" id="student-clubs">
-              <h2 class="about-subheading">Student Clubs</h2>
+              <div class="panel-head">
+                <span class="panel-head-icon"><svg><use href="#icon-users"></use></svg></span>
+                <span class="panel-head-number">06</span>
+                <h2 class="about-subheading">Student Clubs</h2>
+              </div>
               <p class="about-justify">The college maintains multiple platforms for co-curricular and extra-curricular activities plus social service initiatives. Many student-led clubs remain active on campus, focusing on arts, culture, or hobbies to engage students outside of academic hours.</p>
 
-              <h3 class="about-subheading-sm">IEI Students' Chapter</h3>
-              <p class="about-justify">Conducts seminars on technical topics, quizzes, lectures, and other departmental activities.</p>
+              <div class="disclosure-accordion">
+                <details class="disclosure-accordion-item">
+                  <summary>
+                    <span class="disclosure-accordion-item-badge">VSC</span>
+                    <span class="disclosure-accordion-item-heading"><strong>Vivekananda Study Circle</strong><small>Social service</small></span>
+                    <svg class="disclosure-accordion-item-chevron" viewBox="0 0 24 24" aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg>
+                  </summary>
+                  <div class="disclosure-accordion-item-body">
+                    <p class="about-justify">"Vivekananda Study Circle" moves ahead with the vision "Be Good, Do Good," driving students to get involved in social service and strive for international brotherhood. Its motto is "Inculcating Values through Service Activities."</p>
+                    <p class="about-justify">Patron: Dr. B. Sreenivasa Reddy (Principal). Coordinator: Dr. M. Nagaphani Sastry (Associate Professor, ME), with seven faculty in-charges across departments.</p>
+                    <ul class="disclosure-list">
+                      <li><strong>Blood donation camps</strong> - held twice a year; collected units go to the Government General Hospital blood bank. A voluntary donor's directory has been maintained since 2004, with nearly 1,500 registered donors.</li>
+                      <li><strong>Medical camps</strong> - organized annually, with volunteers visiting thandas and gudems that lack medical facilities.</li>
+                      <li><strong>Service camps</strong> - including flood relief (2009) and ISKCON Jagannatha Ratha Yatra support (2012, 2015); every March-April, volunteers serve devotees travelling to Srisailam with food, medical care, and buttermilk distribution.</li>
+                    </ul>
+                    <div class="disclosure-table-wrap">
+                      <table class="disclosure-table">
+                        <thead><tr><th>VSC Report</th><th></th></tr></thead>
+                        <tbody>
+                          <tr><td>Academic Year 2022-23</td><td><a class="notice-download" href="https://www.gprec.ac.in/vsc/vcs%20report%202022-23.pdf" target="_blank" rel="noreferrer">Download</a></td></tr>
+                          <tr><td>Academic Year 2023-24</td><td><a class="notice-download" href="https://www.gprec.ac.in/vsc/vsc-activities-2023-24.pdf" target="_blank" rel="noreferrer">Download</a></td></tr>
+                          <tr><td>Academic Year 2024-25</td><td><a class="notice-download" href="https://www.gprec.ac.in/vsc/VCS-ACTIVITIES-July-2024-2025.pdf" target="_blank" rel="noreferrer">Download</a></td></tr>
+                        </tbody>
+                      </table>
+                    </div>
+                  </div>
+                </details>
 
-              <h3 class="about-subheading-sm">Bhuvana Vijayam</h3>
-              <p class="about-justify">Literary and cultural association providing a forum for students to demonstrate their talents in culture and literature.</p>
+                <div id="campusLifeClubsList" style="display:contents">
+                  <details class="disclosure-accordion-item">
+                    <summary>
+                      <span class="disclosure-accordion-item-badge">BV</span>
+                      <span class="disclosure-accordion-item-heading"><strong>Bhuvana Vijayam</strong><small>Literary &amp; cultural</small></span>
+                      <svg class="disclosure-accordion-item-chevron" viewBox="0 0 24 24" aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg>
+                    </summary>
+                    <div class="disclosure-accordion-item-body">
+                      <p class="about-justify">Literary and cultural association providing a forum for students to demonstrate their talents in culture and literature.</p>
+                    </div>
+                  </details>
 
-              <h3 class="about-subheading-sm">Center for Awareness &amp; Discussion (CAD)</h3>
-              <p class="about-justify">Works with the objective of familiarizing students with current topics through group discussions and quizzes.</p>
+                  <details class="disclosure-accordion-item">
+                    <summary>
+                      <span class="disclosure-accordion-item-badge">CAD</span>
+                      <span class="disclosure-accordion-item-heading"><strong>Center for Awareness &amp; Discussion</strong><small>Discussion &amp; quizzes</small></span>
+                      <svg class="disclosure-accordion-item-chevron" viewBox="0 0 24 24" aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg>
+                    </summary>
+                    <div class="disclosure-accordion-item-body">
+                      <p class="about-justify">Works with the objective of familiarizing students with current topics through group discussions and quizzes.</p>
+                    </div>
+                  </details>
 
-              <h3 class="about-subheading-sm">Vivekananda Study Circle (VSC)</h3>
-              <p class="about-justify">Focused on universal brotherhood, selfless service, and instilling noble values in youth.</p>
+                  <details class="disclosure-accordion-item">
+                    <summary>
+                      <span class="disclosure-accordion-item-badge">IEI</span>
+                      <span class="disclosure-accordion-item-heading"><strong>IEI Students' Chapter</strong><small>Technical</small></span>
+                      <svg class="disclosure-accordion-item-chevron" viewBox="0 0 24 24" aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg>
+                    </summary>
+                    <div class="disclosure-accordion-item-body">
+                      <p class="about-justify">Conducts seminars on technical topics, quizzes, lectures, and other departmental activities.</p>
+                    </div>
+                  </details>
 
-              <h3 class="about-subheading-sm">Art of Living Forum</h3>
-              <p class="about-justify">Started to bring joy, a stress-free mind, a healthy body, and a blossomed life to students as well as faculty.</p>
+                  <details class="disclosure-accordion-item">
+                    <summary>
+                      <span class="disclosure-accordion-item-badge">AoL</span>
+                      <span class="disclosure-accordion-item-heading"><strong>Art of Living Forum</strong><small>Wellness</small></span>
+                      <svg class="disclosure-accordion-item-chevron" viewBox="0 0 24 24" aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg>
+                    </summary>
+                    <div class="disclosure-accordion-item-body">
+                      <p class="about-justify">Started to bring joy, a stress-free mind, a healthy body, and a blossomed life to students as well as faculty.</p>
+                    </div>
+                  </details>
 
-              <h3 class="about-subheading-sm">T&amp;P Club</h3>
-              <p class="about-justify">Started to create awareness among students about career opportunities, training needs, and industry expectations.</p>
+                  <details class="disclosure-accordion-item">
+                    <summary>
+                      <span class="disclosure-accordion-item-badge">T&amp;P</span>
+                      <span class="disclosure-accordion-item-heading"><strong>T&amp;P Club</strong><small>Careers &amp; training</small></span>
+                      <svg class="disclosure-accordion-item-chevron" viewBox="0 0 24 24" aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg>
+                    </summary>
+                    <div class="disclosure-accordion-item-body">
+                      <p class="about-justify">Started to create awareness among students about career opportunities, training needs, and industry expectations.</p>
+                    </div>
+                  </details>
 
-              <h3 class="about-subheading-sm">Other Clubs</h3>
-              <ul class="disclosure-list">
-                <li>ISTE</li>
-                <li>NSS &amp; NCC</li>
-                <li>Coders Club</li>
-                <li>English Club</li>
-                <li>EA</li>
-                <li>I-EEE</li>
-              </ul>
+                  <details class="disclosure-accordion-item">
+                    <summary>
+                      <span class="disclosure-accordion-item-badge">ISTE</span>
+                      <span class="disclosure-accordion-item-heading"><strong>ISTE Student Chapter</strong><small>Technical education</small></span>
+                      <svg class="disclosure-accordion-item-chevron" viewBox="0 0 24 24" aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg>
+                    </summary>
+                    <div class="disclosure-accordion-item-body">
+                      <p class="about-justify">The Indian Society for Technical Education student chapter, part of GPREC's platform for co-curricular and extra-curricular engagement.</p>
+                    </div>
+                  </details>
+
+                  <details class="disclosure-accordion-item">
+                    <summary>
+                      <span class="disclosure-accordion-item-badge">N&amp;N</span>
+                      <span class="disclosure-accordion-item-heading"><strong>NSS &amp; NCC</strong><small>Service &amp; discipline</small></span>
+                      <svg class="disclosure-accordion-item-chevron" viewBox="0 0 24 24" aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg>
+                    </summary>
+                    <div class="disclosure-accordion-item-body">
+                      <p class="about-justify">National Service Scheme and National Cadet Corps units offering students structured community service and disciplined-service training.</p>
+                    </div>
+                  </details>
+
+                  <details class="disclosure-accordion-item">
+                    <summary>
+                      <span class="disclosure-accordion-item-badge">CC</span>
+                      <span class="disclosure-accordion-item-heading"><strong>Coders Club</strong><small>Programming</small></span>
+                      <svg class="disclosure-accordion-item-chevron" viewBox="0 0 24 24" aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg>
+                    </summary>
+                    <div class="disclosure-accordion-item-body">
+                      <p class="about-justify">A programming and problem-solving community for students to practice coding outside the classroom.</p>
+                    </div>
+                  </details>
+
+                  <details class="disclosure-accordion-item">
+                    <summary>
+                      <span class="disclosure-accordion-item-badge">EC</span>
+                      <span class="disclosure-accordion-item-heading"><strong>English Club</strong><small>Language &amp; communication</small></span>
+                      <svg class="disclosure-accordion-item-chevron" viewBox="0 0 24 24" aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg>
+                    </summary>
+                    <div class="disclosure-accordion-item-body">
+                      <p class="about-justify">Focused on building students' spoken and written English and communication skills.</p>
+                    </div>
+                  </details>
+
+                  <details class="disclosure-accordion-item">
+                    <summary>
+                      <span class="disclosure-accordion-item-badge">EA</span>
+                      <span class="disclosure-accordion-item-heading"><strong>EA (English Association)</strong><small>Language &amp; communication</small></span>
+                      <svg class="disclosure-accordion-item-chevron" viewBox="0 0 24 24" aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg>
+                    </summary>
+                    <div class="disclosure-accordion-item-body">
+                      <p class="about-justify">Runs language and communication-focused activities for students alongside the English Club.</p>
+                    </div>
+                  </details>
+
+                  <details class="disclosure-accordion-item">
+                    <summary>
+                      <span class="disclosure-accordion-item-badge">I-E</span>
+                      <span class="disclosure-accordion-item-heading"><strong>I-EEE</strong><small>Technical</small></span>
+                      <svg class="disclosure-accordion-item-chevron" viewBox="0 0 24 24" aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg>
+                    </summary>
+                    <div class="disclosure-accordion-item-body">
+                      <p class="about-justify">Student technical chapter organizing department-level activities for EEE students.</p>
+                    </div>
+                  </details>
+
+                  <details class="disclosure-accordion-item">
+                    <summary>
+                      <span class="disclosure-accordion-item-badge">JG</span>
+                      <span class="disclosure-accordion-item-heading"><strong>Jignasa</strong><small>Annual event</small></span>
+                      <svg class="disclosure-accordion-item-chevron" viewBox="0 0 24 24" aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg>
+                    </summary>
+                    <div class="disclosure-accordion-item-body">
+                      <p class="about-justify">An annual paper-presentation event run through the student clubs program, with photos from its 2024 edition posted on the college's Jignasa event gallery.</p>
+                    </div>
+                  </details>
+                </div>
+              </div>
             </article>
 
             <article class="about-panel" id="student-affairs">
-              <h2 class="about-subheading">Student Affairs</h2>
+              <div class="panel-head">
+                <span class="panel-head-icon"><svg><use href="#icon-user-check"></use></svg></span>
+                <span class="panel-head-number">07</span>
+                <h2 class="about-subheading">Student Affairs</h2>
+              </div>
               <p class="about-justify">The Student Affairs wing supports approximately 3,000 students at GPREC, looking after student welfare and providing special services beyond academics - because the growth of students is not limited to classrooms alone.</p>
 
               <h3 class="about-subheading-sm">Key Responsibilities</h3>
@@ -403,18 +596,76 @@
               <p class="about-justify">Dr. Y.V. Mohan Reddy - Phone: 94402 54733. Office: Ground Floor, Mechanical Engineering Block-1.</p>
 
               <h3 class="about-subheading-sm">Related Services</h3>
-              <ul class="disclosure-list">
-                <li>AICTE Scholarship/Fellowship Schemes</li>
-                <li>Counselling Services</li>
-                <li>Message to Students</li>
-                <li>Message to Parents</li>
-                <li>Code of Conduct</li>
-              </ul>
+              <div class="disclosure-accordion">
+                <div id="campusLifeServicesList" style="display:contents">
+                <details class="disclosure-accordion-item">
+                  <summary>
+                    <span class="disclosure-accordion-item-badge">AI</span>
+                    <span class="disclosure-accordion-item-heading"><strong>AICTE Scholarship/Fellowship Schemes</strong><small>Financial aid</small></span>
+                    <svg class="disclosure-accordion-item-chevron" viewBox="0 0 24 24" aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg>
+                  </summary>
+                  <div class="disclosure-accordion-item-body">
+                    <p class="about-justify">Eligible students can apply for AICTE's student development scholarship and fellowship schemes through the official AICTE portal, which lists the current schemes and their eligibility criteria.</p>
+                  </div>
+                </details>
+
+                <details class="disclosure-accordion-item">
+                  <summary>
+                    <span class="disclosure-accordion-item-badge">CN</span>
+                    <span class="disclosure-accordion-item-heading"><strong>Counselling</strong><small>Mentoring system</small></span>
+                    <svg class="disclosure-accordion-item-chevron" viewBox="0 0 24 24" aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg>
+                  </summary>
+                  <div class="disclosure-accordion-item-body">
+                    <p class="about-justify">GPREC has run a formal mentoring system since AY 2017-18. II, III, and IV B.Tech students are grouped into batches of 15-20 and assigned a faculty mentor for the rest of their course. Mentors track academic performance, offer counselling and career guidance, and report progress to the Head of Department every semester.</p>
+                  </div>
+                </details>
+
+                <details class="disclosure-accordion-item">
+                  <summary>
+                    <span class="disclosure-accordion-item-badge">MS</span>
+                    <span class="disclosure-accordion-item-heading"><strong>Message to Students</strong><small>Staying informed</small></span>
+                    <svg class="disclosure-accordion-item-chevron" viewBox="0 0 24 24" aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg>
+                  </summary>
+                  <div class="disclosure-accordion-item-body">
+                    <p class="about-justify">Academic information - fee deadlines, exam schedules, and scholarship dates - is circulated through notices and circulars, so students are urged to check notice boards daily. Students can also engage through the ISTE Chapter, IEI, Bhuvana Vijayam, and Vivekananda Study Circle, or raise issues at Class Committee and Class Representative meetings chaired by the Principal.</p>
+                  </div>
+                </details>
+
+                <details class="disclosure-accordion-item">
+                  <summary>
+                    <span class="disclosure-accordion-item-badge">MP</span>
+                    <span class="disclosure-accordion-item-heading"><strong>Message to Parents</strong><small>Staying involved</small></span>
+                    <svg class="disclosure-accordion-item-chevron" viewBox="0 0 24 24" aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg>
+                  </summary>
+                  <div class="disclosure-accordion-item-body">
+                    <p class="about-justify">Parents can check results using their ward's Roll No. on the college site and should obtain attendance from the Class Teacher or HOD every 15 days - shortfall alerts are also sent by SMS. Tuition fee is due within 10 days of the term starting, with a fine applying from day 11 to day 20 and de-registration after day 20. Parents are asked to keep contact details updated and caution their ward against ragging or indiscipline.</p>
+                  </div>
+                </details>
+
+                <details class="disclosure-accordion-item">
+                  <summary>
+                    <span class="disclosure-accordion-item-badge">CoC</span>
+                    <span class="disclosure-accordion-item-heading"><strong>Code of Conduct</strong><small>Campus rules</small></span>
+                    <svg class="disclosure-accordion-item-chevron" viewBox="0 0 24 24" aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg>
+                  </summary>
+                  <div class="disclosure-accordion-item-body">
+                    <ul class="disclosure-list">
+                      <li>ID cards must be worn on campus at all times.</li>
+                      <li>No strict dress code, but T-shirts are discouraged - formal wear is expected; a specific khaki uniform applies during Workshop sessions.</li>
+                      <li>Camera-phones are banned in class, with confiscation on violation.</li>
+                      <li>Zero tolerance for ragging, under the AP Anti-Ragging Act.</li>
+                      <li>Conduct that damages the college's reputation is taken seriously.</li>
+                      <li>The Principal's decision is final on all disciplinary matters.</li>
+                    </ul>
+                  </div>
+                </details>
+                </div>
+              </div>
             </article>
 
             <article class="about-panel" id="women-cell" style="padding:0;overflow:hidden;">
               <div class="women-cell-hero-banner">
-                <img class="women-cell-hero-banner-illustration" src="../uploads/general/women-cell-logo.png" alt="" aria-hidden="true">
+                <img class="women-cell-hero-banner-illustration" src="../uploads/women-cell/logo.png" alt="" aria-hidden="true">
                 <div class="women-cell-hero-banner-content">
                   <p class="women-cell-hero-banner-eyebrow">&mdash; GPREC &middot; WOMEN'S CELL</p>
                   <h2>SHE RISES.<br><span>SHE LEADS.</span></h2>
@@ -429,7 +680,12 @@
             </article>
 
             <article class="about-panel" id="hostels">
-              <h2 class="about-subheading">Hostels</h2>
+              <div class="panel-head">
+                <span class="panel-head-icon"><svg><use href="#icon-home"></use></svg></span>
+                <span class="panel-head-number">08</span>
+                <h2 class="about-subheading">Hostels</h2>
+              </div>
+              <div id="campusLifeHostelsBody">
 
               <h3 class="about-subheading-sm">Girls Hostel - G. Narayanamma Bhalikala Vasathi Gruham</h3>
               <div class="disclosure-table-wrap">
@@ -458,19 +714,24 @@
               </div>
               <p class="about-justify">Seats are filled on a first-cum-first-serve basis.</p>
               <p class="about-justify"><strong>Contact:</strong> Dr. Ishthaq Ahmed, Associate Professor of CSE - 9866776244.</p>
+              </div>
             </article>
 
             <article class="about-panel" id="transportation">
-              <h2 class="about-subheading">Transportation</h2>
+              <div class="panel-head">
+                <span class="panel-head-icon"><svg><use href="#icon-bus"></use></svg></span>
+                <span class="panel-head-number">09</span>
+                <h2 class="about-subheading">Transportation</h2>
+              </div>
               <p class="about-justify">The college operates 6 buses between all important centers in Kurnool town and the college on all working days. Bus passes are issued annually at Rs. 12,000 per student.</p>
               <div class="disclosure-table-wrap">
                 <table class="disclosure-table">
-                  <thead><tr><th>Route</th><th>Stops</th></tr></thead>
-                  <tbody>
-                    <tr><td>Route 1 - Bellary Chowrasta</td><td>B. Chowrasta, Sasya Motors, Chenamma Circle, Krishna Nagar, Abbas Nagar, Register Office, Gooty Pet. Bunk, Birla Gate, College</td></tr>
-                    <tr><td>Route 2 - Pump House</td><td>HP Petrol Bunk (VR Colony), Road No. 4, BP Petrol Bunk, Pump House, Sitaram Nagar, Indira Gandhi Nagar, Market Yard, Bangar Peta, College</td></tr>
-                    <tr><td>Route 3 - Old Bus-Stand</td><td>Head Post Office, Control Room, Kids World, Rajvihar, Medical College, Collectorate, Deva Nagar, M.S. Nagar, College</td></tr>
-                    <tr><td>Route 4 - N.R. Peta</td><td>N.R. Peta, Apollo, SBI-Main Branch, RS-Road, C-Camp, Shakuntala Kala Mandir, Amma Hospital, College</td></tr>
+                  <thead><tr><th>Route</th><th>Stops</th><th>Pickup</th><th>Drop</th></tr></thead>
+                  <tbody id="campusLifeBusRoutesBody">
+                    <tr><td>Route 1 - Bellary Chowrasta</td><td>B. Chowrasta, Sasya Motors, Chenamma Circle, Krishna Nagar, Abbas Nagar, Register Office, Gooty Pet. Bunk, Birla Gate, College</td><td>-</td><td>-</td></tr>
+                    <tr><td>Route 2 - Pump House</td><td>HP Petrol Bunk (VR Colony), Road No. 4, BP Petrol Bunk, Pump House, Sitaram Nagar, Indira Gandhi Nagar, Market Yard, Bangar Peta, College</td><td>-</td><td>-</td></tr>
+                    <tr><td>Route 3 - Old Bus-Stand</td><td>Head Post Office, Control Room, Kids World, Rajvihar, Medical College, Collectorate, Deva Nagar, M.S. Nagar, College</td><td>-</td><td>-</td></tr>
+                    <tr><td>Route 4 - N.R. Peta</td><td>N.R. Peta, Apollo, SBI-Main Branch, RS-Road, C-Camp, Shakuntala Kala Mandir, Amma Hospital, College</td><td>-</td><td>-</td></tr>
                   </tbody>
                 </table>
               </div>
@@ -478,7 +739,12 @@
             </article>
 
             <article class="about-panel" id="sports-facilities">
-              <h2 class="about-subheading">Sports Facilities</h2>
+              <div class="panel-head">
+                <span class="panel-head-icon"><svg><use href="#icon-award"></use></svg></span>
+                <span class="panel-head-number">10</span>
+                <h2 class="about-subheading">Sports Facilities</h2>
+              </div>
+              <div id="campusLifeSportsBody">
               <p class="about-justify">The Physical Education department is directed by Dr. A. Vijaya Kumar, with supporting staff assisting students and faculty in accessing fitness and sports amenities.</p>
               <p class="about-justify">The college maintains a large playground measuring 130 x 140 metres, alongside indoor facilities.</p>
 
@@ -548,10 +814,16 @@
                   </tbody>
                 </table>
               </div>
+              </div>
             </article>
 
             <article class="about-panel" id="caa-cell">
-              <h2 class="about-subheading">CAA Cell</h2>
+              <div class="panel-head">
+                <span class="panel-head-icon"><svg><use href="#icon-briefcase"></use></svg></span>
+                <span class="panel-head-number">11</span>
+                <h2 class="about-subheading">CAA Cell</h2>
+              </div>
+              <div id="campusLifeCaaCellBody">
               <p class="about-justify">The Co-Academic Activities (CAA) Cell centralizes administration and monitoring of student chapters and technical forums under the unified supervision of the Principal, including ISTE student chapters, IEEE branches, CSI chapters, and departmental engineering societies.</p>
 
               <h3 class="about-subheading-sm">Objectives &amp; Functions</h3>
@@ -591,10 +863,16 @@
                   </tbody>
                 </table>
               </div>
+              </div>
             </article>
 
             <article class="about-panel" id="grievance-cell">
-              <h2 class="about-subheading">Grievance Cell</h2>
+              <div class="panel-head">
+                <span class="panel-head-icon"><svg><use href="#icon-bell"></use></svg></span>
+                <span class="panel-head-number">12</span>
+                <h2 class="about-subheading">Grievance Cell</h2>
+              </div>
+              <div id="campusLifeGrievanceCellBody">
               <p class="about-justify">GPREC maintains two committees to receive grievances, carry out fact-finding, and suggest remedial and preventive measures.</p>
 
               <h3 class="about-subheading-sm">Student Grievance Redressal Committee (SGRC)</h3>
@@ -618,6 +896,7 @@
 
               <h3 class="about-subheading-sm">Submit a Grievance</h3>
               <p class="about-justify">Use the form below to submit a grievance to GPREC.</p>
+              </div>
               <form class="contact-form" id="grievanceForm">
                 <label>Complainant
                   <select id="grievanceComplainantType">
@@ -714,7 +993,12 @@
             </article>
 
             <article class="about-panel" id="sc-st-grievance-cell">
-              <h2 class="about-subheading">SC/ST Grievance Redressal Committee</h2>
+              <div class="panel-head">
+                <span class="panel-head-icon"><svg><use href="#icon-bell"></use></svg></span>
+                <span class="panel-head-number">13</span>
+                <h2 class="about-subheading">SC/ST Grievance Redressal Committee</h2>
+              </div>
+              <div id="campusLifeScStGrievanceCellBody">
               <p class="about-justify">The committee aims to receive grievances from students, faculty, parents, and alumni regarding SC/ST-related academic and administrative matters, and to suggest remedial approaches - including remedial coaching in life skills, personality development, writing support, presentation skills, and interactive sessions for personal, social, and academic concerns.</p>
 
               <h3 class="about-subheading-sm">Committee</h3>
@@ -730,6 +1014,7 @@
                     <tr><td>Sri. M. Murali Mohan</td><td>Member (Assistant Professor, ME)</td></tr>
                   </tbody>
                 </table>
+              </div>
               </div>
 
               <h3 class="about-subheading-sm">Submit an SC/ST Grievance</h3>
@@ -827,7 +1112,12 @@
             </article>
 
             <article class="about-panel" id="anti-ragging">
-              <h2 class="about-subheading">Anti-Ragging</h2>
+              <div class="panel-head">
+                <span class="panel-head-icon"><svg><use href="#icon-shield"></use></svg></span>
+                <span class="panel-head-number">14</span>
+                <h2 class="about-subheading">Anti-Ragging</h2>
+              </div>
+              <div id="campusLifeAntiRaggingBody">
               <p class="about-justify">Ragging in all its forms and names is banned on the campus of G. Pulla Reddy Engineering College, Kurnool. Students found engaging in ragging face consequences under the 1997 Andhra Pradesh anti-ragging legislation.</p>
 
               <h3 class="about-subheading-sm">Reporting Ragging</h3>
@@ -856,10 +1146,16 @@
                   </tbody>
                 </table>
               </div>
+              </div>
             </article>
 
             <article class="about-panel" id="national-innovation-policy">
-              <h2 class="about-subheading">National Innovation &amp; Startup Policy (NISP)</h2>
+              <div class="panel-head">
+                <span class="panel-head-icon"><svg><use href="#icon-lightbulb"></use></svg></span>
+                <span class="panel-head-number">15</span>
+                <h2 class="about-subheading">National Innovation &amp; Startup Policy (NISP)</h2>
+              </div>
+              <div id="campusLifeNispBody">
               <p class="about-justify">GPREC has implemented the National Student and Faculty Startup Policy-2019, developed by MHRD's Innovation Cell and AICTE, to foster entrepreneurship among students and faculty.</p>
 
               <h3 class="about-subheading-sm">Vision &amp; Mission</h3>
@@ -910,10 +1206,16 @@
                   </tbody>
                 </table>
               </div>
+              </div>
             </article>
 
             <article class="about-panel" id="gprec-blog">
-              <h2 class="about-subheading">GPREC Blog</h2>
+              <div class="panel-head">
+                <span class="panel-head-icon"><svg><use href="#icon-file"></use></svg></span>
+                <span class="panel-head-number">16</span>
+                <h2 class="about-subheading">GPREC Blog</h2>
+              </div>
+              <div id="campusLifeBlogBody">
               <div class="disclosure-table-wrap">
                 <table class="disclosure-table">
                   <thead><tr><th>Post</th><th></th></tr></thead>
@@ -921,6 +1223,7 @@
                     <tr><td>Dr. Kumar's Visit: A Game-Changer for Students</td><td><a class="notice-download" href="https://www.gprec.ac.in/blog/Dr.Kumar-Blog.pdf" target="_blank" rel="noreferrer">Read</a></td></tr>
                   </tbody>
                 </table>
+              </div>
               </div>
             </article>
 
@@ -986,5 +1289,23 @@
     </footer>
 
     <script src="../script.js?v=20260722-31"></script>
+    <script>
+      (() => {
+        // Scroll-spy for .campus-jump-nav - highlights whichever section is currently in view,
+        // page-scoped (not part of the shared script.js) since no other page has this nav.
+        const jumpLinks = document.querySelectorAll("[data-jump-target]");
+        if (!jumpLinks.length) return;
+        const sections = [...jumpLinks].map((link) => document.getElementById(link.dataset.jumpTarget)).filter(Boolean);
+        const setActive = (id) => {
+          jumpLinks.forEach((link) => link.classList.toggle("active", link.dataset.jumpTarget === id));
+        };
+        const observer = new IntersectionObserver((entries) => {
+          entries.forEach((entry) => {
+            if (entry.isIntersecting) setActive(entry.target.id);
+          });
+        }, { rootMargin: "-20% 0px -70% 0px", threshold: 0 });
+        sections.forEach((section) => observer.observe(section));
+      })();
+    </script>
   </body>
 </html>

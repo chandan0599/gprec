@@ -753,6 +753,7 @@
               <option value="about-us">About Us</option>
               <option value="academic-calendar">Academic</option>
               <option value="admissions">Admissions</option>
+              <option value="campus-life">Campus Life</option>
               <option value="careers">Careers</option>
               <option value="contact-us">Contact Us</option>
               <option value="departments">Departments (Nav Menu)</option>
@@ -934,6 +935,52 @@
               <label>M.Tech Programmes<textarea id="scholarshipsMtechInput"></textarea></label>
               <button type="button" id="scholarshipsSaveButton">Save</button>
               <p class="admin-add-feedback" id="scholarshipsSaveFeedback" aria-live="polite"></p>
+            </article>
+          </div>
+
+          <div class="web-page-section" data-web-page="campus-life">
+            <article class="admin-card admin-form-card">
+              <h3>Add Student Club</h3>
+              <p class="field-hint">The Vivekananda Study Circle card (with its committee and report table) is edited directly in <code>pages/campus-life.html</code>, not here - this list covers every other club.</p>
+              <div class="admin-add-grid">
+                <label>Badge (2-3 letters)<input type="text" id="campusLifeClubBadgeInput" placeholder="e.g. CC"></label>
+                <label>Name<input type="text" id="campusLifeClubNameInput" placeholder="e.g. Coders Club"></label>
+                <label>Tag<input type="text" id="campusLifeClubTagInput" placeholder="e.g. Programming"></label>
+              </div>
+              <label>Description<textarea id="campusLifeClubDescriptionInput"></textarea></label>
+              <button type="button" id="campusLifeClubAddButton">Add Club</button>
+              <p class="admin-add-feedback" id="campusLifeClubAddFeedback" aria-live="polite"></p>
+            </article>
+            <div class="admin-table-card">
+              <table>
+                <thead><tr><th>Badge</th><th>Name</th><th>Tag</th><th></th></tr></thead>
+                <tbody id="campusLifeClubsAdminBody"></tbody>
+              </table>
+              <p class="lookup-empty is-hidden" id="campusLifeClubsAdminEmpty">No clubs added yet.</p>
+            </div>
+
+            <article class="admin-card admin-form-card">
+              <h3>Add Student Affairs Service</h3>
+              <div class="admin-add-grid">
+                <label>Badge (2-3 letters)<input type="text" id="campusLifeServiceBadgeInput" placeholder="e.g. MS"></label>
+                <label>Name<input type="text" id="campusLifeServiceNameInput" placeholder="e.g. Message to Students"></label>
+                <label>Tag<input type="text" id="campusLifeServiceTagInput" placeholder="e.g. Staying informed"></label>
+              </div>
+              <label>Description<textarea id="campusLifeServiceDescriptionInput"></textarea></label>
+              <button type="button" id="campusLifeServiceAddButton">Add Service</button>
+              <p class="admin-add-feedback" id="campusLifeServiceAddFeedback" aria-live="polite"></p>
+            </article>
+            <div class="admin-table-card">
+              <table>
+                <thead><tr><th>Badge</th><th>Name</th><th>Tag</th><th></th></tr></thead>
+                <tbody id="campusLifeServicesAdminBody"></tbody>
+              </table>
+              <p class="lookup-empty is-hidden" id="campusLifeServicesAdminEmpty">No services added yet.</p>
+            </div>
+
+            <article class="admin-card">
+              <h3>Bus Routes</h3>
+              <p class="field-hint">Bus routes feeding the public Transportation table are managed under the <strong>Transportation</strong> sidebar section, not here - that's the same "Bus Routes" panel other admin tools already use.</p>
             </article>
           </div>
 
@@ -2365,6 +2412,7 @@
                 <tr><td>Hostel Warden (Boys/Girls)</td><td><code>pages/admin-login.html</code></td><td><code>dashboards/hostel-dashboard.html</code></td></tr>
                 <tr><td>Exam Cell Officer</td><td><code>pages/admin-login.html</code></td><td><code>dashboards/exam-cell-dashboard.html</code></td></tr>
                 <tr><td>Placement Cell Officer</td><td><code>pages/admin-login.html</code></td><td><code>dashboards/placement-dashboard.html</code></td></tr>
+                <tr><td>Women's Cell Admin</td><td><code>pages/admin-login.html</code></td><td><code>dashboards/women-cell-admin-dashboard.html</code></td></tr>
                 <tr><td>Student</td><td><code>pages/student-login.html</code></td><td><code>dashboards/student-dashboard.html</code></td></tr>
                 <tr><td>Faculty</td><td><code>pages/faculty-login.html</code></td><td><code>dashboards/faculty-dashboard.html</code></td></tr>
                 <tr><td>Parent</td><td><code>pages/parent-login.html</code></td><td><code>dashboards/parent-dashboard.html</code></td></tr>

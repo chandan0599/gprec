@@ -14,6 +14,7 @@ const GPREC_PAGE_FOLDERS = {
   "parent-dashboard.html": "dashboards",
   "placement-dashboard.html": "dashboards",
   "student-dashboard.html": "dashboards",
+  "women-cell-admin-dashboard.html": "dashboards",
   "admin-login.html": "pages",
   "alumni-login.html": "pages",
   "faculty-login.html": "pages",
@@ -177,7 +178,8 @@ const GPREC_DASHBOARD_ROLE = {
   "hostel-gate-scan.html": "admin",
   "event-volunteer-dashboard.html": "student",
   "event-pass-scan.html": ["student", "admin"],
-  "event-management-dashboard.html": ["admin", "faculty", "student"]
+  "event-management-dashboard.html": ["admin", "faculty", "student"],
+  "women-cell-admin-dashboard.html": "admin"
 };
 const GPREC_ROLE_LOGIN_PAGE = {
   student: "student-login.html",
@@ -261,6 +263,15 @@ const GPREC_DEMO_SESSIONS = {
       gprecAdminRole: "Placement Cell Officer",
       gprecAdminEmail: "placement.cell@gprec.ac.in",
       gprecAdminDepartment: "Placements"
+    }
+  },
+  womencell: {
+    activeRole: "admin",
+    dashboard: "women-cell-admin-dashboard.html",
+    entries: {
+      gprecAdminRole: "Women's Cell Admin",
+      gprecAdminEmail: "womencell.admin@gprec.ac.in",
+      gprecAdminDepartment: "Women's Cell"
     }
   }
 };
@@ -729,7 +740,8 @@ const defaultAdminConfig = {
     { name: "Boys Hostel Office", email: "boys.warden@gprec.ac.in", role: "Boys Hostel Warden", department: "Boys Hostel", canManageAdmins: false, status: "Active" },
     { name: "Girls Hostel Office", email: "girls.warden@gprec.ac.in", role: "Girls Hostel Warden", department: "Girls Hostel", canManageAdmins: false, status: "Active" },
     { name: "Placement Cell Office", email: "placement.cell@gprec.ac.in", role: "Placement Cell Officer", department: "Placements", canManageAdmins: false, status: "Active" },
-    { name: "Examination Cell Office", email: "exam.cell@gprec.ac.in", role: "Exam Cell Officer", department: "Examinations", canManageAdmins: false, status: "Active" }
+    { name: "Examination Cell Office", email: "exam.cell@gprec.ac.in", role: "Exam Cell Officer", department: "Examinations", canManageAdmins: false, status: "Active" },
+    { name: "Women's Cell Office", email: "womencell.admin@gprec.ac.in", role: "Women's Cell Admin", department: "Women's Cell", canManageAdmins: false, status: "Active" }
   ]
 };
 
@@ -12329,7 +12341,8 @@ portalForms.forEach((form) => {
         "Boys Hostel Warden": "hostel-dashboard.html",
         "Girls Hostel Warden": "hostel-dashboard.html",
         "Placement Cell Officer": "placement-dashboard.html",
-        "Exam Cell Officer": "exam-cell-dashboard.html"
+        "Exam Cell Officer": "exam-cell-dashboard.html",
+        "Women's Cell Admin": "women-cell-admin-dashboard.html"
       };
       const adminDashboardPage = dashboardByAdminRole[adminRole] || "admin-dashboard.html";
       handleRolePasswordLogin({
@@ -16858,6 +16871,545 @@ const renderCampusLifeGrid = () => {
 };
 
 renderCampusLifeGrid();
+
+// Women's Cell dashboard content (dashboards/women-cell-dashboard.html, public, no login) -
+// managed from dashboards/women-cell-admin-dashboard.html (role: "Women's Cell Admin"). Defaults
+// below match what was originally hardcoded directly into the public dashboard's HTML, so
+// nothing changes on the live page until an admin actually edits/adds something.
+const getWomenCellCommittee = () => getSiteContent("womenCellCommittee", [
+  { name: "Dr. K. Devaki Devi", role: "Convener · ME", photoUrl: "../uploads/women-cell/committee-devaki.png" },
+  { name: "Smt. K. Gayathri", role: "Member · CSE", photoUrl: "../uploads/women-cell/committee-gayathri.jpg" },
+  { name: "Dr. K. Subhashini", role: "Member · Mathematics", photoUrl: "../uploads/women-cell/committee-subhashini.jpg" },
+  { name: "Dr. K.V.S. Gopala Krishna Sastry", role: "Member · CE", photoUrl: "../uploads/women-cell/committee-gopala.png" },
+  { name: "Dr. S. Naga Raja Rao", role: "Member · ECE", photoUrl: "../uploads/women-cell/committee-naga.jpg" },
+  { name: "Dr. V. Anantha Lakshmi", role: "Member · EEE", photoUrl: "../uploads/women-cell/committee-anantha.png" },
+  { name: "Smt. Sowjanya", role: "Member · CE", photoUrl: "../uploads/women-cell/committee-sowjanya.png" },
+  { name: "Smt. T. Swathi", role: "Member · ECE", photoUrl: "../uploads/women-cell/committee-swathi.jpg" },
+  { name: "Smt. K. Asha Rani", role: "Member · CSE", photoUrl: "../uploads/women-cell/committee-asharani.png" },
+  { name: "Dr. S. Sailaja", role: "Member · HBS", photoUrl: "../uploads/women-cell/committee-sailaja.jpg" }
+]);
+const saveWomenCellCommittee = (committee) => saveSiteContent("womenCellCommittee", committee);
+
+const getWomenCellReports = () => getSiteContent("womenCellReports", [
+  { year: "2023-24", link: "http://womencell.gprec.ac.in/documents/report23.docx" },
+  { year: "2024-25", link: "http://womencell.gprec.ac.in/documents/report24.docx" },
+  { year: "2025-26", link: "" }
+]);
+const saveWomenCellReports = (reports) => saveSiteContent("womenCellReports", reports);
+
+const getWomenCellResources = () => getSiteContent("womenCellResources", [
+  { title: "Handbook on Sexual Harassment of Women at Workplace", link: "http://womencell.gprec.ac.in/documents/handbook.pdf" },
+  { title: "Women Constitution & Legal Rights", link: "http://womencell.gprec.ac.in/documents/ConstitutionalLegalRights.pdf" },
+  { title: "Women Acts", link: "http://womencell.gprec.ac.in/documents/WomenActs.pdf" },
+  { title: "Women's Cell Process Document", link: "http://womencell.gprec.ac.in/documents/WomenCellProcess.pdf" }
+]);
+const saveWomenCellResources = (resources) => saveSiteContent("womenCellResources", resources);
+
+const getWomenCellNewsletters = () => getSiteContent("womenCellNewsletters", [
+  { edition: "She Voice 2017", link: "http://womencell.gprec.ac.in/documents/she-voice2017.pdf" },
+  { edition: "She Voice 2018", link: "http://womencell.gprec.ac.in/documents/she-voice2018.pdf" },
+  { edition: "She Voice 2019", link: "http://womencell.gprec.ac.in/documents/she-voice2019.pdf" }
+]);
+const saveWomenCellNewsletters = (newsletters) => saveSiteContent("womenCellNewsletters", newsletters);
+
+const getWomenCellNotices = () => getSiteContent("womenCellNotices", [
+  { title: "Swashakthi 2024", details: "The Swashakthi 2024 Women Congress concluded on a high note at GPREC on December 7th, 2024." }
+]);
+const saveWomenCellNotices = (notices) => saveSiteContent("womenCellNotices", notices);
+
+const getWomenCellGallery = () => getSiteContent("womenCellGallery", [
+  "../uploads/women-cell/event-1.jpg",
+  "../uploads/women-cell/event-2.jpg",
+  "../uploads/women-cell/event-3.jpg",
+  "../uploads/women-cell/event-4.jpg",
+  "../uploads/women-cell/event-5.jpg",
+  "../uploads/women-cell/event-6.jpg"
+]);
+const saveWomenCellGallery = (photos) => saveSiteContent("womenCellGallery", photos);
+
+// Public dashboard rendering - every function below is a no-op (via the early "if (!el) return")
+// on every other page, so this is safe to run unconditionally alongside the rest of script.js.
+const renderWomenCellDashboard = () => {
+  const portraitWall = document.querySelector(".wc-portrait-wall");
+  if (portraitWall) {
+    const committee = getWomenCellCommittee();
+    portraitWall.innerHTML = committee
+      .map(
+        (member) => `
+          <figure><img src="${member.photoUrl}" alt="${escapeHtml(member.name)}" loading="lazy"><figcaption><strong>${escapeHtml(member.name)}</strong><span>${escapeHtml(member.role)}</span></figcaption></figure>
+        `
+      )
+      .join("");
+    const committeeCount = document.querySelector("#womenCellCommitteeCount");
+    if (committeeCount) committeeCount.textContent = String(committee.length);
+  }
+
+  const reportsList = document.querySelector("#wcReportsList");
+  if (reportsList) {
+    const reports = getWomenCellReports();
+    reportsList.innerHTML = reports
+      .map(
+        (report) => `
+          <li>
+            <span class="wc-index-list-num">${escapeHtml(report.year)}</span>
+            <span class="wc-index-list-title">Annual Report</span>
+            ${report.link ? `<a class="wc-index-list-action" href="${report.link}" target="_blank" rel="noreferrer">Download</a>` : `<span class="wc-index-list-soon">Update soon</span>`}
+          </li>
+        `
+      )
+      .join("");
+    const reportCount = document.querySelector("#womenCellReportCount");
+    if (reportCount) reportCount.textContent = String(reports.filter((report) => report.link).length);
+  }
+
+  const resourcesList = document.querySelector("#wcResourcesList");
+  if (resourcesList) {
+    const resources = getWomenCellResources();
+    resourcesList.innerHTML = resources
+      .map(
+        (resource) => `
+          <li>
+            <span class="wc-index-list-title">${escapeHtml(resource.title)}</span>
+            <a class="wc-index-list-action" href="${resource.link}" target="_blank" rel="noreferrer">Download</a>
+          </li>
+        `
+      )
+      .join("");
+    const resourceCount = document.querySelector("#womenCellResourceCount");
+    if (resourceCount) resourceCount.textContent = String(resources.length);
+  }
+
+  const newslettersList = document.querySelector("#wcNewslettersList");
+  if (newslettersList) {
+    const newsletters = getWomenCellNewsletters();
+    newslettersList.innerHTML = newsletters
+      .map(
+        (newsletter) => `
+          <li>
+            <span class="wc-index-list-title">${escapeHtml(newsletter.edition)}</span>
+            <a class="wc-index-list-action" href="${newsletter.link}" target="_blank" rel="noreferrer">Download</a>
+          </li>
+        `
+      )
+      .join("");
+    const newsletterCount = document.querySelector("#womenCellNewsletterCount");
+    if (newsletterCount) newsletterCount.textContent = String(newsletters.length);
+  }
+
+  const noticesList = document.querySelector("#wcNoticesList");
+  if (noticesList) {
+    const notices = getWomenCellNotices();
+    noticesList.innerHTML = notices.length
+      ? notices
+          .map(
+            (notice) => `
+              <li><span class="wc-index-list-title"><strong>${escapeHtml(notice.title)}</strong> &mdash; ${escapeHtml(notice.details)}</span></li>
+            `
+          )
+          .join("")
+      : "";
+    const noticesEmpty = document.querySelector("#wcNoticesEmpty");
+    if (noticesEmpty) noticesEmpty.classList.toggle("is-hidden", notices.length > 0);
+  }
+
+  const galleryFrame = document.querySelector(".wc-gallery-frame[data-facility-carousel]");
+  if (galleryFrame) {
+    const photos = getWomenCellGallery();
+    if (photos.length) {
+      galleryFrame.dataset.photos = JSON.stringify(photos);
+      const galleryImg = galleryFrame.querySelector("[data-facility-carousel-img]");
+      if (galleryImg) galleryImg.src = photos[0];
+    }
+  }
+
+  // The bell only exists on this dashboard's topbar - reuses the same renderNotificationList()
+  // every other dashboard's notification bell already runs on, just fed from Women's Cell
+  // notices instead of that role's own data.
+  if (document.querySelector("#notificationBellButton")) {
+    renderNotificationList(getWomenCellNotices().map((notice) => ({ text: `${notice.title}: ${notice.details}`, link: "#wc-notices" })));
+  }
+};
+renderWomenCellDashboard();
+
+// dashboards/women-cell-admin-dashboard.html - CRUD (add + remove) for each of the six lists that
+// feed the public Women's Cell dashboard, following the same add-form/table/remove-button pattern
+// as the Deans manager on pages/about-us.html's admin panel (see adminDeansManagerBody above).
+const wireAdminCrudList = ({ bodySelector, emptySelector, getItems, saveItems, rowHtml, addButtonSelector, addFeedbackSelector, inputSelectors, buildItem, removeAttr, countSelector, itemLabel }) => {
+  const body = document.querySelector(bodySelector);
+  if (!body) return;
+  const emptyEl = emptySelector ? document.querySelector(emptySelector) : null;
+  const countEl = countSelector ? document.querySelector(countSelector) : null;
+  const render = () => {
+    const items = getItems();
+    body.innerHTML = items.map((item, index) => rowHtml(item, index)).join("");
+    if (emptyEl) emptyEl.classList.toggle("is-hidden", items.length > 0);
+    if (countEl) countEl.textContent = String(items.length);
+  };
+  render();
+
+  document.querySelector(addButtonSelector)?.addEventListener("click", () => {
+    const feedback = document.querySelector(addFeedbackSelector);
+    const values = inputSelectors.map((selector) => document.querySelector(selector)?.value.trim() || "");
+    const item = buildItem(values);
+    if (!item) {
+      if (feedback) { feedback.textContent = "Fill in the required fields before adding."; feedback.classList.remove("success"); }
+      return;
+    }
+    saveItems([...getItems(), item]);
+    render();
+    renderWomenCellDashboard();
+    inputSelectors.forEach((selector) => {
+      const field = document.querySelector(selector);
+      if (field) field.value = "";
+    });
+    if (feedback) { feedback.textContent = `${itemLabel} added.`; feedback.classList.add("success"); }
+  });
+
+  body.addEventListener("click", (event) => {
+    const button = event.target.closest(`[${removeAttr}]`);
+    if (!button) return;
+    const index = Number(button.getAttribute(removeAttr));
+    saveItems(getItems().filter((_, i) => i !== index));
+    render();
+    renderWomenCellDashboard();
+    showFeedToast(`${itemLabel} removed.`);
+  });
+};
+
+wireAdminCrudList({
+  bodySelector: "#wcAdminCommitteeBody",
+  emptySelector: "#wcAdminCommitteeEmpty",
+  countSelector: "#womenCellAdminCommitteeCount",
+  getItems: getWomenCellCommittee,
+  saveItems: saveWomenCellCommittee,
+  addButtonSelector: "#wcAdminCommitteeAddButton",
+  addFeedbackSelector: "#wcAdminCommitteeAddFeedback",
+  inputSelectors: ["#wcAdminCommitteeNameInput", "#wcAdminCommitteeRoleInput", "#wcAdminCommitteePhotoInput"],
+  itemLabel: "Committee member",
+  buildItem: ([name, role, photoUrl]) => (name ? { name, role, photoUrl } : null),
+  removeAttr: "data-remove-wc-committee",
+  rowHtml: (member, index) => `
+    <tr>
+      <td>${member.photoUrl ? `<img src="${member.photoUrl}" alt="" style="width:36px;height:36px;border-radius:999px;object-fit:cover;">` : ""}</td>
+      <td>${escapeHtml(member.name)}</td>
+      <td>${escapeHtml(member.role)}</td>
+      <td><button type="button" class="icon-btn-delete" data-remove-wc-committee="${index}" aria-label="Remove" title="Remove">${deleteIconSvg}</button></td>
+    </tr>`
+});
+
+wireAdminCrudList({
+  bodySelector: "#wcAdminReportsBody",
+  emptySelector: "#wcAdminReportsEmpty",
+  countSelector: "#womenCellAdminReportCount",
+  getItems: getWomenCellReports,
+  saveItems: saveWomenCellReports,
+  addButtonSelector: "#wcAdminReportAddButton",
+  addFeedbackSelector: "#wcAdminReportAddFeedback",
+  inputSelectors: ["#wcAdminReportYearInput", "#wcAdminReportLinkInput"],
+  itemLabel: "Report",
+  buildItem: ([year, link]) => (year ? { year, link } : null),
+  removeAttr: "data-remove-wc-report",
+  rowHtml: (report, index) => `
+    <tr>
+      <td>${escapeHtml(report.year)}</td>
+      <td>${report.link ? escapeHtml(report.link) : "Update soon"}</td>
+      <td><button type="button" class="icon-btn-delete" data-remove-wc-report="${index}" aria-label="Remove" title="Remove">${deleteIconSvg}</button></td>
+    </tr>`
+});
+
+wireAdminCrudList({
+  bodySelector: "#wcAdminResourcesBody",
+  emptySelector: "#wcAdminResourcesEmpty",
+  countSelector: "#womenCellAdminResourceCount",
+  getItems: getWomenCellResources,
+  saveItems: saveWomenCellResources,
+  addButtonSelector: "#wcAdminResourceAddButton",
+  addFeedbackSelector: "#wcAdminResourceAddFeedback",
+  inputSelectors: ["#wcAdminResourceTitleInput", "#wcAdminResourceLinkInput"],
+  itemLabel: "Document",
+  buildItem: ([title, link]) => (title && link ? { title, link } : null),
+  removeAttr: "data-remove-wc-resource",
+  rowHtml: (resource, index) => `
+    <tr>
+      <td>${escapeHtml(resource.title)}</td>
+      <td>${escapeHtml(resource.link)}</td>
+      <td><button type="button" class="icon-btn-delete" data-remove-wc-resource="${index}" aria-label="Remove" title="Remove">${deleteIconSvg}</button></td>
+    </tr>`
+});
+
+wireAdminCrudList({
+  bodySelector: "#wcAdminNewslettersBody",
+  emptySelector: "#wcAdminNewslettersEmpty",
+  countSelector: "#womenCellAdminNewsletterCount",
+  getItems: getWomenCellNewsletters,
+  saveItems: saveWomenCellNewsletters,
+  addButtonSelector: "#wcAdminNewsletterAddButton",
+  addFeedbackSelector: "#wcAdminNewsletterAddFeedback",
+  inputSelectors: ["#wcAdminNewsletterEditionInput", "#wcAdminNewsletterLinkInput"],
+  itemLabel: "Newsletter",
+  buildItem: ([edition, link]) => (edition && link ? { edition, link } : null),
+  removeAttr: "data-remove-wc-newsletter",
+  rowHtml: (newsletter, index) => `
+    <tr>
+      <td>${escapeHtml(newsletter.edition)}</td>
+      <td>${escapeHtml(newsletter.link)}</td>
+      <td><button type="button" class="icon-btn-delete" data-remove-wc-newsletter="${index}" aria-label="Remove" title="Remove">${deleteIconSvg}</button></td>
+    </tr>`
+});
+
+wireAdminCrudList({
+  bodySelector: "#wcAdminNoticesBody",
+  emptySelector: "#wcAdminNoticesEmpty",
+  countSelector: "#womenCellAdminNoticeCount",
+  getItems: getWomenCellNotices,
+  saveItems: saveWomenCellNotices,
+  addButtonSelector: "#wcAdminNoticeAddButton",
+  addFeedbackSelector: "#wcAdminNoticeAddFeedback",
+  inputSelectors: ["#wcAdminNoticeTitleInput", "#wcAdminNoticeDetailsInput"],
+  itemLabel: "Notice",
+  buildItem: ([title, details]) => (title ? { title, details } : null),
+  removeAttr: "data-remove-wc-notice",
+  rowHtml: (notice, index) => `
+    <tr>
+      <td>${escapeHtml(notice.title)}</td>
+      <td>${escapeHtml(notice.details)}</td>
+      <td><button type="button" class="icon-btn-delete" data-remove-wc-notice="${index}" aria-label="Remove" title="Remove">${deleteIconSvg}</button></td>
+    </tr>`
+});
+
+(() => {
+  const body = document.querySelector("#wcAdminGalleryBody");
+  if (!body) return;
+  const emptyEl = document.querySelector("#wcAdminGalleryEmpty");
+  const countEl = document.querySelector("#womenCellAdminGalleryCount");
+  const render = () => {
+    const photos = getWomenCellGallery();
+    body.innerHTML = photos
+      .map(
+        (url, index) => `
+          <tr>
+            <td><img src="${url}" alt="" style="width:56px;height:36px;border-radius:6px;object-fit:cover;"></td>
+            <td>${escapeHtml(url)}</td>
+            <td><button type="button" class="icon-btn-delete" data-remove-wc-photo="${index}" aria-label="Remove" title="Remove">${deleteIconSvg}</button></td>
+          </tr>`
+      )
+      .join("");
+    if (emptyEl) emptyEl.classList.toggle("is-hidden", photos.length > 0);
+    if (countEl) countEl.textContent = String(photos.length);
+  };
+  render();
+
+  document.querySelector("#wcAdminGalleryAddButton")?.addEventListener("click", () => {
+    const feedback = document.querySelector("#wcAdminGalleryAddFeedback");
+    const url = document.querySelector("#wcAdminGalleryUrlInput")?.value.trim() || "";
+    if (!url) {
+      if (feedback) { feedback.textContent = "Enter a photo URL before adding."; feedback.classList.remove("success"); }
+      return;
+    }
+    saveWomenCellGallery([...getWomenCellGallery(), url]);
+    render();
+    renderWomenCellDashboard();
+    const field = document.querySelector("#wcAdminGalleryUrlInput");
+    if (field) field.value = "";
+    if (feedback) { feedback.textContent = "Photo added."; feedback.classList.add("success"); }
+  });
+
+  body.addEventListener("click", (event) => {
+    const button = event.target.closest("[data-remove-wc-photo]");
+    if (!button) return;
+    const index = Number(button.dataset.removeWcPhoto);
+    saveWomenCellGallery(getWomenCellGallery().filter((_, i) => i !== index));
+    render();
+    renderWomenCellDashboard();
+    showFeedToast("Photo removed.");
+  });
+})();
+
+// Campus Life page (pages/campus-life.html) - Student Clubs and Student Affairs' Related
+// Services are admin-managed lists (name/tag/description), same wireAdminCrudList CRUD
+// helper reused from the Women's Cell admin above. The rich Vivekananda Study Circle card stays
+// hand-written in the page itself (motto/committee/report table - too structured for a flat
+// list), only the simpler one-line clubs and services are dynamic.
+const getCampusLifeClubs = () => getSiteContent("campusLifeClubs", [
+  { badge: "BV", name: "Bhuvana Vijayam", tag: "Literary & cultural", description: "Literary and cultural association providing a forum for students to demonstrate their talents in culture and literature." },
+  { badge: "CAD", name: "Center for Awareness & Discussion", tag: "Discussion & quizzes", description: "Works with the objective of familiarizing students with current topics through group discussions and quizzes." },
+  { badge: "IEI", name: "IEI Students' Chapter", tag: "Technical", description: "Conducts seminars on technical topics, quizzes, lectures, and other departmental activities." },
+  { badge: "AoL", name: "Art of Living Forum", tag: "Wellness", description: "Started to bring joy, a stress-free mind, a healthy body, and a blossomed life to students as well as faculty." },
+  { badge: "T&P", name: "T&P Club", tag: "Careers & training", description: "Started to create awareness among students about career opportunities, training needs, and industry expectations." },
+  { badge: "ISTE", name: "ISTE Student Chapter", tag: "Technical education", description: "The Indian Society for Technical Education student chapter, part of GPREC's platform for co-curricular and extra-curricular engagement." },
+  { badge: "N&N", name: "NSS & NCC", tag: "Service & discipline", description: "National Service Scheme and National Cadet Corps units offering students structured community service and disciplined-service training." },
+  { badge: "CC", name: "Coders Club", tag: "Programming", description: "A programming and problem-solving community for students to practice coding outside the classroom." },
+  { badge: "EC", name: "English Club", tag: "Language & communication", description: "Focused on building students' spoken and written English and communication skills." },
+  { badge: "EA", name: "EA (English Association)", tag: "Language & communication", description: "Runs language and communication-focused activities for students alongside the English Club." },
+  { badge: "I-E", name: "I-EEE", tag: "Technical", description: "Student technical chapter organizing department-level activities for EEE students." },
+  { badge: "JG", name: "Jignasa", tag: "Annual event", description: "An annual paper-presentation event run through the student clubs program, with photos from its 2024 edition posted on the college's Jignasa event gallery." }
+]);
+const saveCampusLifeClubs = (clubs) => saveSiteContent("campusLifeClubs", clubs);
+
+const getCampusLifeServices = () => getSiteContent("campusLifeServices", [
+  { badge: "AI", name: "AICTE Scholarship/Fellowship Schemes", tag: "Financial aid", description: "Eligible students can apply for AICTE's student development scholarship and fellowship schemes through the official AICTE portal, which lists the current schemes and their eligibility criteria." },
+  { badge: "CN", name: "Counselling", tag: "Mentoring system", description: "GPREC has run a formal mentoring system since AY 2017-18. II, III, and IV B.Tech students are grouped into batches of 15-20 and assigned a faculty mentor for the rest of their course." },
+  { badge: "MS", name: "Message to Students", tag: "Staying informed", description: "Academic information - fee deadlines, exam schedules, and scholarship dates - is circulated through notices and circulars, so students are urged to check notice boards daily." },
+  { badge: "MP", name: "Message to Parents", tag: "Staying involved", description: "Parents can check results using their ward's Roll No. on the college site and should obtain attendance from the Class Teacher or HOD every 15 days - shortfall alerts are also sent by SMS." },
+  { badge: "CoC", name: "Code of Conduct", tag: "Campus rules", description: "ID cards must be worn on campus at all times; formal wear is expected; camera-phones are banned in class; zero tolerance for ragging; the Principal's decision is final on disciplinary matters." }
+]);
+const saveCampusLifeServices = (services) => saveSiteContent("campusLifeServices", services);
+
+const renderCampusLifeAccordionList = (container, items) => {
+  if (!container) return;
+  container.innerHTML = items
+    .map(
+      (item) => `
+        <details class="disclosure-accordion-item">
+          <summary>
+            <span class="disclosure-accordion-item-badge">${escapeHtml(item.badge || item.name.slice(0, 2).toUpperCase())}</span>
+            <span class="disclosure-accordion-item-heading"><strong>${escapeHtml(item.name)}</strong><small>${escapeHtml(item.tag || "")}</small></span>
+            <svg class="disclosure-accordion-item-chevron" viewBox="0 0 24 24" aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg>
+          </summary>
+          <div class="disclosure-accordion-item-body">
+            <p class="about-justify">${escapeHtml(item.description)}</p>
+          </div>
+        </details>
+      `
+    )
+    .join("");
+};
+renderCampusLifeAccordionList(document.querySelector("#campusLifeClubsList"), getCampusLifeClubs());
+renderCampusLifeAccordionList(document.querySelector("#campusLifeServicesList"), getCampusLifeServices());
+
+// dashboards/admin-dashboard.html - Web Page Content > Campus Life admin CRUD, same
+// wireAdminCrudList helper as the Women's Cell admin panel above.
+wireAdminCrudList({
+  bodySelector: "#campusLifeClubsAdminBody",
+  emptySelector: "#campusLifeClubsAdminEmpty",
+  getItems: getCampusLifeClubs,
+  saveItems: saveCampusLifeClubs,
+  addButtonSelector: "#campusLifeClubAddButton",
+  addFeedbackSelector: "#campusLifeClubAddFeedback",
+  inputSelectors: ["#campusLifeClubBadgeInput", "#campusLifeClubNameInput", "#campusLifeClubTagInput", "#campusLifeClubDescriptionInput"],
+  itemLabel: "Club",
+  buildItem: ([badge, name, tag, description]) => (name && description ? { badge, name, tag, description } : null),
+  removeAttr: "data-remove-campus-club",
+  rowHtml: (club, index) => `
+    <tr>
+      <td>${escapeHtml(club.badge || "")}</td>
+      <td>${escapeHtml(club.name)}</td>
+      <td>${escapeHtml(club.tag || "")}</td>
+      <td><button type="button" class="icon-btn-delete" data-remove-campus-club="${index}" aria-label="Remove" title="Remove">${deleteIconSvg}</button></td>
+    </tr>`
+});
+
+wireAdminCrudList({
+  bodySelector: "#campusLifeServicesAdminBody",
+  emptySelector: "#campusLifeServicesAdminEmpty",
+  getItems: getCampusLifeServices,
+  saveItems: saveCampusLifeServices,
+  addButtonSelector: "#campusLifeServiceAddButton",
+  addFeedbackSelector: "#campusLifeServiceAddFeedback",
+  inputSelectors: ["#campusLifeServiceBadgeInput", "#campusLifeServiceNameInput", "#campusLifeServiceTagInput", "#campusLifeServiceDescriptionInput"],
+  itemLabel: "Service",
+  buildItem: ([badge, name, tag, description]) => (name && description ? { badge, name, tag, description } : null),
+  removeAttr: "data-remove-campus-service",
+  rowHtml: (service, index) => `
+    <tr>
+      <td>${escapeHtml(service.badge || "")}</td>
+      <td>${escapeHtml(service.name)}</td>
+      <td>${escapeHtml(service.tag || "")}</td>
+      <td><button type="button" class="icon-btn-delete" data-remove-campus-service="${index}" aria-label="Remove" title="Remove">${deleteIconSvg}</button></td>
+    </tr>`
+});
+
+// Bus routes are real, backend-stored data (bus_routes table, managed from the College Admin's
+// existing "Bus Routes" panel) - this just renders the same data onto the public Transportation
+// table on Campus Life, which previously showed a hardcoded copy disconnected from that admin
+// panel. Falls back to that original static copy when the backend/bootstrap isn't reachable.
+const getCampusLifeBusRoutes = () => {
+  const liveRoutes = getGprecDbBootstrap()?.busRoutes;
+  if (Array.isArray(liveRoutes) && liveRoutes.length) return liveRoutes;
+  return [
+    { routeName: "Route 1 - Bellary Chowrasta", stops: "B. Chowrasta, Sasya Motors, Chenamma Circle, Krishna Nagar, Abbas Nagar, Register Office, Gooty Pet. Bunk, Birla Gate, College" },
+    { routeName: "Route 2 - Pump House", stops: "HP Petrol Bunk (VR Colony), Road No. 4, BP Petrol Bunk, Pump House, Sitaram Nagar, Indira Gandhi Nagar, Market Yard, Bangar Peta, College" },
+    { routeName: "Route 3 - Old Bus-Stand", stops: "Head Post Office, Control Room, Kids World, Rajvihar, Medical College, Collectorate, Deva Nagar, M.S. Nagar, College" },
+    { routeName: "Route 4 - N.R. Peta", stops: "N.R. Peta, Apollo, SBI-Main Branch, RS-Road, C-Camp, Shakuntala Kala Mandir, Amma Hospital, College" }
+  ];
+};
+const getCampusLifeAbout = () => getSiteContent("campusLifeAbout", [{"type": "paragraph", "heading": null, "text": "GPREC attracts top students from across the country, and the college recognizes that the true potential of such students cannot be realized through academics alone. Students engage in literary, cultural, and sports activities through college clubs, youth festivals, and technical competitions, gaining self-management skills and core values through experiential learning."}, {"type": "paragraph", "heading": null, "text": "Students are also represented on administrative committees - the Hostel Governing Body, Canteen Committee, Course Monitoring Committee, and Discipline Committee - giving them hands-on management science experience through real organizational responsibilities."}]);
+const getCampusLifeAmenities = () => getSiteContent("campusLifeAmenities", [{"type": "paragraph", "heading": null, "text": "The campus provides several communication and commercial services, including STD/ISD pay phones, a courier service, a bookstore for textbooks and stationery, copier facilities, and Andhra Bank and ATM facilities within the campus."}, {"type": "paragraph", "heading": null, "text": "A canteen facility is available to cater snacks, coffee, tea, and other refreshments to students and staff throughout college hours."}, {"type": "paragraph", "heading": null, "text": "The campus has an exclusive Health Centre, open to all students and staff from 9 AM to 5 PM, staffed by a qualified Medical Officer and three nursing staff."}, {"type": "list", "heading": null, "items": ["Hospital", "Bank", "ATM", "Telecom Centre", "Post Office", "Stationery Shop"]}]);
+const getCampusLifeTeachingPractices = () => getSiteContent("campusLifeTeachingPractices", [{"type": "paragraph", "heading": null, "text": "GPREC implements pedagogical innovations across all programs through modern infrastructure, online learning platforms, research initiatives, and co-curricular activities."}, {"type": "list", "heading": "Infrastructure & Technology", "items": ["Classrooms feature ceiling-mounted LCD projectors and wall-mounted screens, integrating computer, multimedia, audio-visual, and network technologies with conventional methods", "Google Classroom facilitates online instruction, assignments, quizzes, course materials, and video lectures"]}, {"type": "list", "heading": "Online Learning Platforms", "items": ["MOOC participation (NPTEL, Coursera, edX) enhances subject knowledge and technological exposure", "HackerRank and EBox provide programming language practice environments", "MOODLE enables flexible online classes, quizzes, and resource distribution", "Examly.io offers practice tests in quantitative aptitude, verbal reasoning, and programming"]}, {"type": "list", "heading": "Research & Innovation", "items": ["The Innovations and Incubation Centre promotes entrepreneurship and research awareness", "SCOPUS institute membership enhances research publication quality"]}, {"type": "paragraph", "heading": "Co-curricular Activities", "text": "Programs conducted regularly include webinars, aptitude training, social awareness initiatives, entrepreneurship development, critical thinking workshops, group discussions, and professional ethics education - designed to cultivate problem-solving, leadership, teamwork, and interdisciplinary competencies."}]);
+const getCampusLifeEContent = () => getSiteContent("campusLifeEContent", [{"type": "paragraph", "heading": null, "text": "Faculty-created video content organized by department, published as YouTube playlists."}, {"type": "table", "heading": "Civil Engineering (CE)", "headers": ["Module", "Faculty", ""], "rows": [["Basic Civil Engineering", "Sri M. Hemanth Kumar", {"text": "Watch", "href": "https://www.youtube.com/playlist?list=PLRBj6y5pfD_T8xDXHVMnqJjuJUufRobaO"}], ["Transportation Engineering", "Dr. R. Sushmitha", {"text": "Watch", "href": "https://youtube.com/playlist?list=PLRBj6y5pfD_R8yaNROwksUf4QZiXkoSgf"}], ["Multi-Modal Transportation", "Dr. R. Sushmitha", {"text": "Watch", "href": "https://youtube.com/playlist?list=PLRBj6y5pfD_QW-l--F9_1Jy2NjsqN7t7b"}], ["Surveying", "Sri G. Nagesh Kumar", {"text": "Watch", "href": "https://youtube.com/playlist?list=PLRBj6y5pfD_SBSJxwRR3hDLSfEDDOtlvY"}], ["Environmental Engineering", "Dr. E. Sanjeeva Rayudu", {"text": "Watch", "href": "https://youtube.com/playlist?list=PLRBj6y5pfD_TYuoLuBD6zk7myn8Z537dO"}], ["Design & Drawing of Hydraulic Structures", "Dr. B.J.S. Vara Prasad", {"text": "Watch", "href": "https://youtube.com/playlist?list=PLRBj6y5pfD_TOtT2v-FN6ejtr9hSF7g09"}]]}, {"type": "table", "heading": "Computer Science & Engineering (CSE)", "headers": ["Module", "Faculty", ""], "rows": [["Operating Systems Deadlocks", "Smt. L. Sudha Rani", {"text": "Watch", "href": "https://youtube.com/playlist?list=PLRBj6y5pfD_SxMZTCDMruTzGXLcCd79oM"}], ["Advanced Data Structures & Algorithms", "Dr. C. Sreedhar", {"text": "Watch", "href": "https://youtube.com/playlist?list=PLRBj6y5pfD_SxRGBat3Cb8TQXzPMxHm9W"}], ["Python Programming", "Smt. P. Sunanda", {"text": "Watch", "href": "https://youtube.com/playlist?list=PLRBj6y5pfD_T4g0Jq9f1Ilr60UVbtDz-x"}], ["Machine Learning", "B. Dilip Kumar Reddy", {"text": "Watch", "href": "https://youtube.com/playlist?list=PLRBj6y5pfD_TjvrN4uGjZHH_Ybf_AXrzf"}], ["Computer Networks", "B. Dilip Kumar Reddy", {"text": "Watch", "href": "https://youtube.com/playlist?list=PLRBj6y5pfD_Rlx5FQWTk_Bh0zjy4Javsy"}], ["FLAT", "Dr. Geetha Vani", {"text": "Watch", "href": "https://youtube.com/playlist?list=PLRBj6y5pfD_S8IXvE81vuo_5ypo3bphLx"}], ["Cybersecurity", "P. Sunanda", {"text": "Watch", "href": "https://youtube.com/playlist?list=PLRBj6y5pfD_SleZE-MAO2MMiKLbFU_VDz"}], ["Compiler Design", "Smt. P. Sri Lakshmi", {"text": "Watch", "href": "https://youtube.com/playlist?list=PLRBj6y5pfD_TIuoQF4m7SP7cY8wk0nsah"}]]}, {"type": "table", "heading": "Mechanical Engineering (ME)", "headers": ["Module", "Faculty", ""], "rows": [["CAD", "Dr. M. Nagaphani Sastry", {"text": "Watch", "href": "https://youtube.com/playlist?list=PLRBj6y5pfD_Sfv0SfB744UE2bPceY-UHh"}], ["Engineering Drawing", "Dr. R. Meenakshi Reddy", {"text": "Watch", "href": "https://www.youtube.com/watch?v=sQnySInxxTc&list=PL-f2QZFf28IHlSA97xxxNlSMO275jjxHd"}], ["Mechanics of Solids", "Dr. K. Jayasimha Reddy", {"text": "Watch", "href": "https://www.youtube.com/playlist?list=PL8ZDw89Qj9gFL6WazJmE9fETXaJSDhCQv"}], ["Heat Transfer Laboratory", "G. Venkatesh", {"text": "Watch", "href": "https://www.youtube.com/watch?v=JyIvaUA_o4A&list=PLva9mtM8NEywG9no7edsFkTtA30xSuHWX"}], ["Engine Fundamentals", "Dr. K. Krishna Reddy", {"text": "Watch", "href": "https://youtu.be/DxmJpkEPKZU"}]]}, {"type": "table", "heading": "Humanities & Basic Sciences (H&BS)", "headers": ["Module", "Faculty", ""], "rows": [["Magnetic Materials", "Dr. S. Sailaja", {"text": "Watch", "href": "https://youtube.com/playlist?list=PLRBj6y5pfD_RWAlj9tQ2WvaUs3TYMv8BB"}], ["Semiconductors", "Smt. E. Nirmala Devi", {"text": "Watch", "href": "https://youtu.be/6fiW3OX17qk"}], ["Crystallography & X-ray Diffraction", "Dr. Papori Seal", {"text": "Watch", "href": "https://youtube.com/playlist?list=PLRBj6y5pfD_Qf68pIZcUa6U-p7UEa1W7p"}], ["Molecular Orbital Theory", "Dr. T. Satya", {"text": "Watch", "href": "https://youtube.com/playlist?list=PLRBj6y5pfD_TX_ceYKob4qDtARe2MNJlO"}]]}, {"type": "table", "heading": "CSE - AI & Machine Learning (CSM)", "headers": ["Module", "Faculty", ""], "rows": [["Cloud Computing", "Sri B. Sreedhar", {"text": "Watch", "href": "https://youtube.com/playlist?list=PLRBj6y5pfD_T8RJlt-QbqZxTV9MKr5uqA"}], ["Java Programming", "Sri K. Srikanth", {"text": "Watch", "href": "https://youtube.com/playlist?list=PLRBj6y5pfD_TXaUn_ufGLI_l3EV34l8I3"}], ["Big Data", "Sri P. Praneel Kumar", {"text": "Watch", "href": "https://youtube.com/playlist?list=PLRBj6y5pfD_RwJoSzklRf14CsjNb-ZuoP"}], ["Biological to Artificial Neurons", "Sri P. Madhusudan", {"text": "Watch", "href": "https://youtu.be/Ymqw6_PRA60"}], ["Operating Systems", "Dr. K. Srinivasa Rao", {"text": "Watch", "href": "https://www.youtube.com/playlist?list=PLRBj6y5pfD_SyRt0rFYLlt9nGSTas2Gbp"}], ["Quantum Computing", "Smt. V. Monica", {"text": "Watch", "href": "https://www.youtube.com/playlist?list=PLRBj6y5pfD_RmIFy4B4wwO0SBb-MqvoJ6"}]]}, {"type": "table", "heading": "Electronics & Communication (ECE)", "headers": ["Module", "Faculty", ""], "rows": [["Microprocessors 8085 & 8086", "Dr. S.M. Shamsheer Daula", {"text": "Watch", "href": "https://youtube.com/playlist?list=PLRBj6y5pfD_TCBRsH6-Zxwi_RzqZv_j1L"}], ["Embedded Systems & IoT", "Dr. S.M. Shamsheer Daula", {"text": "Watch", "href": "https://youtube.com/playlist?list=PLRBj6y5pfD_RgloKBOTS-JxS9AdJIml24"}], ["Analog Electronic Circuits", "Dr. L. Lakshmi Prasanna Kumar", {"text": "Watch", "href": "https://youtube.com/playlist?list=PLRBj6y5pfD_SID6vuZEMHgzKgmx6s0haK"}], ["Basic Electronics", "A. Venkata Subba Reddy", {"text": "Watch", "href": "https://youtube.com/playlist?list=PLRBj6y5pfD_RHWA4ksuf54u36hAdYUcyp"}], ["Industrial IoT", "Dr. S.M. Shamsheer Daula", {"text": "Watch", "href": "https://www.youtube.com/playlist?list=PLRBj6y5pfD_Q-Wni3OnG8fwtD21oSlnq4"}]]}, {"type": "table", "heading": "Electrical & Electronics (EEE)", "headers": ["Module", "Faculty", ""], "rows": [["Power Systems", "Dr. G.V. Subba Reddy", {"text": "Watch", "href": "https://youtube.com/playlist?list=PLRBj6y5pfD_TvB_N0RQgBYuMTaIXoWFIz"}], ["Control Systems", "Dr. G.V. Subba Reddy", {"text": "Watch", "href": "https://youtube.com/playlist?list=PLRBj6y5pfD_SfTdGEPBbKlaqXQ_aJWI-f"}], ["Universal Human Values", "Dr. M. Siva Sathyanarayana Varma", {"text": "Watch", "href": "https://youtube.com/playlist?list=PLRBj6y5pfD_TdAA3gfz67fD2jHl7ZtSXA"}]]}]);
+const getCampusLifeHostels = () => getSiteContent("campusLifeHostels", [{"type": "table", "heading": "Girls Hostel - G. Narayanamma Bhalikala Vasathi Gruham", "headers": ["Room Type", "Annual Fee"], "rows": [["Ordinary Room (Common Bathroom)", "Rs. 70,000"], ["Special Room (Attached Bathroom)", "Rs. 80,000"], ["Deluxe Room (A/C with Attached Bathroom)", "Rs. 85,000"]]}, {"type": "paragraph", "heading": null, "text": "Admission fee: Rs. 500. Plus a non-refundable maintenance fund of Rs. 5,000 and a refundable caution deposit of Rs. 5,000."}, {"type": "paragraph", "heading": null, "text": "Dean Hostels: Dr. Y. Rajasekhar Goud - 9441587635. Dean Student Affairs: Dr. K. Devaki Devi - 9177017334."}, {"type": "paragraph", "heading": "Boys Hostel", "text": "Located adjacent to the college campus."}, {"type": "table", "heading": null, "headers": ["Room Type", "Annual Fee"], "rows": [["Ordinary Room (Common Bathroom)", "Rs. 70,500"], ["Special Room (Attached Bathroom)", "Rs. 75,500"]]}, {"type": "paragraph", "heading": null, "text": "Seats are filled on a first-cum-first-serve basis."}, {"type": "paragraph", "heading": null, "text": "Contact: Dr. Ishthaq Ahmed, Associate Professor of CSE - 9866776244."}]);
+const getCampusLifeSports = () => getSiteContent("campusLifeSports", [{"type": "paragraph", "heading": null, "text": "The Physical Education department is directed by Dr. A. Vijaya Kumar, with supporting staff assisting students and faculty in accessing fitness and sports amenities."}, {"type": "paragraph", "heading": null, "text": "The college maintains a large playground measuring 130 x 140 metres, alongside indoor facilities."}, {"type": "list", "heading": "Outdoor Spaces", "items": ["Volleyball", "Basketball", "Ball Badminton", "Kabaddi", "Football", "Cricket", "Athletics"]}, {"type": "list", "heading": "Indoor Facilities", "items": ["Table Tennis", "Multi-gym", "Indoor Stadium"]}, {"type": "list", "heading": "Sports & Games Programs Offered", "items": ["Volleyball", "Basketball", "Ball Badminton", "Kabaddi", "Cricket", "Handball", "Football", "Athletics", "Table Tennis", "Shuttle Badminton", "Chess", "Caroms"]}, {"type": "table", "heading": "Sports & Games Committee", "headers": ["Name", "Role"], "rows": [["Dr. B. Sreenivasa Reddy", "Chair (Principal)"], ["Dr. A. Vijaya Kumar", "Convener (Director of Physical Education)"], ["Sri. V. Mahanandi Reddy", "Co-Convener (Sr. Assistant Professor, ME)"], ["Dr. R. Sudheer Babu", "Member (Associate Professor, ECE)"], ["Sri. L. Lakshmi Prasanna Kumar", "Member (Assistant Professor, ECE)"], ["Sri. B. Thimma Reddy", "Member (Assistant Professor, CSE)"], ["Sri. P. Praveen Yadav", "Member (Assistant Professor, CSE)"], ["Smt. K. Asha Rani", "Member (Assistant Professor, CSE)"], ["Sri. M. Preetham Siddhartha Reddy", "Member (Assistant Professor, CE)"], ["Sri. M. Srinivasa Reddy", "Member (Assistant Professor, EEE)"], ["Dr. M. Sivashankar Reddy", "Member (Assistant Professor, Math)"], ["Smt. E. Nirmala Devi", "Member (Assistant Professor, Physics)"], ["Smt. P. Vasundhara Reddy", "Assistant Physical Director"], ["Sri. K. Ravi Kumar", "Assistant Physical Director"]]}, {"type": "table", "heading": "Student Achievements", "headers": ["Document", ""], "rows": [["Sports Achievements - University Level", {"text": "Download", "href": "https://www.gprec.ac.in/sports/Sports%20-%20Achivements-University.pdf"}]]}]);
+const getCampusLifeCaaCellBlocks = () => getSiteContent("campusLifeCaaCell", [{"type": "paragraph", "heading": null, "text": "The Co-Academic Activities (CAA) Cell centralizes administration and monitoring of student chapters and technical forums under the unified supervision of the Principal, including ISTE student chapters, IEEE branches, CSI chapters, and departmental engineering societies."}, {"type": "list", "heading": "Objectives & Functions", "items": ["Facilitate student development in technical aspects, team working, and leadership skills through seminars, workshops, and industrial visits", "Maintain records of planned and conducted activities annually", "Supply information to university authorities, AICTE, accreditation bodies (NBA, NAAC), and survey agencies (NIRF)", "Monitor and evaluate mandatory CAA requirements for degree completion", "Conduct technical talks, symposiums, skill programs, technical debates, guest lectures, workshops, and industrial visits"]}, {"type": "table", "heading": "Committee", "headers": ["Name", "Role"], "rows": [["Dr. C. Harinatha Reddy", "Convener (Associate Professor, EEE)"], ["Dr. P. Abdul Khayum", "Member; Convener, ISTE SC (Professor, ECE)"], ["Dr. K. Isthaq Ahmed", "Member; Convener, CSI Chapter (Associate Professor, CSE)"], ["IE(I) Faculty In-charges", "Members (CIV, MEC, ECE, CSE, EEE)"], ["IEEE Student Branch Counsellor", "Member"], ["IEEE Society student branch chapter faculty advisors", "Members"], ["Department association faculty in-charges", "Members"], ["Any other technical forums constituted", "-"]]}, {"type": "table", "heading": "Activity Reports", "headers": ["Report", ""], "rows": [["CAA Cell Activities 2019-24", {"text": "Download", "href": "https://www.gprec.ac.in/CAA/GPREC-CAA-Cell-2019-24.pdf"}], ["CAA Cell Activities 2024-25", {"text": "Download", "href": "https://www.gprec.ac.in/CAA/GPREC%20CAA%202024-25%20Reports.pdf"}], ["CAA Cell Activities 2025-26", {"text": "Download", "href": "https://www.gprec.ac.in/CAA/GPREC-CAA-July-2025-toFeb-2026.pdf"}]]}]);
+const getCampusLifeAntiRagging = () => getSiteContent("campusLifeAntiRagging", [{"type": "paragraph", "heading": null, "text": "Ragging in all its forms and names is banned on the campus of G. Pulla Reddy Engineering College, Kurnool. Students found engaging in ragging face consequences under the 1997 Andhra Pradesh anti-ragging legislation."}, {"type": "paragraph", "heading": "Reporting Ragging", "text": "If ragging incidents occur on campus or in town, contact the Superintendent of Police, Kurnool at 08518-225600 or 08518-220999, or the nearest police station."}, {"type": "paragraph", "heading": "Anti-Ragging Committee", "text": "The committee periodically reviews circumstances and recommends preventive strategies against ragging."}, {"type": "table", "heading": null, "headers": ["Name", "Position", "Contact"], "rows": [["Dr. B. Sreenivasa Reddy", "Principal", "270957, 9490332609"], ["Dr. Y.V. Mohan Reddy", "HOD ME", "9440254733"], ["Dr. S. Nagaraja Rao", "HOD ECE", "9440328621"], ["Dr. N. Kasiviswanath", "HOD CSE", "9948232684"], ["Dr. K. Chinnapa Reddy", "HOD CE", "9849036750"], ["Dr. K. Sri Gowri", "HOD EEE", "9440253766"], ["Dr. R. Praveen Sam", "HOD ECS", "9848947982"], ["Dr. Y. Rajasekhar Goud", "HOD H&BS", "9441587635"], ["Dr. K. Madhava Reddy", "Dean", "9989982958"], ["Dr. K. Suresh Reddy", "Professor, ECE", "9866178937"], ["Dr. V. Satish Kumar", "Professor, ME", "9848366453"], ["Dr. K. Devaki Devi", "Associate Professor, ME", "9177017334"], ["Dr. K. Subhashini", "Associate Professor, Mathematics", "9440254730"], ["Dr. G. Raghuram", "PRO", "9440477883"]]}]);
+const getCampusLifeNisp = () => getSiteContent("campusLifeNisp", [{"type": "paragraph", "heading": null, "text": "GPREC has implemented the National Student and Faculty Startup Policy-2019, developed by MHRD's Innovation Cell and AICTE, to foster entrepreneurship among students and faculty."}, {"type": "paragraph", "heading": "Vision & Mission", "text": "Vision: Develop technical talent capable of cutting-edge research and deep-tech entrepreneurship."}, {"type": "list", "heading": null, "items": ["Establish a dynamic startup ecosystem across departments", "Engage students, faculty, and staff in innovation activities", "Create collaborative spaces for knowledge exchange", "Facilitate IP management and technology licensing"]}, {"type": "paragraph", "heading": "Strategic Goals", "text": "Short-term: Critical thinking development, building incubation infrastructure, competency development, and establishing KPIs."}, {"type": "paragraph", "heading": null, "text": "Long-term: Campus-based innovation facilities, academic courses on IPR, patent acquisition, successful startups, increased self-employment, and societal impact."}, {"type": "paragraph", "heading": "Support Mechanisms", "text": "Incubation: Subsidized premises, labs, mentoring, and IP licensing."}, {"type": "paragraph", "heading": null, "text": "Student Support: Induction programs, flexible attendance, and awards."}, {"type": "paragraph", "heading": null, "text": "Faculty Development: Guest lectures and specialized training courses."}, {"type": "table", "heading": "Implementation Committee", "headers": ["Name", "Role"], "rows": [["Dr. D.R. Srinivas", "Associate Professor, ECE"], ["Dr. G. Suresh Kumar", "Associate Professor, ME"], ["Dr. C. Sreedhar", "Professor, CSE"], ["Dr. G. Satheesh", "Associate Professor, EEE"], ["Sri P.C. Praveen Kumar", "Assistant Professor, ECE"], ["Smt. Varalakshmi", "Assistant Professor, CSBS"], ["Smt. Prasunna", "Assistant Professor, CSE"], ["Dr. Mohana Krishnusu", "Assistant Professor, ME"], ["Mr. V.N. Pavan Kumar", "Entrepreneur"], ["Mr. Dinesh Uppara", "Entrepreneur"]]}, {"type": "table", "heading": "Policy Documents", "headers": ["Document", ""], "rows": [["GPREC NISP Policy Document", {"text": "Download", "href": "https://www.gprec.ac.in/nisp/GPREC-NISP-Document.pdf"}], ["GPREC Innovation & Entrepreneurship (I&E) Policy", {"text": "Download", "href": "https://www.gprec.ac.in/nisp/GPREC-I%26E-Policy-Document.pdf"}], ["NISP 2019 for Students and Faculty", {"text": "Download", "href": "https://www.gprec.ac.in/nisp/NISP-2019-for-Students-and-Faculty.pdf"}]]}]);
+const getCampusLifeBlogBlocks = () => getSiteContent("campusLifeBlog", [{"type": "table", "heading": null, "headers": ["Post", ""], "rows": [["Dr. Kumar's Visit: A Game-Changer for Students", {"text": "Read", "href": "https://www.gprec.ac.in/blog/Dr.Kumar-Blog.pdf"}]]}]);
+const getCampusLifeGrievanceCellBlocks = () => getSiteContent("campusLifeGrievanceCell", [{"type": "paragraph", "heading": null, "text": "GPREC maintains two committees to receive grievances, carry out fact-finding, and suggest remedial and preventive measures."}, {"type": "table", "heading": "Student Grievance Redressal Committee (SGRC)", "headers": ["Name", "Role"], "rows": [["Dr. B. Sreenivasa Reddy", "Chair (Principal)"], ["Dr. K.V.S. Gopala Krishna Sastry", "Member Convener (Professor, CE)"], ["Dr. K. Devaki Devi", "Member (Dean, Student Affairs)"], ["Mr. M. Murali Mohan", "Member (Assistant Professor, ME)"], ["M. Chenna Kesava Reddy", "Student Nominee (B.Tech IV Year, CSBS)"]]}, {"type": "paragraph", "heading": null, "text": "Functions: receive grievances from students, carry out fact-finding, and suggest remedial and preventive measures."}, {"type": "paragraph", "heading": "Grievance Redressal Committee (GRC)", "text": "Chaired by Dr. B. Sreenivasa Reddy (Principal), with Dr. K.V.S. Gopala Krishna Sastry (Professor, CE) as Member Convener and six additional faculty members (professors and heads of departments)."}, {"type": "paragraph", "heading": null, "text": "Functions: receive grievances from faculty, parents, and alumni; carry out fact-finding; suggest remedial measures; review suggestions during counselling; and review outgoing student feedback."}, {"type": "paragraph", "heading": "Submit a Grievance", "text": "Use the form below to submit a grievance to GPREC."}]);
+const getCampusLifeScStGrievanceCellBlocks = () => getSiteContent("campusLifeScStGrievanceCell", [{"type": "paragraph", "heading": null, "text": "The committee aims to receive grievances from students, faculty, parents, and alumni regarding SC/ST-related academic and administrative matters, and to suggest remedial approaches - including remedial coaching in life skills, personality development, writing support, presentation skills, and interactive sessions for personal, social, and academic concerns."}, {"type": "table", "heading": "Committee", "headers": ["Name", "Role"], "rows": [["Dr. B. Sreenivasa Reddy", "Chair (Principal)"], ["Dr. P. Abdul Khayum", "Member Convener (Professor, ECE)"], ["Dr. G. Kishor", "Member (Professor, EEE)"], ["Dr. L. Lakshmi Prasanna Kumar", "Member (Assistant Professor, ECE)"], ["Sri. J. Swami Naik", "Member (Associate Professor, CSE)"], ["Sri. M. Murali Mohan", "Member (Assistant Professor, ME)"]]}]);
+
+// Generic renderer for the "blocks" shape above ({type, heading, text|items|headers+rows}) -
+// reconstructs the same about-justify/disclosure-list/disclosure-table markup those sections
+// already used as static HTML, so switching to DB-driven content is visually a no-op until an
+// admin actually edits something.
+const renderCampusLifeBlocks = (containerSelector, blocks) => {
+  const container = document.querySelector(containerSelector);
+  if (!container) return;
+  container.innerHTML = blocks
+    .map((block) => {
+      const heading = block.heading ? `<h3 class="about-subheading-sm">${escapeHtml(block.heading)}</h3>` : "";
+      if (block.type === "paragraph") {
+        return `${heading}<p class="about-justify">${escapeHtml(block.text)}</p>`;
+      }
+      if (block.type === "list") {
+        return `${heading}<ul class="disclosure-list">${block.items.map((item) => `<li>${escapeHtml(item)}</li>`).join("")}</ul>`;
+      }
+      if (block.type === "table") {
+        const theadHtml = block.headers?.length ? `<thead><tr>${block.headers.map((h) => `<th>${escapeHtml(h)}</th>`).join("")}</tr></thead>` : "";
+        const rowsHtml = block.rows
+          .map(
+            (row) => `<tr>${row
+              .map((cell) =>
+                cell && typeof cell === "object" && "href" in cell
+                  ? `<td><a class="notice-download" href="${cell.href}" target="_blank" rel="noreferrer">${escapeHtml(cell.text)}</a></td>`
+                  : `<td>${escapeHtml(cell)}</td>`
+              )
+              .join("")}</tr>`
+          )
+          .join("");
+        return `${heading}<div class="disclosure-table-wrap"><table class="disclosure-table">${theadHtml}<tbody>${rowsHtml}</tbody></table></div>`;
+      }
+      return "";
+    })
+    .join("");
+};
+
+renderCampusLifeBlocks("#campusLifeAboutBody", getCampusLifeAbout());
+renderCampusLifeBlocks("#campusLifeAmenitiesBody", getCampusLifeAmenities());
+renderCampusLifeBlocks("#campusLifeTeachingPracticesBody", getCampusLifeTeachingPractices());
+renderCampusLifeBlocks("#campusLifeEContentBody", getCampusLifeEContent());
+renderCampusLifeBlocks("#campusLifeHostelsBody", getCampusLifeHostels());
+renderCampusLifeBlocks("#campusLifeSportsBody", getCampusLifeSports());
+renderCampusLifeBlocks("#campusLifeCaaCellBody", getCampusLifeCaaCellBlocks());
+renderCampusLifeBlocks("#campusLifeAntiRaggingBody", getCampusLifeAntiRagging());
+renderCampusLifeBlocks("#campusLifeNispBody", getCampusLifeNisp());
+renderCampusLifeBlocks("#campusLifeBlogBody", getCampusLifeBlogBlocks());
+renderCampusLifeBlocks("#campusLifeGrievanceCellBody", getCampusLifeGrievanceCellBlocks());
+renderCampusLifeBlocks("#campusLifeScStGrievanceCellBody", getCampusLifeScStGrievanceCellBlocks());
+
+const campusLifeBusRoutesBody = document.querySelector("#campusLifeBusRoutesBody");
+if (campusLifeBusRoutesBody) {
+  campusLifeBusRoutesBody.innerHTML = getCampusLifeBusRoutes()
+    .map(
+      (route) => `
+        <tr>
+          <td>${escapeHtml(route.routeName)}</td>
+          <td>${escapeHtml(route.stops)}</td>
+          <td>${escapeHtml(route.pickupTime || "-")}</td>
+          <td>${escapeHtml(route.dropTime || "-")}</td>
+        </tr>
+      `
+    )
+    .join("");
+}
 
 // Campus Life page's Campus Facilities cards - each card has several photos for that facility
 // (see pages/campus-life.html), cycled via prev/next instead of a static single image.

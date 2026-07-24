@@ -1,0 +1,211 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Women's Cell Admin | GPREC</title>
+    <meta name="description" content="GPREC Women's Cell admin - manage committee, reports, resources, notices, and gallery for the public Women's Cell dashboard.">
+    <link rel="icon" href="https://www.gprec.ac.in/wp-content/uploads/2017/08/fav.png" sizes="32x32">
+    <link rel="stylesheet" href="../styles.css?v=20260722-33">
+  </head>
+  <body class="admin-dashboard-page">
+    <header class="student-topbar admin-topbar">
+      <a class="student-brand" href="../index.html">
+        <img src="../gprec-logo-enhanced.png" alt="G Pulla Reddy Engineering College">
+      </a>
+      <div class="student-user">
+        <div class="notification-bell-wrap">
+          <button type="button" class="notification-bell" id="notificationBellButton" aria-label="Notifications">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 8a6 6 0 1 1 12 0c0 4 1.5 5.5 2 6H4c.5-.5 2-2 2-6Z"/><path d="M10 20a2 2 0 0 0 4 0"/></svg>
+            <span class="notification-badge is-hidden" id="notificationBadge">0</span>
+          </button>
+          <div class="notification-dropdown is-hidden" id="notificationDropdown">
+            <div class="notification-dropdown-head">Notifications</div>
+            <div id="notificationList"></div>
+          </div>
+        </div>
+        <div class="student-user-menu">
+          <span class="student-user-avatar">WC</span>
+          <button type="button" class="student-user-toggle" aria-label="Account menu" aria-expanded="false">
+            <span class="student-user-name-block">
+              <strong id="adminRoleName">Women's Cell Admin</strong>
+              <small>GPREC Administration</small>
+            </span>
+          </button>
+          <div class="student-user-dropdown">
+            <a href="../pages/admin-login.html">Logout</a>
+          </div>
+        </div>
+      </div>
+    </header>
+
+    <main class="admin-shell">
+      <aside class="admin-sidebar">
+        <div class="student-menu-title">
+          <strong>Women's Cell Console</strong>
+          <button type="button" class="menu-collapse-toggle" id="menuCollapseToggle" aria-label="Collapse menu">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M15 5 9 12l6 7"/></svg>
+          </button>
+        </div>
+        <div class="admin-nav active" data-admin-target="#women-cell-admin-overview" title="Overview" role="button" tabindex="0"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="3" width="8" height="8" rx="1"/><rect x="13" y="3" width="8" height="8" rx="1"/><rect x="3" y="13" width="8" height="8" rx="1"/><rect x="13" y="13" width="8" height="8" rx="1"/></svg><span class="admin-nav-text">Overview</span></div>
+        <div class="admin-nav" data-admin-target="#women-cell-admin-committee" title="Committee" role="button" tabindex="0"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="9" cy="8" r="3"/><path d="M3 21c.7-3.2 3-5 6-5s5.3 1.8 6 5"/><circle cx="17" cy="8" r="2.4"/><path d="M15.5 13.2c2.2.4 3.8 1.9 4.5 4.8"/></svg><span class="admin-nav-text">Committee</span></div>
+        <div class="admin-nav" data-admin-target="#women-cell-admin-reports" title="Reports" role="button" tabindex="0"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 2h9l5 5v15H6Z"/><path d="M15 2v5h5M9 13h6M9 17h4"/></svg><span class="admin-nav-text">Reports</span></div>
+        <div class="admin-nav" data-admin-target="#women-cell-admin-resources" title="Rights &amp; Resources" role="button" tabindex="0"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 5.5A2.5 2.5 0 0 1 6.5 3H20v16H6.5A2.5 2.5 0 0 0 4 21.5zM4 5.5v16M8 7h8"/></svg><span class="admin-nav-text">Rights &amp; Resources</span></div>
+        <div class="admin-nav" data-admin-target="#women-cell-admin-newsletters" title="Newsletters" role="button" tabindex="0"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 4h16v16H4zM4 9h16M9 4v16"/></svg><span class="admin-nav-text">Newsletters</span></div>
+        <div class="admin-nav" data-admin-target="#women-cell-admin-notices" title="Notices" role="button" tabindex="0"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M18 8a6 6 0 0 0-12 0c0 7-3 7-3 9h18c0-2-3-2-3-9ZM10 21h4"/></svg><span class="admin-nav-text">Notices</span></div>
+        <div class="admin-nav" data-admin-target="#women-cell-admin-gallery" title="Gallery" role="button" tabindex="0"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 5h16v14H4zM4 15l4-4 4 4 5-6 3 3"/><circle cx="8.5" cy="8.5" r="1.5"/></svg><span class="admin-nav-text">Gallery</span></div>
+      </aside>
+
+      <section class="admin-workspace">
+        <section class="admin-panel is-active" id="women-cell-admin-overview">
+          <div class="admin-section-head">
+            <div><p class="eyebrow">Overview</p><h2>Manage the public Women's Cell dashboard.</h2></div>
+          </div>
+          <p class="about-justify" style="max-width:640px;">Everything saved here updates <code>dashboards/women-cell-dashboard.html</code> directly - that page has no login and is open to every visitor, so double-check details before saving.</p>
+          <div class="admin-metric-grid">
+            <article><strong id="womenCellAdminCommitteeCount">0</strong><span>Committee members</span></article>
+            <article><strong id="womenCellAdminReportCount">0</strong><span>Annual reports</span></article>
+            <article><strong id="womenCellAdminResourceCount">0</strong><span>Rights &amp; resources</span></article>
+            <article><strong id="womenCellAdminNewsletterCount">0</strong><span>"She Voice" issues</span></article>
+            <article><strong id="womenCellAdminNoticeCount">0</strong><span>Notices</span></article>
+            <article><strong id="womenCellAdminGalleryCount">0</strong><span>Gallery photos</span></article>
+          </div>
+        </section>
+
+        <section class="admin-panel" id="women-cell-admin-committee">
+          <div class="admin-section-head">
+            <div><p class="eyebrow">Committee</p><h2>Add or remove committee members.</h2></div>
+          </div>
+          <article class="admin-card admin-form-card">
+            <h3>Add Committee Member</h3>
+            <div class="admin-add-grid">
+              <label>Name<input type="text" id="wcAdminCommitteeNameInput" placeholder="e.g. Dr. K. Devaki Devi"></label>
+              <label>Role<input type="text" id="wcAdminCommitteeRoleInput" placeholder="e.g. Convener &middot; ME"></label>
+              <label>Photo URL<input type="text" id="wcAdminCommitteePhotoInput" placeholder="../uploads/women-cell/committee-example.jpg"></label>
+            </div>
+            <button type="button" id="wcAdminCommitteeAddButton">Add Member</button>
+            <p class="admin-add-feedback" id="wcAdminCommitteeAddFeedback" aria-live="polite"></p>
+          </article>
+          <div class="admin-table-card">
+            <table>
+              <thead><tr><th>Photo</th><th>Name</th><th>Role</th><th></th></tr></thead>
+              <tbody id="wcAdminCommitteeBody"></tbody>
+            </table>
+            <p class="lookup-empty is-hidden" id="wcAdminCommitteeEmpty">No committee members added yet.</p>
+          </div>
+        </section>
+
+        <section class="admin-panel" id="women-cell-admin-reports">
+          <div class="admin-section-head">
+            <div><p class="eyebrow">Reports</p><h2>Add or remove annual event reports.</h2></div>
+          </div>
+          <article class="admin-card admin-form-card">
+            <h3>Add Report</h3>
+            <div class="admin-add-grid">
+              <label>Academic Year<input type="text" id="wcAdminReportYearInput" placeholder="e.g. 2026-27"></label>
+              <label>Download Link (leave blank for "Update soon")<input type="text" id="wcAdminReportLinkInput" placeholder="https://..."></label>
+            </div>
+            <button type="button" id="wcAdminReportAddButton">Add Report</button>
+            <p class="admin-add-feedback" id="wcAdminReportAddFeedback" aria-live="polite"></p>
+          </article>
+          <div class="admin-table-card">
+            <table>
+              <thead><tr><th>Year</th><th>Link</th><th></th></tr></thead>
+              <tbody id="wcAdminReportsBody"></tbody>
+            </table>
+            <p class="lookup-empty is-hidden" id="wcAdminReportsEmpty">No reports added yet.</p>
+          </div>
+        </section>
+
+        <section class="admin-panel" id="women-cell-admin-resources">
+          <div class="admin-section-head">
+            <div><p class="eyebrow">Rights &amp; Resources</p><h2>Add or remove reference documents.</h2></div>
+          </div>
+          <article class="admin-card admin-form-card">
+            <h3>Add Document</h3>
+            <div class="admin-add-grid">
+              <label>Title<input type="text" id="wcAdminResourceTitleInput" placeholder="e.g. Women Acts"></label>
+              <label>Download Link<input type="text" id="wcAdminResourceLinkInput" placeholder="https://..."></label>
+            </div>
+            <button type="button" id="wcAdminResourceAddButton">Add Document</button>
+            <p class="admin-add-feedback" id="wcAdminResourceAddFeedback" aria-live="polite"></p>
+          </article>
+          <div class="admin-table-card">
+            <table>
+              <thead><tr><th>Title</th><th>Link</th><th></th></tr></thead>
+              <tbody id="wcAdminResourcesBody"></tbody>
+            </table>
+            <p class="lookup-empty is-hidden" id="wcAdminResourcesEmpty">No documents added yet.</p>
+          </div>
+        </section>
+
+        <section class="admin-panel" id="women-cell-admin-newsletters">
+          <div class="admin-section-head">
+            <div><p class="eyebrow">Newsletters</p><h2>Add or remove "She Voice" editions.</h2></div>
+          </div>
+          <article class="admin-card admin-form-card">
+            <h3>Add Newsletter</h3>
+            <div class="admin-add-grid">
+              <label>Edition<input type="text" id="wcAdminNewsletterEditionInput" placeholder="e.g. She Voice 2026"></label>
+              <label>Download Link<input type="text" id="wcAdminNewsletterLinkInput" placeholder="https://..."></label>
+            </div>
+            <button type="button" id="wcAdminNewsletterAddButton">Add Newsletter</button>
+            <p class="admin-add-feedback" id="wcAdminNewsletterAddFeedback" aria-live="polite"></p>
+          </article>
+          <div class="admin-table-card">
+            <table>
+              <thead><tr><th>Edition</th><th>Link</th><th></th></tr></thead>
+              <tbody id="wcAdminNewslettersBody"></tbody>
+            </table>
+            <p class="lookup-empty is-hidden" id="wcAdminNewslettersEmpty">No newsletters added yet.</p>
+          </div>
+        </section>
+
+        <section class="admin-panel" id="women-cell-admin-notices">
+          <div class="admin-section-head">
+            <div><p class="eyebrow">Notices</p><h2>Post events and announcements.</h2></div>
+          </div>
+          <article class="admin-card admin-form-card">
+            <h3>Add Notice</h3>
+            <div class="admin-add-grid">
+              <label>Title<input type="text" id="wcAdminNoticeTitleInput" placeholder="e.g. Swashakthi 2026"></label>
+              <label>Details<input type="text" id="wcAdminNoticeDetailsInput" placeholder="What happened / when"></label>
+            </div>
+            <button type="button" id="wcAdminNoticeAddButton">Add Notice</button>
+            <p class="admin-add-feedback" id="wcAdminNoticeAddFeedback" aria-live="polite"></p>
+          </article>
+          <div class="admin-table-card">
+            <table>
+              <thead><tr><th>Title</th><th>Details</th><th></th></tr></thead>
+              <tbody id="wcAdminNoticesBody"></tbody>
+            </table>
+            <p class="lookup-empty is-hidden" id="wcAdminNoticesEmpty">No notices posted yet.</p>
+          </div>
+        </section>
+
+        <section class="admin-panel" id="women-cell-admin-gallery">
+          <div class="admin-section-head">
+            <div><p class="eyebrow">Gallery</p><h2>Add or remove event photos.</h2></div>
+          </div>
+          <article class="admin-card admin-form-card">
+            <h3>Add Photo</h3>
+            <div class="admin-add-grid">
+              <label>Photo URL<input type="text" id="wcAdminGalleryUrlInput" placeholder="../uploads/women-cell/event-example.jpg"></label>
+            </div>
+            <button type="button" id="wcAdminGalleryAddButton">Add Photo</button>
+            <p class="admin-add-feedback" id="wcAdminGalleryAddFeedback" aria-live="polite"></p>
+          </article>
+          <div class="admin-table-card">
+            <table>
+              <thead><tr><th>Preview</th><th>URL</th><th></th></tr></thead>
+              <tbody id="wcAdminGalleryBody"></tbody>
+            </table>
+            <p class="lookup-empty is-hidden" id="wcAdminGalleryEmpty">No gallery photos added yet.</p>
+          </div>
+        </section>
+      </section>
+    </main>
+
+    <script src="../script.js?v=20260722-33"></script>
+  </body>
+</html>
