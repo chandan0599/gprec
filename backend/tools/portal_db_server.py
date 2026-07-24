@@ -9,6 +9,7 @@ import secrets
 import subprocess
 import sys
 import time
+import traceback
 import uuid
 from http.server import SimpleHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
@@ -3279,31 +3280,52 @@ def set_book_favorites(identity, favorites):
 
 
 def record_ai_usage(partial):
-    # Prefer server-side increments so counters stay accurate across browsers/tabs. Absolute SET
-    # keys are still accepted for backwards compatibility with older clients.
+    # Delta increments only. This endpoint is intentionally reachable without login (the public
+    # GPRECian Bot on index.html runs for anonymous visitors too), so it never accepted absolute
+    # SET values here even for "backwards compatibility" - every real caller in script.js only
+    # ever sends `*Delta: 1`, and an absolute-value path would let anyone overwrite the admin
+    # dashboard's counters outright. Deltas are clamped so a single call can't skew them either.
     run_psql("INSERT INTO ai_usage_stats (id) VALUES (true) ON CONFLICT (id) DO NOTHING;")
-    absolute_map = [
-        ("attempts", "attempts"), ("successes", "successes"), ("failures", "failures"),
-        ("rate_limited", "rateLimited"), ("blocked", "blocked"), ("off_topic", "offTopic")
-    ]
     delta_map = [
         ("attempts", "attemptsDelta"), ("successes", "successesDelta"), ("failures", "failuresDelta"),
         ("rate_limited", "rateLimitedDelta"), ("blocked", "blockedDelta"), ("off_topic", "offTopicDelta")
     ]
-    clauses = [f"{col} = {quote(partial.get(key))}" for col, key in absolute_map if partial.get(key) is not None]
-    clauses += [f"{col} = {col} + {int(partial.get(key) or 0)}" for col, key in delta_map if partial.get(key) is not None]
+    clauses = []
+    for col, key in delta_map:
+        value = partial.get(key)
+        if value is None:
+            continue
+        try:
+            delta = int(value)
+        except (TypeError, ValueError):
+            continue
+        delta = max(-100, min(100, delta))
+        clauses.append(f"{col} = {col} + {delta}")
     for col, key in [("last_provider", "lastProvider"), ("last_error", "lastError")]:
-        if partial.get(key) is not None:
-            clauses.append(f"{col} = {quote(partial.get(key))}")
+        value = partial.get(key)
+        if value is not None:
+            clauses.append(f"{col} = {quote(str(value)[:200])}")
     if clauses:
         run_psql(f"UPDATE ai_usage_stats SET {', '.join(clauses)}, last_used_at = now() WHERE id = true;")
 
 
+AI_REQUEST_LOG_STATUSES = {"success", "failure", "offTopic", "rateLimited", "blocked"}
+
+
 def record_ai_request_log(entry):
+    status = entry.get("status")
+    status = status if status in AI_REQUEST_LOG_STATUSES else None
+    try:
+        latency_ms = int(entry.get("latencyMs"))
+        latency_ms = max(0, min(latency_ms, 600_000))
+    except (TypeError, ValueError):
+        latency_ms = None
+    provider = str(entry.get("provider") or "")[:100]
+    model = str(entry.get("model") or "")[:100]
+    error = str(entry.get("error") or "")[:500]
     run_psql(f"""
         INSERT INTO ai_request_log (provider, model, status, latency_ms, error)
-        VALUES ({quote(entry.get('provider'))}, {quote(entry.get('model'))}, {quote(entry.get('status'))},
-                {quote(entry.get('latencyMs'))}, {quote(entry.get('error'))});
+        VALUES ({quote(provider)}, {quote(model)}, {quote(status)}, {quote(latency_ms)}, {quote(error)});
         DELETE FROM ai_request_log WHERE id NOT IN (SELECT id FROM ai_request_log ORDER BY created_at DESC LIMIT 20);
     """)
 
@@ -3415,6 +3437,15 @@ class PortalHandler(SimpleHTTPRequestHandler):
         length = int(self.headers.get("Content-Length", "0"))
         return json.loads(self.rfile.read(length).decode("utf-8") or "null")
 
+    def send_server_error(self, exc):
+        # Full traceback (including e.g. run_psql's CalledProcessError, whose str() contains the
+        # entire psql argv - host, DB user/name, and the interpolated SQL text) goes to this
+        # process's own stderr for whoever's running the server locally, never to the client -
+        # these routes are reachable over the LAN (HOST = "0.0.0.0"), including unauthenticated
+        # ones, so a raw exception message is not safe to hand back over the wire.
+        traceback.print_exc()
+        self.send_json(500, {"error": "Internal server error"})
+
     def do_OPTIONS(self):
         self.send_response(204)
         self.end_headers()
@@ -3512,6 +3543,11 @@ class PortalHandler(SimpleHTTPRequestHandler):
                 self.send_json(200, {"name": lookup_student_name(roll_no) if roll_no else None})
                 return
             if path == "/api/health":
+                # Admin-only: the payload includes DB host/schema/user and, on failure, the raw
+                # psql error text (which can contain the interpolated SQL) - same sensitivity as
+                # /api/db-stats below, and its only caller is the admin dashboard's DB Health card.
+                if not require_auth(self, allowed_types=["admin"]):
+                    return
                 self.send_json(200, check_database_health())
                 return
             if path == "/api/db-stats":
@@ -3553,7 +3589,7 @@ class PortalHandler(SimpleHTTPRequestHandler):
                 self.send_json(200, run_json(CREDENTIALS_LIST_SQL, []))
                 return
         except Exception as exc:
-            self.send_json(500, {"error": str(exc)})
+            self.send_server_error(exc)
             return
         super().do_GET()
 
@@ -5126,11 +5162,34 @@ class PortalHandler(SimpleHTTPRequestHandler):
                 replace_student_submissions("alumni_event_rsvps", payload or [])
                 self.send_json(200, {"ok": True})
                 return
+            if path == "/api/contact-messages/submit":
+                # Public Contact Us form - unauthenticated by design (visitors aren't logged in),
+                # but can only append one message via INSERT, never see or replace the inbox.
+                data = payload or {}
+                name = (data.get("name") or "").strip()
+                email = (data.get("email") or "").strip()
+                subject = (data.get("subject") or "").strip()
+                body = (data.get("body") or "").strip()
+                if not name or not email or not subject or not body:
+                    self.send_json(400, {"ok": False, "error": "name, email, subject and body are required"})
+                    return
+                message = {
+                    "id": str(uuid.uuid4()),
+                    "name": name,
+                    "email": email,
+                    "subject": subject,
+                    "body": body,
+                    "sentAt": datetime.datetime.utcnow().isoformat() + "Z",
+                }
+                run_psql(f"INSERT INTO contact_messages (id, data) VALUES ({quote(message['id'])}, {quote(json.dumps(message))}::jsonb);")
+                self.send_json(200, {"ok": True})
+                return
             if path == "/api/contact-messages":
-                # Deliberately left open, unlike its siblings above - this is the public Contact Us
-                # form's submit path sharing one bulk-replace endpoint with the admin inbox's
-                # "remove a message" action. Splitting these into separate add-only/admin-only
-                # endpoints so this can be gated too is a known follow-up, not done here.
+                # Admin inbox only - removing a message resends the remaining array through the
+                # same bulk-replace helper used elsewhere. Public submissions go through
+                # /contact-messages/submit above instead, which can only append, never replace.
+                if not require_auth(self, allowed_types=["admin"]):
+                    return
                 replace_student_submissions("contact_messages", payload or [])
                 self.send_json(200, {"ok": True})
                 return
@@ -5715,7 +5774,7 @@ class PortalHandler(SimpleHTTPRequestHandler):
                 return
             self.send_json(404, {"error": "Not found"})
         except Exception as exc:
-            self.send_json(500, {"error": str(exc)})
+            self.send_server_error(exc)
 
 
 if __name__ == "__main__":

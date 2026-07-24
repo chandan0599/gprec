@@ -1,3 +1,15 @@
+// Declared this early (rather than down near its heaviest use, the Resume Builder) so every
+// innerHTML-building function in this file - including ones near the top like
+// renderNotificationList - can call it. This file is one plain <script>, not a module, so a
+// call site above a `const` definition's own line hits the temporal dead zone at runtime.
+const escapeHtml = (value) =>
+  String(value)
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#39;");
+
 // Pages live one level deep under dashboards/ or pages/, but script.js is shared across all of
 // them - a hardcoded bare filename would resolve relative to whichever page is currently open.
 // gprecPageUrl() below turns a bare filename into the correct path from wherever the current page is.
@@ -1116,7 +1128,11 @@ const saveLibraryRecords = async (records) => {
 // --- End library backend integration point ----------------------------------------------
 const libraryStatusFor = (record) => {
   if (record.status === "Returned") return { label: "Returned", cls: "ok" };
-  const overdueDays = Math.floor((new Date(new Date().toDateString()) - new Date(record.dueDate)) / 86400000);
+  // record.dueDate is a plain "YYYY-MM-DD" string; new Date(dueDate) parses date-only strings as
+  // UTC midnight, while new Date(new Date().toDateString()) is local midnight - in a UTC-ahead
+  // timezone (e.g. IST) that mismatch quietly shaved hours off the interval and undercounted
+  // overdue days. parseLocalDateOnly parses both sides as local midnight so they line up.
+  const overdueDays = Math.floor((new Date(new Date().toDateString()) - parseLocalDateOnly(record.dueDate)) / 86400000);
   return overdueDays > 0
     ? { label: `Overdue (Rs. ${overdueDays * LIBRARY_FINE_PER_DAY} fine)`, cls: "warn" }
     : { label: "Issued", cls: "ok" };
@@ -1610,11 +1626,11 @@ const renderNotificationList = (items) => {
   const persistedHtml = persisted
     .map(
       (notification) => `
-        <div class="notification-item${notification.isRead ? "" : " notification-unread"}${notification.link ? " notification-clickable" : ""}" data-notification-id="${notification.id}" data-notification-link="${notification.link || ""}">
+        <div class="notification-item${notification.isRead ? "" : " notification-unread"}${notification.link ? " notification-clickable" : ""}" data-notification-id="${notification.id}" data-notification-link="${escapeHtml(notification.link || "")}">
           <button type="button" class="notification-dismiss" data-dismiss-notification aria-label="Dismiss notification">${deleteIconSvg}</button>
-          <strong>${notification.title}${notification.isRead ? "" : "<em>NEW</em>"}</strong>
-          <p>${notification.message}</p>
-          <small>${notification.createdAt}</small>
+          <strong>${escapeHtml(notification.title)}${notification.isRead ? "" : "<em>NEW</em>"}</strong>
+          <p>${escapeHtml(notification.message)}</p>
+          <small>${escapeHtml(notification.createdAt)}</small>
         </div>
       `
     )
@@ -1627,9 +1643,9 @@ const renderNotificationList = (items) => {
   const legacyHtml = items
     .map((item) => {
       const isLinked = typeof item === "object" && item !== null;
-      const text = isLinked ? item.text : item;
+      const text = escapeHtml(isLinked ? item.text : item);
       return isLinked
-        ? `<div class="notification-item notification-clickable" data-notification-link="${item.link}">${text}</div>`
+        ? `<div class="notification-item notification-clickable" data-notification-link="${escapeHtml(item.link)}">${text}</div>`
         : `<div class="notification-item">${text}</div>`;
     })
     .join("");
@@ -12410,7 +12426,12 @@ portalForms.forEach((form) => {
 
 const changePasswordForm = document.querySelector("#changePasswordForm");
 if (changePasswordForm) {
-  const pending = JSON.parse(sessionStorage.getItem("gprecPendingAuth") || "null");
+  let pending = null;
+  try {
+    pending = JSON.parse(sessionStorage.getItem("gprecPendingAuth") || "null");
+  } catch {
+    pending = null;
+  }
   const changeFeedback = document.querySelector("#changePasswordFeedback");
   const showChangeFeedback = (message, isSuccess) => {
     if (!changeFeedback) return;
@@ -14451,16 +14472,6 @@ const OPEN_LIBRARY_SUBJECT_BY_BRANCH = {
   CE: "civil_engineering"
 };
 
-// Book titles/authors come from a third-party API (Open Library), not just our own data, so
-// they're escaped before going into innerHTML/attributes like any other untrusted input.
-const escapeHtml = (value) =>
-  String(value)
-    .replace(/&/g, "&amp;")
-    .replace(/</g, "&lt;")
-    .replace(/>/g, "&gt;")
-    .replace(/"/g, "&quot;")
-    .replace(/'/g, "&#39;");
-
 // --- Resume Builder ---
 const resumePreview = document.querySelector("#resumePreview");
 if (resumePreview) {
@@ -14812,7 +14823,12 @@ if (bookRecommendationGrid) {
   bookRecommendationGrid.addEventListener("click", (event) => {
     const favoriteButton = event.target.closest(".book-favorite-toggle");
     if (favoriteButton) {
-      const book = JSON.parse(decodeURIComponent(favoriteButton.dataset.book));
+      let book;
+      try {
+        book = JSON.parse(decodeURIComponent(favoriteButton.dataset.book));
+      } catch {
+        return;
+      }
       const identity = resolveBookUserIdentity();
       const favorites = getBookFavorites();
       const myFavorites = favorites[identity] || [];
@@ -27540,7 +27556,10 @@ const createNotice = (notice) => gprecDbPost("/notices", notice);
 const removeNotice = (id) => gprecDbPost("/notices/remove", { id });
 
 const getContactMessages = () => getGprecDbBootstrap()?.contactMessages || [];
+// Admin inbox "remove a message" action only - requires an admin session (see portal_db_server.py).
 const saveContactMessages = (messages) => gprecDbPost("/contact-messages", messages);
+// Public Contact Us form - can only append one message, never replace/see the inbox.
+const submitContactMessage = (message) => gprecDbPost("/contact-messages/submit", message);
 
 // Editable content for the public Careers, Contact Us, Mandatory Disclosures, and R&D pages.
 // Each store seeds from the real content pulled from gprec.ac.in; admins can then add/edit/remove
@@ -27667,13 +27686,13 @@ const renderPublicNoticeBoard = () => {
         <article>
           <span class="notice-board-icon">${noticeBellIconSvg}</span>
           <div class="notice-board-body">
-            <h3>${notice.title}${index === 0 ? '<span class="notice-board-new">New</span>' : ""}</h3>
+            <h3>${escapeHtml(notice.title)}${index === 0 ? '<span class="notice-board-new">New</span>' : ""}</h3>
             <p class="notice-board-meta">
-              <span class="notice-board-audience">${notice.audience}</span>
+              <span class="notice-board-audience">${escapeHtml(notice.audience)}</span>
               ${notice.createdAt ? `<span class="notice-board-date">${new Date(notice.createdAt).toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric" })}</span>` : ""}
             </p>
-            <p class="notice-board-message">${notice.message}</p>
-            ${notice.attachment ? `<a class="notice-attachment" href="${notice.attachment.dataUrl}" download="${notice.attachment.name}">Download Attachment</a>` : ""}
+            <p class="notice-board-message">${escapeHtml(notice.message)}</p>
+            ${notice.attachment ? `<a class="notice-attachment" href="${escapeHtml(notice.attachment.dataUrl)}" download="${escapeHtml(notice.attachment.name)}">Download Attachment</a>` : ""}
           </div>
         </article>
       `
@@ -27724,17 +27743,17 @@ const renderAdminNoticesInto = (container, audiences, departmentFilter) => {
     article.className = "spotlight-card spotlight-card-notice";
     article.setAttribute("data-admin-notice", notice.id);
     const downloadHtml = notice.attachment
-      ? `<a class="notice-download" href="${notice.attachment.dataUrl}" download="${notice.attachment.name}">Download</a>`
+      ? `<a class="notice-download" href="${escapeHtml(notice.attachment.dataUrl)}" download="${escapeHtml(notice.attachment.name)}">Download</a>`
       : "";
     article.innerHTML = `
       <span class="notice-board-icon">${noticeBellIconSvg}</span>
       <div class="notice-board-body">
-        <h3>${notice.title}${index === 0 ? '<span class="notice-board-new">New</span>' : ""}</h3>
+        <h3>${escapeHtml(notice.title)}${index === 0 ? '<span class="notice-board-new">New</span>' : ""}</h3>
         <p class="notice-board-meta">
-          <span class="notice-board-audience">${notice.audience}</span>
+          <span class="notice-board-audience">${escapeHtml(notice.audience)}</span>
           ${notice.createdAt ? `<span class="notice-board-date">${new Date(notice.createdAt).toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric" })}</span>` : ""}
         </p>
-        <p class="notice-board-message">${notice.message}</p>
+        <p class="notice-board-message">${escapeHtml(notice.message)}</p>
         ${downloadHtml}
       </div>
     `;
@@ -27775,10 +27794,10 @@ if (deptNoticeBody) {
       .map(
         (notice) => `
           <tr>
-            <td>${notice.title}</td>
-            <td>${notice.message}</td>
+            <td>${escapeHtml(notice.title)}</td>
+            <td>${escapeHtml(notice.message)}</td>
             <td>${notice.createdAt ? new Date(notice.createdAt).toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric" }) : "-"}</td>
-            <td>${notice.attachment ? `<a class="notice-download" href="${notice.attachment.dataUrl}" download="${notice.attachment.name}">Download</a>` : "-"}</td>
+            <td>${notice.attachment ? `<a class="notice-download" href="${escapeHtml(notice.attachment.dataUrl)}" download="${escapeHtml(notice.attachment.name)}">Download</a>` : "-"}</td>
             <td><button type="button" class="icon-btn-delete" data-remove-dept-notice="${notice.id}" aria-label="Remove" title="Remove">${deleteIconSvg}</button></td>
           </tr>
         `
@@ -27869,9 +27888,9 @@ const renderNoticeManager = () => {
         .map(
           (notice) => `
         <tr>
-          <td>${notice.audience}</td>
-          <td>${notice.title}</td>
-          <td>${notice.attachment ? `<a href="${notice.attachment.dataUrl}" download="${notice.attachment.name}">${notice.attachment.name}</a>` : "-"}</td>
+          <td>${escapeHtml(notice.audience)}</td>
+          <td>${escapeHtml(notice.title)}</td>
+          <td>${notice.attachment ? `<a href="${escapeHtml(notice.attachment.dataUrl)}" download="${escapeHtml(notice.attachment.name)}">${escapeHtml(notice.attachment.name)}</a>` : "-"}</td>
           <td><button type="button" class="icon-btn-delete" data-notice-remove="${notice.id}" aria-label="Remove notice">${deleteIconSvg}</button></td>
         </tr>
       `
@@ -30405,9 +30424,7 @@ if (contactMessageForm) {
       }
       return;
     }
-    const messages = getContactMessages();
-    messages.push({ id: Date.now(), name, email, subject, body, sentAt: new Date().toISOString() });
-    saveContactMessages(messages);
+    submitContactMessage({ name, email, subject, body });
 
     // No real backend to send mail from here - open the visitor's own mail client, addressed
     // to the Principal's office, so they can actually send it as a real email if they choose to.

@@ -4,6 +4,7 @@ import binascii
 import json
 import os
 import re
+import threading
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
 from time import time
@@ -11,6 +12,11 @@ from time import time
 ROOT = Path(__file__).resolve().parents[2]
 CONFIG_PATH = ROOT / "admin-config.json"
 UPLOAD_ROOT = ROOT / "uploads"
+# ThreadingHTTPServer runs each request on its own thread, so two admins saving settings at the
+# same moment could otherwise both read the same on-disk config, merge their own change into it,
+# and write back - the second write wins, silently dropping the first admin's change. This lock
+# just serializes the read-modify-write so that can't interleave.
+ADMIN_CONFIG_LOCK = threading.Lock()
 # Loopback-only on purpose: /upload and /admin-config accept writes with no auth check beyond
 # origin, so this is deliberately unreachable from outside this machine. In production, put a
 # reverse proxy (same server) in front and let it terminate TLS/handle the public origin - do not
@@ -93,11 +99,12 @@ class AdminConfigHandler(BaseHTTPRequestHandler):
         try:
             length = int(self.headers.get("Content-Length", "0"))
             incoming = json.loads(self.rfile.read(length).decode("utf-8") or "{}")
-            current = json.loads(CONFIG_PATH.read_text(encoding="utf-8"))
-            for key in INTEGRATION_KEYS:
-                if key in incoming:
-                    current[key] = incoming[key]
-            CONFIG_PATH.write_text(json.dumps(current, indent=2) + "\n", encoding="utf-8")
+            with ADMIN_CONFIG_LOCK:
+                current = json.loads(CONFIG_PATH.read_text(encoding="utf-8"))
+                for key in INTEGRATION_KEYS:
+                    if key in incoming:
+                        current[key] = incoming[key]
+                CONFIG_PATH.write_text(json.dumps(current, indent=2) + "\n", encoding="utf-8")
             self._send_json(200, current)
         except Exception as exc:
             self._send_json(500, {"error": str(exc)})

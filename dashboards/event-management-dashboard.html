@@ -398,7 +398,7 @@
       </section>
     </main>
 
-    <script src="../html2canvas.min.js"></script>
+    <script src="../vendor/html2canvas.min.js"></script>
     <script src="../script.js?v=20260723-86"></script>
     <script>
       (() => {
@@ -1727,7 +1727,7 @@
           // Coordinators forms above, which already claimed shorter names like titleInput/
           // dateInput; redeclaring those with const is a hard SyntaxError that silently kills the
           // whole inline script (nothing on the page renders) rather than just this section.
-          // Same real-HTML templates (file_templates/08_art_exhibition.html etc., via
+          // Same real-HTML templates (file_templates/event-posters/08_art_exhibition.html etc., via
           // buildEventPosterHtml) as admin-dashboard.html's internal Poster Design tool - just
           // fest-activity ones only (getFestActivityPosterTemplates excludes Graduation
           // Day/Placement Drive/Convocation, which aren't fest activities) and publishing here

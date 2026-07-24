@@ -19,13 +19,19 @@ from pathlib import Path
 from flask import Flask, request, Response
 from playwright.sync_api import sync_playwright
 
-HOST = "0.0.0.0"
+# Loopback-only on purpose, same reasoning as admin_config_server.py: /render-pdf and /render-png
+# take the client's exact html/css and hand it to a real headless Chromium with no auth check
+# beyond origin, so a LAN-reachable bind here would let any other device on the network execute
+# arbitrary script inside that browser (and, from there, reach the other localhost-only servers).
+# script.js already falls back to the client-side html2canvas path whenever this server isn't
+# reachable, so restricting it to loopback costs no functionality - do not change this to
+# 0.0.0.0 without adding real authentication first.
+HOST = "127.0.0.1"
 PORT = 8767
 # Same allowed-origins convention as portal_db_server.py.
 ALLOWED_ORIGINS = {
     "http://127.0.0.1:8080",
     "http://localhost:8080",
-    "http://192.168.1.17:8080",
     "http://127.0.0.1:8766",
     "http://localhost:8766",
 }
