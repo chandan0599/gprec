@@ -968,6 +968,142 @@ SELECT json_build_object(
 );
 """
 
+# Served to /api/bootstrap for "alumni" and "event_visitor" - the two identity types anyone can
+# self-register into with nothing more than an email/password/CAPTCHA (see /api/alumni/signup and
+# /api/event-visitor/signup below), unlike student/parent/faculty/non_teaching/admin, which all
+# require matching a record an admin already provisioned. BOOTSTRAP_SQL was being handed to every
+# authenticated identity type with zero role scoping, so a self-registered account of either kind
+# could read every student's grades/attendance/fees/complaints/documents and the full admin/faculty
+# roster straight off /api/bootstrap. This is PUBLIC_BOOTSTRAP_SQL (same visibility as a logged-out
+# visitor) plus exactly the extra keys those two dashboards' own features need - each field
+# expression copied verbatim from BOOTSTRAP_SQL, not re-derived, so the definitions can't drift.
+SELF_SERVICE_IDENTITY_TYPES = {"alumni", "event_visitor"}
+SELF_SERVICE_BOOTSTRAP_SQL = r"""
+WITH
+catalog_rows AS (
+  SELECT json_object_agg(barcode, json_build_object('title', title, 'author', author)) AS catalog
+  FROM library_books
+),
+faculty_rows AS (
+  SELECT full_name, department_code, email, profile_photo_url, designation,
+    qualifications, google_scholar, apaar_id, vidwan_profile, phone, primary_subject, subject_code
+  FROM faculty
+  WHERE status = 'Active'
+),
+campus_event_registration_rows AS (
+  SELECT json_agg(data ORDER BY updated_at DESC) AS rows FROM campus_event_registrations
+),
+alumni_album_rows AS (
+  SELECT json_agg(data ORDER BY updated_at DESC) AS rows FROM alumni_albums
+),
+alumni_memory_rows AS (
+  SELECT json_agg(data ORDER BY updated_at DESC) AS rows FROM alumni_memories
+),
+alumni_event_rsvp_rows AS (
+  SELECT json_agg(data) AS rows FROM alumni_event_rsvps
+),
+calendar_reminder_rows AS (
+  SELECT json_agg(data) AS rows FROM calendar_reminders
+),
+funding_contribution_rows AS (
+  SELECT json_agg(json_build_object(
+    'id', id::text,
+    'campaignId', campaign_id,
+    'name', contributor_name,
+    'email', contributor_email,
+    'amount', amount,
+    'paymentId', payment_id,
+    'date', extract(epoch FROM contributed_at) * 1000
+  ) ORDER BY contributed_at DESC) AS rows
+  FROM funding_contributions
+),
+alumni_account_rows AS (
+  -- password_hash/password_salt deliberately never selected here - same isolation as
+  -- user_credentials, this is the one broadly-shared bootstrap response.
+  SELECT json_agg(jsonb_build_object('email', email) || data ORDER BY created_at) AS rows FROM alumni_accounts
+)
+SELECT json_build_object(
+  'facultyProfiles', COALESCE((SELECT json_agg(json_build_object(
+    'name', full_name,
+    'department', department_code,
+    'email', email,
+    'photoUrl', profile_photo_url,
+    'designation', designation,
+    'qualifications', qualifications,
+    'googleScholar', google_scholar,
+    'apaarId', apaar_id,
+    'vidwanProfile', vidwan_profile,
+    'phone', phone,
+    'primarySubject', primary_subject,
+    'subjectCode', subject_code
+  ) ORDER BY full_name) FROM faculty_rows), '[]'::json),
+  'nonTeachingStaff', COALESCE((SELECT json_agg(json_build_object(
+    'name', full_name,
+    'email', email,
+    'designation', designation,
+    'section', section,
+    'photoUrl', profile_photo_url
+  ) ORDER BY full_name) FROM non_teaching_staff WHERE status = 'Active'), '[]'::json),
+  'curriculum', COALESCE((
+    SELECT json_object_agg(department_code, subjects) FROM (
+      SELECT department_code, json_agg(json_build_object(
+        'code', subject_code, 'name', subject_name, 'semester', semester,
+        'credits', credits, 'type', subject_type
+      ) ORDER BY subject_code) AS subjects
+      FROM curriculum GROUP BY department_code
+    ) grouped_curriculum
+  ), '{}'::json),
+  'classTimetable', COALESCE((
+    SELECT json_object_agg(department_code, slots) FROM (
+      SELECT department_code, json_agg(json_build_object(
+        'day', day_of_week, 'time', time_slot, 'code', subject_code,
+        'subject', subject_name, 'facultyEmail', faculty_email, 'section', section
+      ) ORDER BY day_of_week, time_slot) AS slots
+      FROM class_timetable GROUP BY department_code
+    ) grouped_timetable
+  ), '{}'::json),
+  'notices', COALESCE((SELECT json_agg(json_build_object(
+    'id', id::text,
+    'audience', audience,
+    'title', title,
+    'message', body,
+    'department', department_code,
+    'attachment', CASE WHEN attachment_url IS NOT NULL
+      THEN json_build_object('name', attachment_name, 'dataUrl', attachment_url, 'mime', attachment_mime)
+      ELSE NULL END,
+    'createdAt', (extract(epoch FROM created_at) * 1000)::bigint
+  ) ORDER BY created_at DESC) FROM notices WHERE status = 'Published'), '[]'::json),
+  'placementDrives', COALESCE((SELECT json_agg(json_build_object(
+    'id', id::text,
+    'company', company,
+    'role', role_title,
+    'ctc', ctc,
+    'date', drive_date::text,
+    'minCgpa', min_cgpa,
+    'maxBacklogs', max_backlogs,
+    'branches', eligible_departments,
+    'addedAt', extract(epoch from drive_date),
+    'driveType', drive_type,
+    'description', description,
+    'sessionTime', session_time,
+    'venue', venue,
+    'mode', mode,
+    'seatCap', seat_cap,
+    'applyLink', apply_link,
+    'registeredCount', (SELECT COUNT(*) FROM placement_applications pa WHERE pa.drive_id = placement_drives.id)
+  ) ORDER BY drive_date) FROM placement_drives), '[]'::json),
+  'libraryCatalog', COALESCE((SELECT catalog FROM catalog_rows), '{}'::json),
+  'siteContent', COALESCE((SELECT json_object_agg(content_key, content_value) FROM site_content), '{}'::json),
+  'campusEventRegistrations', COALESCE((SELECT rows FROM campus_event_registration_rows), '[]'::json),
+  'alumniAccounts', COALESCE((SELECT rows FROM alumni_account_rows), '[]'::json),
+  'alumniAlbums', COALESCE((SELECT rows FROM alumni_album_rows), '[]'::json),
+  'alumniMemories', COALESCE((SELECT rows FROM alumni_memory_rows), '[]'::json),
+  'alumniEventRsvps', COALESCE((SELECT rows FROM alumni_event_rsvp_rows), '[]'::json),
+  'fundingContributions', COALESCE((SELECT rows FROM funding_contribution_rows), '[]'::json),
+  'calendarReminders', COALESCE((SELECT rows FROM calendar_reminder_rows), '[]'::json)
+);
+"""
+
 
 def quote(value):
     if value is None:
@@ -1834,6 +1970,44 @@ IDENTITY_TYPE_TO_KEY_PREFIX = {
 def owns_key(identity, key):
     prefix = IDENTITY_TYPE_TO_KEY_PREFIX.get(identity["identityType"])
     return bool(prefix) and key == f"{prefix}-{identity['identityId']}"
+
+
+def enforce_owned_complaints_replace(records, identity):
+    # complaints is TRUNCATE-and-reinsert (see replace_complaints below), which reassigns every
+    # row's id on each call - unlike the JSONB tables' enforce_owned_replace(), id isn't a stable
+    # key here, so rows are matched by content instead. Closes two things a non-admin caller could
+    # otherwise do: silently drop another student's existing complaint from the table (this endpoint
+    # replaces the whole table, not just the caller's own rows), or file a brand-new complaint
+    # attributed to someone else's roll number. Editing an existing complaint's status (what a
+    # warden/HOD does) is left alone for admin identities, which is why they're exempt below.
+    if identity["identityType"] == "admin":
+        return None
+    owner_value = identity["identityId"]
+
+    def fingerprint(item):
+        return (
+            item.get("studentId"), item.get("category"), item.get("subject"),
+            item.get("description"), item.get("status"),
+        )
+
+    current = run_json(
+        "SELECT COALESCE(json_agg(json_build_object("
+        "'studentId', student_roll_no, 'category', category, 'subject', subject, "
+        "'description', description, 'status', status"
+        ")), '[]'::json) FROM complaints;",
+        [],
+    ) or []
+    incoming_fingerprints = {fingerprint(record) for record in records}
+    for row in current:
+        if row.get("studentId") != owner_value and fingerprint(row) not in incoming_fingerprints:
+            return "Can't remove another student's existing complaint."
+
+    current_fingerprints = {fingerprint(row) for row in current}
+    for record in records:
+        if fingerprint(record) not in current_fingerprints and record.get("studentId") != owner_value:
+            return "Can't file a complaint under another student's identity."
+
+    return None
 
 
 def replace_complaints(records):
@@ -2873,6 +3047,38 @@ def replace_student_submissions(table, records):
     run_psql(sql)
 
 
+def enforce_owned_replace(table, records, identity, owner_field, exempt_types=("admin",), is_owned=lambda row: True):
+    # Every replace_student_submissions() table is a shared blob the client reads in full, mutates
+    # one record of, and posts back whole - so a non-privileged caller's payload doubles as "every
+    # row I know about," not just their own. Without this check, that same POST could silently drop
+    # another owner's existing row (this endpoint deletes anything missing from the payload) or add
+    # a brand-new row stamped with someone else's identity (e.g. forging another student's approved
+    # hostel-leave request). Editing the OTHER fields of an existing row is intentionally left alone
+    # here - that's the legitimate cross-user editing this app already relies on everywhere (faculty
+    # grading a project, an alumnus liking someone else's memory post, a warden approving a request)
+    # and telling that apart from tampering needs per-table field knowledge this generic check
+    # doesn't have. `is_owned` lets a table opt specific rows out of ownership entirely (e.g.
+    # calendar_reminders' shared/non-personal entries, which have no single owner by design).
+    # Returns an error string if the payload should be rejected, or None if it's allowed.
+    if identity["identityType"] in exempt_types:
+        return None
+    owner_value = identity["identityId"]
+    current = run_json(f"SELECT COALESCE(json_agg(data), '[]'::json) FROM {table};", []) or []
+    current_by_id = {row.get("id"): row for row in current if row.get("id")}
+    incoming_ids = {record.get("id") for record in records if record.get("id")}
+
+    for row_id, row in current_by_id.items():
+        if is_owned(row) and row.get(owner_field) != owner_value and row_id not in incoming_ids:
+            return "Can't remove another person's existing record."
+
+    for record in records:
+        row_id = record.get("id")
+        if row_id not in current_by_id and is_owned(record) and record.get(owner_field) != owner_value:
+            return "Can't create a record under another person's identity."
+
+    return None
+
+
 # Gate scanning re-uses these same JSONB-blob tables - gateToken/gateLog live as extra keys inside
 # the existing `data` blob, so adding fields needs no migration. gateToken is a random opaque
 # string, never the request's own id, so a printed pass reveals nothing usable to find another pass.
@@ -3567,7 +3773,13 @@ class PortalHandler(SimpleHTTPRequestHandler):
                 return
             if path == "/api/bootstrap":
                 identity = authenticate(self)
-                self.send_json(200, run_json(BOOTSTRAP_SQL, {}) if identity else run_json(PUBLIC_BOOTSTRAP_SQL, {}))
+                if not identity:
+                    sql = PUBLIC_BOOTSTRAP_SQL
+                elif identity["identityType"] in SELF_SERVICE_IDENTITY_TYPES:
+                    sql = SELF_SERVICE_BOOTSTRAP_SQL
+                else:
+                    sql = BOOTSTRAP_SQL
+                self.send_json(200, run_json(sql, {}))
                 return
             if path == "/api/catalog":
                 self.send_json(200, run_json("SELECT COALESCE(json_object_agg(barcode, json_build_object('title', title, 'author', author)), '{}'::json) FROM library_books;", {}))
@@ -3601,7 +3813,12 @@ class PortalHandler(SimpleHTTPRequestHandler):
         try:
             payload = self.read_json()
             if path == "/api/complaints":
-                if not require_auth(self):
+                identity = require_auth(self)
+                if not identity:
+                    return
+                error = enforce_owned_complaints_replace(payload or [], identity)
+                if error:
+                    self.send_json(403, {"ok": False, "error": error})
                     return
                 replace_complaints(payload or [])
                 self.send_json(200, run_json(BOOTSTRAP_SQL, {}).get("complaints", []))
@@ -3862,7 +4079,7 @@ class PortalHandler(SimpleHTTPRequestHandler):
                 if not identity:
                     return
                 roll_no = payload.get("rollNo") or ""
-                if identity["identityType"] == "student" and identity["identityId"] != roll_no:
+                if identity["identityType"] != "admin" and identity["identityId"] != roll_no:
                     self.send_json(403, {"ok": False, "error": "forbidden"})
                     return
                 if not roll_no:
@@ -3878,7 +4095,7 @@ class PortalHandler(SimpleHTTPRequestHandler):
                 if not identity:
                     return
                 email = (payload.get("email") or "").strip().lower()
-                if identity["identityType"] == "faculty" and identity["identityId"] != email:
+                if identity["identityType"] != "admin" and identity["identityId"] != email:
                     self.send_json(403, {"ok": False, "error": "forbidden"})
                     return
                 if not email:
@@ -3893,7 +4110,7 @@ class PortalHandler(SimpleHTTPRequestHandler):
                 if not identity:
                     return
                 email = (payload.get("email") or "").strip().lower()
-                if identity["identityType"] == "faculty" and identity["identityId"] != email:
+                if identity["identityType"] != "admin" and identity["identityId"] != email:
                     self.send_json(403, {"ok": False, "error": "forbidden"})
                     return
                 if not email:
@@ -4829,31 +5046,56 @@ class PortalHandler(SimpleHTTPRequestHandler):
                 self.send_json(200, {"ok": True})
                 return
             if path == "/api/student-projects":
-                if not require_auth(self):
+                identity = require_auth(self)
+                if not identity:
+                    return
+                error = enforce_owned_replace("student_projects", payload or [], identity, "studentId", exempt_types=("admin", "faculty"))
+                if error:
+                    self.send_json(403, {"ok": False, "error": error})
                     return
                 replace_student_submissions("student_projects", payload or [])
                 self.send_json(200, {"ok": True})
                 return
             if path == "/api/student-research":
-                if not require_auth(self):
+                identity = require_auth(self)
+                if not identity:
+                    return
+                error = enforce_owned_replace("student_research", payload or [], identity, "studentId", exempt_types=("admin", "faculty"))
+                if error:
+                    self.send_json(403, {"ok": False, "error": error})
                     return
                 replace_student_submissions("student_research", payload or [])
                 self.send_json(200, {"ok": True})
                 return
             if path == "/api/hostel-outing-requests":
-                if not require_auth(self):
+                identity = require_auth(self)
+                if not identity:
+                    return
+                error = enforce_owned_replace("hostel_outing_requests", payload or [], identity, "studentId")
+                if error:
+                    self.send_json(403, {"ok": False, "error": error})
                     return
                 replace_student_submissions("hostel_outing_requests", payload or [])
                 self.send_json(200, {"ok": True})
                 return
             if path == "/api/hostel-visiting-requests":
-                if not require_auth(self):
+                identity = require_auth(self)
+                if not identity:
+                    return
+                error = enforce_owned_replace("hostel_visiting_requests", payload or [], identity, "studentId")
+                if error:
+                    self.send_json(403, {"ok": False, "error": error})
                     return
                 replace_student_submissions("hostel_visiting_requests", payload or [])
                 self.send_json(200, {"ok": True})
                 return
             if path == "/api/hostel-leave-requests":
-                if not require_auth(self):
+                identity = require_auth(self)
+                if not identity:
+                    return
+                error = enforce_owned_replace("hostel_leave_requests", payload or [], identity, "studentId")
+                if error:
+                    self.send_json(403, {"ok": False, "error": error})
                     return
                 replace_student_submissions("hostel_leave_requests", payload or [])
                 self.send_json(200, {"ok": True})
@@ -5156,19 +5398,38 @@ class PortalHandler(SimpleHTTPRequestHandler):
                 self.send_json(200, {"ok": True, "activity": activity})
                 return
             if path == "/api/alumni-albums":
-                if not require_auth(self):
+                identity = require_auth(self)
+                if not identity:
+                    return
+                error = enforce_owned_replace("alumni_albums", payload or [], identity, "createdBy")
+                if error:
+                    self.send_json(403, {"ok": False, "error": error})
                     return
                 replace_student_submissions("alumni_albums", payload or [])
                 self.send_json(200, {"ok": True})
                 return
             if path == "/api/alumni-memories":
-                if not require_auth(self):
+                identity = require_auth(self)
+                if not identity:
+                    return
+                # Liking/commenting on someone else's memory is legitimate (that's the whole point
+                # of the feed) and only ever touches an EXISTING row, which enforce_owned_replace
+                # already leaves alone - this only blocks fabricating a brand-new post under
+                # another alumnus's authorEmail, or dropping someone else's existing post.
+                error = enforce_owned_replace("alumni_memories", payload or [], identity, "authorEmail")
+                if error:
+                    self.send_json(403, {"ok": False, "error": error})
                     return
                 replace_student_submissions("alumni_memories", payload or [])
                 self.send_json(200, {"ok": True})
                 return
             if path == "/api/alumni-event-rsvps":
-                if not require_auth(self):
+                identity = require_auth(self)
+                if not identity:
+                    return
+                error = enforce_owned_replace("alumni_event_rsvps", payload or [], identity, "email")
+                if error:
+                    self.send_json(403, {"ok": False, "error": error})
                     return
                 replace_student_submissions("alumni_event_rsvps", payload or [])
                 self.send_json(200, {"ok": True})
@@ -5205,7 +5466,19 @@ class PortalHandler(SimpleHTTPRequestHandler):
                 self.send_json(200, {"ok": True})
                 return
             if path == "/api/calendar-reminders":
-                if not require_auth(self):
+                identity = require_auth(self)
+                if not identity:
+                    return
+                # "shared"/holiday entries have no single owner by design (owner is "" for
+                # everyone) - any authenticated role with calendar-add access can post those, same
+                # as today. Only "personal" reminders (owner = the poster's own studentId/email)
+                # are protected from being read, dropped, or forged by someone else.
+                error = enforce_owned_replace(
+                    "calendar_reminders", payload or [], identity, "owner",
+                    is_owned=lambda row: row.get("scope") == "personal"
+                )
+                if error:
+                    self.send_json(403, {"ok": False, "error": error})
                     return
                 replace_student_submissions("calendar_reminders", payload or [])
                 self.send_json(200, {"ok": True})
@@ -5225,12 +5498,18 @@ class PortalHandler(SimpleHTTPRequestHandler):
                 self.send_json(200, {"ok": True})
                 return
             if path == "/api/student-documents/remove":
-                if not require_auth(self):
+                identity = require_auth(self)
+                if not identity:
                     return
                 doc_id = (payload or {}).get("id") or ""
                 if not doc_id:
                     self.send_json(400, {"ok": False, "error": "id is required"})
                     return
+                if identity["identityType"] != "admin":
+                    owner = run_psql(f"SELECT student_roll_no FROM student_documents WHERE id = {quote(doc_id)}::uuid;").strip()
+                    if owner and owner != identity["identityId"]:
+                        self.send_json(403, {"ok": False, "error": "forbidden"})
+                        return
                 run_psql(f"DELETE FROM student_documents WHERE id = {quote(doc_id)}::uuid;")
                 self.send_json(200, {"ok": True})
                 return
@@ -5748,9 +6027,32 @@ class PortalHandler(SimpleHTTPRequestHandler):
                 self.send_json(200, {"ok": True, "account": account, "token": token})
                 return
             if path == "/api/alumni/profiles":
-                if not require_auth(self, allowed_types=["alumni", "admin"]):
+                identity = require_auth(self, allowed_types=["alumni", "admin"])
+                if not identity:
                     return
-                save_alumni_profiles(payload or [])
+                accounts = payload or []
+                # The client always resends the FULL alumni_accounts array with only its own entry
+                # edited (same read-all/mutate-one/save-all pattern as everywhere else in this
+                # file) - so most entries in any given call are always someone else's, unchanged.
+                # save_alumni_profiles() blindly trusts each entry's own `email` field, so without
+                # this check an alumni could edit a different entry's content before sending and
+                # overwrite that person's profile. Only entries that actually differ from what's
+                # currently stored are checked - untouched entries for other alumni are expected on
+                # every call and must not be rejected.
+                if identity["identityType"] != "admin":
+                    current_rows = run_json(
+                        "SELECT COALESCE(json_agg(jsonb_build_object('email', email) || data), '[]'::json) FROM alumni_accounts;", []
+                    ) or []
+                    current_by_email = {row["email"]: {k: v for k, v in row.items() if k != "email"} for row in current_rows}
+                    for account in accounts:
+                        email = (account.get("email") or "").strip().lower()
+                        if email == identity["identityId"]:
+                            continue
+                        incoming = {k: v for k, v in account.items() if k not in ("email", "password")}
+                        if incoming != current_by_email.get(email, incoming):
+                            self.send_json(403, {"ok": False, "error": "Can't update another alumnus's profile."})
+                            return
+                save_alumni_profiles(accounts)
                 self.send_json(200, {"ok": True})
                 return
             if path == "/api/funding-contributions":

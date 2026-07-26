@@ -3,3 +3,4 @@ __pycache__/
 *.pyc
 tools/.bank_encryption.key
 backend/tools/.bank_encryption.key
+node_modules/

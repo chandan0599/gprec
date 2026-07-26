@@ -6963,11 +6963,11 @@ if (classMessagesList) {
       (item) => `
         <article class="request-card">
           <div class="hostel-student-head">
-            <strong>${item.title}</strong>
-            <span>${item.sentOn}</span>
+            <strong>${escapeHtml(item.title)}</strong>
+            <span>${escapeHtml(item.sentOn)}</span>
           </div>
-          <p>${item.message}</p>
-          <small>From: ${item.facultyName} | ${item.subjectCode ? `${item.subjectCode} - ` : ""}${item.subject}</small>
+          <p>${escapeHtml(item.message)}</p>
+          <small>From: ${escapeHtml(item.facultyName)} | ${item.subjectCode ? `${escapeHtml(item.subjectCode)} - ` : ""}${escapeHtml(item.subject)}</small>
         </article>
       `
     )
@@ -8135,7 +8135,7 @@ const maxTeamSizeByCategory = { "Major Project": 3, "Mini Project I": 4, "Mini P
 
 const formatProjectTeam = (teamMembers) =>
   teamMembers && teamMembers.length > 1
-    ? ` | Team: ${teamMembers.map((member) => `${member.name}${member.isLead ? " (Lead)" : ""}`).join(", ")}`
+    ? ` | Team: ${teamMembers.map((member) => `${escapeHtml(member.name)}${member.isLead ? " (Lead)" : ""}`).join(", ")}`
     : "";
 
 // Timeline progress = share of milestones with an Approved submission - reuses the same
@@ -8484,16 +8484,16 @@ if (projectSubmitForm) {
           <details class="project-card">
             <summary class="project-card-head">
               <div class="project-card-head-text">
-                <strong>${item.title}</strong>
-                <span class="project-card-submitter">${resolveStudentDisplayName(item.studentId, item.studentName)}${item.teamMembers?.find((member) => member.studentId === item.studentId)?.isLead ? " (Lead)" : ""} (${item.studentId})${item.studentSection ? ` - ${item.studentSection}` : ""}</span>
+                <strong>${escapeHtml(item.title)}</strong>
+                <span class="project-card-submitter">${resolveStudentDisplayName(item.studentId, item.studentName)}${item.teamMembers?.find((member) => member.studentId === item.studentId)?.isLead ? " (Lead)" : ""} (${escapeHtml(item.studentId)})${item.studentSection ? ` - ${escapeHtml(item.studentSection)}` : ""}</span>
               </div>
               ${item.status === "Approved" ? timelineSummaryBadge(milestones) : ""}
-              <span class="${requestStatusClass(item.status)}">${item.status}</span>
+              <span class="${requestStatusClass(item.status)}">${escapeHtml(item.status)}</span>
             </summary>
             <div class="project-card-body">
-              <p class="project-card-meta">${item.category} | Guide: ${item.guideName}${formatProjectTeam(item.teamMembers)}</p>
-              <p class="project-card-idea">${item.description}</p>
-              ${item.feedback ? `<p class="portal-note">Guide feedback: ${item.feedback}</p>` : ""}
+              <p class="project-card-meta">${escapeHtml(item.category)} | Guide: ${escapeHtml(item.guideName)}${formatProjectTeam(item.teamMembers)}</p>
+              <p class="project-card-idea">${escapeHtml(item.description)}</p>
+              ${item.feedback ? `<p class="portal-note">Guide feedback: ${escapeHtml(item.feedback)}</p>` : ""}
               ${plagiarismBadgeHtml("project", item.id)}
               ${
                 item.status === "Pending"
@@ -8703,16 +8703,16 @@ if (researchSubmitForm) {
           <details class="project-card">
             <summary class="project-card-head">
               <div class="project-card-head-text">
-                <strong>${item.title}</strong>
-                <span class="project-card-submitter">You (${item.studentId})${item.studentSection ? ` - ${item.studentSection}` : ""}</span>
+                <strong>${escapeHtml(item.title)}</strong>
+                <span class="project-card-submitter">You (${escapeHtml(item.studentId)})${item.studentSection ? ` - ${escapeHtml(item.studentSection)}` : ""}</span>
               </div>
               ${item.status === "Approved" ? timelineSummaryBadge(milestones) : ""}
-              <span class="${requestStatusClass(item.status)}">${item.status}</span>
+              <span class="${requestStatusClass(item.status)}">${escapeHtml(item.status)}</span>
             </summary>
             <div class="project-card-body">
-              <p class="project-card-meta">${item.category} | Supervisor: ${item.guideName}</p>
-              <p class="project-card-idea">${item.description}</p>
-              ${item.feedback ? `<p class="portal-note">Supervisor feedback: ${item.feedback}</p>` : ""}
+              <p class="project-card-meta">${escapeHtml(item.category)} | Supervisor: ${escapeHtml(item.guideName)}</p>
+              <p class="project-card-idea">${escapeHtml(item.description)}</p>
+              ${item.feedback ? `<p class="portal-note">Supervisor feedback: ${escapeHtml(item.feedback)}</p>` : ""}
               ${plagiarismBadgeHtml("research", item.id)}
               ${
                 item.status === "Pending"
@@ -9878,14 +9878,14 @@ if (busRouteManagerBody) {
               item.requesterType === "faculty" ? "-" : item.feePaid ? `<span class="ok">Paid</span>` : `<span class="warn">Unpaid</span>`;
             return `
               <tr>
-                <td>${item.requesterName}</td>
-                <td>${item.requesterType}</td>
-                <td>${item.busNumber}</td>
-                <td>${item.routeName}</td>
-                <td>${item.pickupPoint || "-"} / ${item.dropPoint || "-"}</td>
+                <td>${escapeHtml(item.requesterName)}</td>
+                <td>${escapeHtml(item.requesterType)}</td>
+                <td>${escapeHtml(item.busNumber)}</td>
+                <td>${escapeHtml(item.routeName)}</td>
+                <td>${escapeHtml(item.pickupPoint || "-")} / ${escapeHtml(item.dropPoint || "-")}</td>
                 <td>${feeCell}</td>
-                <td>${item.requestedAt}</td>
-                <td><span class="${requestStatusClass(item.status)}">${item.status}</span></td>
+                <td>${escapeHtml(item.requestedAt)}</td>
+                <td><span class="${requestStatusClass(item.status)}">${escapeHtml(item.status)}</span></td>
                 <td>${actionCell}</td>
               </tr>
             `;
@@ -9929,21 +9929,21 @@ if (busRouteManagerBody) {
               item.status === "Pending"
                 ? `<div class="action-cell"><button type="button" data-vehicle-pass-approve="${item.id}">Yes</button><button type="button" class="btn-reject" data-vehicle-pass-reject="${item.id}">No</button></div>`
                 : "-";
-            const docsCell = `<a href="${item.licenseDocUrl}" target="_blank" rel="noopener">License</a> / <a href="${item.rcDocUrl}" target="_blank" rel="noopener">RC</a>`;
+            const docsCell = `<a href="${sanitizeExternalUrl(item.licenseDocUrl)}" target="_blank" rel="noopener">License</a> / <a href="${sanitizeExternalUrl(item.rcDocUrl)}" target="_blank" rel="noopener">RC</a>`;
             const verificationCell = `
               ${verificationBadge(item.verificationResult)}
-              ${item.verificationNotes ? `<p class="portal-note">${item.verificationNotes}</p>` : ""}
+              ${item.verificationNotes ? `<p class="portal-note">${escapeHtml(item.verificationNotes)}</p>` : ""}
               <button type="button" class="link-button" data-vehicle-pass-verify="${item.id}">Verify</button>
             `;
             return `
               <tr>
-                <td>${item.requesterName}</td>
-                <td>${item.requesterType}</td>
-                <td>${item.vehicleType} - ${item.vehicleNumber}</td>
-                <td>${item.licenseNumber}</td>
+                <td>${escapeHtml(item.requesterName)}</td>
+                <td>${escapeHtml(item.requesterType)}</td>
+                <td>${escapeHtml(item.vehicleType)} - ${escapeHtml(item.vehicleNumber)}</td>
+                <td>${escapeHtml(item.licenseNumber)}</td>
                 <td>${docsCell}</td>
                 <td>${verificationCell}</td>
-                <td><span class="${requestStatusClass(item.status)}">${item.status}</span></td>
+                <td><span class="${requestStatusClass(item.status)}">${escapeHtml(item.status)}</span></td>
                 <td>${actionCell}</td>
               </tr>
             `;
@@ -10421,6 +10421,7 @@ const addGprecianMessage = (text, type = "bot", links = [], question = null) => 
           chip.type = "button";
           chip.textContent = suggestion;
           chip.addEventListener("click", () => {
+            if (gprecianReplyInFlight) return;
             gprecianAskedFollowUps.add(suggestion.toLowerCase());
             addGprecianMessage(suggestion, "user");
             addGprecianBotReply((onToken) => getGprecianReply(suggestion, onToken), suggestion);
@@ -10440,25 +10441,41 @@ const addGprecianMessage = (text, type = "bot", links = [], question = null) => 
 // somewhere to write into as soon as the first chunk arrives. Only Ollama actually calls onToken
 // today (see fetchAiReplyWithTools's Ollama branch); every other provider just never invokes it,
 // so the dots keep showing until the full reply resolves, exactly as before this change.
+// Guards against a second question being submitted while the first is still in flight - without
+// this, getGprecianRecentHistory() would read the DOM mid-flight (the first question's user-row
+// exists with no paired reply yet), producing two consecutive user turns in the history sent to
+// the AI provider. Claude enforces strict user/assistant alternation, so that outright rejects the
+// call; it also risks interleaving the shared gprecianPendingAction/gprecianLastTopicContext state
+// between the two overlapping replies. Checked by both the form submit handler and the Quick
+// Access chip handler below, since either can start a reply.
+let gprecianReplyInFlight = false;
+
 const addGprecianBotReply = async (replyFactory, question = null) => {
   if (!gprecianMessages) return;
-  const typingRow = document.createElement("div");
-  typingRow.className = "chat-row bot-row";
-  typingRow.innerHTML = `<span class="chat-avatar bot-avatar">${studentIcon}</span><div class="bot-message gprecian-typing"><span class="gprecian-typing-dots"><span></span><span></span><span></span></span><span class="gprecian-stream-preview"></span></div>`;
-  gprecianMessages.appendChild(typingRow);
-  gprecianMessages.scrollTop = gprecianMessages.scrollHeight;
-
-  const previewEl = typingRow.querySelector(".gprecian-stream-preview");
-  const onToken = (textSoFar) => {
-    if (!previewEl) return;
-    previewEl.textContent = textSoFar;
+  gprecianReplyInFlight = true;
+  gprecianInput?.setAttribute("disabled", "true");
+  try {
+    const typingRow = document.createElement("div");
+    typingRow.className = "chat-row bot-row";
+    typingRow.innerHTML = `<span class="chat-avatar bot-avatar">${studentIcon}</span><div class="bot-message gprecian-typing"><span class="gprecian-typing-dots"><span></span><span></span><span></span></span><span class="gprecian-stream-preview"></span></div>`;
+    gprecianMessages.appendChild(typingRow);
     gprecianMessages.scrollTop = gprecianMessages.scrollHeight;
-  };
 
-  const [rawReply] = await Promise.all([replyFactory(onToken), new Promise((resolve) => setTimeout(resolve, 450))]);
-  typingRow.remove();
-  const reply = typeof rawReply === "string" ? { text: rawReply, links: [] } : rawReply;
-  addGprecianMessage(reply.text, "bot", reply.links, question);
+    const previewEl = typingRow.querySelector(".gprecian-stream-preview");
+    const onToken = (textSoFar) => {
+      if (!previewEl) return;
+      previewEl.textContent = textSoFar;
+      gprecianMessages.scrollTop = gprecianMessages.scrollHeight;
+    };
+
+    const [rawReply] = await Promise.all([replyFactory(onToken), new Promise((resolve) => setTimeout(resolve, 450))]);
+    typingRow.remove();
+    const reply = typeof rawReply === "string" ? { text: rawReply, links: [] } : rawReply;
+    addGprecianMessage(reply.text, "bot", reply.links, question);
+  } finally {
+    gprecianReplyInFlight = false;
+    gprecianInput?.removeAttribute("disabled");
+  }
 };
 
 const restoreGprecianHistory = () => {
@@ -10660,6 +10677,22 @@ const gprecianNormalizedHasWord = (normalized, word) => normalized.split(/\s+/).
 // the middle - no longer match, while "hod"/"hods" still do).
 const gprecianNormalizedHasWordPrefix = (normalized, word) =>
   normalized.split(/\s+/).filter(Boolean).some((token) => token.startsWith(word));
+
+// Same word-boundary fix as gprecianNormalizedHasWord, but for the many topic-routing gates below
+// that check a whole *list* of keywords/phrases via `.some((k) => normalized.includes(k))` - that
+// raw substring check let "notice" match inside "noticeable", "grade" inside "upgrade", "outing"
+// inside "shouting", "pending" inside "impending", "drive" inside "Google Drive", and "my class"
+// inside "my classmate". Works for both single words and multi-word phrases (checks the phrase's
+// words as a contiguous run of exact tokens), so it's a drop-in replacement for
+// `normalized.includes(keyword)` at every one of those call sites.
+const gprecianNormalizedHasPhrase = (normalized, phrase) => {
+  const tokens = normalized.split(/\s+/).filter(Boolean);
+  const phraseTokens = phrase.split(/\s+/).filter(Boolean);
+  for (let i = 0; i <= tokens.length - phraseTokens.length; i += 1) {
+    if (phraseTokens.every((word, j) => tokens[i + j] === word)) return true;
+  }
+  return false;
+};
 
 const getGprecianEditDistance = (a, b) => {
   if (a === b) return 0;
@@ -12285,7 +12318,7 @@ const getEventVisitorBotAnswer = (normalized) => {
     };
   }
 
-  if (/(event|date|venue|detail|manager|contact|coordinator|help|issue)/.test(normalized)) {
+  if (/\b(event|date|venue|detail|manager|contact|coordinator|help|issue)\b/.test(normalized)) {
     return {
       text: `Event details and manager contacts:\n${eventLines}`,
       links: []
@@ -12405,7 +12438,7 @@ const getGprecianReply = async (question, onToken = null) => {
     return roleLiveAnswer;
   }
 
-  if (["notice", "notices", "announcement", "announcements", "circular"].some((keyword) => normalized.includes(keyword))) {
+  if (["notice", "notices", "announcement", "announcements", "circular"].some((keyword) => gprecianNormalizedHasPhrase(normalized, keyword))) {
     setGprecianTopicContext("notices", "notice notices announcement circular");
     return getNoticeAnswer();
   }
@@ -12546,6 +12579,7 @@ const revealGprecianConversation = () => {
 
 gprecianForm?.addEventListener("submit", (event) => {
   event.preventDefault();
+  if (gprecianReplyInFlight) return;
   const question = gprecianInput.value.trim();
   if (!question) return;
   revealGprecianConversation();
@@ -12556,6 +12590,7 @@ gprecianForm?.addEventListener("submit", (event) => {
 
 gprecianChips.forEach((chip) => {
   chip.addEventListener("click", () => {
+    if (gprecianReplyInFlight) return;
     // Quick Access cards carry a title + subtitle (see .gprecian-chip-title/-subtitle in
     // index.html) - chip.textContent would run both together into one bubble, so read just the
     // title when present. Falls back to the whole button's text for any plain-text legacy chip.
@@ -15815,11 +15850,11 @@ const getStudentLiveDataAnswer = (normalized) => {
   if (studentProfile?.mobile && ["my mobile", "my phone number", "my contact number"].some((keyword) => normalized.includes(keyword))) {
     return `Your registered mobile number is ${studentProfile.mobile}.`;
   }
-  if (studentProfile?.branch && ["my branch", "my department", "which branch", "which department", "my section", "my class"].some((keyword) => normalized.includes(keyword))) {
+  if (studentProfile?.branch && ["my branch", "my department", "which branch", "which department", "my section", "my class"].some((keyword) => gprecianNormalizedHasPhrase(normalized, keyword))) {
     return `You're in ${studentProfile.branch}${studentProfile.className ? `, ${studentProfile.className}` : ""}.`;
   }
 
-  if (["placement", "drive", "recruiter", "hiring"].some((keyword) => normalized.includes(keyword))) {
+  if (["placement", "placement drive", "internship drive", "recruiter", "hiring"].some((keyword) => gprecianNormalizedHasPhrase(normalized, keyword))) {
     const today = new Date(new Date().toDateString());
     const studentPlacementProfile = getStudentPlacementProfile();
     const eligibleDrives = getPlacementDrives().filter(
@@ -15836,14 +15871,14 @@ const getStudentLiveDataAnswer = (normalized) => {
     return `You're eligible for ${eligibleDrives.length} upcoming placement drive(s): ${details}. Apply from Placements > Placement Drives.`;
   }
 
-  if (["gpa", "cgpa", "grade", "grades", "backlog"].some((keyword) => normalized.includes(keyword))) {
+  if (["gpa", "cgpa", "grade", "grades", "backlog"].some((keyword) => gprecianNormalizedHasPhrase(normalized, keyword))) {
     const grades = getGprecDbBootstrap()?.studentGrades?.[studentId] || [];
     if (!grades.length) return "No results are on file for you yet. Check Academics > Grades once they're published.";
     const latest = grades[grades.length - 1];
     return `Your latest semester (${latest.term}) GPA is ${latest.gpa} with ${latest.backlogs} backlogs. Full history is under Academics > Grades.`;
   }
 
-  if (normalized.includes("outing")) {
+  if (gprecianNormalizedHasPhrase(normalized, "outing")) {
     const requests = getOutingRequests().filter((request) => request.studentId === studentId);
     if (!requests.length) return "You have no outing requests on record. Raise one from Hostel > Outing Request.";
     const pending = requests.filter((request) => request.status === "Pending").length;
@@ -15906,7 +15941,7 @@ const getNonTeachingLiveDataAnswer = (normalized) => {
 const getParentLiveDataAnswer = (normalized) => {
   const studentId = localStorage.getItem("gprecParentStudentId") || "";
 
-  if (normalized.includes("outing")) {
+  if (gprecianNormalizedHasPhrase(normalized, "outing")) {
     const requests = getOutingRequests().filter((request) => request.studentId === studentId);
     if (!requests.length) return "Your child has no outing requests on record.";
     const pending = requests.filter((request) => request.status === "Pending").length;
@@ -15926,7 +15961,7 @@ const getParentLiveDataAnswer = (normalized) => {
 };
 
 const getAdminLiveDataAnswer = (normalized) => {
-  if (["approval", "approvals", "pending"].some((keyword) => normalized.includes(keyword))) {
+  if (["approval", "approvals", "pending"].some((keyword) => gprecianNormalizedHasPhrase(normalized, keyword))) {
     const pendingOutings = getOutingRequests().filter((request) => request.status === "Pending").length;
     const pendingVisits = getVisitingRequests().filter((request) => request.status === "Pending").length;
     const pendingLeaves = getLeaveRequests().filter((request) => request.status === "Pending").length;
@@ -15935,7 +15970,7 @@ const getAdminLiveDataAnswer = (normalized) => {
     return `There are ${total} pending approval(s) right now: ${pendingOutings} outing, ${pendingVisits} visiting, ${pendingLeaves} leave request(s). Review them under Approvals and HOD Leave Requests.`;
   }
 
-  if (["notice", "notices"].some((keyword) => normalized.includes(keyword))) {
+  if (["notice", "notices"].some((keyword) => gprecianNormalizedHasPhrase(normalized, keyword))) {
     const notices = getNotices();
     if (!notices.length) return "No notices have been published yet. Create one from the Notices panel.";
     const latest = notices[notices.length - 1];
@@ -15946,7 +15981,7 @@ const getAdminLiveDataAnswer = (normalized) => {
 };
 
 const getAlumniLiveDataAnswer = (normalized) => {
-  if (["placement", "placements", "hiring", "recruit", "recruiter", "drive"].some((keyword) => normalized.includes(keyword))) {
+  if (["placement", "placements", "hiring", "recruit", "recruiter", "placement drive", "internship drive"].some((keyword) => gprecianNormalizedHasPhrase(normalized, keyword))) {
     const today = new Date(new Date().toDateString());
     const upcomingDrives = getPlacementDrives().filter((drive) => parseLocalDateOnly(drive.date) >= today);
     const recruiterCount = getPlacementLogos().length;
@@ -27358,16 +27393,16 @@ if (facultyDashboardName) {
             <details class="project-card">
               <summary class="project-card-head">
                 <div class="project-card-head-text">
-                  <strong>${item.title}</strong>
-                  <span class="project-card-submitter">${resolveStudentDisplayName(item.studentId, item.studentName)}${item.teamMembers?.find((member) => member.studentId === item.studentId)?.isLead ? " (Lead)" : ""} (${item.studentId})${item.studentSection ? ` - ${item.studentSection}` : ""}</span>
+                  <strong>${escapeHtml(item.title)}</strong>
+                  <span class="project-card-submitter">${resolveStudentDisplayName(item.studentId, item.studentName)}${item.teamMembers?.find((member) => member.studentId === item.studentId)?.isLead ? " (Lead)" : ""} (${escapeHtml(item.studentId)})${item.studentSection ? ` - ${escapeHtml(item.studentSection)}` : ""}</span>
                 </div>
                 ${item.status === "Approved" ? timelineSummaryBadge(milestones) : ""}
-                <span class="${requestStatusClass(item.status)}">${item.status}</span>
+                <span class="${requestStatusClass(item.status)}">${escapeHtml(item.status)}</span>
               </summary>
               <div class="project-card-body">
-                <p class="project-card-meta">${resolveStudentDisplayName(item.studentId, item.studentName)} (${item.studentId}) | ${item.category} | Guide: ${item.guideName}${formatProjectTeam(item.teamMembers)}</p>
-                <p class="project-card-idea">${item.description}</p>
-                ${item.feedback ? `<p class="portal-note">Your feedback: ${item.feedback}</p>` : ""}
+                <p class="project-card-meta">${resolveStudentDisplayName(item.studentId, item.studentName)} (${escapeHtml(item.studentId)}) | ${escapeHtml(item.category)} | Guide: ${escapeHtml(item.guideName)}${formatProjectTeam(item.teamMembers)}</p>
+                <p class="project-card-idea">${escapeHtml(item.description)}</p>
+                ${item.feedback ? `<p class="portal-note">Your feedback: ${escapeHtml(item.feedback)}</p>` : ""}
                 ${
                   getPlagiarismCheck("project", item.id)
                     ? plagiarismBadgeHtml("project", item.id)
@@ -27534,16 +27569,16 @@ if (facultyDashboardName) {
             <details class="project-card">
               <summary class="project-card-head">
                 <div class="project-card-head-text">
-                  <strong>${item.title}</strong>
-                  <span class="project-card-submitter">${resolveStudentDisplayName(item.studentId, item.studentName)} (${item.studentId})${item.studentSection ? ` - ${item.studentSection}` : ""}</span>
+                  <strong>${escapeHtml(item.title)}</strong>
+                  <span class="project-card-submitter">${resolveStudentDisplayName(item.studentId, item.studentName)} (${escapeHtml(item.studentId)})${item.studentSection ? ` - ${escapeHtml(item.studentSection)}` : ""}</span>
                 </div>
                 ${item.status === "Approved" ? timelineSummaryBadge(milestones) : ""}
-                <span class="${requestStatusClass(item.status)}">${item.status}</span>
+                <span class="${requestStatusClass(item.status)}">${escapeHtml(item.status)}</span>
               </summary>
               <div class="project-card-body">
-                <p class="project-card-meta">${item.category} | Supervisor: ${item.guideName}</p>
-                <p class="project-card-idea">${item.description}</p>
-                ${item.feedback ? `<p class="portal-note">Your feedback: ${item.feedback}</p>` : ""}
+                <p class="project-card-meta">${escapeHtml(item.category)} | Supervisor: ${escapeHtml(item.guideName)}</p>
+                <p class="project-card-idea">${escapeHtml(item.description)}</p>
+                ${item.feedback ? `<p class="portal-note">Your feedback: ${escapeHtml(item.feedback)}</p>` : ""}
                 ${
                   getPlagiarismCheck("research", item.id)
                     ? plagiarismBadgeHtml("research", item.id)
