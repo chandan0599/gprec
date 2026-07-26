@@ -1,7 +1,7 @@
-// Declared this early (rather than down near its heaviest use, the Resume Builder) so every
-// innerHTML-building function in this file - including ones near the top like
-// renderNotificationList - can call it. This file is one plain <script>, not a module, so a
-// call site above a `const` definition's own line hits the temporal dead zone at runtime.
+// Escapes special HTML characters so untrusted text can't break out and inject HTML/scripts.
+// Placed at the very top of the file (not near its biggest user, the Resume Builder) so every
+// function below can call it - this file is one plain script, not a module, so anything that
+// tries to use this before this line runs would crash.
 const escapeHtml = (value) =>
   String(value)
     .replace(/&/g, "&amp;")
@@ -10,10 +10,9 @@ const escapeHtml = (value) =>
     .replace(/"/g, "&quot;")
     .replace(/'/g, "&#39;");
 
-// escapeHtml() only neutralizes HTML metacharacters - it does nothing to stop a `javascript:` (or
-// `data:`) URL from executing when the escaped string is later placed into an href attribute.
-// Anywhere admin-entered free text ends up as a clickable link (job apply links, uploaded document
-// URLs, etc.) needs this scheme check too, not just escapeHtml.
+// Makes a URL safe to put in a link's href. escapeHtml() alone won't stop a "javascript:" or
+// "data:" link from running code when clicked, so this only allows http(s)/mailto links (or a
+// plain relative path) and replaces anything else with "#".
 const sanitizeExternalUrl = (value) => {
   const trimmed = String(value || "").trim();
   const schemeMatch = trimmed.match(/^([a-z][a-z0-9+.-]*):/i);
@@ -21,9 +20,9 @@ const sanitizeExternalUrl = (value) => {
   return escapeHtml(trimmed);
 };
 
-// Pages live one level deep under dashboards/ or pages/, but script.js is shared across all of
-// them - a hardcoded bare filename would resolve relative to whichever page is currently open.
-// gprecPageUrl() below turns a bare filename into the correct path from wherever the current page is.
+// Which folder each page lives in (dashboards/, pages/, or the root for index.html). Needed
+// because this one script.js file is shared by every page, so a link to another page has to be
+// built relative to wherever the current page actually is - see gprecPageUrl() below.
 const GPREC_PAGE_FOLDERS = {
   "admin-dashboard.html": "dashboards",
   "alumni-dashboard.html": "dashboards",
@@ -99,9 +98,9 @@ const getCurrentStudentId = () => (localStorage.getItem("gprecStudentId") || "")
 const normalizeDobDigits = (value) => String(value || "").replace(/\D/g, "");
 const hasStudentLogin = () => Boolean(getCurrentStudentId());
 
-// Every dashboard's topbar reuses the same ".student-user-dropdown a" Logout link, pointed at
-// that role's login page. Keyed by login filename so each role clears exactly its own identity,
-// instead of leaving the old session (and chat history) intact for whoever logs in next.
+// What to remove from storage when logging out, keyed by which login page the person used.
+// Keeps logout scoped to just that one role, so it doesn't accidentally clear anyone else's
+// saved session.
 const gprecLogoutKeysByLoginPage = {
   "student-login.html": ["gprecStudentId", "gprecDemoMode"],
   "admin-login.html": ["gprecAdminRole", "gprecAdminEmail", "gprecAdminDepartment", "gprecDemoMode"],
@@ -111,9 +110,9 @@ const gprecLogoutKeysByLoginPage = {
   "alumni-login.html": ["gprecAlumniEmail", "gprecAlumniName", "gprecAlumniBatch", "gprecDemoMode"]
 };
 
-// The chat widget is shared across public pages and dashboards. Keyed per role + signed-in
-// identity + app area so conversations don't leak between users, or between an event visitor
-// and an admin dashboard on the same browser.
+// Figures out which saved chat history belongs to the current page/user, so the GPRECian Bot
+// widget (shared by every page) never mixes up conversations between two different people or
+// roles using the same browser.
 const gprecChatScopeKey = () => {
   if (GPREC_CURRENT_ROUTE_FILE === "event-visitor-dashboard.html") return "event-visitor";
   return localStorage.getItem("gprecActiveRole") || GPREC_CURRENT_FOLDER || "public";
@@ -183,10 +182,10 @@ const resetGprecianChatWindowForCurrentIdentity = () => {
   document.querySelector(".gprecian-welcome")?.classList.remove("is-hidden");
 };
 
-// Maps a dashboard file to the session role it requires, and (the reverse) each role to its login
-// page - shared by the entry guard below, gprecHandleSessionExpired, and every login flow. Every
-// admin sub-role (department/hostel-warden/exam-cell/placement) is just an "admin" session with a
-// different role_label, per how the backend issues these tokens.
+// Which login role each dashboard page requires, and (below) which login page each role uses.
+// Used to guard dashboard pages against being opened without the right login, and to send an
+// expired session back to the correct login screen. Department/hostel-warden/exam-cell/placement
+// dashboards all just use a regular "admin" login with a different label.
 const GPREC_DASHBOARD_ROLE = {
   "student-dashboard.html": "student",
   "parent-dashboard.html": "parent",
@@ -213,6 +212,9 @@ const GPREC_ROLE_LOGIN_PAGE = {
   alumni: "alumni-login.html"
 };
 
+// "Try it as a student/faculty/admin/etc." demo login shortcut (e.g. ?demo=student in the URL) -
+// logs the visitor into a fake session for that role without needing a real account, using sample
+// data. See gprecStartDemoSession() below for how it's triggered.
 const GPREC_DEMO_SESSIONS = {
   student: {
     activeRole: "student",
@@ -418,10 +420,9 @@ const cleanHtmlFromAddressBar = () => {
   }
 };
 
-// Site maintenance: per-section admin-panel toggles (public website, each dashboard) that block
-// visitors with a maintenance screen, except for whoever is already signed in as an admin (any
-// admin role, not just the main one), so the admin can keep browsing around to check changes.
-// Login pages stay open so an admin can still sign in during maintenance.
+// Maintenance mode: lets an admin block visitors from one section (public site, a specific
+// dashboard, etc.) with a "we'll be back soon" screen, while admins themselves can still browse
+// in to check things. Login pages always stay reachable so an admin can still sign in.
 const gprecMaintenanceKey = "gprecMaintenanceMode";
 const gprecMaintenanceZoneKeys = ["publicSite", "student", "faculty", "parent", "alumni", "placement", "examCell", "hostel", "department"];
 const gprecMaintenanceZoneFiles = {
@@ -637,6 +638,8 @@ document.querySelectorAll(".detail-back-link").forEach((link) => {
   });
 });
 
+// DOM references for the public site's header nav, hero slideshow, student-voices carousel, and
+// the GPRECian Bot chat widget - grabbed once here and reused by the features further down.
 const menuToggle = document.querySelector(".menu-toggle");
 const navLinks = document.querySelector(".nav-links");
 const utilityToggle = document.querySelector(".utility-toggle");
@@ -722,12 +725,10 @@ const addAdminButton = document.querySelector("#addAdminButton");
 const adminAddFeedback = document.querySelector("#adminAddFeedback");
 const adminCreatorCard = document.querySelector("#adminCreatorCard");
 
-// Hardcoded fallback so the app works unchanged when opened via file:// (fetch() of a local
-// JSON file requires http/https hosting). When served over http/https, admin-config.json
-// loads below and overwrites these properties in place - every consumer reads via
-// defaultAdminConfig.xxx property access, so they transparently pick up the loaded config
-// once the fetch resolves (which, for a same-origin file, finishes well before a user could
-// submit the admin login form).
+// Fallback settings used until admin-config.json finishes loading (or if it can't load at all,
+// e.g. opened via file:// instead of a real server). Everything below reads these as
+// defaultAdminConfig.xxx, so once the real config loads a few lines down, they update in place
+// automatically.
 const defaultSmsNotifications = {
   gradesTemplateId: "",
   gradesTemplateVariable: "MESSAGE",
@@ -768,6 +769,8 @@ const defaultAdminConfig = {
   ]
 };
 
+// Tracks which settings actually came from admin-config.json (vs. still using the fallback
+// above), and lets other code wait for that file to finish loading before running.
 const adminConfigFieldsLoaded = {
   googleClientId: false,
   googleCalendarApiKey: false,
@@ -1219,6 +1222,7 @@ const findAdminByEmail = (email) =>
 
 const complaintStatusClass = (status) => (status === "Resolved" ? "ok" : "warn");
 
+// Student complaints (hostel/academic) - shared with wardens/HOD who resolve them.
 const getComplaints = () => {
   const databaseComplaints = getGprecDbBootstrap()?.complaints;
   if (Array.isArray(databaseComplaints)) return databaseComplaints;
@@ -1242,6 +1246,7 @@ const saveComplaints = (complaints) => {
   localStorage.setItem("gprecComplaints", JSON.stringify(complaints));
 };
 
+// Announcements a faculty member posts to their own class (auto-hidden after 30 days).
 const getClassMessages = () => {
   const messages = getGprecDbBootstrap()?.classMessages || [];
   const thirtyDaysAgo = Date.now() - 30 * 24 * 60 * 60 * 1000;
@@ -1251,6 +1256,8 @@ const getClassMessages = () => {
 const createClassMessage = (message) => gprecDbPost("/class-messages", message);
 const removeClassMessage = (id) => gprecDbPost("/class-messages/remove", { id });
 
+// Admin login page: as the admin types their email, shows which role/department that email is
+// registered as (or a QR-scan-specific message when arriving via a gate-scan link).
 const adminLoginEmail = document.querySelector("#adminLoginEmail");
 const adminRolePreview = document.querySelector("#adminRolePreview");
 const isQrScanAdminLogin = () => {
@@ -1368,6 +1375,7 @@ if (currentYear) {
   currentYear.textContent = String(new Date().getFullYear());
 }
 
+// Notification bell: click to open/close, click anywhere else to close.
 const notificationBellButton = document.querySelector("#notificationBellButton");
 const notificationDropdown = document.querySelector("#notificationDropdown");
 
@@ -1429,6 +1437,7 @@ const appDrawerAddLinkForm = document.querySelector("#appDrawerAddLinkForm");
 // Generic "link" glyph, used only if a link's real favicon fails to load.
 const appDrawerFallbackIconSvg = `<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M10 14 21 3M21 3h-6M21 3v6M12 5H7a2 2 0 0 0-2 2v10a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-5"/></svg>`;
 
+// Draws each saved personal shortcut as a tile with its site favicon, plus edit/remove buttons.
 const renderAppDrawerCustomLinks = () => {
   if (!appDrawerCustomLinksList) return;
   appDrawerCustomLinksList.innerHTML = "";
@@ -1549,6 +1558,8 @@ appDrawerAddLinkForm?.addEventListener("submit", (event) => {
 
 renderAppDrawerCustomLinks();
 
+// Fires a click handler once per tap, even on touch devices that can otherwise send both a
+// pointer event and a click event for the same tap (which would double-fire the handler).
 const bindGprecTap = (element, handler) => {
   if (!element) return;
   let handledPointer = false;
@@ -1628,6 +1639,9 @@ const gprecNavigateToNotificationTarget = (targetLink) => {
   document.querySelector("#notificationDropdown")?.classList.add("is-hidden");
 };
 
+// Draws the bell dropdown: real saved notifications plus each page's own "live" pending-action
+// messages (e.g. "3 outing requests awaiting approval"), and wires dismiss/mark-read/navigate
+// clicks on them.
 const renderNotificationList = (items) => {
   lastRenderedNotificationItems = items;
   const notificationBadge = document.querySelector("#notificationBadge");
@@ -1710,6 +1724,7 @@ if (document.querySelector("#notificationList") && document.body.classList.conta
   renderNotificationList([]);
 }
 
+// Sidebar menu groups behave like an accordion - opening one closes the others.
 studentMenuGroups.forEach((group) => {
   group.addEventListener("toggle", () => {
     if (!group.open) return;
@@ -1827,6 +1842,8 @@ if (timetableDayButtons.length > 0 && timetableDayPanels.length > 0) {
   }
 }
 
+// Payments/Certificate request forms: clicking an application card (e.g. "Semester Tuition")
+// shows its own fields and fee amount, applying any admin overrides or per-student pending fee.
 const applicationCards = document.querySelectorAll(".application-card");
 
 // Certificate-style forms have several stacked, mutually-exclusive field groups, each with their
@@ -1923,6 +1940,7 @@ if (serviceTypeButtons.length > 0 && serviceFieldGroups.length > 0) {
   showServiceType(availableServices.includes(requestedService) ? requestedService : availableServices[0]);
 }
 
+// Backlog fee payment: fee is per subject, so it updates live as the student (un)checks subjects.
 const studentBacklogSubjects = [];
 const BACKLOG_FEE_PER_SUBJECT = 1500;
 const backlogSubjectField = document.querySelector("#backlogSubjectField");
@@ -1960,6 +1978,7 @@ if (backlogSubjectField) {
   }
 }
 
+// Mess advance payment: fee depends on which meal plan (Veg/Non-Veg) the student picks.
 const MESS_PLAN_RATES = { Veg: 14000, "Non-Veg": 16500 };
 const messPlanSelect = document.querySelector("#messPlanSelect");
 const messAdvanceCard = document.querySelector('.application-card[data-application="mess-advance"]');
@@ -2001,6 +2020,8 @@ if (adminRoleName || adminRoleBadge) {
   });
 }
 
+// Maintenance mode admin panel: per-section checkboxes (with a "select all" checkbox) for the
+// full-block screen, plus a separate set for the smaller dismissible notice banner below it.
 const maintenanceZoneAll = document.querySelector("#maintenanceZoneAll");
 const maintenanceZoneCheckboxes = document.querySelectorAll("[data-maintenance-zone]");
 const maintenanceModeMessage = document.querySelector("#maintenanceModeMessage");
@@ -2167,6 +2188,9 @@ resultToggle?.addEventListener("click", () => {
   resultToggle.textContent = isHidden ? "Show Results" : "Hide Results";
 });
 
+// --- Exam Cell: exam schedules, seat allotment, and hall ticket release ---
+// The Exam Cell admin uploads each subject's date/time/room/roll-range per branch; a student's
+// seat number is then worked out from which roll range their number falls into.
 const examCellBranches = ["CSE", "ECE", "EEE", "ME", "CE"];
 
 const defaultExamCellData = {
@@ -2514,6 +2538,7 @@ saveHallTicketReleaseButton?.addEventListener("click", () => {
   }
 });
 
+// --- Invigilation Duties: Exam Cell assigns a faculty member to invigilate a specific exam ---
 const getInvigilationDuties = () => getGprecDbBootstrap()?.invigilationDuties || [];
 const createInvigilationDuty = (duty) => gprecDbPost("/invigilation-duties", duty);
 const removeInvigilationDuty = (id) => gprecDbPost("/invigilation-duties/remove", { id });
@@ -4283,6 +4308,8 @@ renderAllPrepAndExtraSections();
 
 const getPastSemesterExamSchedules = () => getGprecDbBootstrap()?.pastExamSchedules || {};
 
+// Exam timetable shown to the student (and, further below, their parent) - current semester by
+// default, or an older semester picked from the dropdown.
 const studentExamTimetableBody = document.querySelector("#studentExamTimetableBody");
 const examScheduleSemesterSelect = document.querySelector("#examScheduleSemesterSelect");
 const studentExamCellBody = document.querySelector("#studentExamCellBody");
@@ -4367,6 +4394,9 @@ if (studentExamCellBody) {
 }
 
 
+// Student/faculty/parent-style dashboard navigation: clicking a sidebar link (or picking from the
+// mobile dropdown) shows that one panel and hides the rest, syncing the URL hash so a refresh or
+// shared link lands back on the same panel.
 if ((dashboardLinks.length > 0 || studentPanelSelect) && dashboardPanels.length > 0) {
   const showDashboardPanel = (panelId, activeLink = null) => {
     const targetId = panelId && document.querySelector(panelId) ? panelId : "#spotlight";
@@ -4416,6 +4446,8 @@ if ((dashboardLinks.length > 0 || studentPanelSelect) && dashboardPanels.length 
   showDashboardPanel(window.location.hash || defaultDashboardPanel);
 }
 
+// Same panel-switching idea as the student dashboard above, but for admin-family dashboards -
+// plus role-based nav hiding (e.g. a Hostel Warden only ever sees hostel-related panels).
 if (adminNavButtons.length > 0 && adminPanels.length > 0) {
   const storedAdminRole = localStorage.getItem("gprecAdminRole") || "College Admin";
   const storedAdminDepartment = localStorage.getItem("gprecAdminDepartment") || "All";
@@ -4779,6 +4811,8 @@ const buildFestVolunteerIdCardHorizontal = async (data) => {
 const buildFestVolunteerIdCardImage = (data, style) =>
   style === "horizontal" ? buildFestVolunteerIdCardHorizontal(data) : buildFestVolunteerIdCardVertical(data);
 
+// Admin Users directory: list, add, and remove admin accounts. Only the main college admin can
+// add/remove others (everyone else can just view the list).
 if (adminDirectoryBody || addAdminButton) {
   const currentAdminEmail = (localStorage.getItem("gprecAdminEmail") || defaultAdminConfig.mainCollegeAdmin).toLowerCase();
   const isMainAdmin = currentAdminEmail === defaultAdminConfig.mainCollegeAdmin.toLowerCase();
@@ -4906,6 +4940,7 @@ if (adminDirectoryBody || addAdminButton) {
   });
 }
 
+// Reports & Audit panel: read-only feed of recent admin actions (who did what, and when).
 const auditActivityBody = document.querySelector("#auditActivityBody");
 if (auditActivityBody) {
   const renderAuditActivity = () => {
@@ -4931,6 +4966,8 @@ if (auditActivityBody) {
   });
 }
 
+// Manage Login Credentials: shows which admin/faculty/non-teaching accounts have a password set,
+// and lets the main admin generate a one-time password for a new one.
 const credentialStatusBody = document.querySelector("#credentialStatusBody");
 const setCredentialButton = document.querySelector("#setCredentialButton");
 if (credentialStatusBody || setCredentialButton) {
@@ -5034,6 +5071,8 @@ if (feeAmountBody) {
   renderFeeAmountTable();
 }
 
+// Bulk Update Due Fees: admin uploads a CSV of per-student pending fee amounts (with a due date),
+// which becomes the "Pending Fees" banner students see and pay against.
 const pendingFeeOverrideBody = document.querySelector("#pendingFeeOverrideBody");
 const pendingFeeOverrideEmpty = document.querySelector("#pendingFeeOverrideEmpty");
 const pendingFeeCsvInput = document.querySelector("#pendingFeeCsvInput");
@@ -5179,6 +5218,8 @@ if (pendingFeeOverrideBody) {
   });
 }
 
+// Bulk Upload Grades: admin uploads a CSV of roll number/term/GPA/backlogs, can preview one
+// student's grades by roll number, and can text the parent when a result is out.
 const gradesCsvInput = document.querySelector("#gradesCsvInput");
 const gradesCsvUploadButton = document.querySelector("#gradesCsvUploadButton");
 const gradesCsvSampleButton = document.querySelector("#gradesCsvSampleButton");
@@ -5357,6 +5398,8 @@ const downloadCsv = (filename, headers, rows) => {
   link.click();
 };
 
+// Reports & Audit: downloads a CSV of attendance/assignments/results/timetable, or (below) a
+// finance export of every payment on file.
 const generateAcademicReportButton = document.querySelector("#generateAcademicReportButton");
 generateAcademicReportButton?.addEventListener("click", () => {
   const reportType = document.querySelector("#academicReportType")?.value || "attendance";
@@ -5468,6 +5511,8 @@ if (dataRetentionBody) {
   });
 }
 
+// Integrations panel: Library system connection (base URL + API key), with a test-connection
+// button and a way to disconnect back to the local-only fallback.
 const libraryApiBaseUrl = document.querySelector("#libraryApiBaseUrl");
 const libraryApiKey = document.querySelector("#libraryApiKey");
 const libraryApiSaveButton = document.querySelector("#libraryApiSaveButton");
@@ -5554,6 +5599,8 @@ if (libraryApiStatus) {
   });
 }
 
+// Integrations panel: SMS/WhatsApp (MSG91) settings used for parent OTP login and for
+// grades/attendance notification texts.
 const smsAuthKeyInput = document.querySelector("#smsAuthKeyInput");
 const smsSenderIdInput = document.querySelector("#smsSenderIdInput");
 const smsTemplateIdInput = document.querySelector("#smsTemplateIdInput");
@@ -5661,6 +5708,8 @@ if (smsSettingsStatus) {
   });
 }
 
+// Integrations panel: KYC/document-verification provider used to auto-check Vehicle Pass
+// license/RC documents (falls back to manual review if not configured).
 const kycProviderInput = document.querySelector("#kycProviderInput");
 const kycAuthKeyInput = document.querySelector("#kycAuthKeyInput");
 const kycBaseUrlInput = document.querySelector("#kycBaseUrlInput");
@@ -5723,6 +5772,9 @@ if (kycSettingsStatus) {
   });
 }
 
+// Integrations panel: which backend/database the app talks to (REST API, PHP endpoint, or a
+// direct MySQL/PostgreSQL connection) - shows only the fields relevant to whichever type is
+// selected, and previews the JDBC URL for the direct-database options.
 const databaseTypeInput = document.querySelector("#databaseTypeInput");
 const databaseApiBaseUrl = document.querySelector("#databaseApiBaseUrl");
 const databaseApiKey = document.querySelector("#databaseApiKey");
@@ -6091,6 +6143,10 @@ if (dbHealthCard) {
   setInterval(pollDbStats, DB_CHART_POLL_MS);
 }
 
+// Seed/fallback data below (hostelStudentData, defaultStudentDirectory, defaultStudentProfiles) -
+// used only until the real database data loads and overwrites it in place (see
+// hydratePortalDataFromDatabase further down), so the app still shows something sensible if the
+// backend is unreachable.
 const hostelStudentData = {
   "20X51A0501": {
     name: "Sai Chandan",
@@ -6289,6 +6345,8 @@ if ((adminRoleName || adminRoleBadge) && localStorage.getItem("gprecAdminRole"))
   applyGprecianBotGreeting(localStorage.getItem("gprecAdminRole"));
 }
 
+// Profile photo resolution: use the real uploaded photo if there is one, otherwise generate an
+// initials avatar so no one shows a broken image.
 const getFallbackInitialsSvg = (name, backgroundColor = "ff8100", textColor = "ffffff") => {
   const initials = getInitialsFromName(name);
   return `https://api.dicebear.com/9.x/initials/svg?seed=${encodeURIComponent(initials)}&backgroundColor=${backgroundColor}&textColor=${textColor}`;
@@ -6715,6 +6773,7 @@ if (currentDayTimetableBody) {
     .join("");
 }
 
+// Student ID Pass: a simple PDF with the student's basic details and photo, for on-campus use.
 document.querySelector("#downloadStudentPassButton")?.addEventListener("click", async () => {
   const studentId = getCurrentStudentId();
   const profile = defaultStudentProfiles[studentId];
@@ -6831,6 +6890,7 @@ viewHallTicketButton?.addEventListener("click", async () => {
   if (result.statusEl) result.statusEl.textContent = "Hall ticket opened for viewing - use your browser's PDF viewer to save or print it.";
 });
 
+// Scholarship bank details form: where a student's scholarship payment gets sent.
 const defaultScholarshipBankDetails = (name) => ({
   accountHolder: name,
   bankName: "",
@@ -7023,6 +7083,8 @@ hostelStudentLookup?.addEventListener("keydown", (event) => {
   }
 });
 
+// Seed/fallback faculty directory per department (HOD + faculty list), overwritten by real
+// database data once it loads, same pattern as the student seed data further up.
 const defaultDepartmentFacultyByDept = {
   CSE: {
     hod: { name: "Dr. G. Praveen Kumar", designation: "Professor & HOD, CSE", email: "hod.cse@gprec.ac.in" },
@@ -7264,6 +7326,8 @@ const getAllFacultyFlat = () => {
   return flat;
 };
 
+// Photo Directory (admin): search students/faculty, change or remove one photo at a time, or
+// bulk-upload many photo files at once (matched to a person by filename = roll number/email).
 const photoDirectoryBody = document.querySelector("#photoDirectoryBody");
 const photoBulkInput = document.querySelector("#photoBulkInput");
 if (photoDirectoryBody || photoBulkInput) {
@@ -7483,6 +7547,8 @@ const assignFacultyToDepartment = (email, name, department, designation) =>
 const removeFacultyMember = (email) => gprecDbPost("/faculty/remove", { email });
 const stripHodDesignation = (designation) => (designation || "").replace(/\s*[&,-]*\s*hod\b/gi, "").trim() || "Faculty";
 
+// Faculty Directory: department admin assigns/removes HOD and faculty; students see their own
+// department's HOD and faculty list read-only.
 const facultyDirectoryBody = document.querySelector("#facultyDirectoryBody");
 const studentHodCard = document.querySelector("#studentHodCard");
 const studentFacultyGrid = document.querySelector("#studentFacultyGrid");
@@ -7690,6 +7756,8 @@ if (facultyCsvUploadButton) {
 renderStudentDepartmentFaculty();
 renderAdminFacultyDirectory();
 
+// Department Overview: quick counts (subjects, timetable slots, sections, faculty) for whichever
+// department is currently selected.
 const deptStatSubjects = document.querySelector("#deptStatSubjects");
 if (deptStatSubjects) {
   const renderDepartmentOverviewStats = () => {
@@ -7717,6 +7785,8 @@ if (deptStatSubjects) {
   });
 }
 
+// Attendance reports: download a CSV of students below 75% attendance, or (below) a raw
+// attendance log filtered by section and date range.
 document.querySelector("#generateAttendanceShortageButton")?.addEventListener("click", () => {
   const deptCode = adminSelectedDepartment();
   const feedback = document.querySelector("#attendanceShortageFeedback");
@@ -7784,6 +7854,8 @@ document.querySelector("#generateAttendanceSectionReportButton")?.addEventListen
   }
 });
 
+// Student Section Assignment: which section (e.g. "CSE III-A") each roll number belongs to,
+// set individually or via CSV bulk upload - controls which timetable rows a student sees.
 const studentSectionBody = document.querySelector("#studentSectionBody");
 const studentSectionEmpty = document.querySelector("#studentSectionEmpty");
 
@@ -7886,6 +7958,8 @@ if (studentSectionBody) {
   });
 }
 
+// Curriculum Upload: department admin uploads a CSV of subjects (code/name/semester/credits/type)
+// for their department, previewed here before/after saving.
 const curriculumPreviewBody = document.querySelector("#curriculumPreviewBody");
 const curriculumPreviewEmpty = document.querySelector("#curriculumPreviewEmpty");
 const curriculumCsvInput = document.querySelector("#curriculumCsvInput");
@@ -7983,6 +8057,8 @@ if (curriculumPreviewBody) {
   });
 }
 
+// Class Timetable Upload: department admin uploads a CSV of day/time/subject/faculty/section
+// slots, same preview-then-save pattern as Curriculum Upload above.
 const timetablePreviewBody = document.querySelector("#timetablePreviewBody");
 const timetablePreviewEmpty = document.querySelector("#timetablePreviewEmpty");
 const timetableCsvInput = document.querySelector("#timetableCsvInput");
@@ -8295,6 +8371,8 @@ const wireTopicSuggester = ({ kind, department, categorySelectId, keywordsInputI
   });
 };
 
+// Student Project submission form: pick a category/guide, optionally add teammates (with a team
+// size cap per category) and a lead, and optionally get AI topic suggestions first.
 const projectSubmitForm = document.querySelector("#projectSubmitForm");
 if (projectSubmitForm) {
   const projectStudentId = getCurrentStudentId();
@@ -8817,6 +8895,8 @@ if (researchSubmitForm) {
 }
 
 
+// Class Cancellations: a faculty member marks one of their own classes cancelled for a date, and
+// students in that section see it as a notice.
 const getClassCancellations = () => getGprecDbBootstrap()?.classCancellations || [];
 const createClassCancellation = (cancellation) => gprecDbPost("/class-cancellations", cancellation);
 const removeClassCancellation = (id) => gprecDbPost("/class-cancellations/remove", { id });
@@ -9165,6 +9245,8 @@ const downloadOutingReceipt = async (request) => {
   link.click();
 };
 
+// Outing Requests: student submits a weekday/weekend outing request, warden approves/rejects it,
+// and an approved request becomes a downloadable gate pass with a QR code.
 const studentOutingBody = document.querySelector("#studentOutingBody");
 const studentOutingEmpty = document.querySelector("#studentOutingEmpty");
 
@@ -9485,6 +9567,8 @@ if (hostelStudentData[currentHostelLeaveStudentId]) {
   }
 }
 
+// Warden's view: approve/reject every student's outing request (below: hostel leave, then
+// parent-submitted visiting requests - same approve/reject pattern each time).
 const adminOutingBody = document.querySelector("#adminOutingBody");
 
 const renderAdminOutingRequests = () => {
@@ -9703,6 +9787,8 @@ const renderAdminVisitingRequests = () => {
 
 renderAdminVisitingRequests();
 
+// HOD approves/rejects faculty leave requests from their own department (below: a non-teaching
+// staff supervisor's equivalent for their own staff's leave requests).
 const hodLeaveApprovalsBody = document.querySelector("#hodLeaveApprovalsBody");
 
 const renderHodLeaveApprovals = () => {
@@ -9789,6 +9875,8 @@ const renderStaffLeaveApprovals = () => {
 
 renderStaffLeaveApprovals();
 
+// Bus Service admin: manage routes and buses, and approve/reject student/faculty bus-service
+// requests (further below: Vehicle Pass approvals share this same panel).
 const busRouteManagerBody = document.querySelector("#busRouteManagerBody");
 if (busRouteManagerBody) {
   const busRouteSelectInput = document.querySelector("#busRouteSelectInput");
@@ -10168,6 +10256,17 @@ if (courseTrack && courseCards.length > 0) {
   updateCourses();
 }
 
+// ============================================================================================
+// GPRECian Bot - the site-wide chat widget. Everything from here down (roughly a third of this
+// file) belongs to it: this FAQ answer bank for public/general questions, per-role "live data"
+// answers (a student's own grades/attendance/fees, etc.), the AI provider integrations, safety
+// guardrails, RAG/knowledge-base retrieval, and the chat UI itself.
+// ============================================================================================
+
+// Public FAQ answer bank - keyword-matched canned answers for questions anyone (logged in or not)
+// might ask about the college itself (admissions, departments, facilities, contact info, ...).
+// Role-specific questions (a student's own grades, a faculty member's own timetable, etc.) are
+// handled separately further down by each role's own "live data" answer function.
 const gprecianAnswers = [
   {
     keywords: ["admission", "admissions", "join", "apply", "procedure"],
@@ -10539,6 +10638,8 @@ const gprecianDashboardRole = document.querySelector("#spotlightGrid")
   ? "event-visitor"
   : "public";
 
+// Per-role "where do I find X" answer banks - these just point to the right menu section, unlike
+// the "live data" answer functions further down which actually pull the person's own real data.
 const studentGprecianAnswers = [
   { keywords: ["attendance"], answer: "Open Academics > Attendance in the left menu to see your subject-wise attendance percentage." },
   { keywords: ["timetable", "time table", "class schedule"], answer: "Your weekly class timetable is under Academics > Class Timetable." },
@@ -11967,6 +12068,9 @@ document.addEventListener("click", (event) => {
 // gprecianPendingAction remembers what it's waiting for until the next message answers it.
 let gprecianPendingAction = null;
 
+// Asks the AI to pull structured data (a date, a title, etc.) out of a plain-English message and
+// return it as JSON - used by the bot's conversational actions below (set a reminder, post a
+// notice) to turn "remind me to submit the form next Friday" into a real title + date.
 const extractJsonFromAi = async (systemPrompt, question) => {
   const aiSettings = getAiSettings();
   if (!isAiSettingsConfigured(aiSettings)) return null;
@@ -12009,6 +12113,9 @@ const gprecianCreateReminder = (title, date) => {
   notifyCalendarRerender();
 };
 
+// Bot conversational action: "remind me to X on Y" creates a real calendar reminder. If the
+// title or date is missing/unclear, the bot asks a follow-up question and remembers it was
+// mid-reminder (gprecianPendingAction) so the next message is treated as the answer.
 const tryHandleReminderIntent = async (question, normalized) => {
   const isNewRequest = /remind me|set (a |an )?reminder|add (a |an )?reminder|create (a |an )?reminder/i.test(normalized);
   const isFollowUp = gprecianPendingAction?.type === "reminder";
@@ -12044,6 +12151,9 @@ const tryHandleReminderIntent = async (question, normalized) => {
 
 const gprecianDepartmentCodes = ["CSE", "ECE", "EEE", "ME", "CE", "CSM", "CSD", "CSB", "CST", "HBS"];
 
+// Bot conversational action: admin/department admin/faculty can ask the bot to post a notice (or,
+// for faculty, a class message) instead of using the Notices panel - the bot fills in the missing
+// title/message/audience by asking follow-up questions when needed.
 const tryHandleNoticeIntent = async (question, normalized) => {
   const canPostNotice = gprecianDashboardRole === "admin" || gprecianDashboardRole === "department" || gprecianDashboardRole === "faculty";
   if (!canPostNotice) return null;
@@ -12126,6 +12236,8 @@ const tryHandleNoticeIntent = async (question, normalized) => {
   return `Done - posted "${extracted.title}" to ${department || "all students (site-wide)"}.`;
 };
 
+// Bot conversational action: an admin can ask the bot "what needs my approval" and then approve/
+// reject items by number, instead of navigating to each approvals panel.
 const gprecianGetPendingApprovals = () => {
   if (gprecianDashboardRole !== "admin") return [];
   const adminRole = localStorage.getItem("gprecAdminRole") || "";
@@ -12250,6 +12362,8 @@ const gprecianEventContactText = (event = {}) => {
   return contact || "Event manager contact will be shared by the event team.";
 };
 
+// Event-visitor-specific bot answers: payment/pass/registration questions answered from the
+// visitor's own real registrations, not the general FAQ bank.
 const getEventVisitorBotAnswer = (normalized) => {
   if (gprecianDashboardRole !== "event-visitor") return null;
 
@@ -12328,6 +12442,9 @@ const getEventVisitorBotAnswer = (normalized) => {
   return null;
 };
 
+// The bot's main "answer this question" function - tries guardrails, greetings, pending actions,
+// role-specific live data, the keyword FAQ bank, and finally the live AI, roughly in that order,
+// and returns the first one that actually answers the question.
 const getGprecianReply = async (question, onToken = null) => {
   const contextualQuestion = withGprecianFollowUpContext(question);
   const normalized = normalizeGprecianQuery(contextualQuestion);
@@ -12710,6 +12827,8 @@ if (gprecianInput && gprecianSuggestions) {
   gprecianForm?.addEventListener("submit", hideGprecianSuggestions);
 }
 
+// Simple math CAPTCHA (e.g. "3 + 5") for any form that has one - just enough friction to stop a
+// basic bot script, not meant to stop a determined human attacker.
 const generateCaptcha = (form) => {
   const question = form.querySelector(".captcha-question");
   const input = form.querySelector(".captcha-input");
@@ -13502,6 +13621,12 @@ assignmentForm?.addEventListener("submit", (event) => {
   feedback.textContent = "Assignment submitted successfully. Your files and comments are saved.";
   feedback.classList.add("success");
 });
+
+// ============================================================================================
+// PDF/document generation utilities - hand-built PDF writer (no library), ID card renderers,
+// barcode/QR encoding, and the pass/receipt/ID-card builders used throughout the app (hall
+// tickets, gate passes, payment receipts, student/staff/volunteer ID cards).
+// ============================================================================================
 
 // Predicts the page height makePdfWithPhoto's layout will actually need for given content, using
 // the same per-element spacing constants that function's own layout code uses. This lets short
@@ -14963,6 +15088,8 @@ if (classCancellationNotices) {
   classCancellationNotices.innerHTML = [...upcomingAdhocClasses, ...upcomingCancellations].join("");
 }
 
+// Unused fallback sample timetable, kept for reference/demo purposes - the real timetable comes
+// from getDepartmentTimetable() (admin-uploaded per department).
 const defaultClassTimetable = [
   { day: "Monday", code: "DBMS", subject: "Database Management Systems", time: "9:30 AM - 10:20 AM" },
   { day: "Monday", code: "OS", subject: "Operating Systems", time: "10:30 AM - 11:20 AM" },
@@ -15993,6 +16120,8 @@ const getAlumniLiveDataAnswer = (normalized) => {
   return null;
 };
 
+// Assignments: faculty posts an assignment (with an optional attachment), students submit their
+// work against it. Course Materials (below) is a similar but simpler faculty-upload-only feature.
 const getAssignments = () => getGprecDbBootstrap()?.assignments || [];
 
 const createAssignment = (assignment) => gprecDbPost("/assignments", assignment);
@@ -19719,6 +19848,8 @@ if (attendanceTableBody) {
   renderAttendance();
 }
 
+// Campus Events: public-facing events with registration, an optional fee, and gate-scanning at
+// the door - distinct from the internal College Fest activities feature further below.
 const defaultCampusEvents = [
   {
     id: "campus-event-technovision-2026",
@@ -22719,6 +22850,7 @@ if (studentManualCheckinButton) {
   });
 }
 
+// Campus Events admin panel: add/edit/remove public events, export each event's registrant list.
 const campusEventManagerBody = document.querySelector("#campusEventManagerBody");
 const campusEventManagerEmpty = document.querySelector("#campusEventManagerEmpty");
 const campusEventTitleInput = document.querySelector("#campusEventTitleInput");
@@ -22898,6 +23030,8 @@ campusEventManagerBody?.addEventListener("click", (event) => {
   recordActivity("Removed campus event", "Campus Events");
 });
 
+// Sample per-subject detail (dashboards/subject-detail.html) - schedule, current assignment,
+// materials, and class-completion progress for one subject.
 const subjectData = {
   DBMS: {
     code: "DBMS",
@@ -23917,6 +24051,7 @@ const renderFundingContributors = () => {
     : `<li><span>No contributions yet. Be the first to contribute.</span></li>`;
 };
 
+// Alumni Funding admin: add/remove campaigns, each showing its live raised-vs-goal total.
 const fundingCampaignManagerBody = document.querySelector("#fundingCampaignManagerBody");
 if (fundingCampaignManagerBody) {
   const fundingCampaignTitleInput = document.querySelector("#fundingCampaignTitleInput");
@@ -23982,6 +24117,7 @@ if (fundingCampaignManagerBody) {
   });
 }
 
+// Spotlight Posters admin: upload/remove the promotional images shown in the Spotlight feed.
 const spotlightPosterManagerBody = document.querySelector("#spotlightPosterManagerBody");
 if (spotlightPosterManagerBody) {
   const spotlightPosterTitleInput = document.querySelector("#spotlightPosterTitleInput");
@@ -25530,6 +25666,8 @@ const initAlumniGallery = (currentEmail) => {
   renderMemories();
 };
 
+// Alumni Dashboard setup: loads the signed-in alumni's name/batch, then wires up every
+// alumni feature (profile, directory, gallery, events, funding, feed) for this session.
 const alumniDashboardName = document.querySelector("#alumniDashboardName");
 if (alumniDashboardName) {
   const alumniEmail = localStorage.getItem("gprecAlumniEmail") || "preview.alumni@gprec.ac.in";
@@ -25626,6 +25764,8 @@ if (alumniDashboardName) {
   }
 }
 
+// Faculty Dashboard setup: confirms a real faculty session exists (redirects to login if not),
+// then loads that faculty member's name/details and wires up their dashboard features.
 const facultyDashboardName = document.querySelector("#facultyDashboardName");
 if (facultyDashboardName) {
   const facultyEmail = localStorage.getItem("gprecFacultyEmail") || "";
@@ -25708,6 +25848,7 @@ if (facultyDashboardName) {
     setText("#payslipFacultyDesignation", facultyRecord.designation);
     setText("#payslipFacultyDepartment", facultyRecord.department);
 
+    // Pay slip download - month picker plus a generated PDF using sample fixed salary figures.
     const payslipMonthSelect = document.querySelector("#payslipMonthSelect");
     if (payslipMonthSelect) {
       const now = new Date();
@@ -25745,6 +25886,7 @@ if (facultyDashboardName) {
       link.click();
     });
 
+    // Bank Details form, used for salary/reimbursement payouts - account number is masked on input.
     const bankDetailsForm = document.querySelector("#bankDetailsForm");
     if (bankDetailsForm) {
       const bankKey = `faculty-${facultyRecord.email}`;
@@ -25779,6 +25921,7 @@ if (facultyDashboardName) {
       });
     }
 
+    // Form 16 download - financial-year picker plus a generated PDF using sample fixed salary figures.
     const form16YearSelect = document.querySelector("#form16YearSelect");
     if (form16YearSelect) {
       const now = new Date();
@@ -26249,6 +26392,7 @@ if (facultyDashboardName) {
       renderAttendanceHistory();
     });
 
+    // Internal Marks entry - faculty record each roster student's internal assessment marks for their subject.
     const internalMarksClassSelect = document.querySelector("#internalMarksClassSelect");
     const internalMarksHead = document.querySelector("#internalMarksHead");
     const internalMarksBody = document.querySelector("#internalMarksBody");
@@ -26392,6 +26536,7 @@ if (facultyDashboardName) {
       internalMarksEmpty?.classList.remove("is-hidden");
     }
 
+    // Faculty "Create a Course" form - builds a lesson list one row at a time, then publishes it.
     const courseLessonBuilder = document.querySelector("#courseLessonBuilder");
     if (courseLessonBuilder) {
       const addLessonRow = () => {
@@ -26666,6 +26811,7 @@ if (facultyDashboardName) {
       renderMyCourses();
     }
 
+    // Section checkboxes for the course form above - lets the faculty pick which class sections a course applies to.
     const classSectionChecklist = document.querySelector("#classSectionChecklist");
     if (classSectionChecklist) {
       const sections = gprecDbRequest("/courses/sections", { method: "POST", body: {} })?.sections || [];
@@ -26768,6 +26914,7 @@ if (facultyDashboardName) {
       });
     }
 
+    // Faculty Assignments - create an assignment for their subject and review student submissions against it.
     const assignmentsSubjectLabel = document.querySelector("#assignmentsSubjectLabel");
     if (assignmentsSubjectLabel) {
       assignmentsSubjectLabel.textContent = facultySubjectCode
@@ -27047,6 +27194,7 @@ if (facultyDashboardName) {
     renderAssignmentList();
     renderSubmissionsFor(null);
 
+    // Course Materials - faculty upload files/links for students to download for their subject.
     const materialListBody = document.querySelector("#materialListBody");
     const materialListEmpty = document.querySelector("#materialListEmpty");
     const uploadMaterialForm = document.querySelector("#uploadMaterialForm");
@@ -27110,6 +27258,7 @@ if (facultyDashboardName) {
 
     renderMaterialList();
 
+    // Faculty Leave requests - a HOD's requests route to the Principal, everyone else's route to their own HOD.
     const leaveApproverName = facultyRecord.isHod
       ? "Principal Office (admin@gprec.ac.in)"
       : `${defaultDepartmentFacultyByDept[facultyRecord.department]?.hod.name || "your HOD"} (${defaultDepartmentFacultyByDept[facultyRecord.department]?.hod.email || "-"})`;
@@ -27193,6 +27342,7 @@ if (facultyDashboardName) {
       renderMyLeaveRequests();
     });
 
+    // Ad-hoc/extra class requests this faculty member has submitted, with their approval status.
     const myAdhocClassBody = document.querySelector("#myAdhocClassBody");
     const myAdhocClassEmpty = document.querySelector("#myAdhocClassEmpty");
     const renderMyAdhocClassRequests = () => {
@@ -27253,6 +27403,7 @@ if (facultyDashboardName) {
       renderMyAdhocClassRequests();
     });
 
+    // Faculty "Message My Class" - a broadcast note to every student in their section (auto-expires, see getClassMessages above).
     const classMessageSubjectLabel = document.querySelector("#classMessageSubjectLabel");
     if (classMessageSubjectLabel) {
       classMessageSubjectLabel.textContent = facultySubjectCode
@@ -27494,6 +27645,7 @@ if (facultyDashboardName) {
     };
     renderDepartmentProjects();
 
+    // Faculty guide's view of their students' Research submissions - same approve/reject + milestone flow as Projects above.
     const departmentResearchList = document.querySelector("#departmentResearchList");
     const departmentResearchEmpty = document.querySelector("#departmentResearchEmpty");
     const renderDepartmentResearch = () => {
@@ -27931,6 +28083,8 @@ if (myEventsBody) {
   });
 }
 
+// Parent Dashboard setup: loads the linked child's profile (day scholar or hostel resident)
+// and wires up every parent-facing feature (grades, attendance, fees, outings, etc.) below.
 const parentDashboardName = document.querySelector("#parentDashboardName");
 if (parentDashboardName) {
   const parentStudentId = localStorage.getItem("gprecParentStudentId") || "";
@@ -28248,6 +28402,8 @@ const savePublicationsRows = (rows) => saveSiteContent("publicationsRows", rows)
 const getNbaAccreditationRows = () => getSiteContent("nbaAccreditationRows", []);
 const saveNbaAccreditationRows = (rows) => saveSiteContent("nbaAccreditationRows", rows);
 
+// Public homepage Notice Board - shows admin-published "Public Announcement" notices,
+// plus a card for any campus event opened to outside colleges (see event.isPublic below).
 const publicNoticeAudiences = ["Public Announcement"];
 const noticeBoardList = document.querySelector("#noticeBoardList");
 
@@ -28521,6 +28677,7 @@ publishNoticeButton?.addEventListener("click", async () => {
   }
 });
 
+// Admin Webinars panel: schedule/list/remove webinars (title, date/time, live link).
 const webinarManagerBody = document.querySelector("#webinarManagerBody");
 if (webinarManagerBody) {
   const webinarManagerEmpty = document.querySelector("#webinarManagerEmpty");
@@ -28598,6 +28755,8 @@ if (webinarManagerBody) {
 // Not wired to make live API calls - a static frontend cannot hold a paid API key securely.
 const defaultAiSettings = { provider: "", model: "", apiKey: "", baseUrl: "" };
 
+// Hides the map SDK vendor's watermark/attribution badge on the campus map, including any
+// added later (via MutationObserver), since our free-tier plan doesn't require displaying it.
 const hideMapSdkAttribution = (() => {
   let observer = null;
   const attributionSelector = [
@@ -28732,6 +28891,9 @@ if (mapSdkProviderInput) {
 // See GPREC_UPLOAD_ENDPOINT's comment above - same hostname-relative, protocol-matching fix.
 const GPREC_CONFIG_SAVE_ENDPOINT = `${window.location.protocol}//${window.location.hostname}:8765/admin-config`;
 
+// Bundles every integration's settings (Google, PayU, AI, Map, Library, Database, SMS, KYC)
+// into one payload - each Save button sends this whole bundle to the local settings server,
+// which merges in just the field that actually changed.
 const getCurrentIntegrationConfig = () => ({
   googleClientId: document.querySelector("#googleClientIdInput")?.value.trim() || defaultAdminConfig.googleClientId || "",
   googleCalendarApiKey: document.querySelector("#googleCalendarApiKeyInput")?.value.trim() || defaultAdminConfig.googleCalendarApiKey || "",
@@ -28786,6 +28948,7 @@ const persistIntegrationSettings = async (feedbackEl, successText, isPositive = 
   }
 };
 
+// Admin Integrations page: the dropdown that switches which single integration's settings card is shown.
 const integrationSelect = document.querySelector("#integrationSelect");
 if (integrationSelect) {
   const integrationCards = document.querySelectorAll("[data-integration]");
@@ -28808,6 +28971,8 @@ if (integrationSelect) {
   showIntegration(integrationSelect.value);
 }
 
+// AI Provider settings form (GPRECian Bot's brain) - lets the admin pick a provider/model/key,
+// test the connection, and see request logs/usage stats/knowledge-base status further below.
 const aiProviderInput = document.querySelector("#aiProviderInput");
 const aiModelInput = document.querySelector("#aiModelInput");
 const aiApiKeyInput = document.querySelector("#aiApiKeyInput");
@@ -29038,6 +29203,8 @@ const aiStatusBadge = (status) => {
   return `<span class="${cssClass}">${labels[status] || status}</span>`;
 };
 
+// AI Request Log / Usage Stats - shows the admin recent bot calls and success/failure/latency
+// tallies, for diagnosing whether the configured AI provider is actually working.
 const renderAiRequestLog = () => {
   const log = getAiRequestLog();
   const body = document.querySelector("#aiRequestLogBody");
@@ -30469,6 +30636,8 @@ const buildDepartmentCategories = (department) => {
   return { categories, staticContent };
 };
 
+// Department page (department-<code>.html) - loads that department's name/details and renders
+// its About/Vision/Faculty/etc. tabs from buildDepartmentCategories above.
 const departmentNameEl = document.querySelector("#departmentName");
 if (departmentNameEl) {
   const deptCode = document.body.dataset.deptCode || new URLSearchParams(window.location.search).get("dept");
@@ -30488,6 +30657,8 @@ if (departmentNameEl) {
   }
 }
 
+// Admissions/Fee Structure/Scholarships pages - simple admin-editable text blocks, each with
+// its own getX()/saveX() pair backed by site content (same pattern as Idea Lab below).
 const getAdmissionsContent = () => getSiteContent("admissionsContent", {});
 const saveAdmissionsContent = (content) => saveSiteContent("admissionsContent", content);
 
@@ -30994,6 +31165,7 @@ if (contactAddressText) {
   }
 }
 
+// Public Contact Us form - saves the message and also opens the visitor's mail client so it's actually sent.
 const contactMessageForm = document.querySelector("#contactMessageForm");
 if (contactMessageForm) {
   contactMessageForm.addEventListener("submit", (event) => {
@@ -31100,6 +31272,7 @@ const wireGrievanceForm = (formId, fieldsAttr, commonAttr, mailSubjectPrefix) =>
 wireGrievanceForm("#grievanceForm", "data-grievance-fields", "data-grievance-fields-common", "Grievance");
 wireGrievanceForm("#scstGrievanceForm", "data-scst-grievance-fields", "data-scst-grievance-fields-common", "SC/ST Grievance");
 
+// Admin Contact Us inbox - lists every message submitted via the public form above, newest first.
 const contactMessagesBody = document.querySelector("#contactMessagesBody");
 if (contactMessagesBody) {
   const contactMessagesEmpty = document.querySelector("#contactMessagesEmpty");
@@ -31132,6 +31305,8 @@ if (contactMessagesBody) {
   document.querySelector('.admin-nav[data-admin-target="#contact-messages"]')?.addEventListener("click", renderContactMessages);
 }
 
+// Admin "Web Page Content" editor: the dropdown that switches which public page's content-editing
+// section is shown, remembering the last one picked across reloads.
 const webPageSelect = document.querySelector("#webPageSelect");
 if (webPageSelect) {
   const uiState = getAdminUiState();
@@ -31975,6 +32150,7 @@ if (webPageSelect) {
     });
   }
 
+  // --- About Us Management: intro text, plus the Management/Governing Body/Deans/Leader-bio groups below ---
   const aboutUsPara1Input = document.querySelector("#aboutUsPara1Input");
   if (aboutUsPara1Input) {
     const aboutUsPara2Input = document.querySelector("#aboutUsPara2Input");
