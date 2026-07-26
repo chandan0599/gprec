@@ -6,9 +6,9 @@
     <title>Placement Cell Dashboard | GPREC</title>
     <meta name="description" content="GPREC placement cell dashboard for posting drives and eligibility criteria.">
     <link rel="icon" href="https://www.gprec.ac.in/wp-content/uploads/2017/08/fav.png" sizes="32x32">
-    <link rel="stylesheet" href="../styles.css?v=20260722-31">
+    <link rel="stylesheet" href="../styles.css?v=20260726-1">
   </head>
-  <body class="admin-dashboard-page">
+  <body class="admin-dashboard-page gprec-orb-chat">
     <header class="student-topbar admin-topbar">
       <a class="student-brand" href="../index.html">
         <img src="../gprec-logo-enhanced.png" alt="G Pulla Reddy Engineering College">
@@ -293,11 +293,24 @@
           <p class="gprecian-welcome-greeting" id="gprecianWelcomeGreeting">Hello</p>
           <p class="gprecian-welcome-question">How can I help you today?</p>
           <p class="gprecian-welcome-subtext">Ask me about drives, student placement records, or exporting reports.</p>
+          <p class="gprecian-quick-access-label"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M13 2 4 14h6l-1 8 9-12h-6l1-8Z"/></svg>Quick Access</p>
           <div class="gprecian-chips" aria-label="Suggested questions">
-            <button type="button" data-question="placement drives">Placement Drives</button>
-            <button type="button" data-question="internship drives">Internship Drives</button>
-            <button type="button" data-question="mock interviews">Mock Interviews</button>
-            <button type="button" data-question="job recommendations">Job Recommendations</button>
+            <button type="button" data-question="placement drives" data-badge="blue">
+              <span class="gprecian-chip-icon"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><rect x="3" y="8" width="18" height="12" rx="2"/><path d="M8 8V6a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2M3 13h18"/></svg></span>
+              <span class="gprecian-chip-text"><span class="gprecian-chip-title">Placement Drives</span><span class="gprecian-chip-subtitle">Upcoming drives</span></span>
+            </button>
+            <button type="button" data-question="internship drives" data-badge="green">
+              <span class="gprecian-chip-icon"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><rect x="3" y="8" width="18" height="12" rx="2"/><path d="M8 8V6a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2M3 13h18"/></svg></span>
+              <span class="gprecian-chip-text"><span class="gprecian-chip-title">Internship Drives</span><span class="gprecian-chip-subtitle">Internship openings</span></span>
+            </button>
+            <button type="button" data-question="mock interviews" data-badge="orange">
+              <span class="gprecian-chip-icon"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><circle cx="9" cy="8" r="3"/><circle cx="17" cy="9" r="2.5"/><path d="M3 20c0-3 2.5-5 6-5s6 2 6 5M15 20c0-2 1.5-4 4-4"/></svg></span>
+              <span class="gprecian-chip-text"><span class="gprecian-chip-title">Mock Interviews</span><span class="gprecian-chip-subtitle">Practice sessions</span></span>
+            </button>
+            <button type="button" data-question="job recommendations" data-badge="purple">
+              <span class="gprecian-chip-icon"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><rect x="3" y="8" width="18" height="12" rx="2"/><path d="M8 8V6a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2M3 13h18"/></svg></span>
+              <span class="gprecian-chip-text"><span class="gprecian-chip-title">Job Recommendations</span><span class="gprecian-chip-subtitle">Suggested for you</span></span>
+            </button>
           </div>
         </div>
         <div class="gprecian-messages is-hidden"></div>
@@ -306,7 +319,8 @@
           <button type="submit" aria-label="Send message"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"/></svg></button>
           <div class="gprecian-suggestions is-hidden" id="gprecianSuggestions"></div>
         </form>
-        <p class="gprecian-disclaimer">AI-generated answers may be inaccurate - verify important details with the college.</p>
+        <p class="gprecian-disclaimer" aria-describedby="gprecianDisclaimerFull_placementdashboardhtml"><span>Powered by AI &middot; Built for GPREC</span><svg class="gprecian-disclaimer-icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M12 3l7 3v6c0 4.5-3 7.5-7 9-4-1.5-7-4.5-7-9V6l7-3Z"/></svg></p>
+        <span id="gprecianDisclaimerFull_placementdashboardhtml" class="sr-only">AI-generated answers may be inaccurate - verify important details with the college.</span>
       </section>
       <button class="gprecian-toggle" type="button" aria-label="Open GPRECian chat">
         <span><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m4 6 8-3 8 3-8 3zM7 8v3M17 8v3M9 12a3 3 0 1 0 6 0M5 21c.7-3.2 3.4-5 7-5s6.3 1.8 7 5"/></svg></span>
@@ -314,6 +328,6 @@
       </button>
     </div>
 
-    <script src="../script.js?v=20260722-31"></script>
+    <script src="../script.js?v=20260726-2"></script>
   </body>
 </html>

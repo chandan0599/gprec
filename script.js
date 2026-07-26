@@ -1063,7 +1063,15 @@ const recordActivity = (action, module) =>
 // section rows). One backing table (site_content) instead of ~27 bespoke ones, since every one of
 // these is uniformly "an admin edits a JSON blob that every visitor sees."
 const getSiteContent = (key, fallback) => getGprecDbBootstrap()?.siteContent?.[key] ?? fallback;
-const saveSiteContent = (key, value) => gprecDbPost("/site-content", { key, value });
+const saveSiteContent = (key, value) => {
+  const result = gprecDbPost("/site-content", { key, value });
+  // saveSiteContent() backs a lot of content beyond just the RAG-relevant bits (admissions, fees,
+  // scholarships, departments) - invalidating on every call is harmless (the next read just
+  // rebuilds a small in-memory array) and far simpler than tracking which specific keys feed the
+  // knowledge base. See invalidateGprecianKnowledgeBaseCache() for why this matters.
+  if (typeof invalidateGprecianKnowledgeBaseCache === "function") invalidateGprecianKnowledgeBaseCache();
+  return result;
+};
 
 const getLibraryCatalog = async () => {
   const databaseCatalog = getGprecDbBootstrap()?.libraryCatalog;
@@ -10154,7 +10162,12 @@ const gprecianAnswers = [
     link: { url: gprecPageUrl("admissions.html"), label: "Open Admissions page" }
   },
   {
-    keywords: ["code", "eamcet", "ecet", "pgecet", "gpre", "gpre1"],
+    // "gpre"/"gpre1" used to be keywords here too, but "gpre" is a substring of "gprec" - the
+    // college's own name, which appears in almost every question - so the fuzzy matcher's
+    // substring-containment fallback (doesGprecianKeywordMatch/isGprecianTokenMatch) matched this
+    // admission-codes answer to completely unrelated questions like "What departments does GPREC
+    // have?". eamcet/ecet/pgecet already cover how anyone actually phrases this question.
+    keywords: ["code", "eamcet", "ecet", "pgecet"],
     answer: "Admission codes: EAMCET & ECET code is GPRE. PGECET code is GPRE1."
   },
   {
@@ -10383,20 +10396,53 @@ const addGprecianMessage = (text, type = "bot", links = [], question = null) => 
     meta.className = "chat-meta";
     meta.textContent = `GPRECian Bot · AI Assistant · ${new Date().toLocaleTimeString("en-IN", { hour: "numeric", minute: "2-digit" })}`;
     gprecianMessages.appendChild(meta);
+    // Same gate as the flag button above - only on a live turn (real question known), not when
+    // restoring saved history, so old follow-ups don't get re-picked/re-rendered on every reload.
+    if (question) {
+      const followUps = getGprecianFollowUpSuggestions(question);
+      if (followUps.length) {
+        const followUpRow = document.createElement("div");
+        followUpRow.className = "gprecian-followups";
+        followUps.forEach((suggestion) => {
+          const chip = document.createElement("button");
+          chip.type = "button";
+          chip.textContent = suggestion;
+          chip.addEventListener("click", () => {
+            gprecianAskedFollowUps.add(suggestion.toLowerCase());
+            addGprecianMessage(suggestion, "user");
+            addGprecianBotReply((onToken) => getGprecianReply(suggestion, onToken), suggestion);
+          });
+          followUpRow.appendChild(chip);
+        });
+        gprecianMessages.appendChild(followUpRow);
+      }
+    }
   }
   gprecianMessages.scrollTop = gprecianMessages.scrollHeight;
   saveGprecianHistory();
 };
 
-const addGprecianBotReply = async (replyPromise, question = null) => {
+// replyFactory is (onToken) => Promise<reply> rather than an already-started promise, so the
+// typing row (and its live-preview span) exists before the request starts - onToken needs
+// somewhere to write into as soon as the first chunk arrives. Only Ollama actually calls onToken
+// today (see fetchAiReplyWithTools's Ollama branch); every other provider just never invokes it,
+// so the dots keep showing until the full reply resolves, exactly as before this change.
+const addGprecianBotReply = async (replyFactory, question = null) => {
   if (!gprecianMessages) return;
   const typingRow = document.createElement("div");
   typingRow.className = "chat-row bot-row";
-  typingRow.innerHTML = `<span class="chat-avatar bot-avatar">${studentIcon}</span><p class="bot-message gprecian-typing"><span></span><span></span><span></span></p>`;
+  typingRow.innerHTML = `<span class="chat-avatar bot-avatar">${studentIcon}</span><div class="bot-message gprecian-typing"><span class="gprecian-typing-dots"><span></span><span></span><span></span></span><span class="gprecian-stream-preview"></span></div>`;
   gprecianMessages.appendChild(typingRow);
   gprecianMessages.scrollTop = gprecianMessages.scrollHeight;
 
-  const [rawReply] = await Promise.all([replyPromise, new Promise((resolve) => setTimeout(resolve, 450))]);
+  const previewEl = typingRow.querySelector(".gprecian-stream-preview");
+  const onToken = (textSoFar) => {
+    if (!previewEl) return;
+    previewEl.textContent = textSoFar;
+    gprecianMessages.scrollTop = gprecianMessages.scrollHeight;
+  };
+
+  const [rawReply] = await Promise.all([replyFactory(onToken), new Promise((resolve) => setTimeout(resolve, 450))]);
   typingRow.remove();
   const reply = typeof rawReply === "string" ? { text: rawReply, links: [] } : rawReply;
   addGprecianMessage(reply.text, "bot", reply.links, question);
@@ -10705,6 +10751,36 @@ const withGprecianFollowUpContext = (question) => {
   return `${gprecianLastTopicContext.seedText} ${question}`;
 };
 
+// Real multi-turn memory for the live AI, on top of the single-slot topic-context heuristic
+// above: reads the last few already-rendered turns straight out of the chat panel's own DOM (the
+// same source saveGprecianHistory() persists from) and hands them to the model as actual
+// conversation history, the same way any normal chat assistant sees its own prior turns - instead
+// of every question being answered from a blank slate with only a keyword-seeded hint spliced in.
+// Only used for the GPRECian Bot chat widget itself; every other fetchAiReply() caller (plagiarism
+// check, book search refinement, writing improvement, etc.) still defaults to no history, since
+// those aren't a back-and-forth conversation and this DOM has nothing to do with them.
+const GPRECIAN_HISTORY_MAX_TURNS = 6;
+const getGprecianRecentHistory = () => {
+  if (!gprecianMessages) return [];
+  const rows = Array.from(gprecianMessages.querySelectorAll(".chat-row"));
+  // The current question was already rendered as the last user-row before getGprecianReply() runs
+  // (see the call site) - drop it here since it's sent separately as the actual new turn.
+  if (rows.length && rows[rows.length - 1].classList.contains("user-row")) rows.pop();
+  return rows
+    .map((row) => {
+      const isUser = row.classList.contains("user-row");
+      const text = (isUser ? row.querySelector("p")?.textContent : row.querySelector(".bot-message")?.dataset.rawText) || "";
+      return text.trim() ? { role: isUser ? "user" : "assistant", content: text.trim() } : null;
+    })
+    .filter(Boolean)
+    .slice(-GPRECIAN_HISTORY_MAX_TURNS);
+};
+
+// Gemini's Content objects use role "model" (not "assistant") and wrap text in a parts array -
+// converts the shared {role, content} history shape used everywhere else into that.
+const geminiContentsFromHistory = (history) =>
+  history.map((turn) => ({ role: turn.role === "assistant" ? "model" : "user", parts: [{ text: turn.content }] }));
+
 // Sentinel the model is told to reply with for anything outside GPREC/this site - checked for
 // client-side below and swapped for a friendly redirect message, so an off-topic answer never
 // reaches the visitor even if a smaller/local model doesn't refuse as cleanly as a bigger one.
@@ -10968,6 +11044,16 @@ const isAllowedAiTopic = (text) => {
   return AI_ALLOWED_TOPIC_PATTERNS.some((pattern) => pattern.test(normalized));
 };
 
+// A bare "hi"/"hello"/"hey there" doesn't match any AI_ALLOWED_TOPIC_PATTERNS keyword (it isn't
+// about GPREC or a study topic), so without this it fell through to the same "I can only help
+// with..." refusal as a genuinely off-topic question - a cold first impression for the single most
+// common opening message. Only matches when the WHOLE message is just a greeting (optionally
+// addressed to the bot), so "hi, what are the admission fees" still reaches the real answer below
+// instead of being short-circuited here.
+const GPRECIAN_GREETING_PATTERN =
+  /^(hi+|hey+|hiya|heya|hello+|yo+|sup|greetings|namaste|good morning|good afternoon|good evening)( there| chatbot| bot| gprecian bot| gprecian)?$/;
+const isGprecianGreeting = (normalized) => GPRECIAN_GREETING_PATTERN.test(normalized.trim());
+
 const getPreAiGuardrailReply = (question) => {
   if (looksUnsafeForChatbot(question)) {
     return {
@@ -11118,6 +11204,61 @@ const getGprecianKnowledgeBase = () => {
   return refreshGprecianKnowledgeBase();
 };
 
+// Without this, the local chunk cache above only ever rebuilt when it was empty - publish a
+// notice, edit the fee structure, add a department, and both the keyword-overlap RAG fallback AND
+// the *source* chunks for the real embedded semantic index kept answering from whatever content
+// existed the last time someone happened to load a page with an empty cache. Called from every
+// admin action that touches KB-relevant content (createNotice/removeNotice, saveSiteContent) so
+// the local chunk list is correct immediately.
+const GPRECIAN_KB_DIRTY_KEY = "gprecKbDirty";
+
+// Re-embeds every chunk into knowledge_base_chunks (one Ollama call per chunk) so the semantic
+// index catches up automatically, without an admin needing to remember the manual "Refresh
+// Knowledge Base" button. Uses fetch(), not gprecDbRequest()'s synchronous XHR - that's the actual
+// fix here: a *blocking* re-embed run right after every edit would freeze the admin's tab for
+// however long the batch takes, which is exactly why this used to be manual-only. An async
+// request can run the same work in the background while the admin keeps editing.
+const gprecKnowledgeBaseSyncInBackground = async () => {
+  const baseUrl = gprecApiBaseUrl();
+  if (!baseUrl) return;
+  const kb = getGprecianKnowledgeBase();
+  const sessionToken = localStorage.getItem("gprecSessionToken");
+  try {
+    const response = await fetch(`${baseUrl}/knowledge-base/refresh`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Accept: "application/json",
+        ...(sessionToken ? { Authorization: `Bearer ${sessionToken}` } : {})
+      },
+      body: JSON.stringify({ chunks: kb.chunks })
+    });
+    if (!response.ok) return;
+    const result = await response.json().catch(() => null);
+    if (!result?.ok) return;
+    localStorage.removeItem(GPRECIAN_KB_DIRTY_KEY);
+    // Silent unless the admin has the Knowledge Base panel open right now - this runs whenever
+    // any visitor's action invalidates the cache, not just from the admin dashboard itself.
+    if (typeof renderKnowledgeBaseStatus === "function" && document.querySelector("#knowledgeBaseStatus")) {
+      renderKnowledgeBaseStatus(`<span class="ok">Auto-synced</span>&nbsp;- ${result.count} chunks embedded for semantic search.`);
+    }
+  } catch {
+    // Ollama/API unreachable - leave the dirty flag set, next edit (or the manual button) retries.
+  }
+};
+
+// Debounced: several edits in a row (e.g. filling out the whole Admissions form field by field)
+// should trigger one sync after things settle, not one full re-embed run per keystroke-triggered
+// save.
+let gprecKnowledgeBaseSyncTimer = null;
+const GPRECIAN_KB_SYNC_DEBOUNCE_MS = 4000;
+const invalidateGprecianKnowledgeBaseCache = () => {
+  localStorage.removeItem(GPRECIAN_KB_STORAGE_KEY);
+  localStorage.setItem(GPRECIAN_KB_DIRTY_KEY, "1");
+  clearTimeout(gprecKnowledgeBaseSyncTimer);
+  gprecKnowledgeBaseSyncTimer = setTimeout(gprecKnowledgeBaseSyncInBackground, GPRECIAN_KB_SYNC_DEBOUNCE_MS);
+};
+
 const GPRECIAN_STOPWORDS = new Set([
   "the", "a", "an", "is", "are", "was", "were", "of", "to", "in", "for", "and", "or", "on", "at",
   "what", "how", "do", "does", "did", "i", "my", "me", "can", "you", "your", "please", "tell",
@@ -11169,8 +11310,9 @@ const retrieveRelevantChunksSemantic = (question, topN = 4) => {
 // pending backlogs" vs "cgpa") that a literal .includes(keyword) check misses. Each tool is a thin
 // adapter around those same existing functions, not a reimplementation, so the model never sees
 // or formats raw data itself. Scoped per role so a student session is never offered a faculty-only
-// tool. Only wired up for the Ollama provider (its /api/chat "tools" format) - Gemini/OpenAI/Claude
-// fall back to fetchAiReply()'s plain RAG-context-stuffed single-shot call.
+// tool. Wired up for every provider (Ollama, OpenAI, Claude, Gemini), each via its own tool-call
+// wire format; only falls back to fetchAiReply()'s plain RAG-context-stuffed single-shot call if
+// the provider isn't configured or the call fails outright.
 const gprecianToolsByRole = {
   student: [
     { name: "get_attendance", description: "The logged-in student's current attendance percentage, overall and subject-wise.", run: () => getLiveAttendanceAnswer("student") },
@@ -11200,10 +11342,30 @@ const gprecianToolsByRole = {
   public: []
 };
 
+// Ollama/OpenAI share the same "tools" wire shape ({type:"function", function:{name, description,
+// parameters}}) - one schema builder covers both.
 const gprecianToolSchemas = (role) =>
   (gprecianToolsByRole[role] || []).map((tool) => ({
     type: "function",
     function: { name: tool.name, description: tool.description, parameters: { type: "object", properties: {}, required: [] } }
+  }));
+
+// Claude's tool shape is flat - name/description/input_schema at the top level, no nested
+// "function" wrapper.
+const gprecianToolSchemasClaude = (role) =>
+  (gprecianToolsByRole[role] || []).map((tool) => ({
+    name: tool.name,
+    description: tool.description,
+    input_schema: { type: "object", properties: {}, required: [] }
+  }));
+
+// Gemini's functionDeclarations have no "type"/nested-schema wrapper at all - just
+// name/description/parameters directly, grouped under one functionDeclarations array.
+const gprecianToolDeclarationsGemini = (role) =>
+  (gprecianToolsByRole[role] || []).map((tool) => ({
+    name: tool.name,
+    description: tool.description,
+    parameters: { type: "object", properties: {}, required: [] }
   }));
 
 const runGprecianTool = (role, name) => {
@@ -11216,54 +11378,237 @@ const runGprecianTool = (role, name) => {
   }
 };
 
-// Two-turn tool-calling loop: ask once with the available tools attached: if the model calls one
-// (or more), run each against real app data and hand the results back for a final natural-
-// language answer; if it doesn't call a tool at all (a general/FAQ question), its first response
-// IS the answer. Returns null on any failure (network, non-ollama provider, timeout) so the
-// caller can fall back to fetchAiReply()'s simpler single-shot path.
-const fetchAiReplyWithTools = async (settings, question, systemPrompt = gprecianSystemPrompt) => {
-  if (settings.provider !== "ollama") return null;
-  const tools = gprecianToolSchemas(gprecianDashboardRole);
-  const model = settings.model || "llama3.2";
-  const baseUrl = (settings.baseUrl || "http://localhost:11434").replace(/\/$/, "");
+// Real agent loop, not a fixed two-turn shape, for every provider that supports tool calling
+// (Ollama, OpenAI, Claude, Gemini - each with its own request/response wire format, but the same
+// control flow): each round hands the model the tools again along with everything gathered so
+// far, so it can chain calls - e.g. check get_grades, decide from the backlog count that
+// get_placement_eligibility is also relevant, call that too, then answer - the same
+// call/observe/decide cycle my own tool use follows, rather than one fixed round of tool calls
+// followed by a forced answer. Stops the moment the model responds with no further tool calls
+// (that response IS the answer); GPRECIAN_MAX_TOOL_ROUNDS bounds it in case the model keeps
+// calling tools indefinitely, same reasoning a real agent loop caps its own step count. Returns
+// null on any failure (network, unsupported provider, timeout) so the caller can fall back to
+// fetchAiReply()'s simpler single-shot path.
+const GPRECIAN_MAX_TOOL_ROUNDS = 6;
+
+const fetchAiReplyWithTools = async (settings, question, systemPrompt = gprecianSystemPrompt, history = [], onToken = null) => {
   const controller = new AbortController();
-  const timeoutId = setTimeout(() => controller.abort(), 20000);
+  // Longer than fetchAiReply()'s single-shot timeout since this can be several round trips deep,
+  // each a full model inference call.
+  const timeoutId = setTimeout(() => controller.abort(), 45000);
   try {
-    const messages = [
-      { role: "system", content: systemPrompt },
-      { role: "user", content: question }
-    ];
-    const callOllama = async (body) => {
-      const response = await fetch(`${baseUrl}/api/chat`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        signal: controller.signal,
-        body: JSON.stringify(body)
-      });
-      if (!response.ok) {
-        const errorBody = await response.json().catch(() => null);
-        throw new Error(errorBody?.error ? `Ollama: ${errorBody.error}` : `Ollama request failed (HTTP ${response.status})`);
+    if (settings.provider === "ollama") {
+      const tools = gprecianToolSchemas(gprecianDashboardRole);
+      const model = settings.model || "llama3.2";
+      const baseUrl = (settings.baseUrl || "http://localhost:11434").replace(/\/$/, "");
+      const messages = [
+        { role: "system", content: systemPrompt },
+        ...history,
+        { role: "user", content: question }
+      ];
+      // Streams Ollama's NDJSON response (one small JSON object per line) instead of waiting for
+      // the whole reply. Content deltas get handed to onToken as they arrive - live typing effect
+      // in the chat panel - while tool_calls (which Ollama always emits complete, never split
+      // across chunks) get collected the same way the old non-streaming call read them. A round
+      // where the model decides to call a tool has no content to show anyway, so onToken simply
+      // never fires for those rounds; it only ever fires for a round that's actually answering.
+      const callOllama = async (body) => {
+        const response = await fetch(`${baseUrl}/api/chat`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          signal: controller.signal,
+          body: JSON.stringify({ ...body, stream: true })
+        });
+        if (!response.ok) {
+          const errorBody = await response.json().catch(() => null);
+          throw new Error(errorBody?.error ? `Ollama: ${errorBody.error}` : `Ollama request failed (HTTP ${response.status})`);
+        }
+        const reader = response.body.getReader();
+        const decoder = new TextDecoder();
+        let buffer = "";
+        let content = "";
+        let toolCalls = null;
+        while (true) {
+          const { done, value } = await reader.read();
+          if (done) break;
+          buffer += decoder.decode(value, { stream: true });
+          const lines = buffer.split("\n");
+          buffer = lines.pop();
+          for (const line of lines) {
+            const trimmed = line.trim();
+            if (!trimmed) continue;
+            let chunk;
+            try {
+              chunk = JSON.parse(trimmed);
+            } catch {
+              continue;
+            }
+            if (chunk.message?.tool_calls?.length) toolCalls = chunk.message.tool_calls;
+            if (chunk.message?.content) {
+              content += chunk.message.content;
+              if (onToken) onToken(content);
+            }
+          }
+        }
+        return { message: { role: "assistant", content, tool_calls: toolCalls } };
+      };
+
+      for (let round = 0; round < GPRECIAN_MAX_TOOL_ROUNDS; round++) {
+        const data = await callOllama({ model, messages, tools: tools.length ? tools : undefined });
+        const toolCalls = data?.message?.tool_calls;
+        if (!toolCalls?.length) return data?.message?.content?.trim() || null;
+
+        messages.push(data.message);
+        toolCalls.forEach((call) => {
+          messages.push({ role: "tool", content: runGprecianTool(gprecianDashboardRole, call.function?.name) });
+        });
       }
-      return response.json();
-    };
 
-    const firstData = await callOllama({ model, stream: false, messages, tools: tools.length ? tools : undefined });
-    const toolCalls = firstData?.message?.tool_calls;
-    if (!toolCalls?.length) return firstData?.message?.content?.trim() || null;
+      // Hit the round cap still trying to call tools - drop the tools list so this last call is
+      // forced to answer in plain text from whatever it already gathered, instead of looping forever.
+      const finalData = await callOllama({ model, stream: false, messages });
+      return finalData?.message?.content?.trim() || null;
+    }
 
-    messages.push(firstData.message);
-    toolCalls.forEach((call) => {
-      messages.push({ role: "tool", content: runGprecianTool(gprecianDashboardRole, call.function?.name) });
-    });
+    if (settings.provider === "openai") {
+      const tools = gprecianToolSchemas(gprecianDashboardRole);
+      const model = settings.model || "gpt-4o-mini";
+      const messages = [
+        { role: "system", content: systemPrompt },
+        ...history,
+        { role: "user", content: question }
+      ];
+      const callOpenAi = async (body) => {
+        const response = await fetch("https://api.openai.com/v1/chat/completions", {
+          method: "POST",
+          headers: { "Content-Type": "application/json", Authorization: `Bearer ${settings.apiKey}` },
+          signal: controller.signal,
+          body: JSON.stringify(body)
+        });
+        if (!response.ok) {
+          const errorBody = await response.json().catch(() => null);
+          const message = errorBody?.error?.message;
+          throw new Error(message ? `OpenAI: ${message}` : `OpenAI request failed (HTTP ${response.status})`);
+        }
+        return response.json();
+      };
 
-    const secondData = await callOllama({ model, stream: false, messages });
-    return secondData?.message?.content?.trim() || null;
+      for (let round = 0; round < GPRECIAN_MAX_TOOL_ROUNDS; round++) {
+        const data = await callOpenAi({ model, messages, tools: tools.length ? tools : undefined });
+        const message = data?.choices?.[0]?.message;
+        const toolCalls = message?.tool_calls;
+        if (!toolCalls?.length) return message?.content?.trim() || null;
+
+        messages.push(message);
+        toolCalls.forEach((call) => {
+          messages.push({ role: "tool", tool_call_id: call.id, content: runGprecianTool(gprecianDashboardRole, call.function?.name) });
+        });
+      }
+
+      const finalData = await callOpenAi({ model, messages });
+      return finalData?.choices?.[0]?.message?.content?.trim() || null;
+    }
+
+    if (settings.provider === "claude") {
+      const tools = gprecianToolSchemasClaude(gprecianDashboardRole);
+      const model = settings.model || "claude-haiku-4-5-20251001";
+      const messages = [...history, { role: "user", content: question }];
+      const callClaude = async (body) => {
+        const response = await fetch("https://api.anthropic.com/v1/messages", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            "x-api-key": settings.apiKey,
+            "anthropic-version": "2023-06-01",
+            "anthropic-dangerous-direct-browser-access": "true"
+          },
+          signal: controller.signal,
+          body: JSON.stringify(body)
+        });
+        if (!response.ok) {
+          const errorBody = await response.json().catch(() => null);
+          const message = errorBody?.error?.message;
+          throw new Error(message ? `Claude: ${message}` : `Claude request failed (HTTP ${response.status})`);
+        }
+        return response.json();
+      };
+
+      for (let round = 0; round < GPRECIAN_MAX_TOOL_ROUNDS; round++) {
+        const data = await callClaude({ model, max_tokens: 300, system: systemPrompt, messages, tools: tools.length ? tools : undefined });
+        if (data?.stop_reason !== "tool_use") {
+          return (data?.content || []).find((block) => block.type === "text")?.text?.trim() || null;
+        }
+
+        messages.push({ role: "assistant", content: data.content });
+        const toolResults = (data.content || [])
+          .filter((block) => block.type === "tool_use")
+          .map((block) => ({ type: "tool_result", tool_use_id: block.id, content: runGprecianTool(gprecianDashboardRole, block.name) }));
+        messages.push({ role: "user", content: toolResults });
+      }
+
+      const finalData = await callClaude({ model, max_tokens: 300, system: systemPrompt, messages });
+      return (finalData?.content || []).find((block) => block.type === "text")?.text?.trim() || null;
+    }
+
+    if (settings.provider === "gemini") {
+      const declarations = gprecianToolDeclarationsGemini(gprecianDashboardRole);
+      const model = settings.model || "gemini-2.0-flash-exp";
+      const contents = [...geminiContentsFromHistory(history), { role: "user", parts: [{ text: question }] }];
+      const callGemini = async (body) => {
+        const response = await fetch(
+          `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${encodeURIComponent(settings.apiKey)}`,
+          {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            signal: controller.signal,
+            body: JSON.stringify(body)
+          }
+        );
+        if (!response.ok) {
+          const errorBody = await response.json().catch(() => null);
+          const message = errorBody?.error?.message;
+          throw new Error(message ? `Gemini: ${message}` : `Gemini request failed (HTTP ${response.status})`);
+        }
+        return response.json();
+      };
+
+      for (let round = 0; round < GPRECIAN_MAX_TOOL_ROUNDS; round++) {
+        const data = await callGemini({
+          contents,
+          systemInstruction: { parts: [{ text: systemPrompt }] },
+          tools: declarations.length ? [{ functionDeclarations: declarations }] : undefined
+        });
+        const parts = data?.candidates?.[0]?.content?.parts || [];
+        const functionCalls = parts.filter((part) => part.functionCall);
+        if (!functionCalls.length) return parts.find((part) => part.text)?.text?.trim() || null;
+
+        // Gemini's own turn is echoed back verbatim as role "model"; the results of every
+        // function call it just requested go back together as a single role "user" turn.
+        contents.push({ role: "model", parts });
+        contents.push({
+          role: "user",
+          parts: functionCalls.map((part) => ({
+            functionResponse: {
+              name: part.functionCall.name,
+              response: { result: runGprecianTool(gprecianDashboardRole, part.functionCall.name) }
+            }
+          }))
+        });
+      }
+
+      const finalData = await callGemini({ contents, systemInstruction: { parts: [{ text: systemPrompt }] } });
+      return finalData?.candidates?.[0]?.content?.parts?.find((part) => part.text)?.text?.trim() || null;
+    }
+
+    return null;
+  } catch {
+    return null;
   } finally {
     clearTimeout(timeoutId);
   }
 };
 
-const fetchAiReply = async (settings, question, systemPrompt = gprecianSystemPrompt) => {
+const fetchAiReply = async (settings, question, systemPrompt = gprecianSystemPrompt, history = []) => {
   const controller = new AbortController();
   const timeoutId = setTimeout(() => controller.abort(), 12000);
   try {
@@ -11276,7 +11621,7 @@ const fetchAiReply = async (settings, question, systemPrompt = gprecianSystemPro
           headers: { "Content-Type": "application/json" },
           signal: controller.signal,
           body: JSON.stringify({
-            contents: [{ role: "user", parts: [{ text: question }] }],
+            contents: [...geminiContentsFromHistory(history), { role: "user", parts: [{ text: question }] }],
             systemInstruction: { parts: [{ text: systemPrompt }] }
           })
         }
@@ -11299,6 +11644,7 @@ const fetchAiReply = async (settings, question, systemPrompt = gprecianSystemPro
           model,
           messages: [
             { role: "system", content: systemPrompt },
+            ...history,
             { role: "user", content: question }
           ]
         })
@@ -11326,7 +11672,7 @@ const fetchAiReply = async (settings, question, systemPrompt = gprecianSystemPro
           model,
           max_tokens: 300,
           system: systemPrompt,
-          messages: [{ role: "user", content: question }]
+          messages: [...history, { role: "user", content: question }]
         })
       });
       if (!response.ok) {
@@ -11349,6 +11695,7 @@ const fetchAiReply = async (settings, question, systemPrompt = gprecianSystemPro
           stream: false,
           messages: [
             { role: "system", content: systemPrompt },
+            ...history,
             { role: "user", content: question }
           ]
         })
@@ -11760,7 +12107,14 @@ const gprecianEventContactText = (event = {}) => {
 const getEventVisitorBotAnswer = (normalized) => {
   if (gprecianDashboardRole !== "event-visitor") return null;
 
-  const registrations = gprecianEventVisitorRequest("/event-visitor/my-registrations", { method: "POST" })?.registrations || [];
+  // Distinct from registrations.length === 0 - that's also true for a signed-in visitor who just
+  // hasn't registered for anything yet. Without this, every instructional answer below used to
+  // tell an already-signed-in visitor to "create an account, sign in..." as if they weren't, when
+  // the only thing actually missing was registering for an event.
+  const isSignedIn = !!localStorage.getItem("gprecEventVisitorToken");
+  const registrations = isSignedIn
+    ? gprecianEventVisitorRequest("/event-visitor/my-registrations", { method: "POST" })?.registrations || []
+    : [];
   const registeredIds = new Set(registrations.map((registration) => registration.eventId));
   const today = new Date(new Date().toDateString());
   const events = getCampusEvents();
@@ -11787,23 +12141,33 @@ const getEventVisitorBotAnswer = (normalized) => {
 
   if (/(payment|pay|fee|refund|transaction|upi|amount)/.test(normalized)) {
     return {
-      text: `For payment issues, contact the event manager shown on the event card or pass. Current event contacts:\n${eventLines}`,
+      text: !isSignedIn
+        ? "Sign in and register for an event first - the event manager's payment contact appears on your pass once you're registered."
+        : registrations.length
+        ? `For payment issues, contact the event manager shown on your pass. Your event contacts:\n${eventLines}`
+        : `You're signed in but not registered for any event yet, so there's no payment contact to show. Once you register, the manager's contact appears on your pass. Open events right now:\n${eventLines}`,
       links: []
     };
   }
 
   if (/(pass|ticket|qr|receipt|download)/.test(normalized)) {
     return {
-      text: registrations.length
+      text: !isSignedIn
+        ? "Sign in (or create an account) and register for an open event first - once you're registered, the Download Event Pass and Download Receipt buttons appear immediately in Your Event Passes."
+        : registrations.length
         ? "Open the Your Event Passes section. Each registered event has Download Event Pass and Download Receipt buttons, and those saved registrations remain visible after you sign in again."
-        : "First create an account, sign in, and register for an open event. After registration, the event pass and receipt buttons appear immediately.",
+        : "You're signed in, but you haven't registered for any event yet - that's why there's no pass to download. Register for an open event and the Download Event Pass / Download Receipt buttons appear right away.",
       links: []
     };
   }
 
   if (/(register|registration|signup|sign up|create account|login|log in|account)/.test(normalized)) {
     return {
-      text: "Flow: Register Now -> Create Account -> after account creation go to Sign In -> choose Register for Event. If you already registered for one event, sign in again to see that pass and register for other open public events.",
+      text: !isSignedIn
+        ? "Flow: Register Now -> Create Account -> after account creation go to Sign In -> choose Register for Event."
+        : registrations.length
+        ? "You're already signed in and registered for at least one event - open Your Event Passes to see it, or choose Register for Event on another open event below."
+        : "You're already signed in - just choose Register for Event on any open event below to get your pass.",
       links: []
     };
   }
@@ -11818,7 +12182,7 @@ const getEventVisitorBotAnswer = (normalized) => {
   return null;
 };
 
-const getGprecianReply = async (question) => {
+const getGprecianReply = async (question, onToken = null) => {
   const contextualQuestion = withGprecianFollowUpContext(question);
   const normalized = normalizeGprecianQuery(contextualQuestion);
   const guardrailReply = getPreAiGuardrailReply(contextualQuestion);
@@ -11829,6 +12193,13 @@ const getGprecianReply = async (question) => {
       recordAiRequestLog({ provider: aiSettings.provider || "guardrail", model: aiSettings.model || "-", status: "blocked", latencyMs: 0, error: "" });
     }
     return { text: guardrailReply.text, links: [] };
+  }
+
+  if (isGprecianGreeting(normalized)) {
+    return {
+      text: `Hi there! ${gprecianRoleFallback[gprecianDashboardRole] || gprecianRoleFallback.public}`,
+      links: []
+    };
   }
 
   // Answering a clarifying question asked last turn (see getFacultyDirectoryAnswer) - treat this
@@ -11949,11 +12320,18 @@ const getGprecianReply = async (question) => {
         ? `Relevant GPREC website information (use this to answer if it's relevant to the question):\n${relevantChunks.map((c) => `- ${c.text}`).join("\n").slice(0, 900)}\n\nQuestion: ${trimmedQuestion}`
         : trimmedQuestion;
 
+      // The last few real turns of this conversation, straight from the chat panel itself - so a
+      // follow-up like "what about ECE?" after "what's the CSE fee?" actually reaches the model
+      // with the first question/answer still attached, the way any normal chat assistant works.
+      const conversationHistory = getGprecianRecentHistory();
+
       // Prefer the tool-calling agent when it's available for this provider - it can pull the
       // visitor's OWN live data (attendance, grades, leave status, etc.) on demand instead of
       // relying only on whatever's in the RAG context, which only ever covers public site
       // content. Falls back to the plain single-shot call for other providers or if it fails.
-      const aiText = (await fetchAiReplyWithTools(aiSettings, augmentedQuestion)) ?? (await fetchAiReply(aiSettings, augmentedQuestion));
+      const aiText =
+        (await fetchAiReplyWithTools(aiSettings, augmentedQuestion, undefined, conversationHistory, onToken)) ??
+        (await fetchAiReply(aiSettings, augmentedQuestion, undefined, conversationHistory));
       const latencyMs = Date.now() - startedAt;
       if (aiText) {
         if (looksUnsafeForChatbot(aiText)) {
@@ -12040,16 +12418,20 @@ gprecianForm?.addEventListener("submit", (event) => {
   if (!question) return;
   revealGprecianConversation();
   addGprecianMessage(question, "user");
-  addGprecianBotReply(getGprecianReply(question), question);
+  addGprecianBotReply((onToken) => getGprecianReply(question, onToken), question);
   gprecianInput.value = "";
 });
 
 gprecianChips.forEach((chip) => {
   chip.addEventListener("click", () => {
-    const question = chip.dataset.question || chip.textContent;
+    // Quick Access cards carry a title + subtitle (see .gprecian-chip-title/-subtitle in
+    // index.html) - chip.textContent would run both together into one bubble, so read just the
+    // title when present. Falls back to the whole button's text for any plain-text legacy chip.
+    const chipLabel = chip.querySelector(".gprecian-chip-title")?.textContent || chip.textContent;
+    const question = chip.dataset.question || chipLabel;
     revealGprecianConversation();
-    addGprecianMessage(chip.textContent, "user");
-    addGprecianBotReply(getGprecianReply(question), question);
+    addGprecianMessage(chipLabel, "user");
+    addGprecianBotReply((onToken) => getGprecianReply(question, onToken), question);
   });
 });
 
@@ -12071,7 +12453,7 @@ const GPRECIAN_SUGGESTED_QUESTIONS_BY_ROLE = {
     "What are the placement details?",
     "What are the latest notices?",
     "How do I contact the college?",
-    "What is today's date?"
+    "What are the hostel and campus facilities?"
   ],
   student: [
     "What is my name?",
@@ -12113,6 +12495,24 @@ const GPRECIAN_SUGGESTED_QUESTIONS_BY_ROLE = {
 };
 const GPRECIAN_SUGGESTED_QUESTIONS =
   GPRECIAN_SUGGESTED_QUESTIONS_BY_ROLE[gprecianDashboardRole] || GPRECIAN_SUGGESTED_QUESTIONS_BY_ROLE.public;
+
+// Follow-up chips shown under each bot reply (see addGprecianMessage) - reuses the same curated
+// per-role list the typeahead above already uses, rather than inventing separate "what's related
+// to this answer" logic. Tracks what's already been asked/shown this session so the same 2-3
+// obvious questions don't keep resurfacing turn after turn once the pool runs low.
+const gprecianAskedFollowUps = new Set();
+const getGprecianFollowUpSuggestions = (question) => {
+  const pool = GPRECIAN_SUGGESTED_QUESTIONS_BY_ROLE[gprecianDashboardRole] || GPRECIAN_SUGGESTED_QUESTIONS_BY_ROLE.public;
+  gprecianAskedFollowUps.add(question.trim().toLowerCase());
+  const candidates = pool.filter((suggestion) => !gprecianAskedFollowUps.has(suggestion.toLowerCase()));
+  const shuffled = [...candidates];
+  for (let i = shuffled.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
+  }
+  return shuffled.slice(0, 3);
+};
+
 const gprecianSuggestions = document.querySelector("#gprecianSuggestions");
 if (gprecianInput && gprecianSuggestions) {
   const hideGprecianSuggestions = () => {
@@ -27552,8 +27952,16 @@ if (parentDashboardName) {
 // read-modify-write-the-whole-array approach.
 const getNotices = () => getGprecDbBootstrap()?.notices || [];
 
-const createNotice = (notice) => gprecDbPost("/notices", notice);
-const removeNotice = (id) => gprecDbPost("/notices/remove", { id });
+const createNotice = (notice) => {
+  const result = gprecDbPost("/notices", notice);
+  invalidateGprecianKnowledgeBaseCache();
+  return result;
+};
+const removeNotice = (id) => {
+  const result = gprecDbPost("/notices/remove", { id });
+  invalidateGprecianKnowledgeBaseCache();
+  return result;
+};
 
 const getContactMessages = () => getGprecDbBootstrap()?.contactMessages || [];
 // Admin inbox "remove a message" action only - requires an admin session (see portal_db_server.py).
@@ -28551,8 +28959,12 @@ const renderKnowledgeBaseStatus = (syncMessage = "") => {
   const statusEl = document.querySelector("#knowledgeBaseStatus");
   if (!statusEl) return;
   const kb = getGprecianKnowledgeBase();
+  const isDirty = !!localStorage.getItem(GPRECIAN_KB_DIRTY_KEY);
   statusEl.innerHTML =
-    `<span class="ok">${kb.chunks.length} items indexed</span> - last refreshed ${new Date(kb.builtAt).toLocaleString("en-IN")}` +
+    `<span class="ok">${kb.chunks.length} items indexed</span>&nbsp;- last refreshed ${new Date(kb.builtAt).toLocaleString("en-IN")}` +
+    (isDirty
+      ? `<br><span class="warn">Syncing</span>&nbsp;- content changed, updating semantic search in the background. If this doesn't clear within a minute, click Refresh below (the embedding model may be unreachable).`
+      : "") +
     (syncMessage ? `<br>${syncMessage}` : "");
 };
 // Deferred: buildGprecianKnowledgeBase() (called transitively via renderKnowledgeBaseStatus) reads
@@ -28563,6 +28975,9 @@ const renderKnowledgeBaseStatus = (syncMessage = "") => {
 if (document.querySelector("#knowledgeBaseStatus")) window.setTimeout(renderKnowledgeBaseStatus, 0);
 
 document.querySelector("#refreshKnowledgeBaseButton")?.addEventListener("click", (event) => {
+  // This manual sync is about to do the same work the debounced background one would - cancel
+  // that pending run so it doesn't fire again a few seconds later for no reason.
+  clearTimeout(gprecKnowledgeBaseSyncTimer);
   refreshGprecDbBootstrap();
   const kb = refreshGprecianKnowledgeBase();
   renderKnowledgeBaseStatus();
@@ -28581,10 +28996,11 @@ document.querySelector("#refreshKnowledgeBaseButton")?.addEventListener("click",
   hideGprecLoader();
   button.disabled = false;
   button.textContent = originalLabel;
+  if (result?.ok) localStorage.removeItem(GPRECIAN_KB_DIRTY_KEY);
   renderKnowledgeBaseStatus(
     result?.ok
-      ? `<span class="ok">${result.count} chunks embedded for semantic search.</span>`
-      : `<span class="warn">Semantic search sync failed (embedding model unreachable) - the bot will fall back to keyword matching until this succeeds.</span>`
+      ? `<span class="ok">Synced</span>&nbsp;- ${result.count} chunks embedded for semantic search.`
+      : `<span class="warn">Sync failed</span>&nbsp;- embedding model unreachable, the bot will fall back to keyword matching until this succeeds.`
   );
 });
 

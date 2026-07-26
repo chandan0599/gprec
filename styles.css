@@ -27,6 +27,20 @@ textarea {
   resize: none;
 }
 
+/* Standard visually-hidden pattern: present in the DOM and announced by screen readers, but takes
+   no visual space and isn't clipped by overflow:hidden ancestors (unlike display:none/width:0). */
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: -1px;
+  padding: 0;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
 /* Unlike a transition, a CSS animation replays each time an element re-enters the render
    tree, so these work with the app's existing display:none-based show/hide with no JS changes. */
 @keyframes gprec-fade-in {
@@ -2394,10 +2408,25 @@ td.action-cell > * + * {
 .ok,
 .warn {
   display: inline-flex;
+  margin: 4px 6px 4px 0;
   padding: 4px 8px;
   border-radius: 999px;
   font-size: 0.76rem;
   font-weight: 950;
+}
+
+#knowledgeBaseStatus {
+  line-height: 2.4;
+}
+
+/* Fixed, equal width for both stacked pills here specifically ("99 items indexed" is the longest
+   text this panel ever shows, so everything else - Synced, Syncing, Sync failed, Auto-synced -
+   centers within that same width) - scoped to this one panel, not the shared .ok/.warn rule
+   above, since other pills elsewhere on the site are meant to hug their own (often short) text. */
+#knowledgeBaseStatus .ok,
+#knowledgeBaseStatus .warn {
+  width: 140px;
+  justify-content: center;
 }
 
 .ok {
@@ -3176,6 +3205,7 @@ a {
 .home-fest-meta {
   display: flex;
   flex-wrap: wrap;
+  justify-content: center;
   gap: 16px;
   margin-top: 8px;
   color: #c7cce0;
@@ -3207,6 +3237,7 @@ a {
   /* Center against the CTA using the digits alone (.tlabel is taken out of flow below), not the
      digit+label stack, so "Register Now" lines up with the numbers instead of sitting low. */
   align-items: center;
+  justify-content: center;
   gap: 2px;
 }
 
@@ -4837,7 +4868,7 @@ button + .admin-add-feedback {
   min-width: 300px;
   max-height: 100%;
   padding: clamp(32px, 4vw, 52px) clamp(28px, 4vw, 48px);
-  overflow-y: auto;
+  overflow-y: hidden;
   border: 0;
   border-radius: 0;
   background: #101632;
@@ -16553,15 +16584,51 @@ img.alumni-post-avatar {
   font-weight: 700;
 }
 
+/* Follow-up chips under a bot reply (see getGprecianFollowUpSuggestions/addGprecianMessage) -
+   same left indent as .chat-meta above so they line up under the bubble, not the avatar. */
+.gprecian-followups {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin: 6px 0 0 40px;
+}
+
+.gprecian-followups button {
+  padding: 6px 12px;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  background: var(--white);
+  color: var(--navy);
+  font: inherit;
+  font-size: 0.78rem;
+  font-weight: 700;
+  text-align: left;
+  cursor: pointer;
+  transition: border-color 150ms ease, background 150ms ease, color 150ms ease;
+}
+
+.gprecian-followups button:hover,
+.gprecian-followups button:focus-visible {
+  border-color: var(--orange);
+  background: #fff4e5;
+  color: var(--orange);
+  outline: none;
+}
+
 .gprecian-typing {
   display: flex;
-  gap: 4px;
   align-items: center;
   padding-top: 14px;
   padding-bottom: 14px;
 }
 
-.gprecian-typing span {
+.gprecian-typing-dots {
+  display: flex;
+  gap: 4px;
+  align-items: center;
+}
+
+.gprecian-typing-dots span {
   width: 6px;
   height: 6px;
   border-radius: 999px;
@@ -16569,12 +16636,31 @@ img.alumni-post-avatar {
   animation: gprecian-typing-bounce 1.1s infinite ease-in-out;
 }
 
-.gprecian-typing span:nth-child(2) {
+.gprecian-typing-dots span:nth-child(2) {
   animation-delay: 0.15s;
 }
 
-.gprecian-typing span:nth-child(3) {
+.gprecian-typing-dots span:nth-child(3) {
   animation-delay: 0.3s;
+}
+
+/* Ollama streams its reply token-by-token (see fetchAiReplyWithTools), so this preview fills in
+   live while the bouncing dots hide - other providers never write into it, so the dots just stay
+   put like before. Not the final message bubble; addGprecianBotReply swaps this whole row for a
+   real, safety-checked .bot-message once the full reply resolves. */
+.gprecian-stream-preview:empty {
+  display: none;
+}
+
+.gprecian-typing-dots:has(~ .gprecian-stream-preview:not(:empty)) {
+  display: none;
+}
+
+.gprecian-stream-preview {
+  font-size: 0.9rem;
+  line-height: 1.45;
+  color: #344054;
+  white-space: pre-wrap;
 }
 
 @keyframes gprecian-typing-bounce {
@@ -16882,120 +16968,609 @@ img.alumni-post-avatar {
   box-shadow: 0 16px 40px rgba(4, 40, 74, 0.3);
 }
 
-.event-visitor-page.admin-dashboard-page .gprecian-panel {
-  border: 1px solid rgba(255, 255, 255, 0.18);
-  background:
-    linear-gradient(135deg, rgba(255, 154, 60, 0.08), transparent 30%),
-    rgba(7, 17, 31, 0.94);
-  box-shadow: 0 28px 80px rgba(0, 0, 0, 0.38);
-  backdrop-filter: blur(18px);
+/* GPRECian Bot "Quick Access" redesign - trial run on the public homepage only
+   (body.gprec-orb-chat). Clean, card-based, icon-driven: a light neutral canvas, a 2-column grid
+   of colored icon-badge cards replacing the old plain-text pill chips, and flat white/navy message
+   cards - no gradients-everywhere or glass blur. If this reads well here, add the same body class
+   to other pages to roll it out - nothing below touches the un-scoped .gprecian-* rules above, so
+   every other page is completely unaffected until then. */
+body.gprec-orb-chat {
+  --gprec-orb: linear-gradient(155deg, #123a63 0%, var(--navy) 55%, #051e36 100%);
+  --gprec-orb-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.12), 0 6px 14px rgba(4, 40, 74, 0.24);
+  --gprec-canvas: #f5f7fb;
 }
 
-.event-visitor-page.admin-dashboard-page .gprecian-head {
+/* Whole panel is now a frosted-glass floating card, matching the toggle pill's glass treatment,
+   instead of a solid opaque background - translucent + blurred so whatever's behind the widget on
+   the page shows through softly. */
+body.gprec-orb-chat .gprecian-panel {
+  border: none;
+  border-radius: 24px;
+  background: rgba(248, 250, 253, 0.78);
+  backdrop-filter: blur(26px) saturate(160%);
+  -webkit-backdrop-filter: blur(26px) saturate(160%);
+  box-shadow: 0 28px 60px rgba(4, 40, 74, 0.24), 0 6px 16px rgba(4, 40, 74, 0.12);
+}
+
+/* Solid var(--navy) - the exact same navy used everywhere else on the site (top nav, buttons,
+   etc.) - instead of a translucent blend, which shifted the perceived color away from the site's
+   actual brand navy once blended with whatever's behind it. */
+body.gprec-orb-chat .gprecian-head {
+  border-radius: 24px 24px 0 0;
+  background: var(--navy);
+}
+
+/* One single floating glowing orb, not a ring wrapping a separate inner circle - the button
+   itself is the orb (gradient sphere + breathing glow), with the icon sitting directly on it.
+   The "GPRECian Bot" label stays a hover-only tooltip via the base .gprecian-toggle strong rule
+   (nothing here overrides its display/position, so that base behavior applies unchanged). */
+/* No border at all - a translucent border here was letting whatever's on the page behind the
+   button (the site's own orange accents) blend through at the edge, showing as a faint unwanted
+   orange ring. An opaque background + shadow is enough to read as a floating button on its own. */
+body.gprec-orb-chat .gprecian-toggle {
+  width: 70px;
+  height: 70px;
+  border: none;
+  border-radius: 50%;
+  background: var(--gprec-orb);
+  animation: gprec-orb-glow-pulse 2.8s ease-in-out infinite;
+}
+
+/* Orange breathing glow - box-shadow only, so it never touches `transform` and can't fight the
+   existing hover scale-up effect (:hover/:focus-visible set transform: scale(1.06) in the base
+   rule). Was neutral white/navy before (see the border removal note above, about an orange-tinted
+   *border* reading as an unwanted ring at the button's edge) - a soft glow radiating outward past
+   the edge doesn't have that problem, so orange here is safe. */
+@keyframes gprec-orb-glow-pulse {
+  0%, 100% {
+    box-shadow: var(--gprec-orb-shadow), 0 18px 38px rgba(4, 40, 74, 0.28), 0 0 0 0 rgba(255, 135, 2, 0.24);
+  }
+  50% {
+    box-shadow: var(--gprec-orb-shadow), 0 18px 38px rgba(4, 40, 74, 0.28), 0 0 22px 8px rgba(255, 135, 2, 0.32);
+  }
+}
+
+body.gprec-orb-chat .gprecian-toggle span {
+  background: transparent;
+  box-shadow: none;
   color: #ffffff;
+}
+
+/* Hover tooltip label ("GPRECian Bot") as glass too, instead of the base rule's solid navy pill -
+   matches the frosted treatment used everywhere else in this redesign. */
+/* Still no pill/background (kept from the last request) - the polish here is in motion and
+   type, not a box: a smooth slide+fade on appearance instead of the base rule's abrupt
+   display:none/block toggle, plus letter-spacing so plain white text doesn't read as an
+   afterthought. display stays "block" always so opacity/transform can actually transition -
+   visibility handles removing it from interaction/hit-testing while hidden. */
+body.gprec-orb-chat .gprecian-toggle strong {
+  display: block;
+  padding: 0;
+  border: none;
+  border-radius: 0;
+  background: none;
+  box-shadow: none;
+  color: #ffffff;
+  font-size: 0.82rem;
+  font-weight: 900;
+  letter-spacing: 0.02em;
+  text-shadow: 0 1px 4px rgba(4, 40, 74, 0.85), 0 1px 2px rgba(4, 40, 74, 0.85);
+  opacity: 0;
+  visibility: hidden;
+  transform: translateX(6px);
+  transition: opacity 200ms ease, transform 200ms ease, visibility 0s linear 200ms;
+}
+
+body.gprec-orb-chat .gprecian-toggle:hover strong,
+body.gprec-orb-chat .gprecian-toggle:focus-visible strong {
+  opacity: 1;
+  visibility: visible;
+  transform: translateX(0);
+  transition: opacity 200ms ease, transform 200ms ease, visibility 0s linear 0s;
+}
+
+body.gprec-orb-chat .bot-avatar {
+  color: #ffffff;
+  background: var(--gprec-orb);
+  box-shadow: var(--gprec-orb-shadow);
+}
+
+body.gprec-orb-chat .user-avatar {
+  color: var(--navy);
+  background: #ffe6bf;
+}
+
+/* Transparent so the glass panel's own blur shows through continuously instead of these sections
+   painting their own opaque backgrounds on top of it. */
+body.gprec-orb-chat .gprecian-welcome,
+body.gprec-orb-chat .gprecian-messages,
+body.gprec-orb-chat .gprecian-form,
+body.gprec-orb-chat .gprecian-disclaimer {
+  background: transparent;
+}
+
+/* Tighter vertical rhythm than the base rule - the Quick Access grid below already explains each
+   category via its own subtitle, so the long paragraph this used to sit above got dropped
+   entirely (see .gprecian-welcome-subtext) rather than just visually squeezed. */
+body.gprec-orb-chat .gprecian-welcome {
+  gap: 8px;
+  padding: 16px 16px 2px;
+}
+
+body.gprec-orb-chat .gprecian-welcome-greeting {
+  font-size: 0.95rem;
+}
+
+body.gprec-orb-chat .gprecian-welcome-question {
+  font-size: 1.15rem;
+}
+
+/* Redundant now that each Quick Access card carries its own subtitle - keeping both repeated the
+   same information twice and was most of the extra height. */
+body.gprec-orb-chat .gprecian-welcome-subtext {
+  display: none;
+}
+
+/* --- Quick Access card grid, replacing the old single-column text-only pill chips --- */
+body.gprec-orb-chat .gprecian-quick-access-label {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin: 0;
+  color: var(--navy);
+  font-size: 0.76rem;
+  font-weight: 900;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+body.gprec-orb-chat .gprecian-quick-access-label svg {
+  width: 14px;
+  height: 14px;
+  color: var(--orange);
+  fill: currentColor;
+}
+
+body.gprec-orb-chat .gprecian-chips {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+  padding-bottom: 14px;
+}
+
+/* Bouncier pop-in than the inherited base fade-slide, staggered per card so the 2x2 grid arrives
+   one card after another instead of all at once. */
+@keyframes gprec-card-pop-in {
+  0% {
+    opacity: 0;
+    transform: translateY(10px) scale(0.94);
+  }
+  60% {
+    opacity: 1;
+    transform: translateY(-2px) scale(1.015);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+/* Glossy diagonal sheen (light catching a glass panel) as an extra background layer, not a
+   separate ::before overlay - an absolutely-positioned pseudo-element paints AFTER normal-flow
+   children, which would sit the sheen on top of the card's own text and reduce legibility. A
+   background layer always paints behind an element's children instead, so this is layout-safe. */
+body.gprec-orb-chat .gprecian-chips button {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 6px;
+  min-height: 0;
+  padding: 11px 12px;
+  border-radius: 14px;
+  overflow: hidden;
+  background: linear-gradient(150deg, rgba(255, 255, 255, 0.65) 0%, rgba(255, 255, 255, 0.2) 30%, transparent 55%),
+    rgba(255, 255, 255, 0.68);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  box-shadow: 0 1px 2px rgba(4, 40, 74, 0.04), inset 0 1px 0 rgba(255, 255, 255, 0.8);
+  animation: gprec-card-pop-in 420ms cubic-bezier(0.34, 1.56, 0.64, 1) backwards;
+  transition: border-color 150ms ease, background 150ms ease, box-shadow 150ms ease, transform 150ms ease;
+}
+
+body.gprec-orb-chat .gprecian-chips button:nth-child(1) {
+  animation-delay: 80ms;
+}
+
+body.gprec-orb-chat .gprecian-chips button:nth-child(2) {
+  animation-delay: 140ms;
+}
+
+body.gprec-orb-chat .gprecian-chips button:nth-child(3) {
+  animation-delay: 200ms;
+}
+
+body.gprec-orb-chat .gprecian-chips button:nth-child(4) {
+  animation-delay: 260ms;
+}
+
+body.gprec-orb-chat .gprecian-chips button:hover,
+body.gprec-orb-chat .gprecian-chips button:focus-visible {
+  background: linear-gradient(150deg, rgba(255, 255, 255, 0.65) 0%, rgba(255, 255, 255, 0.2) 30%, transparent 55%),
+    rgba(255, 255, 255, 0.92);
+  border-color: var(--orange);
+  transform: translateY(-1px);
+  box-shadow: 0 10px 20px rgba(4, 40, 74, 0.1);
+}
+
+/* Icon badge gets a little bounce-and-tilt of its own on card hover, on top of the card's lift. */
+body.gprec-orb-chat .gprecian-chips button:hover .gprecian-chip-icon,
+body.gprec-orb-chat .gprecian-chips button:focus-visible .gprecian-chip-icon {
+  transform: scale(1.12) rotate(-4deg);
+}
+
+body.gprec-orb-chat .gprecian-chip-icon {
+  display: grid;
+  width: 32px;
+  height: 32px;
+  flex: 0 0 auto;
+  place-items: center;
+  border-radius: 10px;
+  background: #eef1fa;
+  color: #3457d5;
+  transition: transform 220ms cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+body.gprec-orb-chat .gprecian-chip-icon svg {
+  width: 17px;
+  height: 17px;
+  stroke: currentColor;
+  stroke-width: 1.9;
+  fill: none;
+}
+
+body.gprec-orb-chat button[data-badge="blue"] .gprecian-chip-icon {
+  background: #e3ecff;
+  color: #3457d5;
+}
+
+body.gprec-orb-chat button[data-badge="green"] .gprecian-chip-icon {
+  background: #e2f5ea;
+  color: var(--green);
+}
+
+body.gprec-orb-chat button[data-badge="orange"] .gprecian-chip-icon {
+  background: #fff0dc;
+  color: var(--orange);
+}
+
+body.gprec-orb-chat button[data-badge="purple"] .gprecian-chip-icon {
+  background: #ece7fb;
+  color: #6f42c1;
+}
+
+body.gprec-orb-chat .gprecian-chip-text {
+  display: grid;
+  gap: 2px;
+}
+
+body.gprec-orb-chat .gprecian-chip-title {
+  color: var(--navy);
+  font-size: 0.86rem;
+  font-weight: 850;
+  line-height: 1.2;
+}
+
+body.gprec-orb-chat .gprecian-chip-subtitle {
+  color: var(--muted);
+  font-size: 0.72rem;
+  font-weight: 700;
+  line-height: 1.3;
+}
+
+/* --- Message cards: flat white/navy, no gradients or blur --- */
+/* Layers on top of .chat-row's own inherited slide-up (different element, so no conflict) - the
+   row slides up while the bubble itself scales in, giving messages a bit more "arrival" feel. */
+@keyframes gprec-bubble-pop-in {
+  0% {
+    opacity: 0;
+    transform: scale(0.9);
+  }
+  100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+body.gprec-orb-chat .gprecian-messages .user-message,
+body.gprec-orb-chat .gprecian-messages .bot-message {
+  border-radius: 16px;
+  animation: gprec-bubble-pop-in 260ms cubic-bezier(0.34, 1.56, 0.64, 1) backwards;
+}
+
+/* Sheen folded into the background layer itself (see the Quick Access card comment above for
+   why - not a separate ::before, which would paint on top of the message text). */
+body.gprec-orb-chat .bot-message {
+  position: relative;
+  overflow: hidden;
+  border-color: rgba(4, 40, 74, 0.08);
+  background: linear-gradient(150deg, rgba(255, 255, 255, 0.55) 0%, rgba(255, 255, 255, 0.15) 28%, transparent 50%),
+    rgba(255, 255, 255, 0.82);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  box-shadow: 0 4px 12px rgba(4, 40, 74, 0.05), inset 0 1px 0 rgba(255, 255, 255, 0.8);
+}
+
+body.gprec-orb-chat .chat-links a {
+  border-radius: 12px;
+}
+
+body.gprec-orb-chat .gprecian-form input {
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.75);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  transition: border-color 150ms ease, box-shadow 150ms ease, background 150ms ease;
+}
+
+body.gprec-orb-chat .gprecian-form input:focus {
+  outline: none;
+  border-color: var(--orange);
+  background: rgba(255, 255, 255, 0.95);
+  box-shadow: 0 0 0 3px rgba(255, 135, 2, 0.14);
+}
+
+body.gprec-orb-chat .gprecian-form > button {
+  color: #ffffff;
+  background: var(--gprec-orb);
+  box-shadow: var(--gprec-orb-shadow);
+}
+
+/* Footer disclaimer restyled as a quiet branded strip, echoing "Powered by AI - Built for GPREC"
+   style footers - keeps the existing accuracy-warning copy (that's a real trust/legal note, not
+   just decoration) but gives it the small-icon-plus-text treatment instead of bare centered text. */
+body.gprec-orb-chat .gprecian-disclaimer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 12px 16px;
+  border-top: 1px solid rgba(4, 40, 74, 0.08);
+  border-radius: 0 0 24px 24px;
+  background: transparent;
+  color: #37455a;
+  font-size: 0.78rem;
+  font-weight: 700;
+  text-align: left;
+}
+
+body.gprec-orb-chat .gprecian-disclaimer-icon {
+  display: block;
+  width: 14px;
+  height: 14px;
+  flex: 0 0 auto;
+  stroke: var(--orange);
+  stroke-width: 1.9;
+  fill: none;
+}
+
+/* Visitor dashboard compass theme, reskinned onto the shared gprec-orb-chat layout: same cards,
+   spacing and animations as every other dashboard's chatbot, just recolored with this page's own
+   orange/navy compass palette instead of the light neutral canvas. The triple class selector
+   (.event-visitor-page.admin-dashboard-page.gprec-orb-chat) outranks the plain
+   "body.gprec-orb-chat" rules above on specificity alone, so nothing here needs !important. */
+.event-visitor-page.admin-dashboard-page.gprec-orb-chat .gprecian-panel {
   background:
-    linear-gradient(90deg, rgba(255, 154, 60, 0.16), rgba(232, 93, 4, 0.10), rgba(232, 93, 4, 0.14)),
-    rgba(3, 10, 28, 0.92);
+    radial-gradient(circle at 82% 12%, rgba(255, 154, 60, 0.14), transparent 36%),
+    linear-gradient(160deg, rgba(18, 28, 62, 0.98), rgba(7, 12, 30, 0.98));
+  box-shadow: 0 28px 60px rgba(0, 0, 0, 0.42), 0 6px 16px rgba(0, 0, 0, 0.3);
 }
 
-.event-visitor-page.admin-dashboard-page .bot-avatar,
-.event-visitor-page.admin-dashboard-page .gprecian-avatar {
-  color: #07111f;
-  background: linear-gradient(135deg, #FF9A3C, #E85D04);
-  box-shadow: 0 10px 24px rgba(255, 154, 60, 0.18);
-}
-
-.event-visitor-page.admin-dashboard-page .gprecian-messages,
-.event-visitor-page.admin-dashboard-page .gprecian-welcome {
+.event-visitor-page.admin-dashboard-page.gprec-orb-chat .gprecian-head {
   background:
-    radial-gradient(circle at top left, rgba(255, 154, 60, 0.10), transparent 34%),
-    rgba(3, 10, 28, 0.72);
+    linear-gradient(90deg, rgba(255, 154, 60, 0.16), rgba(232, 93, 4, 0.08), transparent),
+    rgba(6, 11, 28, 0.96);
 }
 
-.event-visitor-page.admin-dashboard-page .gprecian-welcome-greeting,
-.event-visitor-page.admin-dashboard-page .gprecian-welcome-question {
+.event-visitor-page.admin-dashboard-page.gprec-orb-chat .gprecian-toggle,
+.event-visitor-page.admin-dashboard-page.gprec-orb-chat .bot-avatar,
+.event-visitor-page.admin-dashboard-page.gprec-orb-chat .gprecian-form > button {
+  background:
+    radial-gradient(circle at 50% 35%, rgba(255, 154, 60, 0.24), transparent 46%),
+    linear-gradient(145deg, #14225A, #071024);
+}
+
+/* Same technique the old compass-theme launcher used: the dashed spinning ring lives on ::before
+   (repurposed from the shared rule's pulsing-dot role) and the green online-status dot moves to
+   ::after, positioned to match. Rotating ::before alone - never the button itself - keeps the
+   icon inside upright instead of spinning the whole launcher (which is what broke Playwright's
+   click-stability check and would have looked wrong for a real visitor too). */
+.event-visitor-page.admin-dashboard-page.gprec-orb-chat .gprecian-toggle {
+  background:
+    radial-gradient(circle at 50% 35%, rgba(255, 154, 60, 0.24), transparent 46%),
+    linear-gradient(145deg, #14225A, #071024);
+  animation: gprec-compass-glow-pulse 2.8s ease-in-out infinite;
+}
+
+.event-visitor-page.admin-dashboard-page.gprec-orb-chat .gprecian-toggle::before {
+  right: auto;
+  bottom: auto;
+  inset: -9px;
+  width: auto;
+  height: auto;
+  border: 1px dashed rgba(255, 177, 92, 0.48);
+  border-radius: 999px;
+  background: transparent;
+  animation: gprec-compass-ring-spin 16s linear infinite;
+}
+
+.event-visitor-page.admin-dashboard-page.gprec-orb-chat .gprecian-toggle::after {
+  right: 5px;
+  bottom: 5px;
+}
+
+@keyframes gprec-compass-ring-spin {
+  to { transform: rotate(360deg); }
+}
+
+@keyframes gprec-compass-glow-pulse {
+  0%, 100% {
+    box-shadow: var(--gprec-orb-shadow), 0 18px 38px rgba(0, 0, 0, 0.4), 0 0 0 0 rgba(255, 154, 60, 0.35);
+  }
+  50% {
+    box-shadow: var(--gprec-orb-shadow), 0 18px 38px rgba(0, 0, 0, 0.4), 0 0 22px 7px rgba(255, 154, 60, 0.35);
+  }
+}
+
+.event-visitor-page.admin-dashboard-page.gprec-orb-chat .gprecian-welcome-question {
   color: #ffffff;
 }
 
-.event-visitor-page.admin-dashboard-page .gprecian-welcome-subtext,
-.event-visitor-page.admin-dashboard-page .gprecian-disclaimer,
-.event-visitor-page.admin-dashboard-page .gprecian-title div span {
-  color: rgba(255, 255, 255, 0.68);
+.event-visitor-page.admin-dashboard-page.gprec-orb-chat .gprecian-quick-access-label {
+  color: #FFB15C;
 }
 
-.event-visitor-page.admin-dashboard-page .gprecian-chips button {
-  color: #ffffff;
-  border-color: rgba(255, 255, 255, 0.16);
-  background: rgba(255, 255, 255, 0.08);
-}
-
-.event-visitor-page.admin-dashboard-page .gprecian-chips button:hover,
-.event-visitor-page.admin-dashboard-page .gprecian-chips button:focus-visible {
-  color: #07111f;
-  border-color: transparent;
-  background: #E85D04;
-}
-
-.event-visitor-page.admin-dashboard-page .bot-message {
-  color: rgba(255, 255, 255, 0.86);
-  border-color: rgba(255, 255, 255, 0.14);
-  background: rgba(255, 255, 255, 0.08);
-}
-
-.event-visitor-page.admin-dashboard-page .bot-message-body strong {
+.event-visitor-page.admin-dashboard-page.gprec-orb-chat .gprecian-quick-access-label svg {
   color: #FF9A3C;
 }
 
-.event-visitor-page.admin-dashboard-page .user-message {
-  color: #07111f;
-  background: linear-gradient(135deg, #FF9A3C, #E85D04);
+.event-visitor-page.admin-dashboard-page.gprec-orb-chat .gprecian-chips button {
+  border-color: transparent;
+  background: linear-gradient(150deg, rgba(255, 255, 255, 0.10) 0%, rgba(255, 255, 255, 0.03) 30%, transparent 55%),
+    rgba(255, 255, 255, 0.06);
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.2), inset 0 1px 0 rgba(255, 255, 255, 0.08);
 }
 
-.event-visitor-page.admin-dashboard-page .gprecian-form {
-  background: rgba(3, 10, 28, 0.82);
+.event-visitor-page.admin-dashboard-page.gprec-orb-chat .gprecian-chips button:hover,
+.event-visitor-page.admin-dashboard-page.gprec-orb-chat .gprecian-chips button:focus-visible {
+  background: linear-gradient(150deg, rgba(255, 255, 255, 0.10) 0%, rgba(255, 255, 255, 0.03) 30%, transparent 55%),
+    rgba(255, 255, 255, 0.11);
+  border-color: #FF9A3C;
+  box-shadow: 0 10px 20px rgba(0, 0, 0, 0.3);
 }
 
-.event-visitor-page.admin-dashboard-page .gprecian-form input {
+.event-visitor-page.admin-dashboard-page.gprec-orb-chat .gprecian-chip-title {
   color: #ffffff;
-  border-color: rgba(255, 255, 255, 0.18);
-  background: rgba(255, 255, 255, 0.08);
 }
 
-.event-visitor-page.admin-dashboard-page .gprecian-form input::placeholder {
-  color: rgba(255, 255, 255, 0.52);
+.event-visitor-page.admin-dashboard-page.gprec-orb-chat .gprecian-chip-subtitle {
+  color: rgba(255, 255, 255, 0.6);
 }
 
-.event-visitor-page.admin-dashboard-page .gprecian-form > button,
-.event-visitor-page.admin-dashboard-page .gprecian-toggle {
-  color: #07111f;
-  background: linear-gradient(135deg, #FF9A3C, #E85D04);
+.event-visitor-page.admin-dashboard-page.gprec-orb-chat .bot-message {
+  color: #ffffff;
+  border-color: rgba(255, 255, 255, 0.1);
+  background: linear-gradient(150deg, rgba(255, 255, 255, 0.08) 0%, rgba(255, 255, 255, 0.02) 28%, transparent 50%),
+    rgba(255, 255, 255, 0.05);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2), inset 0 1px 0 rgba(255, 255, 255, 0.08);
 }
 
-.event-visitor-page.admin-dashboard-page .gprecian-toggle {
-  border-color: rgba(255, 255, 255, 0.22);
-  box-shadow: 0 18px 44px rgba(232, 93, 4, 0.26);
+.event-visitor-page.admin-dashboard-page.gprec-orb-chat .bot-message-body strong {
+  color: #FF9A3C;
 }
 
-.event-visitor-page.admin-dashboard-page .gprecian-toggle span {
-  color: #07111f;
-  background: rgba(255, 255, 255, 0.24);
-  box-shadow: inset 0 0 0 2px rgba(255, 255, 255, 0.20);
-}
-
-.event-visitor-page.admin-dashboard-page .gprecian-toggle strong {
-  color: #07111f;
-  background: #E85D04;
-}
-
-.event-visitor-page.admin-dashboard-page .gprecian-suggestions {
-  border-color: rgba(255, 255, 255, 0.18);
-  background: rgba(7, 17, 31, 0.96);
-}
-
-.event-visitor-page.admin-dashboard-page .gprecian-suggestions button {
+.event-visitor-page.admin-dashboard-page.gprec-orb-chat .gprecian-form input {
   color: #ffffff;
   border-color: rgba(255, 255, 255, 0.14);
-  background: rgba(255, 255, 255, 0.08);
+  background: rgba(255, 255, 255, 0.06);
+}
+
+.event-visitor-page.admin-dashboard-page.gprec-orb-chat .gprecian-form input::placeholder {
+  color: rgba(255, 255, 255, 0.45);
+}
+
+.event-visitor-page.admin-dashboard-page.gprec-orb-chat .gprecian-form input:focus {
+  border-color: #FF9A3C;
+  background: rgba(255, 255, 255, 0.09);
+  box-shadow: 0 0 0 3px rgba(255, 154, 60, 0.16);
+}
+
+.event-visitor-page.admin-dashboard-page.gprec-orb-chat .gprecian-disclaimer {
+  border-top-color: rgba(255, 255, 255, 0.1);
+  color: rgba(255, 255, 255, 0.6);
+}
+
+.event-visitor-page.admin-dashboard-page.gprec-orb-chat .gprecian-disclaimer-icon {
+  stroke: #FF9A3C;
+}
+
+.event-visitor-page.admin-dashboard-page.gprec-orb-chat .gprecian-welcome {
+  position: relative;
+  isolation: isolate;
+  overflow: hidden;
+}
+
+.event-visitor-page.admin-dashboard-page.gprec-orb-chat .gprecian-welcome > * {
+  position: relative;
+  z-index: 1;
+}
+
+/* The actual "old design compass" - a large compass-rose watermark, not the small N/E/S/W
+   letters. Exact SVG/position/opacity/animation pulled verbatim from git history
+   (.gprecian-welcome::after there). The old code duplicated this same artwork three times
+   (panel::before, welcome::after, messages::after, all at the same spot) - that stacking was
+   the actual "duplicate compass" bug reported earlier. This restores exactly one copy. */
+.event-visitor-page.admin-dashboard-page.gprec-orb-chat .gprecian-welcome::after {
+  content: "";
+  position: absolute;
+  right: -72px;
+  bottom: 18px;
+  z-index: 0;
+  display: block;
+  width: 230px;
+  aspect-ratio: 1;
+  background: url("data:image/svg+xml,%3Csvg width='520' height='520' viewBox='0 0 520 520' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' stroke='%23FF9A3C' stroke-linecap='round' stroke-linejoin='round'%3E%3Ccircle cx='260' cy='260' r='218' stroke-width='8' opacity='.72'/%3E%3Ccircle cx='260' cy='260' r='134' stroke-width='6' opacity='.56'/%3E%3Ccircle cx='260' cy='260' r='72' stroke='%23E85D04' stroke-width='6' opacity='.84'/%3E%3Cpath d='M260 46 306 260 260 474 214 260z' fill='%23E85D04' stroke='none' opacity='.82'/%3E%3Cpath d='M46 260 260 214 474 260 260 306z' fill='%23FF9A3C' stroke='none' opacity='.58'/%3E%3Cpath d='M142 142 260 220 378 142 300 260 378 378 260 300 142 378 220 260z' stroke-width='6' opacity='.48'/%3E%3Cpath d='M260 18v74M260 428v74M18 260h74M428 260h74' stroke-width='7' opacity='.34'/%3E%3C/g%3E%3C/svg%3E") center / contain no-repeat;
+  opacity: .2;
+  pointer-events: none;
+  animation: gprec-compass-ring-spin 20s linear infinite;
+}
+
+/* Exact original values (position, size, animation) - pulled verbatim from git history
+   (git show HEAD:styles.css). This rule must come after ".gprecian-welcome > *" above - both
+   match this element with equal specificity, so source order decides, and ">*"'s
+   position:relative was winning that tie and silently knocking this out of position:absolute. */
+.event-visitor-page.admin-dashboard-page.gprec-orb-chat .gprecian-compass-directions {
+  position: absolute;
+  right: -72px;
+  top: auto;
+  bottom: 18px;
+  z-index: 1;
+  width: 230px;
+  aspect-ratio: 1;
+  pointer-events: none;
+  animation: gprec-compass-ring-spin 20s linear infinite;
+}
+
+.event-visitor-page.admin-dashboard-page.gprec-orb-chat .gprecian-compass-directions i {
+  position: absolute;
+  color: #FFB15C;
+  font: 900 0.56rem/1 "Courier New", monospace;
+  letter-spacing: 0;
+  text-shadow: 0 0 10px rgba(255, 138, 29, 0.34);
+}
+
+.event-visitor-page.admin-dashboard-page.gprec-orb-chat .gprecian-compass-directions i:nth-child(1) {
+  top: 0;
+  left: 50%;
+  transform: translateX(-50%);
+}
+
+.event-visitor-page.admin-dashboard-page.gprec-orb-chat .gprecian-compass-directions i:nth-child(2) {
+  top: 50%;
+  right: 0;
+  transform: translateY(-50%);
+}
+
+.event-visitor-page.admin-dashboard-page.gprec-orb-chat .gprecian-compass-directions i:nth-child(3) {
+  bottom: 0;
+  left: 50%;
+  transform: translateX(-50%);
+}
+
+.event-visitor-page.admin-dashboard-page.gprec-orb-chat .gprecian-compass-directions i:nth-child(4) {
+  top: 50%;
+  left: 0;
+  transform: translateY(-50%);
 }
 
 .event-visitor-page.admin-dashboard-page {
@@ -21246,86 +21821,10 @@ button.calendar-cell-event {
   opacity: .11;
 }
 
-/* Reference-style compass in the event visitor help chat background. */
-.event-visitor-page.admin-dashboard-page .gprecian-panel {
-  isolation: isolate;
-}
-
-.event-visitor-page.admin-dashboard-page .gprecian-panel::before {
-  display: none;
-}
-
-.event-visitor-page.admin-dashboard-page .gprecian-panel > * {
-  position: relative;
-  z-index: 1;
-}
-
-@media (max-width: 760px) {
-  .event-visitor-page.admin-dashboard-page .gprecian-panel::before {
-    display: none;
-  }
-}
-
-/* Use blue instead of near-black for the event visitor help chat surfaces. */
-.event-visitor-page.admin-dashboard-page .gprecian-panel,
-.event-visitor-page.admin-dashboard-page .gprecian-welcome {
-  background:
-    radial-gradient(circle at 78% 24%, rgba(255, 154, 60, 0.06), transparent 34%),
-    linear-gradient(160deg, rgba(18, 44, 122, 0.98), rgba(9, 28, 78, 0.98));
-}
-
-.event-visitor-page.admin-dashboard-page .gprecian-head,
-.event-visitor-page.admin-dashboard-page .gprecian-form {
-  background: rgba(8, 29, 82, 0.92);
-}
-
-.event-visitor-page.admin-dashboard-page .gprecian-chips button,
-.event-visitor-page.admin-dashboard-page .gprecian-form input {
-  background: rgba(255, 255, 255, 0.10);
-}
-
-.event-visitor-page.admin-dashboard-page .gprecian-welcome {
-  position: relative;
-  isolation: isolate;
-  overflow: hidden;
-}
-
-.event-visitor-page.admin-dashboard-page .gprecian-welcome::before {
-  position: absolute;
-  right: -78px;
-  top: auto;
-  bottom: 118px;
-  z-index: 0;
-  width: min(300px, 46vw);
-  aspect-ratio: 1;
-  background: url("data:image/svg+xml,%3Csvg width='520' height='520' viewBox='0 0 520 520' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' stroke='%23FF7A18' stroke-linecap='round' stroke-linejoin='round'%3E%3Ccircle cx='260' cy='260' r='218' stroke-width='10' opacity='.9'/%3E%3Ccircle cx='260' cy='260' r='132' stroke-width='8' opacity='.68'/%3E%3Ccircle cx='260' cy='260' r='70' fill='%23A9430B' stroke='none' opacity='.8'/%3E%3Ccircle cx='260' cy='260' r='38' fill='%23FF9A3C' stroke='none' opacity='.86'/%3E%3Cpath d='M260 46 306 260 260 474 214 260z' fill='%23E85D04' stroke='none' opacity='.9'/%3E%3Cpath d='M46 260 260 214 474 260 260 306z' fill='%23FF9A3C' stroke='none' opacity='.7'/%3E%3Cpath d='M142 142 260 220 378 142 300 260 378 378 260 300 142 378 220 260z' stroke-width='7' opacity='.58'/%3E%3Cpath d='M260 18v74M260 428v74M18 260h74M428 260h74' stroke-width='8' opacity='.42'/%3E%3C/g%3E%3C/svg%3E") center / contain no-repeat;
-  content: "";
-  opacity: .20;
-  pointer-events: none;
-  animation: gprecChatCompassRing 20s linear infinite;
-}
-
-.event-visitor-page.admin-dashboard-page .gprecian-welcome > * {
-  position: relative;
-  z-index: 1;
-}
-
-@media (max-width: 760px) {
-  .event-visitor-page.admin-dashboard-page .gprecian-welcome::before {
-    right: -92px;
-    top: auto;
-    bottom: 142px;
-    width: 280px;
-    opacity: .16;
-  }
-}
-
 /* Admin-controlled visitor theme/compass placement. The homepage banner has its own fixed
    compass-theme layout (.home-fest-bg) and doesn't participate in this toggle. */
 .event-visitor-page[data-visitor-theme="minimal"] .visitor-compass-art,
-.event-visitor-page[data-visitor-theme="festival"] .visitor-compass-art,
-.event-visitor-page.admin-dashboard-page[data-visitor-theme="minimal"] .gprecian-welcome::before,
-.event-visitor-page.admin-dashboard-page[data-visitor-theme="festival"] .gprecian-welcome::before {
+.event-visitor-page[data-visitor-theme="festival"] .visitor-compass-art {
   display: none;
 }
 
@@ -21340,25 +21839,6 @@ button.calendar-cell-event {
 
 .event-visitor-page.admin-dashboard-page[data-compass-position="bottom-right"] .visitor-dash-hero > .visitor-compass-art {
   top: 74%;
-}
-
-.event-visitor-page.admin-dashboard-page[data-compass-position="left"] .gprecian-welcome::after,
-.event-visitor-page.admin-dashboard-page[data-compass-position="left"] .gprecian-compass-directions {
-  right: auto;
-  left: -72px;
-}
-
-/* right: calc(50% - half the compass width) centers the box without a transform, so the
-   transform property stays free for the gprecChatCompassRing spin animation on ::after. */
-.event-visitor-page.admin-dashboard-page[data-compass-position="center"] .gprecian-welcome::after,
-.event-visitor-page.admin-dashboard-page[data-compass-position="center"] .gprecian-compass-directions {
-  right: calc(50% - 115px);
-}
-
-.event-visitor-page.admin-dashboard-page[data-compass-position="bottom-right"] .gprecian-welcome::after,
-.event-visitor-page.admin-dashboard-page[data-compass-position="bottom-right"] .gprecian-compass-directions {
-  right: -96px;
-  bottom: 4px;
 }
 
 /* Old decorative doodle line-art removed for a clean flat backdrop matching the login screen -
@@ -22147,96 +22627,6 @@ button.calendar-cell-event {
   min-height: 220px;
 }
 
-.event-visitor-page.admin-dashboard-page .gprecian-panel,
-.event-visitor-page.admin-dashboard-page .gprecian-welcome,
-.event-visitor-page.admin-dashboard-page .gprecian-messages {
-  background:
-    radial-gradient(circle at 78% 18%, rgba(232, 93, 4, 0.16), transparent 30%),
-    linear-gradient(145deg, rgba(16, 22, 50, 0.96), rgba(10, 16, 36, 0.98) 60%, rgba(5, 9, 20, 0.98)) !important;
-}
-
-.event-visitor-page.admin-dashboard-page .gprecian-panel {
-  border-color: rgba(255, 154, 60, 0.2);
-  box-shadow: 0 24px 70px rgba(0, 0, 0, 0.36);
-}
-
-.event-visitor-page.admin-dashboard-page .gprecian-panel::before {
-  position: absolute;
-  right: -92px;
-  bottom: 104px;
-  z-index: 0;
-  display: block !important;
-  width: 260px;
-  aspect-ratio: 1;
-  background: url("data:image/svg+xml,%3Csvg width='520' height='520' viewBox='0 0 520 520' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' stroke='%23FF9A3C' stroke-linecap='round' stroke-linejoin='round'%3E%3Ccircle cx='260' cy='260' r='212' stroke-width='7' opacity='.58'/%3E%3Ccircle cx='260' cy='260' r='132' stroke-width='5' opacity='.44'/%3E%3Ccircle cx='260' cy='260' r='72' stroke='%23E85D04' stroke-width='5' opacity='.72'/%3E%3Cpath d='M260 64 304 260 260 456 216 260z' fill='%23E85D04' stroke='none' opacity='.72'/%3E%3Cpath d='M64 260 260 216 456 260 260 304z' fill='%23FF9A3C' stroke='none' opacity='.48'/%3E%3Cpath d='M150 150 260 224 370 150 296 260 370 370 260 296 150 370 224 260z' stroke-width='5' opacity='.38'/%3E%3C/g%3E%3C/svg%3E") center / contain no-repeat;
-  content: "";
-  opacity: .16;
-  pointer-events: none;
-}
-
-.event-visitor-page.admin-dashboard-page .gprecian-welcome,
-.event-visitor-page.admin-dashboard-page .gprecian-messages {
-  position: relative;
-  isolation: isolate;
-  overflow: hidden;
-}
-
-.event-visitor-page.admin-dashboard-page .gprecian-welcome::after,
-.event-visitor-page.admin-dashboard-page .gprecian-messages::after {
-  position: absolute;
-  right: -72px;
-  bottom: 18px;
-  z-index: 0;
-  display: block;
-  width: 230px;
-  aspect-ratio: 1;
-  background: url("data:image/svg+xml,%3Csvg width='520' height='520' viewBox='0 0 520 520' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' stroke='%23FF9A3C' stroke-linecap='round' stroke-linejoin='round'%3E%3Ccircle cx='260' cy='260' r='218' stroke-width='8' opacity='.72'/%3E%3Ccircle cx='260' cy='260' r='134' stroke-width='6' opacity='.56'/%3E%3Ccircle cx='260' cy='260' r='72' stroke='%23E85D04' stroke-width='6' opacity='.84'/%3E%3Cpath d='M260 46 306 260 260 474 214 260z' fill='%23E85D04' stroke='none' opacity='.82'/%3E%3Cpath d='M46 260 260 214 474 260 260 306z' fill='%23FF9A3C' stroke='none' opacity='.58'/%3E%3Cpath d='M142 142 260 220 378 142 300 260 378 378 260 300 142 378 220 260z' stroke-width='6' opacity='.48'/%3E%3Cpath d='M260 18v74M260 428v74M18 260h74M428 260h74' stroke-width='7' opacity='.34'/%3E%3C/g%3E%3C/svg%3E") center / contain no-repeat;
-  content: "";
-  opacity: .2;
-  pointer-events: none;
-}
-
-.event-visitor-page.admin-dashboard-page .gprecian-messages::after {
-  transform: rotate(-8deg);
-}
-
-.event-visitor-page.admin-dashboard-page .gprecian-welcome::after {
-  animation: gprecChatCompassRing 20s linear infinite;
-}
-
-.event-visitor-page.admin-dashboard-page .gprecian-welcome > *,
-.event-visitor-page.admin-dashboard-page .gprecian-messages > * {
-  position: relative;
-  z-index: 1;
-}
-
-.event-visitor-page.admin-dashboard-page .gprecian-head,
-.event-visitor-page.admin-dashboard-page .gprecian-form {
-  border-color: rgba(255, 154, 60, 0.16);
-  background: rgba(5, 9, 20, 0.56) !important;
-}
-
-.event-visitor-page.admin-dashboard-page .bot-message {
-  color: #ffffff;
-  border-color: rgba(255, 154, 60, 0.14);
-  background: rgba(10, 16, 36, 0.72);
-}
-
-.event-visitor-page.admin-dashboard-page .user-message {
-  color: #07111f;
-  background: #FF9A3C;
-}
-
-.event-visitor-page.admin-dashboard-page .gprecian-form input {
-  color: #ffffff;
-  border-color: rgba(255, 154, 60, 0.18);
-  background: rgba(10, 16, 36, 0.68) !important;
-}
-
-.event-visitor-page.admin-dashboard-page .gprecian-toggle {
-  background: linear-gradient(135deg, #E85D04, #FF9A3C) !important;
-}
-
 .event-visitor-page.admin-dashboard-page .visitor-login-footer {
   position: relative;
   z-index: 5;
@@ -22313,6 +22703,18 @@ button.calendar-cell-event {
   flex-wrap: wrap;
   gap: 10px;
   margin-top: 18px;
+}
+
+/* Moved out of .visitor-dash-copy in the HTML to be a direct .visitor-dash-hero grid child, same
+   as .visitor-dash-stats below it - grid-column:1/-1 + width:100% here mirrors .visitor-dash-stats
+   exactly (styles.css ~L21874), so both rows share the same full width and centering the timer in
+   it reliably lines up with the middle "Registered" tile's own center at any viewport width.
+   (A fixed-pixel margin here previously only worked at the one width it was measured at.) */
+.event-visitor-page.admin-dashboard-page .visitor-dash-timer {
+  grid-column: 1 / -1;
+  width: 100%;
+  max-width: none;
+  justify-content: center;
 }
 
 .event-visitor-page.admin-dashboard-page .visitor-fest-pulse span {
@@ -23418,7 +23820,6 @@ button.calendar-cell-event {
 .event-visitor-page.admin-dashboard-page .visitor-fest-band,
 .event-visitor-page.admin-dashboard-page .visitor-dashboard-grid,
 .event-visitor-page.admin-dashboard-page .visitor-registrations-preview,
-.event-visitor-page.admin-dashboard-page .gprecian-panel,
 .event-visitor-page.admin-dashboard-page .visitor-login-footer {
   border-color: var(--compass-line) !important;
   background:
@@ -23510,10 +23911,7 @@ button.calendar-cell-event {
   background: linear-gradient(135deg, var(--compass-amber), var(--compass-orange)) !important;
 }
 
-.event-visitor-page.admin-dashboard-page .visitor-dash-login-compass svg,
-.event-visitor-page.admin-dashboard-page .gprecian-panel::before,
-.event-visitor-page.admin-dashboard-page .gprecian-welcome::after,
-.event-visitor-page.admin-dashboard-page .gprecian-messages::after {
+.event-visitor-page.admin-dashboard-page .visitor-dash-login-compass svg {
   filter: drop-shadow(0 22px 42px rgba(255, 138, 29, 0.10));
 }
 
@@ -23622,7 +24020,6 @@ button.calendar-cell-event {
 
 .event-visitor-page.admin-dashboard-page #visitorDashTopbar,
 .event-visitor-page.admin-dashboard-page .visitor-dash-shell,
-.event-visitor-page.admin-dashboard-page .gprecian,
 .event-visitor-page.admin-dashboard-page .visitor-login-footer {
   position: relative;
   z-index: 1;
@@ -23726,9 +24123,7 @@ button.calendar-cell-event {
   .event-visitor-page.admin-dashboard-page .visitor-dash-hero::after,
   .event-visitor-page.admin-dashboard-page .visitor-fest-band::before,
   .event-visitor-page.admin-dashboard-page .visitor-registrations-preview::before,
-  .event-visitor-page.admin-dashboard-page .visitor-dashboard-grid::before,
-  .event-visitor-page.admin-dashboard-page .gprecian-welcome::after,
-  .event-visitor-page.admin-dashboard-page .gprecian-compass-directions {
+  .event-visitor-page.admin-dashboard-page .visitor-dashboard-grid::before {
     animation: none !important;
   }
 
@@ -23737,299 +24132,6 @@ button.calendar-cell-event {
   .event-visitor-page.admin-dashboard-page .visitor-dashboard-grid {
     animation: none !important;
   }
-}
-
-/* Keep the GPRECian bot always visible on the visitor dashboard. */
-.event-visitor-page.admin-dashboard-page .gprecian,
-.event-visitor-page.admin-dashboard-page .gprecian.is-hidden {
-  display: grid !important;
-  position: fixed !important;
-  right: 22px !important;
-  bottom: 22px !important;
-  z-index: 120 !important;
-}
-
-.event-visitor-page.admin-dashboard-page .gprecian-panel {
-  display: block !important;
-  width: min(390px, calc(100vw - 32px)) !important;
-  max-height: min(720px, calc(100vh - 42px));
-}
-
-.event-visitor-page.admin-dashboard-page .gprecian-toggle,
-.event-visitor-page.admin-dashboard-page .gprecian-close {
-  display: none !important;
-}
-
-/* Clarification: keep the bot launcher icon always visible, but don't force the full chat open. */
-.event-visitor-page.admin-dashboard-page .gprecian,
-.event-visitor-page.admin-dashboard-page .gprecian.is-hidden {
-  display: grid !important;
-  position: fixed !important;
-  right: 22px !important;
-  bottom: 22px !important;
-  z-index: 140 !important;
-}
-
-.event-visitor-page.admin-dashboard-page .gprecian-panel {
-  display: none !important;
-  width: min(390px, calc(100vw - 32px)) !important;
-}
-
-.event-visitor-page.admin-dashboard-page .gprecian.open .gprecian-panel {
-  display: block !important;
-}
-
-.event-visitor-page.admin-dashboard-page .gprecian-toggle {
-  display: inline-flex !important;
-  position: relative;
-  z-index: 2;
-  min-width: 58px;
-  min-height: 58px;
-  border: 2px solid rgba(255, 177, 92, 0.50) !important;
-  box-shadow: 0 18px 42px rgba(0, 0, 0, 0.34), 0 0 0 6px rgba(255, 138, 29, 0.10);
-}
-
-.event-visitor-page.admin-dashboard-page .gprecian-toggle span {
-  display: inline-grid !important;
-}
-
-.event-visitor-page.admin-dashboard-page .gprecian-close {
-  display: inline-grid !important;
-}
-
-/* Restore the visitor chatbot launcher to the darker compass-theme style. */
-.event-visitor-page.admin-dashboard-page .gprecian-toggle {
-  display: inline-grid !important;
-  width: 58px !important;
-  height: 58px !important;
-  min-width: 58px !important;
-  min-height: 58px !important;
-  place-items: center !important;
-  padding: 0 !important;
-  border: 1px solid rgba(255, 154, 60, 0.32) !important;
-  border-radius: 16px !important;
-  color: #FFB15C !important;
-  background:
-    radial-gradient(circle at 72% 18%, rgba(255, 154, 60, 0.18), transparent 42%),
-    linear-gradient(145deg, rgba(16, 26, 58, 0.96), rgba(6, 11, 28, 0.98)) !important;
-  box-shadow: 0 16px 38px rgba(0, 0, 0, 0.34), inset 0 1px 0 rgba(255, 255, 255, 0.06) !important;
-}
-
-.event-visitor-page.admin-dashboard-page .gprecian-toggle span {
-  display: grid !important;
-  width: 40px !important;
-  height: 40px !important;
-  place-items: center !important;
-  border: 1px solid rgba(255, 154, 60, 0.28) !important;
-  border-radius: 12px !important;
-  color: #FFB15C !important;
-  background: rgba(255, 138, 29, 0.08) !important;
-  box-shadow: none !important;
-}
-
-.event-visitor-page.admin-dashboard-page .gprecian-toggle svg {
-  width: 24px !important;
-  height: 24px !important;
-  stroke: currentColor !important;
-}
-
-.event-visitor-page.admin-dashboard-page .gprecian-toggle::before {
-  right: -2px !important;
-  bottom: -2px !important;
-  width: 13px !important;
-  height: 13px !important;
-  background: #21B26B !important;
-}
-
-.event-visitor-page.admin-dashboard-page .gprecian-toggle::after {
-  right: -2px !important;
-  bottom: -2px !important;
-  width: 13px !important;
-  height: 13px !important;
-  border: 2px solid #071024 !important;
-  background: #21B26B !important;
-}
-
-.event-visitor-page.admin-dashboard-page .gprecian-toggle strong {
-  color: #F8FAFF !important;
-  border: 1px solid rgba(255, 154, 60, 0.18);
-  background: rgba(7, 13, 31, 0.96) !important;
-}
-
-/* Make expand work again after the always-visible launcher overrides. */
-.event-visitor-page.admin-dashboard-page .gprecian.open {
-  right: 22px !important;
-  bottom: 22px !important;
-}
-
-.event-visitor-page.admin-dashboard-page .gprecian.open .gprecian-panel {
-  display: flex !important;
-  flex-direction: column;
-  width: min(390px, calc(100vw - 32px)) !important;
-  max-height: min(720px, calc(100vh - 42px)) !important;
-}
-
-.event-visitor-page.admin-dashboard-page .gprecian.open .gprecian-panel.expanded {
-  width: min(680px, calc(100vw - 44px)) !important;
-  max-height: min(82vh, 760px) !important;
-}
-
-.event-visitor-page.admin-dashboard-page .gprecian.open .gprecian-panel.expanded .gprecian-messages,
-.event-visitor-page.admin-dashboard-page .gprecian.open .gprecian-panel.expanded .gprecian-welcome {
-  max-height: min(520px, calc(100vh - 230px)) !important;
-}
-
-/* Use the shared dashboard chatbot launcher style on this page too. */
-.event-visitor-page.admin-dashboard-page .gprecian-toggle {
-  display: grid !important;
-  width: 70px !important;
-  height: 70px !important;
-  min-width: 70px !important;
-  min-height: 70px !important;
-  place-items: center !important;
-  padding: 0 !important;
-  border: 3px solid #ffffff !important;
-  border-radius: 999px !important;
-  color: var(--navy) !important;
-  background: linear-gradient(145deg, #ffffff 0%, #eef6ff 100%) !important;
-  box-shadow: 0 18px 38px rgba(4, 40, 74, 0.22), inset 0 0 0 1px rgba(255, 129, 0, 0.18) !important;
-}
-
-.event-visitor-page.admin-dashboard-page .gprecian-toggle span {
-  display: grid !important;
-  width: 56px !important;
-  height: 56px !important;
-  place-items: center !important;
-  color: var(--navy) !important;
-  border: 0 !important;
-  border-radius: 999px !important;
-  background: #fff4e5 !important;
-  box-shadow: inset 0 0 0 2px rgba(255, 129, 0, 0.22) !important;
-}
-
-.event-visitor-page.admin-dashboard-page .gprecian-toggle svg {
-  width: 34px !important;
-  height: 34px !important;
-  fill: rgba(255, 154, 60, 0.10) !important;
-  stroke: #FF9A3C !important;
-  stroke-width: 1.9 !important;
-}
-
-.event-visitor-page.admin-dashboard-page .gprecian-toggle::before {
-  inset: -9px !important;
-  width: auto !important;
-  height: auto !important;
-  border: 1px dashed rgba(255, 177, 92, 0.48) !important;
-  border-radius: 999px !important;
-  background: transparent !important;
-  box-shadow:
-    inset 0 0 0 8px rgba(255, 138, 29, 0.035),
-    0 0 28px rgba(255, 138, 29, 0.12) !important;
-  animation: gprecChatCompassRing 16s linear infinite !important;
-}
-
-.event-visitor-page.admin-dashboard-page .gprecian-toggle::after {
-  right: 5px !important;
-  bottom: 7px !important;
-  width: 12px !important;
-  height: 12px !important;
-  border: 2px solid #070D1F !important;
-  border-radius: 999px !important;
-  background: #21B26B !important;
-  box-shadow: 0 0 0 4px rgba(33, 178, 107, 0.14) !important;
-}
-
-.event-visitor-page.admin-dashboard-page .gprecian-toggle strong {
-  right: 82px !important;
-  color: #ffffff !important;
-  border: 0 !important;
-  background: var(--navy) !important;
-}
-
-/* Match the shared dashboard expand behavior. */
-.event-visitor-page.admin-dashboard-page .gprecian.open .gprecian-panel {
-  display: block !important;
-  width: min(360px, calc(100vw - 30px)) !important;
-  max-height: none !important;
-}
-
-.event-visitor-page.admin-dashboard-page .gprecian.open .gprecian-panel.expanded {
-  width: min(480px, calc(100vw - 30px)) !important;
-  max-height: none !important;
-}
-
-.event-visitor-page.admin-dashboard-page .gprecian.open .gprecian-panel.expanded .gprecian-messages {
-  max-height: 480px !important;
-}
-
-/* Same old launcher shape, recolored for the compass dashboard theme. */
-.event-visitor-page.admin-dashboard-page .gprecian-toggle {
-  border-color: rgba(255, 154, 60, 0.34) !important;
-  color: #FF9A3C !important;
-  background:
-    radial-gradient(circle at 50% 35%, rgba(255, 154, 60, 0.20), transparent 46%),
-    linear-gradient(145deg, #14225A, #071024) !important;
-  box-shadow: 0 18px 42px rgba(0, 0, 0, 0.34), inset 0 0 0 1px rgba(255, 154, 60, 0.16) !important;
-}
-
-.event-visitor-page.admin-dashboard-page .gprecian-toggle span {
-  color: #FF9A3C !important;
-  background: linear-gradient(145deg, #1B2B66, #0A1435) !important;
-  box-shadow: inset 0 0 0 2px rgba(255, 154, 60, 0.26), 0 0 18px rgba(255, 138, 29, 0.10) !important;
-}
-
-.event-visitor-page.admin-dashboard-page .gprecian-toggle strong {
-  color: #F8FAFF !important;
-  border: 1px solid rgba(255, 154, 60, 0.18) !important;
-  background: rgba(7, 13, 31, 0.96) !important;
-}
-
-@keyframes gprecChatCompassRing {
-  to { transform: rotate(360deg); }
-}
-
-.event-visitor-page.admin-dashboard-page .gprecian-compass-directions {
-  position: absolute;
-  right: -72px;
-  top: auto;
-  bottom: 18px;
-  z-index: 1;
-  width: 230px;
-  aspect-ratio: 1;
-  pointer-events: none;
-  animation: gprecChatCompassRing 20s linear infinite;
-}
-
-.event-visitor-page.admin-dashboard-page .gprecian-compass-directions i {
-  position: absolute;
-  color: #FFB15C;
-  font: 900 0.56rem/1 "Courier New", monospace;
-  letter-spacing: 0;
-  text-shadow: 0 0 10px rgba(255, 138, 29, 0.34);
-}
-
-.event-visitor-page.admin-dashboard-page .gprecian-compass-directions i:nth-child(1) {
-  top: 0;
-  left: 50%;
-  transform: translateX(-50%);
-}
-
-.event-visitor-page.admin-dashboard-page .gprecian-compass-directions i:nth-child(2) {
-  top: 50%;
-  right: 0;
-  transform: translateY(-50%);
-}
-
-.event-visitor-page.admin-dashboard-page .gprecian-compass-directions i:nth-child(3) {
-  bottom: 0;
-  left: 50%;
-  transform: translateX(-50%);
-}
-
-.event-visitor-page.admin-dashboard-page .gprecian-compass-directions i:nth-child(4) {
-  top: 50%;
-  left: 0;
-  transform: translateY(-50%);
 }
 
 /* Live fest ticker and subtle compass route paths. */
@@ -24941,7 +25043,7 @@ button.calendar-cell-event {
   background: linear-gradient(135deg, #FFB15C, #FF8A1D) !important;
 }
 
-.event-visitor-page.admin-dashboard-page .visitor-scroll-compass {
+.event-visitor-page .visitor-scroll-compass {
   position: fixed;
   top: 50%;
   right: 18px;
@@ -24949,62 +25051,69 @@ button.calendar-cell-event {
   display: grid;
   gap: 8px;
   place-items: center;
+  width: 40px;
   opacity: 0.54;
   transform: translateY(-50%);
   pointer-events: none;
   transition: opacity .25s ease;
 }
 
-.event-visitor-page.admin-dashboard-page .visitor-scroll-compass.is-active {
+.event-visitor-page .visitor-scroll-compass.is-active {
   opacity: 0.86;
 }
 
-.event-visitor-page.admin-dashboard-page .visitor-scroll-compass > span,
-.event-visitor-page.admin-dashboard-page .visitor-scroll-compass small {
-  color: #FFB15C;
+.event-visitor-page .visitor-scroll-compass > span,
+.event-visitor-page .visitor-scroll-compass small {
+  display: block;
+  width: 100%;
+  text-align: center;
+  /* !important needed to beat the ".event-visitor-page.admin-dashboard-page small" theme
+     catch-all (styles.css ~L23854), which also uses !important and would otherwise recolor
+     this to --compass-muted only inside the dashboard, breaking parity with the login page. */
+  color: #FFB15C !important;
   font: 900 0.68rem/1 "Courier New", monospace;
 }
 
-.event-visitor-page.admin-dashboard-page .visitor-scroll-compass i {
+.event-visitor-page .visitor-scroll-compass i {
   position: relative;
   display: grid;
-  width: 46px;
-  height: 46px;
+  width: 40px;
+  height: 40px;
   place-items: center;
   border: 1px solid rgba(255, 154, 60, 0.24);
   border-radius: 50%;
   background:
     radial-gradient(circle, rgba(255, 154, 60, 0.10), transparent 52%),
     rgba(7, 13, 31, 0.72);
-  box-shadow: inset 0 0 0 7px rgba(255, 154, 60, 0.04);
+  box-shadow: inset 0 0 0 6px rgba(255, 154, 60, 0.04);
 }
 
-.event-visitor-page.admin-dashboard-page .visitor-scroll-compass b {
+.event-visitor-page .visitor-scroll-compass b {
   display: block;
-  width: 7px;
-  height: 7px;
+  width: 6px;
+  height: 6px;
   border-radius: 50%;
   background: #FFB15C;
   box-shadow:
-    0 -17px 0 -1px #FF9A3C,
-    0 0 16px rgba(255, 138, 29, 0.55);
+    0 -15px 0 -1px #FF9A3C,
+    0 0 14px rgba(255, 138, 29, 0.55);
   transform-origin: 50% 50%;
   transition: transform .12s linear;
 }
 
-.event-visitor-page.admin-dashboard-page .visitor-scroll-compass i::before,
-.event-visitor-page.admin-dashboard-page .visitor-scroll-compass i::after {
+.event-visitor-page .visitor-scroll-compass i::before,
+.event-visitor-page .visitor-scroll-compass i::after {
   position: absolute;
   content: "";
   background: rgba(255, 154, 60, 0.32);
 }
 
-.event-visitor-page.admin-dashboard-page .visitor-scroll-compass i::before {
+.event-visitor-page .visitor-scroll-compass i::before {
   width: 1px;
   height: 100%;
 }
 
-.event-visitor-page.admin-dashboard-page .visitor-scroll-compass i::after {
+.event-visitor-page .visitor-scroll-compass i::after {
   width: 100%;
   height: 1px;
 }
@@ -25037,10 +25146,6 @@ button.calendar-cell-event {
 
   .event-visitor-page.admin-dashboard-page .visitor-zone-map-stage {
     min-height: 520px;
-  }
-
-  .event-visitor-page.admin-dashboard-page .visitor-scroll-compass {
-    display: none;
   }
 }
 
@@ -25480,4 +25585,202 @@ button.calendar-cell-event {
   border-color: var(--orange);
   color: #ffffff;
   background: var(--orange);
+}
+
+/* Event-visitor page-load reveal: compass rings scale in, the needle spins hard then eases to a
+   stop pointing N, a sonar ping fires on the settle, cardinal letters fade in, then the whole
+   thing zooms/fades away to reveal the real page. Self-contained (own class names), so it can't
+   collide with the shared .gprecian-compass-directions/.visitor-scroll-compass systems elsewhere
+   on this same page. JS just toggles .is-leaving after a timeout - all the choreography below is
+   pure CSS so nothing here can desync from a slow network/script delay. */
+/* Hidden by default - only .playVisitorPageReveal() (called from the sign-in submit handler on
+   success) adds .is-active to show and start the entrance choreography. Nothing here runs on a
+   plain page load. */
+.visitor-page-reveal {
+  display: none;
+  position: fixed;
+  inset: 0;
+  /* One above #gprecLoader's 100000 (styles.css ~L2611) - the login submit handler's
+     visitorRequest() call triggers that small action-busy spinner for real, and without this the
+     two would render stacked on top of each other in the same spot. The reveal already
+     communicates "something is happening" on its own, so it should just cover the small one. */
+  z-index: 100001;
+  overflow: hidden;
+  /* Same background as .event-visitor-page itself, so the reveal reads as part of the page
+     rather than a different-colored splash screen slapped on top of it. */
+  background:
+    radial-gradient(circle at 16% 18%, rgba(18, 39, 112, 0.92) 0 24%, transparent 24.2%),
+    radial-gradient(circle at 84% 78%, rgba(78, 50, 84, 0.50) 0 23%, transparent 23.2%),
+    radial-gradient(circle at 50% 40%, rgba(232, 93, 4, 0.12), transparent 28%),
+    linear-gradient(135deg, #111f5a 0%, #0A1433 44%, #071027 100%);
+  opacity: 1;
+  transition: opacity 550ms cubic-bezier(0.6, 0, 0.4, 1), visibility 0s linear 550ms;
+}
+
+.visitor-page-reveal.is-active {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 22px;
+}
+
+.visitor-page-reveal.is-leaving {
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
+}
+
+.visitor-reveal-dashring {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: min(560px, 90vw);
+  aspect-ratio: 1;
+  border: 1px dashed rgba(255, 154, 60, 0.22);
+  border-radius: 999px;
+  transform: translate(-50%, -50%);
+  animation: reveal-dashring-spin 30s linear infinite;
+}
+
+@keyframes reveal-dashring-spin {
+  to { transform: translate(-50%, -50%) rotate(360deg); }
+}
+
+.visitor-reveal-compass {
+  position: relative;
+  width: min(220px, 52vw);
+  aspect-ratio: 1;
+}
+
+.visitor-reveal-compass svg {
+  display: block;
+  width: 100%;
+  height: 100%;
+  overflow: visible;
+}
+
+.reveal-ring {
+  transform-origin: 0 0;
+  opacity: 0;
+  animation: reveal-ring-in 640ms cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+.reveal-ring-outer {
+  animation-delay: 60ms;
+}
+
+.reveal-ring-mid {
+  animation-delay: 180ms;
+}
+
+.reveal-ring-inner {
+  animation-delay: 300ms;
+}
+
+@keyframes reveal-ring-in {
+  0% { opacity: 0; transform: scale(0.5); }
+  100% { opacity: 1; transform: scale(1); }
+}
+
+.reveal-ticks {
+  opacity: 0;
+  animation: reveal-fade-in 400ms ease 420ms forwards;
+}
+
+@keyframes reveal-fade-in {
+  to { opacity: 1; }
+}
+
+.reveal-needle {
+  transform-origin: 0 0;
+  transform: rotate(-40deg);
+  opacity: 0;
+  animation:
+    reveal-needle-fade 300ms ease 260ms forwards,
+    reveal-needle-spin 1200ms cubic-bezier(0.22, 0.8, 0.24, 1) 260ms forwards;
+}
+
+@keyframes reveal-needle-fade {
+  to { opacity: 1; }
+}
+
+@keyframes reveal-needle-spin {
+  0% { transform: rotate(-40deg); }
+  65% { transform: rotate(740deg); }
+  100% { transform: rotate(720deg); }
+}
+
+.reveal-ping {
+  transform-origin: 0 0;
+  opacity: 0;
+  animation: reveal-ping-out 700ms ease-out 1460ms forwards;
+}
+
+@keyframes reveal-ping-out {
+  0% { opacity: .8; transform: scale(1); }
+  100% { opacity: 0; transform: scale(2.1); }
+}
+
+.reveal-directions {
+  position: absolute;
+  inset: 0;
+  opacity: 0;
+  animation: reveal-fade-in 400ms ease 1520ms forwards;
+}
+
+.reveal-directions i {
+  position: absolute;
+  color: #FFB15C;
+  font: 900 0.72rem/1 "Courier New", monospace;
+  font-style: normal;
+  letter-spacing: 0.04em;
+  text-shadow: 0 0 10px rgba(255, 138, 29, 0.4);
+}
+
+.reveal-directions .rd-n { top: -2px; left: 50%; transform: translateX(-50%); }
+.reveal-directions .rd-e { top: 50%; right: -6px; transform: translateY(-50%); }
+.reveal-directions .rd-s { bottom: -2px; left: 50%; transform: translateX(-50%); }
+.reveal-directions .rd-w { top: 50%; left: -6px; transform: translateY(-50%); }
+
+.visitor-reveal-label {
+  margin: 0;
+  color: #ffffff;
+  font-family: Impact, "Arial Black", sans-serif;
+  font-size: clamp(1.1rem, 4vw, 1.5rem);
+  letter-spacing: 0.12em;
+  text-shadow: 0 2px 14px rgba(0, 0, 0, 0.4);
+  opacity: 0;
+  animation: reveal-label-in 500ms cubic-bezier(0.16, 1, 0.3, 1) 1560ms forwards;
+}
+
+@keyframes reveal-label-in {
+  0% { opacity: 0; transform: translateY(8px); }
+  100% { opacity: 1; transform: translateY(0); }
+}
+
+/* prefers-reduced-motion / no-JS-timing-issue fallback: skip the choreography, everything is
+   just visible immediately so the reveal reads as a plain instant fade instead of forcing motion. */
+.visitor-page-reveal.reduce-motion .reveal-ring,
+.visitor-page-reveal.reduce-motion .reveal-ticks,
+.visitor-page-reveal.reduce-motion .reveal-needle,
+.visitor-page-reveal.reduce-motion .reveal-directions,
+.visitor-page-reveal.reduce-motion .visitor-reveal-label {
+  animation: none;
+  opacity: 1;
+  transform: none;
+}
+
+.visitor-page-reveal.reduce-motion .reveal-ping {
+  display: none;
+}
+
+.visitor-page-reveal.reduce-motion .visitor-reveal-dashring {
+  animation-duration: 60s;
+}
+
+@media (max-width: 480px) {
+  .visitor-reveal-compass {
+    width: min(180px, 58vw);
+  }
 }

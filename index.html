@@ -10,9 +10,9 @@
     <link rel="preconnect" href="https://www.gprec.ac.in">
     <link rel="icon" href="https://www.gprec.ac.in/wp-content/uploads/2017/08/fav.png" sizes="32x32">
     <link rel="apple-touch-icon" href="https://www.gprec.ac.in/wp-content/uploads/2017/08/fav.png">
-    <link rel="stylesheet" href="styles.css">
+    <link rel="stylesheet" href="styles.css?v=20260726-1">
   </head>
-  <body>
+  <body class="gprec-orb-chat">
     <svg class="icon-sprite" aria-hidden="true" focusable="false">
       <symbol id="icon-lightbulb" viewBox="0 0 24 24"><path d="M9 21h6M10 17h4M8.2 14.2a6 6 0 1 1 7.6 0c-.9.7-1.3 1.6-1.4 2.8H9.6c-.1-1.2-.5-2.1-1.4-2.8Z"/></symbol>
       <symbol id="icon-campus" viewBox="0 0 24 24"><path d="M3 21h18M5 21V9l7-4 7 4v12M9 21v-7h6v7M8 10h.01M12 10h.01M16 10h.01"/></symbol>
@@ -407,11 +407,24 @@
           <p class="gprecian-welcome-greeting" id="gprecianWelcomeGreeting">Hello</p>
           <p class="gprecian-welcome-question">How can I help you today?</p>
           <p class="gprecian-welcome-subtext">Ask me about admissions, codes, departments, exams, placements, notices, photos, affiliations, campus facilities, or contact details.</p>
+          <p class="gprecian-quick-access-label"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M13 2 4 14h6l-1 8 9-12h-6l1-8Z"/></svg>Quick Access</p>
           <div class="gprecian-chips" aria-label="Suggested questions">
-            <button type="button" data-question="admission">Admissions</button>
-            <button type="button" data-question="notices">Notices</button>
-            <button type="button" data-question="departments">Departments</button>
-            <button type="button" data-question="contact">Contact Us</button>
+            <button type="button" data-question="admission" data-badge="blue">
+              <span class="gprecian-chip-icon"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="m4 6 8-3 8 3-8 3zM7 8v3M17 8v3M9 12a3 3 0 1 0 6 0M5 21c.7-3.2 3.4-5 7-5s6.3 1.8 7 5"/></svg></span>
+              <span class="gprecian-chip-text"><span class="gprecian-chip-title">Admissions</span><span class="gprecian-chip-subtitle">Courses, eligibility, process</span></span>
+            </button>
+            <button type="button" data-question="departments" data-badge="green">
+              <span class="gprecian-chip-icon"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M4 6c3-1 6-1 8 1 2-2 5-2 8-1v13c-3-1-6-1-8 1-2-2-5-2-8-1V6Z"/><path d="M12 7v13"/></svg></span>
+              <span class="gprecian-chip-text"><span class="gprecian-chip-title">Departments</span><span class="gprecian-chip-subtitle">Branches, curriculum</span></span>
+            </button>
+            <button type="button" data-question="notices" data-badge="orange">
+              <span class="gprecian-chip-icon"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M18 8a6 6 0 0 0-12 0c0 7-3 7-3 9h18c0-2-3-2-3-9ZM10 21h4"/></svg></span>
+              <span class="gprecian-chip-text"><span class="gprecian-chip-title">Notices</span><span class="gprecian-chip-subtitle">Announcements, circulars</span></span>
+            </button>
+            <button type="button" data-question="contact" data-badge="purple">
+              <span class="gprecian-chip-icon"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M5 4h4l2 5-2.5 1.5a11 11 0 0 0 5 5L15 13l5 2v4a2 2 0 0 1-2 2A16 16 0 0 1 3 6a2 2 0 0 1 2-2Z"/></svg></span>
+              <span class="gprecian-chip-text"><span class="gprecian-chip-title">Contact Us</span><span class="gprecian-chip-subtitle">Address, phone, email</span></span>
+            </button>
           </div>
         </div>
         <div class="gprecian-messages is-hidden"></div>
@@ -420,7 +433,8 @@
           <button type="submit" aria-label="Send message"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"/></svg></button>
           <div class="gprecian-suggestions is-hidden" id="gprecianSuggestions"></div>
         </form>
-        <p class="gprecian-disclaimer">AI-generated answers may be inaccurate - verify important details with the college.</p>
+        <p class="gprecian-disclaimer" aria-describedby="gprecianDisclaimerFull"><span>Powered by AI &middot; Built for GPREC</span><svg class="gprecian-disclaimer-icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M12 3l7 3v6c0 4.5-3 7.5-7 9-4-1.5-7-4.5-7-9V6l7-3Z"/></svg></p>
+        <span id="gprecianDisclaimerFull" class="sr-only">AI-generated answers may be inaccurate - verify important details with the college.</span>
       </section>
       <button class="gprecian-toggle" type="button" aria-label="Open GPRECian chat">
         <span><svg><use href="#icon-student"></use></svg></span>
@@ -438,6 +452,6 @@
       <button class="photo-lightbox-nav photo-lightbox-next" type="button" id="photoLightboxNext" aria-label="Next photo">&rsaquo;</button>
     </div>
 
-    <script src="script.js"></script>
+    <script src="script.js?v=20260726-2"></script>
   </body>
 </html>

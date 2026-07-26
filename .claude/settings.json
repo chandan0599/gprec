@@ -10,7 +10,13 @@
       "Bash(grep -n \"^renderAboutHistoryGallery\\(\\);$\\\\|^const aboutHistoryManagerBody\" script.js)",
       "Bash(sed -n '1827,2171p' /tmp/diff_c8_96_script.diff | grep -n \"^@@\\\\|^ const \\\\|^ }\" | head -20)",
       "Bash(grep -n \"qrText: \\\\`GPREC Vehicle Pass\\\\|qrText: \\\\`GPREC Bus Pass\" script.js)",
-      "Bash(cd /Users/lakkavaramsaichandan/gprec.ac.in *)"
+      "Bash(cd /Users/lakkavaramsaichandan/gprec.ac.in *)",
+      "Bash(rm -rf /tmp/wc-test-site *)",
+      "Bash(tar czf *)",
+      "Bash(python3 /private/tmp/claude-501/-Users-lakkavaramsaichandan-gprec-ac-in/d24f1fff-dc2f-49ed-b1f3-88dd6cbf60ba/scratchpad/rollout_orb_chat.py)"
+    ],
+    "additionalDirectories": [
+      "/private/tmp/wc-test-site"
     ]
   }
 }

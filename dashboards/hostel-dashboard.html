@@ -6,9 +6,9 @@
     <title>Hostel Dashboard | GPREC</title>
     <meta name="description" content="GPREC hostel warden dashboard for allocation, outings, leave, visiting, and complaints.">
     <link rel="icon" href="https://www.gprec.ac.in/wp-content/uploads/2017/08/fav.png" sizes="32x32">
-    <link rel="stylesheet" href="../styles.css?v=20260722-31">
+    <link rel="stylesheet" href="../styles.css?v=20260726-1">
   </head>
-  <body class="admin-dashboard-page">
+  <body class="admin-dashboard-page gprec-orb-chat">
     <header class="student-topbar admin-topbar">
       <a class="student-brand" href="../index.html">
         <img src="../gprec-logo-enhanced.png" alt="G Pulla Reddy Engineering College">
@@ -247,11 +247,24 @@
           <p class="gprecian-welcome-greeting" id="gprecianWelcomeGreeting">Hello</p>
           <p class="gprecian-welcome-question">How can I help you today?</p>
           <p class="gprecian-welcome-subtext">Ask me about outing requests, leave requests, hostel allocation, or complaints.</p>
+          <p class="gprecian-quick-access-label"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M13 2 4 14h6l-1 8 9-12h-6l1-8Z"/></svg>Quick Access</p>
           <div class="gprecian-chips" aria-label="Suggested questions">
-            <button type="button" data-question="outing requests">Outing Requests</button>
-            <button type="button" data-question="leave requests">Leave Requests</button>
-            <button type="button" data-question="hostel allocation">Hostel Allocation</button>
-            <button type="button" data-question="complaints">Complaints</button>
+            <button type="button" data-question="outing requests" data-badge="blue">
+              <span class="gprecian-chip-icon"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4M10 17l5-5-5-5M15 12H3"/></svg></span>
+              <span class="gprecian-chip-text"><span class="gprecian-chip-title">Outing Requests</span><span class="gprecian-chip-subtitle">Approve outings</span></span>
+            </button>
+            <button type="button" data-question="leave requests" data-badge="green">
+              <span class="gprecian-chip-icon"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><rect x="6" y="4" width="12" height="17" rx="2"/><path d="M9 4V3a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v1M9 11h6M9 15h6"/></svg></span>
+              <span class="gprecian-chip-text"><span class="gprecian-chip-title">Leave Requests</span><span class="gprecian-chip-subtitle">Approve leaves</span></span>
+            </button>
+            <button type="button" data-question="hostel allocation" data-badge="orange">
+              <span class="gprecian-chip-icon"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><rect x="4" y="3" width="16" height="18" rx="1"/><path d="M8 7h2M14 7h2M8 11h2M14 11h2M8 15h2M14 15h2M10 21v-4h4v4"/></svg></span>
+              <span class="gprecian-chip-text"><span class="gprecian-chip-title">Hostel Allocation</span><span class="gprecian-chip-subtitle">Room assignments</span></span>
+            </button>
+            <button type="button" data-question="complaints" data-badge="purple">
+              <span class="gprecian-chip-icon"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M5 3v18M5 4h11l-2 4 2 4H5"/></svg></span>
+              <span class="gprecian-chip-text"><span class="gprecian-chip-title">Complaints</span><span class="gprecian-chip-subtitle">Student complaints</span></span>
+            </button>
           </div>
         </div>
         <div class="gprecian-messages is-hidden"></div>
@@ -260,7 +273,8 @@
           <button type="submit" aria-label="Send message"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"/></svg></button>
           <div class="gprecian-suggestions is-hidden" id="gprecianSuggestions"></div>
         </form>
-        <p class="gprecian-disclaimer">AI-generated answers may be inaccurate - verify important details with the college.</p>
+        <p class="gprecian-disclaimer" aria-describedby="gprecianDisclaimerFull_hosteldashboardhtml"><span>Powered by AI &middot; Built for GPREC</span><svg class="gprecian-disclaimer-icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M12 3l7 3v6c0 4.5-3 7.5-7 9-4-1.5-7-4.5-7-9V6l7-3Z"/></svg></p>
+        <span id="gprecianDisclaimerFull_hosteldashboardhtml" class="sr-only">AI-generated answers may be inaccurate - verify important details with the college.</span>
       </section>
       <button class="gprecian-toggle" type="button" aria-label="Open GPRECian chat">
         <span><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m4 6 8-3 8 3-8 3zM7 8v3M17 8v3M9 12a3 3 0 1 0 6 0M5 21c.7-3.2 3.4-5 7-5s6.3 1.8 7 5"/></svg></span>
@@ -268,6 +282,6 @@
       </button>
     </div>
 
-    <script src="../script.js?v=20260722-31"></script>
+    <script src="../script.js?v=20260726-2"></script>
   </body>
 </html>
