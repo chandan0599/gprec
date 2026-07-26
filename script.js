@@ -17958,6 +17958,35 @@ const getCampusLifeClubs = () => getSiteContent("campusLifeClubs", [
 ]);
 const saveCampusLifeClubs = (clubs) => saveSiteContent("campusLifeClubs", clubs);
 
+// Every club shows a photo in its badge circle: a real one (club.photo, set from the admin
+// Photo URL field) if uploaded, otherwise a simple line icon matched to the club's Tag by
+// keyword, so the page still looks right before anyone uploads real club photos.
+const campusLifeClubThemeIcon = (tag = "") => {
+  const wrap = (inner) => `<svg viewBox="0 0 24 24" aria-hidden="true">${inner}</svg>`;
+  const t = tag.toLowerCase();
+  if (t.includes("literary") || t.includes("cultural"))
+    return wrap('<path d="M4 5.5C4 4.7 4.7 4 5.5 4H11v16H5.5A1.5 1.5 0 0 1 4 18.5v-13Z"/><path d="M20 5.5c0-.8-.7-1.5-1.5-1.5H13v16h5.5a1.5 1.5 0 0 0 1.5-1.5v-13Z"/>');
+  if (t.includes("discussion") || t.includes("quiz"))
+    return wrap('<path d="M21 11.8a8.3 8.3 0 0 1-8.3 8.3c-1.3 0-2.6-.3-3.7-.9L3 21l1.8-5.9a8.2 8.2 0 0 1-.9-3.8A8.3 8.3 0 0 1 12.2 3a8.4 8.4 0 0 1 8.3 8.3Z"/>');
+  if (t.includes("wellness"))
+    return wrap('<path d="M20.8 8.1a5.5 5.5 0 0 0-9.3-3.9l-.5.5-.5-.5A5.5 5.5 0 0 0 3.2 8.1c0 2 1 3.6 2.5 5.1L12 19.5l6.3-6.3c1.5-1.5 2.5-3.1 2.5-5.1Z"/>');
+  if (t.includes("career") || t.includes("training"))
+    return wrap('<rect x="3" y="7.5" width="18" height="12" rx="2"/><path d="M9 7.5V6a2 2 0 0 1 2-2h2a2 2 0 0 1 2 2v1.5"/><path d="M3 12.5h18"/>');
+  if (t.includes("education"))
+    return wrap('<path d="m12 4 9 4.5-9 4.5-9-4.5Z"/><path d="M6.5 10.7v4.3c0 1.4 2.5 2.5 5.5 2.5s5.5-1.1 5.5-2.5v-4.3"/><path d="M21 8.5v6"/>');
+  if (t.includes("technical"))
+    return wrap('<rect x="8" y="8" width="8" height="8" rx="1"/><path d="M9 4v3M15 4v3M9 17v3M15 17v3M4 9h3M4 15h3M17 9h3M17 15h3"/>');
+  if (t.includes("service") || t.includes("discipline"))
+    return wrap('<path d="M12 3.5 5 6v6c0 4.5 3 7.8 7 8.5 4-.7 7-4 7-8.5V6l-7-2.5Z"/><path d="m9.2 12 2 2 3.6-4"/>');
+  if (t.includes("programming"))
+    return wrap('<path d="m8.5 8-4 4 4 4"/><path d="m15.5 8 4 4-4 4"/><path d="m13 6-2 12"/>');
+  if (t.includes("language") || t.includes("communication"))
+    return wrap('<path d="M21 11.5a8.5 8.5 0 1 1-17 0 8.5 8.5 0 0 1 17 0Z"/><path d="M3.5 9h17M3.5 14h17"/><path d="M12 3c-2.3 2.4-3.5 5.4-3.5 8.5S9.7 17.6 12 20c2.3-2.4 3.5-5.4 3.5-8.5S14.3 5.4 12 3Z"/>');
+  if (t.includes("event"))
+    return wrap('<rect x="3.5" y="5" width="17" height="16" rx="2"/><path d="M3.5 10h17M8 3v4M16 3v4"/><path d="m8.5 14.5 1.5 1.5 3-3.5"/>');
+  return wrap('<circle cx="12" cy="8" r="3.2"/><path d="M5 20c0-3.6 3.1-6.5 7-6.5s7 2.9 7 6.5"/>');
+};
+
 const getCampusLifeServices = () => getSiteContent("campusLifeServices", [
   { badge: "AI", name: "AICTE Scholarship/Fellowship Schemes", tag: "Financial aid", description: "Eligible students can apply for AICTE's student development scholarship and fellowship schemes through the official AICTE portal, which lists the current schemes and their eligibility criteria." },
   { badge: "CN", name: "Counselling", tag: "Mentoring system", description: "GPREC has run a formal mentoring system since AY 2017-18. II, III, and IV B.Tech students are grouped into batches of 15-20 and assigned a faculty mentor for the rest of their course." },
@@ -17967,14 +17996,23 @@ const getCampusLifeServices = () => getSiteContent("campusLifeServices", [
 ]);
 const saveCampusLifeServices = (services) => saveSiteContent("campusLifeServices", services);
 
-const renderCampusLifeAccordionList = (container, items) => {
+// `showPhoto: true` (Student Clubs only) swaps the plain letter badge for a real photo when one's
+// been uploaded, or campusLifeClubThemeIcon's themed icon otherwise - Student Affairs' Services
+// keeps the plain letter badge, since those aren't clubs with a "theme" to illustrate.
+const renderCampusLifeAccordionList = (container, items, { showPhoto = false } = {}) => {
   if (!container) return;
   container.innerHTML = items
     .map(
       (item) => `
         <details class="disclosure-accordion-item">
           <summary>
-            <span class="disclosure-accordion-item-badge">${escapeHtml(item.badge || item.name.slice(0, 2).toUpperCase())}</span>
+            <span class="disclosure-accordion-item-badge">${
+              showPhoto
+                ? item.photo
+                  ? `<img src="${escapeHtml(item.photo)}" alt="">`
+                  : campusLifeClubThemeIcon(item.tag)
+                : escapeHtml(item.badge || item.name.slice(0, 2).toUpperCase())
+            }</span>
             <span class="disclosure-accordion-item-heading"><strong>${escapeHtml(item.name)}</strong><small>${escapeHtml(item.tag || "")}</small></span>
             <svg class="disclosure-accordion-item-chevron" viewBox="0 0 24 24" aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg>
           </summary>
@@ -17986,7 +18024,7 @@ const renderCampusLifeAccordionList = (container, items) => {
     )
     .join("");
 };
-renderCampusLifeAccordionList(document.querySelector("#campusLifeClubsList"), getCampusLifeClubs());
+renderCampusLifeAccordionList(document.querySelector("#campusLifeClubsList"), getCampusLifeClubs(), { showPhoto: true });
 renderCampusLifeAccordionList(document.querySelector("#campusLifeServicesList"), getCampusLifeServices());
 
 // dashboards/admin-dashboard.html - Web Page Content > Campus Life admin CRUD, same
@@ -17998,13 +18036,14 @@ wireAdminCrudList({
   saveItems: saveCampusLifeClubs,
   addButtonSelector: "#campusLifeClubAddButton",
   addFeedbackSelector: "#campusLifeClubAddFeedback",
-  inputSelectors: ["#campusLifeClubBadgeInput", "#campusLifeClubNameInput", "#campusLifeClubTagInput", "#campusLifeClubDescriptionInput"],
+  inputSelectors: ["#campusLifeClubBadgeInput", "#campusLifeClubNameInput", "#campusLifeClubTagInput", "#campusLifeClubDescriptionInput", "#campusLifeClubPhotoInput"],
   itemLabel: "Club",
-  buildItem: ([badge, name, tag, description]) => (name && description ? { badge, name, tag, description } : null),
+  buildItem: ([badge, name, tag, description, photo]) => (name && description ? { badge, name, tag, description, photo } : null),
   removeAttr: "data-remove-campus-club",
   rowHtml: (club, index) => `
     <tr>
       <td>${escapeHtml(club.badge || "")}</td>
+      <td>${club.photo ? `<img src="${escapeHtml(club.photo)}" alt="" style="width:32px;height:32px;border-radius:999px;object-fit:cover;">` : "-"}</td>
       <td>${escapeHtml(club.name)}</td>
       <td>${escapeHtml(club.tag || "")}</td>
       <td><button type="button" class="icon-btn-delete" data-remove-campus-club="${index}" aria-label="Remove" title="Remove">${deleteIconSvg}</button></td>

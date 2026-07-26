@@ -941,11 +941,12 @@
           <div class="web-page-section" data-web-page="campus-life">
             <article class="admin-card admin-form-card">
               <h3>Add Student Club</h3>
-              <p class="field-hint">The Vivekananda Study Circle card (with its committee and report table) is edited directly in <code>pages/campus-life.html</code>, not here - this list covers every other club.</p>
+              <p class="field-hint">The Vivekananda Study Circle card (with its committee and report table) is edited directly in <code>pages/campus-life.html</code>, not here - this list covers every other club. Add a Photo URL to show a real club photo; otherwise a themed icon based on the Tag is shown automatically.</p>
               <div class="admin-add-grid">
                 <label>Badge (2-3 letters)<input type="text" id="campusLifeClubBadgeInput" placeholder="e.g. CC"></label>
                 <label>Name<input type="text" id="campusLifeClubNameInput" placeholder="e.g. Coders Club"></label>
                 <label>Tag<input type="text" id="campusLifeClubTagInput" placeholder="e.g. Programming"></label>
+                <label>Photo URL (optional)<input type="text" id="campusLifeClubPhotoInput" placeholder="../uploads/campus-life/coders-club.jpg"></label>
               </div>
               <label>Description<textarea id="campusLifeClubDescriptionInput"></textarea></label>
               <button type="button" id="campusLifeClubAddButton">Add Club</button>
@@ -953,7 +954,7 @@
             </article>
             <div class="admin-table-card">
               <table>
-                <thead><tr><th>Badge</th><th>Name</th><th>Tag</th><th></th></tr></thead>
+                <thead><tr><th>Badge</th><th>Photo</th><th>Name</th><th>Tag</th><th></th></tr></thead>
                 <tbody id="campusLifeClubsAdminBody"></tbody>
               </table>
               <p class="lookup-empty is-hidden" id="campusLifeClubsAdminEmpty">No clubs added yet.</p>
