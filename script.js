@@ -10,6 +10,17 @@ const escapeHtml = (value) =>
     .replace(/"/g, "&quot;")
     .replace(/'/g, "&#39;");
 
+// escapeHtml() only neutralizes HTML metacharacters - it does nothing to stop a `javascript:` (or
+// `data:`) URL from executing when the escaped string is later placed into an href attribute.
+// Anywhere admin-entered free text ends up as a clickable link (job apply links, uploaded document
+// URLs, etc.) needs this scheme check too, not just escapeHtml.
+const sanitizeExternalUrl = (value) => {
+  const trimmed = String(value || "").trim();
+  const schemeMatch = trimmed.match(/^([a-z][a-z0-9+.-]*):/i);
+  if (schemeMatch && !/^https?$|^mailto$/i.test(schemeMatch[1])) return "#";
+  return escapeHtml(trimmed);
+};
+
 // Pages live one level deep under dashboards/ or pages/, but script.js is shared across all of
 // them - a hardcoded bare filename would resolve relative to whichever page is currently open.
 // gprecPageUrl() below turns a bare filename into the correct path from wherever the current page is.
@@ -1066,10 +1077,12 @@ const getSiteContent = (key, fallback) => getGprecDbBootstrap()?.siteContent?.[k
 const saveSiteContent = (key, value) => {
   const result = gprecDbPost("/site-content", { key, value });
   // saveSiteContent() backs a lot of content beyond just the RAG-relevant bits (admissions, fees,
-  // scholarships, departments) - invalidating on every call is harmless (the next read just
-  // rebuilds a small in-memory array) and far simpler than tracking which specific keys feed the
-  // knowledge base. See invalidateGprecianKnowledgeBaseCache() for why this matters.
-  if (typeof invalidateGprecianKnowledgeBaseCache === "function") invalidateGprecianKnowledgeBaseCache();
+  // scholarships, departments) - invalidating on every successful call is harmless (the next read
+  // just rebuilds a small in-memory array) and far simpler than tracking which specific keys feed
+  // the knowledge base. See invalidateGprecianKnowledgeBaseCache() for why this matters. Only runs
+  // when the write actually went through - a rejected/failed save changed nothing, so there's
+  // nothing new to sync.
+  if (result && typeof invalidateGprecianKnowledgeBaseCache === "function") invalidateGprecianKnowledgeBaseCache();
   return result;
 };
 
@@ -2706,7 +2719,7 @@ const renderPlacementSpotlight = () => {
   spotlightGrid.querySelectorAll("[data-spotlight-placement]").forEach((article) => article.remove());
   const today = new Date(new Date().toDateString());
   const upcomingDrives = getPlacementDrives()
-    .filter((drive) => new Date(drive.date) >= today)
+    .filter((drive) => parseLocalDateOnly(drive.date) >= today)
     .sort((a, b) => (b.addedAt || 0) - (a.addedAt || 0));
 
   const spotlightCopyByType = {
@@ -3696,13 +3709,13 @@ const renderDriveDirectoryFor = (driveType, tbody) => {
     .map(
       (drive) => `
         <tr>
-          <td>${drive.company}</td>
-          <td>${drive.role}</td>
-          <td>${drive.ctc}</td>
+          <td>${escapeHtml(drive.company)}</td>
+          <td>${escapeHtml(drive.role)}</td>
+          <td>${escapeHtml(drive.ctc)}</td>
           <td>${formatExamDate(drive.date)}</td>
           <td>${drive.minCgpa}</td>
           <td>${drive.maxBacklogs}</td>
-          <td>${drive.branches.join(", ")}</td>
+          <td>${escapeHtml(drive.branches.join(", "))}</td>
           <td><button type="button" class="icon-btn-download" data-drive-export="${drive.id}" aria-label="Export applicants CSV" title="Export applicants CSV">${downloadIconSvg}</button></td>
           <td><button type="button" class="icon-btn-delete" data-drive-remove="${drive.id}" aria-label="Remove" title="Remove">${deleteIconSvg}</button></td>
         </tr>
@@ -3803,12 +3816,12 @@ const renderPlacementRecords = () => {
     .map(
       (applicant) => `
         <tr>
-          <td>${applicant.rollNo}</td>
-          <td>${applicant.studentName}</td>
-          <td>${applicant.department || "-"}</td>
-          <td>${applicant.driveType || "Placement"}</td>
-          <td>${applicant.company}</td>
-          <td>${applicant.role}</td>
+          <td>${escapeHtml(applicant.rollNo)}</td>
+          <td>${escapeHtml(applicant.studentName)}</td>
+          <td>${escapeHtml(applicant.department || "-")}</td>
+          <td>${escapeHtml(applicant.driveType || "Placement")}</td>
+          <td>${escapeHtml(applicant.company)}</td>
+          <td>${escapeHtml(applicant.role)}</td>
           <td>${applicant.appliedAt ? new Date(applicant.appliedAt).toLocaleString("en-IN") : "-"}</td>
           <td>
             <select class="admin-select" data-placement-status data-drive-id="${applicant.driveId}" data-roll-no="${applicant.rollNo}">
@@ -3875,9 +3888,9 @@ const renderDriveGridFor = (driveType, gridEl, emptyEl, applyLabel) => {
       }
       return `
         <article class="event-card">
-          <div class="event-card-head"><strong>${drive.company}</strong><span class="event-fee-badge">${drive.ctc}</span></div>
-          <p>${drive.role}</p>
-          <small>${formatExamDate(drive.date)} | Min CGPA ${drive.minCgpa} | Max backlogs ${drive.maxBacklogs} | ${drive.branches.join(", ")}</small>
+          <div class="event-card-head"><strong>${escapeHtml(drive.company)}</strong><span class="event-fee-badge">${escapeHtml(drive.ctc)}</span></div>
+          <p>${escapeHtml(drive.role)}</p>
+          <small>${formatExamDate(drive.date)} | Min CGPA ${drive.minCgpa} | Max backlogs ${drive.maxBacklogs} | ${escapeHtml(drive.branches.join(", "))}</small>
           ${actionHtml}
         </article>
       `;
@@ -3934,11 +3947,11 @@ const renderPrepSessionDirectory = (driveType, tbody) => {
     .map(
       (session) => `
         <tr>
-          <td>${session.company}</td>
+          <td>${escapeHtml(session.company)}</td>
           <td>${formatExamDate(session.date)}</td>
-          <td>${session.sessionTime || "-"}</td>
-          <td>${session.venue || "-"}</td>
-          <td>${session.mode || "-"}</td>
+          <td>${escapeHtml(session.sessionTime || "-")}</td>
+          <td>${escapeHtml(session.venue || "-")}</td>
+          <td>${escapeHtml(session.mode || "-")}</td>
           <td>${session.registeredCount || 0}${session.seatCap ? ` / ${session.seatCap}` : ""}</td>
           <td><button type="button" class="icon-btn-download" data-drive-export="${session.id}" aria-label="Export registrants CSV" title="Export registrants CSV">${downloadIconSvg}</button></td>
           <td><button type="button" class="icon-btn-delete" data-drive-remove="${session.id}" aria-label="Remove" title="Remove">${deleteIconSvg}</button></td>
@@ -4010,9 +4023,9 @@ const renderPrepSessionGrid = (driveType, gridEl, emptyEl) => {
       }
       return `
         <article class="event-card">
-          <div class="event-card-head"><strong>${session.company}</strong>${session.mode ? `<span class="event-fee-badge">${session.mode}</span>` : ""}</div>
-          <p>${session.description || ""}</p>
-          <small>${formatExamDate(session.date)}${session.sessionTime ? ` | ${session.sessionTime}` : ""}${session.venue ? ` | ${session.venue}` : ""}${session.seatCap ? ` | ${session.registeredCount || 0}/${session.seatCap} registered` : ""}</small>
+          <div class="event-card-head"><strong>${escapeHtml(session.company)}</strong>${session.mode ? `<span class="event-fee-badge">${escapeHtml(session.mode)}</span>` : ""}</div>
+          <p>${escapeHtml(session.description || "")}</p>
+          <small>${formatExamDate(session.date)}${session.sessionTime ? ` | ${escapeHtml(session.sessionTime)}` : ""}${session.venue ? ` | ${escapeHtml(session.venue)}` : ""}${session.seatCap ? ` | ${session.registeredCount || 0}/${session.seatCap} registered` : ""}</small>
           ${actionHtml}
         </article>
       `;
@@ -4055,11 +4068,11 @@ const renderJobRecommendationDirectory = () => {
     .map(
       (job) => `
         <tr>
-          <td>${job.company}</td>
-          <td>${job.role}</td>
-          <td>${job.ctc || "-"}</td>
+          <td>${escapeHtml(job.company)}</td>
+          <td>${escapeHtml(job.role)}</td>
+          <td>${escapeHtml(job.ctc || "-")}</td>
           <td>${formatExamDate(job.date)}</td>
-          <td>${job.description || "-"}</td>
+          <td>${escapeHtml(job.description || "-")}</td>
           <td><button type="button" class="icon-btn-delete" data-drive-remove="${job.id}" aria-label="Remove" title="Remove">${deleteIconSvg}</button></td>
         </tr>
       `
@@ -4109,10 +4122,10 @@ const renderJobRecommendationGrid = () => {
     .map(
       (job) => `
         <article class="event-card">
-          <div class="event-card-head"><strong>${job.company}</strong>${job.ctc ? `<span class="event-fee-badge">${job.ctc}</span>` : ""}</div>
-          <p>${job.role}</p>
-          <small>${job.description ? `${job.description} | ` : ""}Deadline: ${formatExamDate(job.date)}</small>
-          <a class="event-apply-toggle" href="${job.applyLink}" target="_blank" rel="noopener noreferrer">Apply ↗</a>
+          <div class="event-card-head"><strong>${escapeHtml(job.company)}</strong>${job.ctc ? `<span class="event-fee-badge">${escapeHtml(job.ctc)}</span>` : ""}</div>
+          <p>${escapeHtml(job.role)}</p>
+          <small>${job.description ? `${escapeHtml(job.description)} | ` : ""}Deadline: ${formatExamDate(job.date)}</small>
+          <a class="event-apply-toggle" href="${sanitizeExternalUrl(job.applyLink)}" target="_blank" rel="noopener noreferrer">Apply ↗</a>
         </article>
       `
     )
@@ -4166,13 +4179,13 @@ const renderInterviewScheduleTable = () => {
     .map(
       (slot) => `
         <tr>
-          <td>${slot.rollNo}</td>
-          <td>${slot.studentName}</td>
-          <td>${slot.roundName}</td>
+          <td>${escapeHtml(slot.rollNo)}</td>
+          <td>${escapeHtml(slot.studentName)}</td>
+          <td>${escapeHtml(slot.roundName)}</td>
           <td>${formatExamDate(slot.date)}</td>
-          <td>${slot.time}</td>
-          <td>${slot.venue || "-"}</td>
-          <td>${slot.notes || "-"}</td>
+          <td>${escapeHtml(slot.time)}</td>
+          <td>${escapeHtml(slot.venue || "-")}</td>
+          <td>${escapeHtml(slot.notes || "-")}</td>
           <td><button type="button" class="icon-btn-delete" data-schedule-remove="${slot.id}" aria-label="Remove" title="Remove">${deleteIconSvg}</button></td>
         </tr>
       `
@@ -4239,14 +4252,14 @@ const renderMyInterviewSchedule = () => {
     .map(
       (slot) => `
         <tr>
-          <td>${slot.company}</td>
-          <td>${slot.role}</td>
-          <td>${slot.driveType}</td>
-          <td>${slot.roundName}</td>
+          <td>${escapeHtml(slot.company)}</td>
+          <td>${escapeHtml(slot.role)}</td>
+          <td>${escapeHtml(slot.driveType)}</td>
+          <td>${escapeHtml(slot.roundName)}</td>
           <td>${formatExamDate(slot.date)}</td>
-          <td>${slot.time}</td>
-          <td>${slot.venue || "-"}</td>
-          <td>${slot.notes || "-"}</td>
+          <td>${escapeHtml(slot.time)}</td>
+          <td>${escapeHtml(slot.venue || "-")}</td>
+          <td>${escapeHtml(slot.notes || "-")}</td>
         </tr>
       `
     )
@@ -4490,8 +4503,8 @@ if (adminNavButtons.length > 0 && adminPanels.length > 0) {
             <tr>
               <td>${resolveStudentDisplayName(item.studentId, item.studentName)} (${item.studentId})</td>
               <td>${item.room || "-"}</td>
-              <td>${item.subject}</td>
-              <td>${item.description}</td>
+              <td>${escapeHtml(item.subject)}</td>
+              <td>${escapeHtml(item.description)}</td>
               <td><span class="${complaintStatusClass(item.status)}">${item.status}</span></td>
               <td>${
                 item.status === "Pending"
@@ -6884,7 +6897,7 @@ if (complaintForm) {
         (item) => `
           <tr>
             <td>${item.category}</td>
-            <td>${item.subject}</td>
+            <td>${escapeHtml(item.subject)}</td>
             <td><span class="${complaintStatusClass(item.status)}">${item.status}</span></td>
             <td>${
               item.status === "Pending"
@@ -9170,8 +9183,8 @@ const renderOutingRequestsTable = (bodyEl, emptyEl, studentId, onChange) => {
       return `
         <tr>
           <td>${request.outingType || "-"}</td>
-          <td>${request.reason}</td>
-          <td>${request.place || "-"}</td>
+          <td>${escapeHtml(request.reason)}</td>
+          <td>${escapeHtml(request.place || "-")}</td>
           <td>${request.outTime}</td>
           <td>${request.returnTime}</td>
           <td><span class="${outingStatusClass(request.status)}">${request.status}</span></td>
@@ -9383,7 +9396,7 @@ const renderHostelLeaveTable = (bodyEl, emptyEl, studentId, onChange) => {
           <td>${request.leaveType}</td>
           <td>${formatExamDate(request.fromDate)}</td>
           <td>${formatExamDate(request.toDate)}</td>
-          <td>${request.reason}</td>
+          <td>${escapeHtml(request.reason)}</td>
           <td><span class="${outingStatusClass(request.status)}">${request.status}</span></td>
           <td>${actionCell}</td>
         </tr>
@@ -9493,8 +9506,8 @@ const renderAdminOutingRequests = () => {
           <div class="hostel-student-grid">
             <p><strong>Requested By</strong><span>${request.requestedBy || "Student"}</span></p>
             <p><strong>Outing Type</strong><span>${request.outingType || "-"}</span></p>
-            <p><strong>Purpose of Visit</strong><span>${request.reason}</span></p>
-            <p><strong>Place of Visit</strong><span>${request.place || "-"}</span></p>
+            <p><strong>Purpose of Visit</strong><span>${escapeHtml(request.reason)}</span></p>
+            <p><strong>Place of Visit</strong><span>${escapeHtml(request.place || "-")}</span></p>
             <p><strong>Parent Mobile</strong><span>${resolveParentMobile(request.studentId, request.parentMobile)}</span></p>
             <p><strong>Out Time</strong><span>${request.outTime}</span></p>
             <p><strong>Return Time</strong><span>${request.returnTime}</span></p>
@@ -9556,7 +9569,7 @@ const renderAdminHostelLeaveRequests = () => {
             <p><strong>Leave Type</strong><span>${request.leaveType}</span></p>
             <p><strong>From</strong><span>${formatExamDate(request.fromDate)}</span></p>
             <p><strong>To</strong><span>${formatExamDate(request.toDate)}</span></p>
-            <p><strong>Reason</strong><span>${request.reason}</span></p>
+            <p><strong>Reason</strong><span>${escapeHtml(request.reason)}</span></p>
             <p><strong>Parent Mobile</strong><span>${resolveParentMobile(request.studentId, request.parentMobile)}</span></p>
           </div>
           <div class="request-card-actions">${actionCell}</div>
@@ -10231,7 +10244,7 @@ const gprecianAnswers = [
     answer: "GPREC alumni are placed in reputed national and multinational organizations across the globe. Use the Alumni link in the top bar for the official alumni page."
   },
   {
-    keywords: ["contact", "phone", "email", "address", "location"],
+    keywords: ["contact", "phone", "email", "address", "location", "located", "where is gprec"],
     answer: "Contact: G Pulla Reddy Nagar, Nandyal Road, Kurnool - 518 007, AP, India. Phone: 08518-270957 / 08518-280719. Email: info@gprec.ac.in.",
     link: { url: gprecPageUrl("contact-us.html"), label: "Open Contact Us" }
   },
@@ -10634,6 +10647,20 @@ const normalizeGprecianQuery = (text = "") => {
     .join(" ");
 };
 
+// Whole-word check for the early topic gates below (attendance, faculty) - those used to do a raw
+// normalized.includes(word) on the full question string, so "hod" matched inside "met**hod**ology"
+// and forced completely unrelated questions into the faculty-clarification flow. A simple exact
+// token match (no fuzzy/edit-distance tolerance needed here - these are just quick routing gates,
+// not the final answer) is enough to fix it.
+const gprecianNormalizedHasWord = (normalized, word) => normalized.split(/\s+/).filter(Boolean).includes(word);
+// Prefix variant for root words that are meant to catch every conjugation of themselves
+// ("teach" -> teaches/teaching/teacher, "professor" -> professors, "hod" as a standalone word) -
+// a whole-token check alone would miss "teaches"/"professors", but a *prefix* check still fixes
+// the actual bug (word STARTS with "hod", so "method"/"methodology" - where "hod" only appears in
+// the middle - no longer match, while "hod"/"hods" still do).
+const gprecianNormalizedHasWordPrefix = (normalized, word) =>
+  normalized.split(/\s+/).filter(Boolean).some((token) => token.startsWith(word));
+
 const getGprecianEditDistance = (a, b) => {
   if (a === b) return 0;
   if (!a || !b) return Math.max(a.length, b.length);
@@ -10654,23 +10681,54 @@ const getGprecianEditDistance = (a, b) => {
   return previous[b.length];
 };
 
+// The containment fallback this used to have (inputToken.includes(keywordToken) etc., for tokens
+// over 3 chars) was the actual root cause behind several wrong-answer bugs, not just the "gpre"/
+// "gprec" one fixed earlier: "example".includes("exam"), "amount".includes("mou"),
+// "method"/"methodology".includes("hod"), "facebook".includes("book"), "coffee".includes("fee")
+// all matched a completely unrelated keyword this way. The singular-form strip below already
+// covers the legitimate case this containment check was likely added for (plurals), and the
+// edit-distance fallback covers genuinely close misspellings - a raw substring check on top of
+// those two doesn't add a real capability, just false positives.
+// Pairs of real, unrelated words that are only one edit apart - the distance check below can't
+// tell "a typo of the same word" from "a genuinely different word that happens to be close",
+// so these are excluded explicitly rather than trying to tighten the threshold enough to reject
+// them (which risks rejecting real typos too). Found via testing: "Is there a trade fair on
+// campus?" matched keyword "grade"; "recommend a hotel for parents visiting" matched "hostel".
+// Add to this list (both directions not needed - checked as an unordered pair) as more are found.
+const GPRECIAN_EDIT_DISTANCE_DENYLIST = [
+  ["grade", "trade"],
+  ["hostel", "hotel"]
+];
+const isGprecianEditDistanceDenied = (a, b) =>
+  GPRECIAN_EDIT_DISTANCE_DENYLIST.some(([x, y]) => (a === x && b === y) || (a === y && b === x));
+
 const isGprecianTokenMatch = (inputToken, keywordToken) => {
   if (!inputToken || !keywordToken) return false;
   if (inputToken === keywordToken) return true;
-  if (inputToken.length > 3 && keywordToken.length > 3 && (inputToken.includes(keywordToken) || keywordToken.includes(inputToken))) return true;
   const singularInput = inputToken.replace(/s$/, "");
   const singularKeyword = keywordToken.replace(/s$/, "");
   if (singularInput === singularKeyword) return true;
+  if (isGprecianEditDistanceDenied(singularInput, singularKeyword)) return false;
+  // Raised from 4 to 6 - at length 4-5, a distance-1 tolerance means roughly a fifth of the word
+  // can differ, which is loose enough to conflate two short, real, unrelated words (the denylist
+  // above catches known cases, but a higher minimum length reduces how many other such pairs
+  // exist in the first place).
   const maxLength = Math.max(singularInput.length, singularKeyword.length);
-  if (maxLength < 4) return false;
+  if (maxLength < 6) return false;
   const allowedDistance = maxLength >= 8 ? 2 : 1;
   return getGprecianEditDistance(singularInput, singularKeyword) <= allowedDistance;
 };
 
+// Same fix as isGprecianTokenMatch above, one level up: this used to also try a raw
+// normalizedQuestion.includes(normalizedKeyword) on the WHOLE strings before ever tokenizing -
+// an even less bounded version of the same bug (no length gate at all), so "amount" still matched
+// keyword "mou" even after isGprecianTokenMatch's own containment check was removed. The
+// token-by-token .every()/.some() below already handles both single-word and multi-word keywords
+// correctly (each keyword word just needs a matching token somewhere in the question, in any
+// order) without needing a substring shortcut.
 const doesGprecianKeywordMatch = (normalizedQuestion, keyword) => {
   const normalizedKeyword = normalizeGprecianQuery(keyword);
   if (!normalizedKeyword) return false;
-  if (normalizedQuestion.includes(normalizedKeyword)) return true;
   const questionTokens = normalizedQuestion.split(/\s+/).filter(Boolean);
   const keywordTokens = normalizedKeyword.split(/\s+/).filter(Boolean);
   if (!keywordTokens.length) return false;
@@ -10732,17 +10790,32 @@ const rememberGprecianKeywordContext = (match) => {
   setGprecianTopicContext(match.keywords?.[0] || "question", getKeywordContextSeed(match));
 };
 
+// This used to also treat ANY short (<=8 token) question starting with what/how/where/why/
+// when/which/who/can/is/are/do/does/did/show/tell/explain/etc. as a follow-up - but that's
+// almost every plain, complete, self-contained question in English ("What is the fee structure?"
+// is 5 tokens starting with "what"). That meant asking one question, then a second totally
+// unrelated one, silently prepended the FIRST question's topic/answer text onto the second
+// before it ever reached the keyword matcher - so the second question kept getting answered
+// (or mis-routed) based on the first topic instead of its own content. Likely the real cause
+// behind most "bot gave the wrong answer" reports today, not the keyword-matching bugs fixed
+// earlier. Now only genuine backreferences/continuations count as a follow-up: an explicit
+// pronoun-style backreference (it/this/that/same/above/again), an elliptical continuation
+// ("what about X", "and X", "how about X" - never a complete question on their own), or an
+// app-issue continuation ("still not working" after a support answer).
 const isGprecianFollowUpQuestion = (normalizedQuestion) => {
   if (!normalizedQuestion || !gprecianLastTopicContext) return false;
   if (Date.now() - gprecianLastTopicContext.updatedAt > GPRECIAN_FOLLOW_UP_CONTEXT_MS) {
     clearGprecianTopicContext();
     return false;
   }
-  const tokens = normalizedQuestion.split(/\s+/).filter(Boolean);
-  const startsLikeFollowUp = /^(how|where|what|why|when|which|who|can|could|should|is|are|do|does|did|open|show|tell|explain|fix|update|reset|refresh|sync|help|same|also|then|and|it|this|that|there)\b/.test(normalizedQuestion);
-  const refersBack = /\b(it|this|that|there|same|above|previous|again|also)\b/.test(normalizedQuestion);
+  // "there" deliberately excluded - "is there.../are there any..." is a completely ordinary,
+  // self-contained question construction ("Are there any scholarships?"), not a backreference;
+  // it kept getting misread as "that thing (over) there", contaminating a fresh question with
+  // whatever the previous, unrelated topic happened to be.
+  const refersBack = /\b(it|this|that|same|above|previous|again|also)\b/.test(normalizedQuestion);
+  const isEllipticalFollowUp = /^(what about|how about|and )\b/.test(normalizedQuestion);
   const isIssueFollowUp = /\b(not working|not getting|could not|can't|cannot|unable|broken|error|issue|bug|problem|fix|failed|failing)\b/.test(normalizedQuestion);
-  return (tokens.length <= 8 && startsLikeFollowUp) || refersBack || isIssueFollowUp;
+  return refersBack || isEllipticalFollowUp || isIssueFollowUp;
 };
 
 const withGprecianFollowUpContext = (question) => {
@@ -10762,7 +10835,15 @@ const withGprecianFollowUpContext = (question) => {
 const GPRECIAN_HISTORY_MAX_TURNS = 6;
 const getGprecianRecentHistory = () => {
   if (!gprecianMessages) return [];
-  const rows = Array.from(gprecianMessages.querySelectorAll(".chat-row"));
+  // Exclude the typing-indicator row - addGprecianBotReply appends it (a .bot-row) *before*
+  // calling the reply factory that runs this, so at the time this runs the actual last .chat-row
+  // is the typing placeholder, not the just-asked question. Without filtering it out first, the
+  // check below never found a user-row to pop, so the current question stayed in history AND got
+  // sent again as the new turn - two consecutive {role:"user"} messages in a row, which the
+  // Claude API rejects outright (strict user/assistant alternation) on every single call.
+  const rows = Array.from(gprecianMessages.querySelectorAll(".chat-row")).filter(
+    (row) => !row.querySelector(".gprecian-typing")
+  );
   // The current question was already rendered as the last user-row before getGprecianReply() runs
   // (see the call site) - drop it here since it's sent separately as the actual new turn.
   if (rows.length && rows[rows.length - 1].classList.contains("user-row")) rows.pop();
@@ -11005,7 +11086,7 @@ const AI_INJECTION_PATTERNS = [
   /disregard (all|the|any) (previous|prior|above)/i,
   /system prompt/i,
   /you are now/i,
-  /act as (a|an)(?! (student|faculty|parent|admin))/i,
+  /act as (a|an) .{0,20}(unrestricted|uncensored|jailbroken|without (any )?(rules|restrictions|filters)|with no (rules|restrictions|filters))/i,
   /jailbreak/i,
   /reveal your (instructions|prompt)/i
 ];
@@ -11017,7 +11098,8 @@ const looksLikePromptInjection = (text) => {
 const AI_UNSAFE_PATTERNS = [
   /\b(poison|poisoning|toxic dose|cyanide|arsenic|ricin|nerve agent)\b/i,
   /\b(make|prepare|mix|dose|administer|hide|use)\b.*\b(poison|toxin|explosive|weapon)\b/i,
-  /\b(kill|harm|hurt|injure)\b.*\b(myself|someone|person|people|student|teacher)\b/i,
+  /\b(kill|harm|hurt|injure)\b.*\b(someone|person|people|student|teacher)\b/i,
+  /\b(want to|going to|plan(?:ning)? to|thinking about|how (?:do|can) i)\b.*\b(kill|hurt|harm|injure)\b.*\bmyself\b/i,
   /\b(suicide|self harm|self-harm|overdose)\b/i,
   /\b(hack|phish|steal password|bypass login|sql injection|malware|ransomware)\b/i
 ];
@@ -11035,9 +11117,14 @@ const looksLikeAppSupportQuestion = (text) => {
   return APP_HELP_PATTERNS.every((pattern) => pattern.test(normalized));
 };
 
+// "s?" on the pluralizable nouns below - \bscholarship\b has a word boundary right after the "p",
+// which never matches inside "scholarships" (the very next character, "s", is still a word
+// character, so there's no boundary there). That silently rejected "Are there any scholarships?"
+// as off-topic even though "scholarship" is right there in the list - the exact same class of bug
+// as the singular/plural keyword issues fixed elsewhere, just in the topic allowlist this time.
 const AI_ALLOWED_TOPIC_PATTERNS = [
-  /\b(gprec|pulla reddy|college|campus|admission|course|department|faculty|student|exam|fee|scholarship|placement|hostel|library|notice|event|ticket|pass|attendance|grade|timetable|dashboard|portal|website|app|admin|database|db|data|media|content|photo|video|gallery|knowledge base|chatbot|ai)\b/i,
-  /\b(study|academic|subject|homework|assignment|project|research|syllabus|coding|programming|math|physics|chemistry|engineering|book|explain|definition|concept|exam prep)\b/i
+  /\b(gprec|pulla reddy|colleges?|campus(es)?|admissions?|courses?|departments?|facult(y|ies)|students?|exams?|fees?|scholarships?|placements?|hostels?|librar(y|ies)|notices?|events?|tickets?|pass(es)?|attendance|grades?|timetables?|dashboards?|portals?|websites?|apps?|admins?|databases?|db|data|media|contents?|photos?|videos?|galler(y|ies)|knowledge base|chatbots?|ai)\b/i,
+  /\b(study|academics?|subjects?|homework|assignments?|projects?|research|syllab(us|i)|coding|programming|math|physics|chemistry|engineering|books?|explain(s|ed|ing)?|definitions?|concepts?|exam prep)\b/i
 ];
 const isAllowedAiTopic = (text) => {
   const normalized = normalizeGprecianQuery(text);
@@ -11256,6 +11343,11 @@ const invalidateGprecianKnowledgeBaseCache = () => {
   localStorage.removeItem(GPRECIAN_KB_STORAGE_KEY);
   localStorage.setItem(GPRECIAN_KB_DIRTY_KEY, "1");
   clearTimeout(gprecKnowledgeBaseSyncTimer);
+  // /knowledge-base/refresh requires an admin session server-side. Only admin sessions can ever
+  // reach this point with content that actually changed, but scheduling the sync unconditionally
+  // still wastes a request (and leaves the dirty flag set with nothing left to retry it) whenever
+  // a non-admin session is the one active in this tab.
+  if (typeof gprecIsAdminSession === "function" && !gprecIsAdminSession()) return;
   gprecKnowledgeBaseSyncTimer = setTimeout(gprecKnowledgeBaseSyncInBackground, GPRECIAN_KB_SYNC_DEBOUNCE_MS);
 };
 
@@ -11910,7 +12002,7 @@ const tryHandleReminderIntent = async (question, normalized) => {
   );
   if (!extracted?.title) return "Sure - what should the reminder say, and for what date?";
   if (!extracted.date || extracted.date < gprecianTodayIso()) {
-    gprecianPendingAction = { type: "reminder", title: extracted.title };
+    gprecianPendingAction = { type: "reminder", title: extracted.title, updatedAt: Date.now() };
     return `Got it - "${extracted.title}". What date should that be (today or later)?`;
   }
   gprecianCreateReminder(extracted.title, extracted.date);
@@ -11968,8 +12060,14 @@ const tryHandleNoticeIntent = async (question, normalized) => {
   // Admin: audience can be site-wide or a specific department - ask if it isn't clear.
   if (isFollowUp) {
     const answer = normalized.trim();
-    const matchedCode = gprecianDepartmentCodes.find((code) => answer.includes(code.toLowerCase()));
+    // Whole-token match, not answer.includes(code) - a raw substring check matched "me"/"ce"
+    // inside ordinary words like "some"/"noticeboard", silently posting a site-wide notice to
+    // just Mechanical or Civil Engineering instead. isAll is also checked BEFORE matchedCode is
+    // trusted (previously matchedCode won even when the reply also said "everyone"), so "post to
+    // everyone" can't get hijacked by an accidental code-shaped word elsewhere in the reply.
+    const answerTokens = answer.split(/\s+/).filter(Boolean);
     const isAll = /\ball\b|everyone|site.?wide/i.test(answer);
+    const matchedCode = isAll ? null : gprecianDepartmentCodes.find((code) => answerTokens.includes(code.toLowerCase()));
     if (!matchedCode && !isAll) {
       return `Reply with "all" for everyone, or a department code: ${gprecianDepartmentCodes.join(", ")}.`;
     }
@@ -11987,7 +12085,7 @@ const tryHandleNoticeIntent = async (question, normalized) => {
   );
   if (!extracted?.title || !extracted?.message) return "Sure - what should the notice say?";
   if (!extracted.audience) {
-    gprecianPendingAction = { type: "notice", title: extracted.title, message: extracted.message };
+    gprecianPendingAction = { type: "notice", title: extracted.title, message: extracted.message, updatedAt: Date.now() };
     return `Who should this go to? Reply "all" for everyone, or a department code: ${gprecianDepartmentCodes.join(", ")}.`;
   }
   const department = extracted.audience === "all" ? "" : extracted.audience;
@@ -12068,12 +12166,27 @@ const tryHandleApprovalIntent = async (question, normalized) => {
 
   const items = gprecianGetPendingApprovals();
   if (!items.length) return "No pending approval requests right now.";
-  gprecianPendingAction = { type: "approval", items };
+  gprecianPendingAction = { type: "approval", items, updatedAt: Date.now() };
   const listText = items.map((item, index) => `${index + 1}. ${item.label}`).join("\n");
   return `Here's what's pending:\n${listText}\n\nReply with a number and approve or reject, e.g. "1 approve".`;
 };
 
+// Same 10-minute window as GPRECIAN_FOLLOW_UP_CONTEXT_MS, and the same reasoning: without an
+// expiry, a pending reminder/notice/approval question asked minutes or hours ago could still
+// hijack a completely unrelated later message into "I still need a valid date for that
+// reminder..." forever, since nothing ever cleared it.
+const GPRECIAN_PENDING_ACTION_EXPIRY_MS = 10 * 60 * 1000;
+const GPRECIAN_CANCEL_PATTERN = /\b(cancel|never ?mind|forget it|forget that|stop|nvm)\b/i;
+
 const tryHandleGprecianAction = async (question, normalized) => {
+  if (gprecianPendingAction && Date.now() - gprecianPendingAction.updatedAt > GPRECIAN_PENDING_ACTION_EXPIRY_MS) {
+    gprecianPendingAction = null;
+  }
+  if (gprecianPendingAction && GPRECIAN_CANCEL_PATTERN.test(normalized)) {
+    const cancelledType = gprecianPendingAction.type;
+    gprecianPendingAction = null;
+    return `Okay, cancelled that ${cancelledType}. What else can I help with?`;
+  }
   if (gprecianPendingAction?.type === "reminder") return tryHandleReminderIntent(question, normalized);
   if (gprecianPendingAction?.type === "notice") return tryHandleNoticeIntent(question, normalized);
   if (gprecianPendingAction?.type === "approval") return tryHandleApprovalIntent(question, normalized);
@@ -12118,7 +12231,7 @@ const getEventVisitorBotAnswer = (normalized) => {
   const registeredIds = new Set(registrations.map((registration) => registration.eventId));
   const today = new Date(new Date().toDateString());
   const events = getCampusEvents();
-  const openEvents = events.filter((event) => event.isPublic && new Date(event.date) >= today && !registeredIds.has(event.id));
+  const openEvents = events.filter((event) => event.isPublic && parseLocalDateOnly(event.date) >= today && !registeredIds.has(event.id));
   const registeredEvents = registrations.map((registration) => {
     const event = events.find((item) => item.id === registration.eventId) || {};
     return {
@@ -12187,6 +12300,12 @@ const getGprecianReply = async (question, onToken = null) => {
   const normalized = normalizeGprecianQuery(contextualQuestion);
   const guardrailReply = getPreAiGuardrailReply(contextualQuestion);
   if (guardrailReply) {
+    // A blocked/unsafe message or an app-support deflection clearly isn't the answer to whatever
+    // the bot was waiting for (a faculty clarification, a reminder date, a notice audience) - reset
+    // that pending state here rather than leaving it to silently misinterpret the visitor's NEXT,
+    // genuinely unrelated message as if it were that answer.
+    gprecianAwaitingFacultyClarification = false;
+    gprecianPendingAction = null;
     if (guardrailReply.status === "blocked") {
       const aiSettings = getAiSettings();
       recordAiUsage({ blockedDelta: 1, lastProvider: aiSettings.provider || "guardrail", lastError: "" });
@@ -12196,6 +12315,10 @@ const getGprecianReply = async (question, onToken = null) => {
   }
 
   if (isGprecianGreeting(normalized)) {
+    // Same reasoning as the guardrail branch above - a bare "hi" is never a real answer to a
+    // pending clarification/action, so don't let it linger and hijack the next message.
+    gprecianAwaitingFacultyClarification = false;
+    gprecianPendingAction = null;
     return {
       text: `Hi there! ${gprecianRoleFallback[gprecianDashboardRole] || gprecianRoleFallback.public}`,
       links: []
@@ -12225,7 +12348,11 @@ const getGprecianReply = async (question, onToken = null) => {
   }
 
   if (
-    ["attendance", "present", "absent", "bunk"].some((keyword) => normalized.includes(keyword)) &&
+    // "present" removed - it's an ordinary word on its own ("the present academic year", "at
+    // present") with no real connection to attendance, unlike "attendance"/"absent"/"bunk" which
+    // are unambiguous. It was also matching as a raw substring of unrelated words before the
+    // gprecianNormalizedHasWord fix below.
+    ["attendance", "absent", "bunk"].some((keyword) => gprecianNormalizedHasWord(normalized, keyword)) &&
     (gprecianDashboardRole === "student" || gprecianDashboardRole === "parent")
   ) {
     setGprecianTopicContext("attendance", "attendance present absent bunk");
@@ -12236,7 +12363,12 @@ const getGprecianReply = async (question, onToken = null) => {
   // clearly about finding something to read - not just any message that happens to mention
   // "book", so this doesn't hijack unrelated questions like "how do I book a hostel outing".
   if (
-    ["book", "books", "novel", "textbook"].some((keyword) => normalized.includes(keyword)) &&
+    // Whole-word check (not the old normalized.includes(keyword)) - "book" as a raw substring
+    // matched "Facebook", misrouting an unrelated question into book suggestions whenever it also
+    // happened to contain any word from the second list below. The second list is left as
+    // multi-word phrases/full words where a substring check is safe (a 2+ word phrase, or a
+    // longer single word like "recommend", is very unlikely to appear by accident).
+    ["book", "books", "novel", "novels", "textbook", "textbooks"].some((keyword) => gprecianNormalizedHasWord(normalized, keyword)) &&
     ["recommend", "recommendation", "suggest", "suggestion", "read", "looking for", "any good", "which book", "what should i"].some((keyword) => normalized.includes(keyword))
   ) {
     setGprecianTopicContext("book suggestions", "book books novel textbook recommend suggestion read");
@@ -12249,7 +12381,7 @@ const getGprecianReply = async (question, onToken = null) => {
   // etc. in whatever order/wording someone types it, instead of only exact phrases like
   // "who teaches" or "which faculty". Works for any visitor, same as the public Department pages.
   const GPRECIAN_FACULTY_TOPIC_WORDS = ["faculty", "teach", "professor", "hod", "lecturer", "instructor"];
-  if (GPRECIAN_FACULTY_TOPIC_WORDS.some((word) => normalized.includes(word))) {
+  if (GPRECIAN_FACULTY_TOPIC_WORDS.some((word) => gprecianNormalizedHasWordPrefix(normalized, word))) {
     setGprecianTopicContext("faculty directory", "faculty teacher professor hod lecturer instructor");
     return await getFacultyDirectoryAnswer(question, normalized);
   }
@@ -13869,7 +14001,7 @@ if (nonTeachingDashboardName) {
             <td>${request.leaveType}</td>
             <td>${formatExamDate(request.fromDate)}</td>
             <td>${formatExamDate(request.toDate)}</td>
-            <td>${request.reason}</td>
+            <td>${escapeHtml(request.reason)}</td>
             <td><span class="${requestStatusClass(request.status)}">${request.status}</span></td>
             <td>${request.status === "Pending" ? `<button type="button" data-staff-leave-cancel="${request.id}">Cancel</button>` : ""}</td>
           </tr>
@@ -14784,13 +14916,13 @@ const classCancellationNotices = document.querySelector("#classCancellationNotic
 if (classCancellationNotices) {
   const today = new Date(new Date().toDateString());
   const upcomingCancellations = getClassCancellations()
-    .filter((item) => new Date(item.date) >= today)
-    .sort((a, b) => new Date(a.date) - new Date(b.date))
+    .filter((item) => parseLocalDateOnly(item.date) >= today)
+    .sort((a, b) => parseLocalDateOnly(a.date) - parseLocalDateOnly(b.date))
     .map((item) => `<div class="fee-notice"><span>Class Cancelled: <strong>${item.subject}</strong> on ${formatExamDate(item.date)} - ${item.reason}</span></div>`);
 
   const upcomingAdhocClasses = getAdhocClassRequests()
-    .filter((item) => item.status === "Approved" && new Date(item.date) >= today)
-    .sort((a, b) => new Date(a.date) - new Date(b.date))
+    .filter((item) => item.status === "Approved" && parseLocalDateOnly(item.date) >= today)
+    .sort((a, b) => parseLocalDateOnly(a.date) - parseLocalDateOnly(b.date))
     .map((item) => `<div class="fee-notice"><span>Adhoc Class Added: <strong>${item.subject}</strong> on ${formatExamDate(item.date)}, ${item.time}</span></div>`);
 
   classCancellationNotices.innerHTML = [...upcomingAdhocClasses, ...upcomingCancellations].join("");
@@ -15692,7 +15824,7 @@ const getStudentLiveDataAnswer = (normalized) => {
     const studentPlacementProfile = getStudentPlacementProfile();
     const eligibleDrives = getPlacementDrives().filter(
       (drive) =>
-        new Date(drive.date) >= today &&
+        parseLocalDateOnly(drive.date) >= today &&
         drive.branches.includes(studentPlacementProfile.branch) &&
         studentPlacementProfile.cgpa >= drive.minCgpa &&
         studentPlacementProfile.backlogs <= drive.maxBacklogs
@@ -15745,7 +15877,7 @@ const getFacultyLiveDataAnswer = (normalized) => {
   if (normalized.includes("invigilation")) {
     const today = new Date(new Date().toDateString());
     const duties = getInvigilationDuties().filter((duty) => duty.facultyEmail === facultyEmail);
-    const upcoming = duties.filter((duty) => new Date(duty.date) >= today);
+    const upcoming = duties.filter((duty) => parseLocalDateOnly(duty.date) >= today);
     if (!duties.length) return "You have no invigilation duties assigned right now.";
     const details = upcoming.map((duty) => `${duty.code} on ${formatExamDate(duty.date)} at ${duty.time} (${duty.room})`).join(", ");
     return upcoming.length
@@ -15816,7 +15948,7 @@ const getAdminLiveDataAnswer = (normalized) => {
 const getAlumniLiveDataAnswer = (normalized) => {
   if (["placement", "placements", "hiring", "recruit", "recruiter", "drive"].some((keyword) => normalized.includes(keyword))) {
     const today = new Date(new Date().toDateString());
-    const upcomingDrives = getPlacementDrives().filter((drive) => new Date(drive.date) >= today);
+    const upcomingDrives = getPlacementDrives().filter((drive) => parseLocalDateOnly(drive.date) >= today);
     const recruiterCount = getPlacementLogos().length;
     return upcomingDrives.length
       ? `${recruiterCount} recruiter(s) are currently listed on Campus Placements. ${upcomingDrives.length} upcoming drive(s): ${upcomingDrives.map((drive) => `${drive.company} on ${formatExamDate(drive.date)}`).join(", ")}.`
@@ -18528,7 +18660,7 @@ const renderAlumniPlacements = () => {
 
   if (alumniPlacementsSummary) {
     const today = new Date(new Date().toDateString());
-    const upcomingDrives = getPlacementDrives().filter((drive) => new Date(drive.date) >= today);
+    const upcomingDrives = getPlacementDrives().filter((drive) => parseLocalDateOnly(drive.date) >= today);
     const recruiterCount = getPlacementLogos().length;
     alumniPlacementsSummary.textContent = upcomingDrives.length
       ? `${recruiterCount} recruiter(s) currently listed. ${upcomingDrives.length} upcoming placement drive(s): ${upcomingDrives.map((drive) => `${drive.company} on ${formatExamDate(drive.date)}`).join(", ")}.`
@@ -19830,11 +19962,14 @@ const formatCampusEventDate = (dateValue) => {
   return parsed.toLocaleDateString("en-IN", { day: "2-digit", month: "short", year: "numeric" });
 };
 
-const parseLocalDateOnly = (dateValue) => {
+// Function declaration (not `const ... =`) so it's hoisted whole and callable from code earlier in
+// this file that runs during initial script execution, before this line would otherwise have run -
+// same TDZ reasoning as escapeHtml() living at the very top of the file.
+function parseLocalDateOnly(dateValue) {
   if (!dateValue) return null;
   const parsed = new Date(`${dateValue}T00:00:00`);
   return Number.isNaN(parsed.getTime()) ? null : parsed;
-};
+}
 
 const addDaysToLocalDate = (date, days) => {
   const copy = new Date(date);
@@ -23624,14 +23759,14 @@ const renderFeedSidebar = (currentEmail) => {
     const today = new Date();
     today.setHours(0, 0, 0, 0);
     const upcoming = getAlumniEvents()
-      .filter((event) => new Date(event.date) >= today)
-      .sort((a, b) => new Date(a.date) - new Date(b.date))
+      .filter((event) => parseLocalDateOnly(event.date) >= today)
+      .sort((a, b) => parseLocalDateOnly(a.date) - parseLocalDateOnly(b.date))
       .slice(0, 4);
     eventsList.innerHTML = upcoming.length
       ? upcoming
           .map(
             (event) => `
-              <li><strong>${event.title}</strong><span>${new Date(event.date).toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric" })} - ${event.location}</span></li>
+              <li><strong>${event.title}</strong><span>${parseLocalDateOnly(event.date).toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric" })} - ${event.location}</span></li>
             `
           )
           .join("")
@@ -23953,7 +24088,7 @@ const initAlumniEvents = (currentEmail) => {
   const renderEvents = () => {
     const list = document.querySelector("#alumniEventList");
     if (!list) return;
-    const events = [...getAlumniEvents()].sort((a, b) => new Date(a.date) - new Date(b.date));
+    const events = [...getAlumniEvents()].sort((a, b) => parseLocalDateOnly(a.date) - parseLocalDateOnly(b.date));
     const rsvps = getEventRsvps();
 
     list.innerHTML = events.length
@@ -23962,7 +24097,7 @@ const initAlumniEvents = (currentEmail) => {
             const attendees = rsvps.filter((rsvp) => rsvp.eventId === event.id);
             const isGoing = attendees.some((rsvp) => rsvp.email === currentEmail);
             const dateLabel = event.date
-              ? new Date(event.date).toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric" })
+              ? parseLocalDateOnly(event.date).toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric" })
               : "Date TBA";
             return `
           <article class="alumni-event-card">
@@ -25732,13 +25867,13 @@ if (facultyDashboardName) {
     if (classScheduleChangesNotices && facultySubjectCode) {
       const today = new Date(new Date().toDateString());
       const otherCancellations = getClassCancellations()
-        .filter((item) => item.facultyEmail !== facultyRecord.email && new Date(item.date) >= today)
-        .sort((a, b) => new Date(a.date) - new Date(b.date))
+        .filter((item) => item.facultyEmail !== facultyRecord.email && parseLocalDateOnly(item.date) >= today)
+        .sort((a, b) => parseLocalDateOnly(a.date) - parseLocalDateOnly(b.date))
         .map((item) => `<div class="fee-notice"><span>Class Cancelled: <strong>${item.subject}</strong> on ${formatExamDate(item.date)} - ${item.reason}</span></div>`);
 
       const otherAdhocClasses = getAdhocClassRequests()
-        .filter((item) => item.facultyEmail !== facultyRecord.email && item.status === "Approved" && new Date(item.date) >= today)
-        .sort((a, b) => new Date(a.date) - new Date(b.date))
+        .filter((item) => item.facultyEmail !== facultyRecord.email && item.status === "Approved" && parseLocalDateOnly(item.date) >= today)
+        .sort((a, b) => parseLocalDateOnly(a.date) - parseLocalDateOnly(b.date))
         .map((item) => `<div class="fee-notice"><span>Adhoc Class Added: <strong>${item.subject}</strong> on ${formatExamDate(item.date)}, ${item.time}</span></div>`);
 
       const combined = [...otherAdhocClasses, ...otherCancellations];
@@ -27598,8 +27733,8 @@ if (facultyDashboardName) {
             (item) => `
               <tr>
                 <td>${resolveStudentDisplayName(item.studentId, item.studentName)} (${item.studentId})</td>
-                <td>${item.subject}</td>
-                <td>${item.description}</td>
+                <td>${escapeHtml(item.subject)}</td>
+                <td>${escapeHtml(item.description)}</td>
                 <td><span class="${complaintStatusClass(item.status)}">${item.status}</span></td>
                 <td>${
                   item.status === "Pending"
@@ -27954,12 +28089,12 @@ const getNotices = () => getGprecDbBootstrap()?.notices || [];
 
 const createNotice = (notice) => {
   const result = gprecDbPost("/notices", notice);
-  invalidateGprecianKnowledgeBaseCache();
+  if (result) invalidateGprecianKnowledgeBaseCache();
   return result;
 };
 const removeNotice = (id) => {
   const result = gprecDbPost("/notices/remove", { id });
-  invalidateGprecianKnowledgeBaseCache();
+  if (result) invalidateGprecianKnowledgeBaseCache();
   return result;
 };
 
@@ -29546,7 +29681,7 @@ const getAutoCalendarEntries = (centerYear = new Date().getFullYear()) => {
     if (modalDot) modalDot.className = `calendar-event-modal-dot kind-${entryKind(entry)}`;
     if (modalTitle) modalTitle.textContent = entry.title;
     if (modalDate) {
-      const dateLabel = new Date(entry.date).toLocaleDateString("en-IN", {
+      const dateLabel = parseLocalDateOnly(entry.date).toLocaleDateString("en-IN", {
         weekday: "long",
         day: "numeric",
         month: "long",

@@ -3467,7 +3467,7 @@ class PortalHandler(SimpleHTTPRequestHandler):
                 if not key:
                     self.send_json(400, {"ok": False, "error": "key is required"})
                     return
-                if identity["identityType"] not in ("admin", "non_teaching") and not owns_key(identity, key):
+                if identity["identityType"] != "admin" and not owns_key(identity, key):
                     self.send_json(403, {"ok": False, "error": "forbidden"})
                     return
                 self.send_json(200, {"details": get_bank_details(key)})
@@ -3480,7 +3480,7 @@ class PortalHandler(SimpleHTTPRequestHandler):
                 if not student_id:
                     self.send_json(400, {"ok": False, "error": "studentId is required"})
                     return
-                if identity["identityType"] in ("student", "parent") and identity["identityId"] != student_id:
+                if identity["identityType"] != "admin" and identity["identityId"] != student_id:
                     self.send_json(403, {"ok": False, "error": "forbidden"})
                     return
                 self.send_json(200, {"history": get_payment_history(student_id)})
@@ -4459,7 +4459,7 @@ class PortalHandler(SimpleHTTPRequestHandler):
                     return
                 assignment_id = (payload or {}).get("assignmentId") or ""
                 student_roll_no = (payload or {}).get("studentId") or ""
-                if identity["identityType"] == "student" and identity["identityId"] != student_roll_no:
+                if identity["identityType"] != "admin" and identity["identityId"] != student_roll_no:
                     self.send_json(403, {"ok": False, "error": "forbidden"})
                     return
                 comment = (payload or {}).get("comment") or ""
@@ -4516,7 +4516,7 @@ class PortalHandler(SimpleHTTPRequestHandler):
                 if not identity:
                     return
                 student_roll_no = (payload or {}).get("studentId") or ""
-                if identity["identityType"] == "student" and identity["identityId"] != student_roll_no:
+                if identity["identityType"] != "admin" and identity["identityId"] != student_roll_no:
                     self.send_json(403, {"ok": False, "error": "forbidden"})
                     return
                 drive_id = (payload or {}).get("driveId") or ""
@@ -4675,7 +4675,7 @@ class PortalHandler(SimpleHTTPRequestHandler):
                 if not identity:
                     return
                 student_roll_no = (payload or {}).get("studentId") or ""
-                if identity["identityType"] == "student" and identity["identityId"] != student_roll_no:
+                if identity["identityType"] != "admin" and identity["identityId"] != student_roll_no:
                     self.send_json(403, {"ok": False, "error": "forbidden"})
                     return
                 amount = (payload or {}).get("amount")
@@ -4694,7 +4694,7 @@ class PortalHandler(SimpleHTTPRequestHandler):
                 if not identity:
                     return
                 key = (payload or {}).get("key") or ""
-                if identity["identityType"] not in ("admin", "non_teaching") and not owns_key(identity, key):
+                if identity["identityType"] != "admin" and not owns_key(identity, key):
                     self.send_json(403, {"ok": False, "error": "forbidden"})
                     return
                 details = (payload or {}).get("details")
@@ -4921,11 +4921,22 @@ class PortalHandler(SimpleHTTPRequestHandler):
             if path == "/api/campus-event-registrations":
                 # No allowed_types restriction, matching the hostel-outing/leave/visit convention -
                 # any authenticated identity (a student registering for themselves) can write here.
-                if not require_auth(self):
+                identity = require_auth(self)
+                if not identity:
                     return
                 record = payload or {}
                 if not record.get("id"):
                     self.send_json(400, {"ok": False, "error": "id is required"})
+                    return
+                # The client builds id as "<eventId>:<own roll number/email>" (script.js
+                # getCampusEventRegistrant/saveCampusEventRegistration) but that's just a plain
+                # string the client controls - without this check, any authenticated identity could
+                # pass someone ELSE's id here and upsert_campus_event_registration's
+                # INSERT ... ON CONFLICT DO UPDATE would silently overwrite that person's
+                # registration with attacker-supplied data.
+                expected_id = f"{record.get('eventId')}:{identity['identityId']}"
+                if identity["identityType"] != "admin" and record.get("id") != expected_id:
+                    self.send_json(403, {"ok": False, "error": "forbidden"})
                     return
                 if not upsert_campus_event_registration(record):
                     self.send_json(409, {"ok": False, "error": "Registration limit reached for this event."})
@@ -5204,7 +5215,7 @@ class PortalHandler(SimpleHTTPRequestHandler):
                 if not identity:
                     return
                 doc = payload or {}
-                if identity["identityType"] == "student" and identity["identityId"] != doc.get("studentId"):
+                if identity["identityType"] != "admin" and identity["identityId"] != doc.get("studentId"):
                     self.send_json(403, {"ok": False, "error": "forbidden"})
                     return
                 if not doc.get("studentId") or not doc.get("docType") or not doc.get("fileUrl"):
@@ -5636,7 +5647,7 @@ class PortalHandler(SimpleHTTPRequestHandler):
                 # bookFavorites identity strings are "student:<roll>"/"faculty:<email>" (colon,
                 # not the hyphen bank-details/owns_key uses) - checked inline rather than adding a
                 # second helper for one caller.
-                if auth_identity["identityType"] in ("student", "faculty") and identity != f"{auth_identity['identityType']}:{auth_identity['identityId']}":
+                if auth_identity["identityType"] != "admin" and identity != f"{auth_identity['identityType']}:{auth_identity['identityId']}":
                     self.send_json(403, {"ok": False, "error": "forbidden"})
                     return
                 favorites = (payload or {}).get("favorites")

@@ -25118,6 +25118,26 @@ button.calendar-cell-event {
   height: 1px;
 }
 
+/* At the same 680px breakpoint where .visitor-login-card (styles.css ~L18818) drops to a
+   full-width, column-stacked, height:auto layout, this fixed top:50% position sits right on top
+   of the centered pre-login sign-in form instead of beside it. Moved to a bottom corner instead -
+   bottom-left specifically, since .gprecian (the chat bubble, ~L16281) already owns bottom-right. */
+@media (max-width: 680px) {
+  .event-visitor-page .visitor-scroll-compass {
+    top: auto;
+    bottom: 18px;
+    left: 14px;
+    right: auto;
+    width: 34px;
+    transform: none;
+  }
+
+  .event-visitor-page .visitor-scroll-compass i {
+    width: 34px;
+    height: 34px;
+  }
+}
+
 @media (max-width: 1180px) {
   .event-visitor-page.admin-dashboard-page .visitor-announcement-list {
     grid-template-columns: repeat(2, minmax(0, 1fr));

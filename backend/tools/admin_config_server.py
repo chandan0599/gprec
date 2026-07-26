@@ -5,6 +5,7 @@ import json
 import os
 import re
 import threading
+import traceback
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
 from time import time
@@ -86,6 +87,14 @@ class AdminConfigHandler(BaseHTTPRequestHandler):
         self._cors_headers()
         self.end_headers()
 
+    def _send_server_error(self, exc):
+        # Full traceback goes to this process's own stderr for whoever's running the server
+        # locally, never to the client - reachable behind a reverse proxy in production, so a raw
+        # exception message (which can include filesystem paths) is not safe to hand back over the
+        # wire. Mirrors portal_db_server.py's send_server_error().
+        traceback.print_exc()
+        self._send_json(500, {"error": "Internal server error"})
+
     def do_POST(self):
         if self.path == "/admin-config":
             self.save_admin_config()
@@ -107,7 +116,7 @@ class AdminConfigHandler(BaseHTTPRequestHandler):
                 CONFIG_PATH.write_text(json.dumps(current, indent=2) + "\n", encoding="utf-8")
             self._send_json(200, current)
         except Exception as exc:
-            self._send_json(500, {"error": str(exc)})
+            self._send_server_error(exc)
 
     def save_upload(self):
         try:
@@ -137,7 +146,7 @@ class AdminConfigHandler(BaseHTTPRequestHandler):
                 },
             )
         except Exception as exc:
-            self._send_json(500, {"error": str(exc)})
+            self._send_server_error(exc)
 
     def log_message(self, fmt, *args):
         print(f"[admin-config] {self.address_string()} - {fmt % args}")
