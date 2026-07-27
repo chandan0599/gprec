@@ -20466,42 +20466,47 @@ const homeFestCompassSvg = `
     </defs>
     <rect width="900" height="150" fill="url(#homeFestBgGrad)"/>
     <g clip-path="url(#homeFestBgClip)">
-      <g transform="translate(455,80)">
-        <g class="home-fest-dashring"><circle r="70" fill="none" stroke="#E85D04" stroke-width="1" stroke-dasharray="2 8" opacity=".2"/></g>
-        <g class="home-fest-ring"><circle r="55" fill="none" stroke="#E85D04" stroke-width="1" opacity=".15"/></g>
-        <circle r="43" fill="none" stroke="#FF9A3C" stroke-width=".6" opacity=".2"/>
-        <g stroke="#E85D04" stroke-width="1.2" opacity=".35">
-          <line x1="0" y1="-70" x2="0" y2="-63.5"/>
-          <line x1="0" y1="70" x2="0" y2="63.5"/>
-          <line x1="-70" y1="0" x2="-63.5" y2="0"/>
-          <line x1="70" y1="0" x2="63.5" y2="0"/>
+      <!-- Exact copy of the login page's compass art (dashboards/event-visitor-dashboard.html's
+           .visitor-login-compass-art svg - same viewBox, same ring/tick/label/needle numbers,
+           unscaled) - nested in its own <svg> with preserveAspectRatio="xMidYMid meet" (not
+           "slice" like the outer banner background) so it's never cropped, just letterboxed to
+           fit this shorter, wider banner instead of stretched or cut off. -->
+      <svg x="370" y="1" width="170" height="148" viewBox="0 0 480 560" preserveAspectRatio="xMidYMid meet" aria-hidden="true">
+        <g transform="translate(240,300)">
+          <g class="home-fest-dashring"><circle r="150" fill="none" stroke="#E85D04" stroke-width="1" stroke-dasharray="2 10" opacity=".3"/></g>
+          <g class="home-fest-ring"><circle r="118" fill="none" stroke="#E85D04" stroke-width="1" opacity=".25"/></g>
+          <circle r="92" fill="none" stroke="#FF9A3C" stroke-width=".6" opacity=".2"/>
+
+          <g stroke="#E85D04" stroke-width="1.5" opacity=".4">
+            <line x1="0" y1="-150" x2="0" y2="-136"/>
+            <line x1="0" y1="150" x2="0" y2="136"/>
+            <line x1="-150" y1="0" x2="-136" y2="0"/>
+            <line x1="150" y1="0" x2="136" y2="0"/>
+          </g>
+          <!-- font-size is much bigger here than the login page's own 13 - this whole compass is
+               displayed at roughly 1/4 scale (142px tall vs. the login page's ~560px-tall art
+               panel), and text doesn't stay legible when shrunk by the same ratio as the rings,
+               so it's boosted back up to read clearly at this compass's actual display size. -->
+          <g fill="#FF9A3C" opacity=".6" font-family="Courier New,monospace" font-size="46" font-weight="700" text-anchor="middle">
+            <text x="0" y="-158">N</text>
+            <text x="0" y="170">S</text>
+            <text x="-162" y="5">W</text>
+            <text x="162" y="5">E</text>
+          </g>
+
+          <circle r="70" fill="#1a2040" stroke="#E85D04" stroke-width="1" opacity=".8"/>
+          <circle r="58" fill="#1e2450" stroke="#E85D04" stroke-width=".5" opacity=".6"/>
+          <g class="home-fest-compass-group">
+            <polygon points="0,-52 13,-13 52,0 13,13 0,52 -13,13 -52,0 -13,-13" fill="none" stroke="#FF9A3C" stroke-width="1" opacity=".5" transform="rotate(22.5)"/>
+          </g>
+          <g class="home-fest-needle">
+            <polygon points="0,-52 13,-13 52,0 13,13 0,52 -13,13 -52,0 -13,-13" fill="#E85D04"/>
+            <circle r="19" fill="#B44500"/>
+            <circle r="12" fill="#E85D04"/>
+            <circle r="6" fill="#FF9A3C"/>
+          </g>
         </g>
-        <!-- Matches the login page's compass (dashring/ring/plain-circle/ticks/N-S-E-W/solid
-             circles/needle, dashboards/event-visitor-dashboard.html's .visitor-login-compass-art),
-             scaled down to this dashring's r=70 (that one's is r=150). Labels sit just inside the
-             dashring rather than just outside it like the login page's do, though - this banner is
-             a short strip, not a tall panel, and .home-fest-banner's aspect-ratio is shorter than
-             this SVG's 900x150 viewBox, so preserveAspectRatio="slice" crops the top and bottom to
-             fit; labels any further out (as far as the login page's proportions would put them)
-             end up cropped off, especially "S". -->
-        <g class="home-fest-compass-labels" fill="#FF9A3C" font-family="'Courier New', monospace" font-size="11" font-weight="700" text-anchor="middle" opacity=".55">
-          <text x="0" y="-44">N</text>
-          <text x="0" y="49">S</text>
-          <text x="44" y="4">E</text>
-          <text x="-44" y="4">W</text>
-        </g>
-        <circle r="34" fill="#1a2040" stroke="#E85D04" stroke-width="1" opacity=".5"/>
-        <circle r="27" fill="#1e2450" stroke="#E85D04" stroke-width=".5" opacity=".35"/>
-        <g class="home-fest-compass-group">
-          <polygon points="0,-25 6.5,-6.5 25,0 6.5,6.5 0,25 -6.5,6.5 -25,0 -6.5,-6.5" fill="none" stroke="#FF9A3C" stroke-width="1" opacity=".35" transform="rotate(22.5)"/>
-        </g>
-        <g class="home-fest-needle">
-          <polygon points="0,-25 6.5,-6.5 25,0 6.5,6.5 0,25 -6.5,6.5 -25,0 -6.5,-6.5" fill="#E85D04" opacity=".6"/>
-          <circle r="9" fill="#B44500" opacity=".7"/>
-          <circle r="5.6" fill="#E85D04" opacity=".7"/>
-          <circle r="2.8" fill="#FF9A3C" opacity=".7"/>
-        </g>
-      </g>
+      </svg>
       <path d="M 40 120 Q 150 130 260 105 T 400 82" stroke="#E85D04" stroke-width="1" stroke-dasharray="1 8" fill="none" opacity=".3"/>
       <circle cx="40" cy="120" r="3" fill="#FF9A3C" opacity=".6"/>
     </g>
