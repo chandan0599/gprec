@@ -3122,6 +3122,41 @@ a {
   border-color: var(--orange);
 }
 
+/* Photo description for whichever slide is currently active (see the shared hero-rotation
+   setInterval in script.js, which keeps this text in sync via each slide's data-caption) - kept
+   as one reusable class since a page only ever has the home hero OR the About Us history gallery,
+   never both. Empty/missing captions just render nothing (no empty pill sitting on the photo). */
+.hero-slide-caption {
+  position: absolute;
+  left: 28px;
+  right: 120px;
+  bottom: 26px;
+  z-index: 3;
+  margin: 0;
+  padding: 6px 14px;
+  overflow: hidden;
+  border-radius: 999px;
+  background: rgba(4, 40, 74, 0.55);
+  backdrop-filter: blur(10px);
+  color: var(--white);
+  font-size: 0.82rem;
+  font-weight: 800;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.hero-slide-caption:empty {
+  display: none;
+}
+
+.about-gallery .hero-slide-caption {
+  left: 16px;
+  right: 96px;
+  bottom: 16px;
+  font-size: 0.76rem;
+  padding: 4px 12px;
+}
+
 .hero-info {
   position: relative;
   z-index: 4;

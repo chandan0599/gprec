@@ -650,6 +650,17 @@ const utilityToggle = document.querySelector(".utility-toggle");
 const utilityInner = document.querySelector(".utility-inner");
 const heroSlides = document.querySelectorAll(".hero-slide");
 const heroDots = document.querySelectorAll(".hero-dots span");
+
+// Shows the currently-active hero/history slide's photo description (its data-caption, set by
+// renderHomeHeroSlides/renderAboutHistoryGallery below from each slide's alt/caption text) - re-run
+// every time the active slide changes, whether that's the rotation timer further down or a fresh
+// render after an admin adds/reorders slides. Only one of the two galleries exists on any given
+// page, so querying by this shared class always means "whichever one is on this page."
+const syncHeroSlideCaption = () => {
+  const captionEl = document.querySelector(".hero-slide-caption");
+  if (!captionEl) return;
+  captionEl.textContent = document.querySelector(".hero-slide.active")?.dataset.caption || "";
+};
 const voiceTrack = document.querySelector(".voice-grid");
 const voiceCards = document.querySelectorAll(".voice-grid article");
 const voicePrev = document.querySelector(".voice-prev");
@@ -10178,6 +10189,7 @@ if (document.querySelector("#notificationList")) {
     activeSlide = (activeSlide + 1) % currentHeroSlides.length;
     currentHeroSlides[activeSlide]?.classList.add("active");
     currentHeroDots[activeSlide]?.classList.add("active");
+    syncHeroSlideCaption();
     // .hero-dots caps itself to ~4 dots wide and scrolls (see styles.css) so a long slide list
     // doesn't stretch the pill - without this, the active (orange) dot rotates past the edge of
     // that window and disappears from view once its slide is more than ~4 slides in. Adjusting
@@ -17005,10 +17017,12 @@ const renderHomeHeroSlides = () => {
   if (!homeHeroSlidesContainer) return;
   homeHeroSlidesContainer.innerHTML = getHomeHeroSlides()
     .map(
-      (slide, index) => `<img class="hero-slide${slide.poster ? " poster-slide" : ""}${index === 0 ? " active" : ""}" src="${slide.photoDataUrl}" alt="${slide.alt || "GPREC campus photo"}">`
+      (slide, index) =>
+        `<img class="hero-slide${slide.poster ? " poster-slide" : ""}${index === 0 ? " active" : ""}" src="${slide.photoDataUrl}" alt="${escapeHtml(slide.alt || "GPREC campus photo")}" data-caption="${escapeHtml(slide.alt || "")}">`
     )
     .join("");
   regenerateHeroDots();
+  syncHeroSlideCaption();
 };
 
 renderHomeHeroSlides();
@@ -17107,17 +17121,18 @@ const aboutHistoryGallery = document.querySelector("#aboutHistoryGallery");
 const renderAboutHistoryGallery = () => {
   if (!aboutHistoryGallery) return;
   const slides = getAboutHistorySlides();
-  const dotsMarkup = '<div class="hero-dots" aria-hidden="true"></div>';
+  const dotsMarkup = '<p class="hero-slide-caption"></p><div class="hero-dots" aria-hidden="true"></div>';
   aboutHistoryGallery.innerHTML = slides.length
     ? slides
         .map(
           (slide, index) => `
-        <div class="hero-slide${index === 0 ? " active" : ""}" style="background-image:url(${slide.photoDataUrl});background-size:cover;background-position:center"></div>
+        <div class="hero-slide${index === 0 ? " active" : ""}" style="background-image:url(${slide.photoDataUrl});background-size:cover;background-position:center" data-caption="${escapeHtml(slide.caption || "")}"></div>
       `
         )
         .join("") + dotsMarkup
     : `<div class="hero-slide active about-gallery-placeholder"><span>No history photos yet<small>Add one from the admin Media panel</small></span></div>${dotsMarkup}`;
   regenerateHeroDots();
+  syncHeroSlideCaption();
 };
 
 renderAboutHistoryGallery();
