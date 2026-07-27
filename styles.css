@@ -3184,6 +3184,7 @@ a {
   color: #ffffff;
   border: none;
   border-radius: 10px;
+  background: radial-gradient(circle at 30% 20%, #1c2650, #0a1226 70%);
   box-shadow: 0 6px 24px rgba(0, 0, 0, 0.2);
 }
 
@@ -3194,6 +3195,16 @@ a {
   display: block;
   width: 100%;
   height: 100%;
+  overflow: hidden;
+}
+
+.home-fest-banner .home-fest-login-compass {
+  top: 41%;
+  left: 50%;
+  width: min(220px, 26%);
+  opacity: .78;
+  filter: brightness(1.28) saturate(1.15);
+  transform: translate(-50%, -50%);
 }
 
 .home-fest-overlay {
@@ -3385,54 +3396,10 @@ a {
   outline: none;
 }
 
-.home-fest-compass-group {
-  animation: homeFestCompassSpin 40s linear infinite;
-  transform-origin: 0 0;
-}
-
-@keyframes homeFestCompassSpin {
-  from { transform: rotate(0deg); }
-  to { transform: rotate(360deg); }
-}
-
-.home-fest-needle {
-  animation: homeFestNeedleSway 4s ease-in-out infinite;
-  transform-origin: 0 0;
-}
-
-@keyframes homeFestNeedleSway {
-  0%, 100% { transform: rotate(-6deg); }
-  50% { transform: rotate(6deg); }
-}
-
-.home-fest-ring {
-  animation: homeFestRingPulse 4s ease-in-out infinite;
-  transform-origin: 0 0;
-}
-
-@keyframes homeFestRingPulse {
-  0%, 100% { opacity: 0.25; }
-  50% { opacity: 0.55; }
-}
-
-.home-fest-dashring {
-  animation: homeFestOrbit 60s linear infinite;
-  transform-origin: 0 0;
-}
-
-@keyframes homeFestOrbit {
-  from { transform: rotate(0deg); }
-  to { transform: rotate(-360deg); }
-}
-
 @media (prefers-reduced-motion: reduce) {
   .home-fest-timer .tval.tick,
   .home-fest-timer .tsep svg,
-  .home-fest-cta,
-  .home-fest-compass-group,
-  .home-fest-needle,
-  .home-fest-ring,
-  .home-fest-dashring {
+  .home-fest-cta {
     animation: none;
   }
 }
@@ -4468,10 +4435,65 @@ button + .admin-add-feedback {
    post-login fest pages; the sign-in screen is just a centered card on a plain dark field. */
 .event-visitor-page.login-page {
   background: #0A1024;
+  background-image: none;
+}
+
+.event-visitor-page.login-page,
+.event-visitor-page.login-page .login-header,
+.event-visitor-page.login-page .visitor-fest-login,
+.event-visitor-page.login-page .visitor-login-card,
+.event-visitor-page.login-page .visitor-fest-hero,
+.event-visitor-page.login-page .role-login-card {
+  border-color: transparent !important;
+  background-color: #0A1024 !important;
+  background-image: none !important;
+  box-shadow: none !important;
+  backdrop-filter: none !important;
+}
+
+.event-visitor-page.login-page::before,
+.event-visitor-page.login-page::after,
+.event-visitor-page.login-page .visitor-fest-login::before,
+.event-visitor-page.login-page .visitor-fest-login::after,
+.event-visitor-page.login-page .visitor-login-card::before,
+.event-visitor-page.login-page .visitor-login-card::after,
+.event-visitor-page.login-page .visitor-fest-hero::before,
+.event-visitor-page.login-page .visitor-fest-hero::after {
+  display: none !important;
+  content: none !important;
+}
+
+.event-visitor-page.login-page #visitorLoginMain .visitor-login-compass-art {
+  display: none !important;
+}
+
+.event-visitor-page.login-page .visitor-scroll-compass {
+  display: none !important;
+}
+
+.event-visitor-page.login-page .visitor-login-footer {
+  display: none !important;
+  border: 0 !important;
+  background: #0A1024 !important;
+  background-image: none !important;
+  box-shadow: none !important;
+}
+
+.event-visitor-page.login-page .visitor-login-footer::before,
+.event-visitor-page.login-page .visitor-login-footer::after {
+  display: none !important;
+  content: none !important;
+}
+
+.event-visitor-page.login-page .visitor-login-footer .footer-grid,
+.event-visitor-page.login-page .visitor-login-footer .copyright {
+  border: 0 !important;
+  background: transparent !important;
+  background-image: none !important;
 }
 
 .event-visitor-page .login-header {
-  border-bottom: 1px solid rgba(255, 255, 255, 0.14);
+  border-bottom: 0;
   background: rgba(4, 9, 25, 0.66);
   box-shadow: none;
   backdrop-filter: blur(18px);
@@ -4555,7 +4577,9 @@ button + .admin-add-feedback {
   height: 640px;
   overflow: hidden;
   border-radius: 14px;
-  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
+  background: #0A1024;
+  border: 0;
+  box-shadow: none;
 }
 
 .visitor-fest-hero {
@@ -4571,15 +4595,37 @@ button + .admin-add-feedback {
   overflow: hidden;
   color: #ffffff;
   border: 0;
-  background: radial-gradient(circle at 30% 20%, #1c2650, #0a1226 70%);
+  background: #0A1024;
   box-shadow: none;
   backdrop-filter: none;
+}
+
+.visitor-fest-hero > .visitor-login-compass-art {
+  display: none;
 }
 
 .visitor-login-brand-top,
 .visitor-login-brand-bottom {
   position: relative;
   z-index: 1;
+}
+
+.visitor-login-brand-bottom {
+  display: grid;
+  gap: 20px;
+}
+
+.visitor-login-brand-bottom .home-fest-meta {
+  position: static;
+  justify-content: center;
+  width: auto;
+  max-width: 100%;
+  transform: none;
+}
+
+.visitor-login-brand-bottom .home-fest-timer {
+  justify-content: center;
+  padding-bottom: 16px;
 }
 
 .visitor-login-brand-top {
@@ -4928,8 +4974,9 @@ button + .admin-add-feedback {
   padding: clamp(32px, 4vw, 52px) clamp(28px, 4vw, 48px);
   overflow-y: hidden;
   border: 0;
+  border-left: 0;
   border-radius: 0;
-  background: #101632;
+  background: #0A1024;
   box-shadow: none;
   backdrop-filter: none;
 }
@@ -22780,15 +22827,8 @@ button.calendar-cell-event {
 }
 
 .event-visitor-page.admin-dashboard-page .visitor-login-footer::before {
-  position: absolute;
-  inset: 0;
-  z-index: -1;
-  display: block;
-  background:
-    linear-gradient(rgba(255, 154, 60, 0.045) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(255, 154, 60, 0.045) 1px, transparent 1px);
-  background-size: 54px 54px;
-  content: "";
+  display: none !important;
+  content: none !important;
 }
 
 .event-visitor-page.admin-dashboard-page .visitor-login-footer .footer-grid {
@@ -24146,12 +24186,11 @@ button.calendar-cell-event {
 .event-visitor-page.admin-dashboard-page::after {
   background-image:
     radial-gradient(circle, rgba(255, 177, 92, 0.76) 0 1.4px, transparent 2.4px),
-    radial-gradient(circle, rgba(238, 242, 255, 0.44) 0 1px, transparent 2px),
-    linear-gradient(115deg, transparent 0 42%, rgba(255, 177, 92, 0.08) 48%, transparent 56%);
-  background-position: 0 0, 54px 82px, -120vw 0;
-  background-size: 118px 118px, 174px 174px, 80vw 100vh;
+    radial-gradient(circle, rgba(238, 242, 255, 0.44) 0 1px, transparent 2px);
+  background-position: 0 0, 54px 82px;
+  background-size: 118px 118px, 174px 174px;
   opacity: 0.46;
-  animation: visitorCinematicStars 34s linear infinite, visitorCinematicSweep 12s ease-in-out infinite;
+  animation: visitorCinematicStars 34s linear infinite;
 }
 
 .event-visitor-page.admin-dashboard-page #visitorDashTopbar,
@@ -24159,6 +24198,25 @@ button.calendar-cell-event {
 .event-visitor-page.admin-dashboard-page .visitor-login-footer {
   position: relative;
   z-index: 1;
+}
+
+.event-visitor-page.admin-dashboard-page .visitor-login-footer {
+  background: #071827 !important;
+  background-image: none !important;
+  border-color: rgba(255, 154, 60, 0.18) !important;
+  box-shadow: none !important;
+  backdrop-filter: none !important;
+}
+
+.event-visitor-page.admin-dashboard-page .visitor-login-footer::before,
+.event-visitor-page.admin-dashboard-page .visitor-login-footer::after {
+  display: none !important;
+  content: none !important;
+}
+
+.event-visitor-page.admin-dashboard-page .visitor-login-footer .copyright {
+  background: #030b13 !important;
+  background-image: none !important;
 }
 
 .event-visitor-page.admin-dashboard-page .visitor-dash-hero::after {
@@ -25939,4 +25997,58 @@ button.calendar-cell-event {
   .visitor-reveal-compass {
     width: min(180px, 58vw);
   }
+}
+
+.event-visitor-page.admin-dashboard-page::before,
+.event-visitor-page.admin-dashboard-page::after,
+.event-visitor-page.admin-dashboard-page .visitor-dash-hero::before,
+.event-visitor-page.admin-dashboard-page .visitor-dash-hero::after,
+.event-visitor-page.admin-dashboard-page #visitorFestAbout::before,
+.event-visitor-page.admin-dashboard-page #visitorFestAbout::after,
+.event-visitor-page.admin-dashboard-page .visitor-compass-story::before,
+.event-visitor-page.admin-dashboard-page .visitor-compass-story::after,
+.event-visitor-page.admin-dashboard-page .visitor-fest-band::before,
+.event-visitor-page.admin-dashboard-page .visitor-fest-band::after,
+.event-visitor-page.admin-dashboard-page .visitor-dashboard-grid::before,
+.event-visitor-page.admin-dashboard-page .visitor-dashboard-grid::after,
+.event-visitor-page.admin-dashboard-page .visitor-registrations-preview::before,
+.event-visitor-page.admin-dashboard-page .visitor-registrations-preview::after {
+  display: none !important;
+  background: none !important;
+  background-image: none !important;
+  border: 0 !important;
+  animation: none !important;
+  content: none !important;
+}
+
+.event-visitor-page.admin-dashboard-page .visitor-compass-story,
+.event-visitor-page.admin-dashboard-page #visitorFestAbout,
+.event-visitor-page.admin-dashboard-page #visitorFestAbout .visitor-fest-feature-grid article {
+  background-image: none !important;
+}
+
+.event-visitor-page.admin-dashboard-page .visitor-dashboard-panel::before,
+.event-visitor-page.admin-dashboard-page .visitor-dashboard-panel::after,
+.event-visitor-page.admin-dashboard-page .visitor-fest-sections::before,
+.event-visitor-page.admin-dashboard-page .visitor-fest-sections::after,
+.event-visitor-page.admin-dashboard-page .visitor-main-column::before,
+.event-visitor-page.admin-dashboard-page .visitor-main-column::after,
+.event-visitor-page.admin-dashboard-page .visitor-compass-directions::before,
+.event-visitor-page.admin-dashboard-page .visitor-compass-directions::after,
+.event-visitor-page.admin-dashboard-page .visitor-fest-feature-grid::before,
+.event-visitor-page.admin-dashboard-page .visitor-fest-feature-grid::after,
+.event-visitor-page.admin-dashboard-page .visitor-fest-timeline::before,
+.event-visitor-page.admin-dashboard-page .visitor-fest-timeline::after,
+.event-visitor-page.admin-dashboard-page .visitor-dashboard-panel .event-card::before,
+.event-visitor-page.admin-dashboard-page .visitor-dashboard-panel .event-card::after,
+.event-visitor-page.admin-dashboard-page .spotlight-poster-player::before,
+.event-visitor-page.admin-dashboard-page .spotlight-poster-player::after,
+.event-visitor-page.admin-dashboard-page #visitorFestContact::before,
+.event-visitor-page.admin-dashboard-page #visitorFestContact::after {
+  display: none !important;
+  background: none !important;
+  background-image: none !important;
+  border: 0 !important;
+  animation: none !important;
+  content: none !important;
 }

@@ -20449,32 +20449,23 @@ const startHomeFestCountdown = (event) => {
   window.gprecHomeFestCountdownTimer = window.setInterval(update, 1000);
 };
 
-// Compass-theme ticket banner watermark, ported directly from the supplied mock: a dashed orbit
-// ring, pulsing ring, and swaying needle centered behind the copy/timer, plus a faint dotted
-// travel path under the left-hand text. preserveAspectRatio="xMidYMid slice" keeps the compass
-// circular (cropping overflow) instead of stretching it into an ellipse on mobile, where
-// .home-fest-banner drops its 900:150 aspect ratio for a taller stacked layout (see styles.css).
+// Homepage banner compass uses the same SVG/classes as the event visitor login page, so the
+// public landing page and login flow share one compass treatment.
 const homeFestCompassSvg = `
-  <svg class="home-fest-bg" viewBox="0 0 900 150" preserveAspectRatio="xMidYMid slice" aria-hidden="true" role="img">
-    <defs>
-      <radialGradient id="homeFestBgGrad" cx="72%" cy="50%" r="75%">
-        <stop offset="0%" stop-color="#1c2650"/>
-        <stop offset="55%" stop-color="#101a3a"/>
-        <stop offset="100%" stop-color="#0A1024"/>
-      </radialGradient>
-      <clipPath id="homeFestBgClip"><rect width="900" height="150"/></clipPath>
-    </defs>
-    <rect width="900" height="150" fill="url(#homeFestBgGrad)"/>
-    <g clip-path="url(#homeFestBgClip)">
-      <!-- Exact copy of the login page's compass art (dashboards/event-visitor-dashboard.html's
-           .visitor-login-compass-art svg - same viewBox, same ring/tick/label/needle numbers,
-           unscaled) - nested in its own <svg> with preserveAspectRatio="xMidYMid meet" (not
-           "slice" like the outer banner background) so it's never cropped, just letterboxed to
-           fit this shorter, wider banner instead of stretched or cut off. -->
-      <svg x="378" y="3" width="154" height="100" viewBox="0 0 480 560" preserveAspectRatio="xMidYMid meet" aria-hidden="true">
+  <div class="home-fest-bg" aria-hidden="true">
+    <div class="visitor-login-compass-art home-fest-login-compass">
+      <svg viewBox="0 0 480 560" preserveAspectRatio="xMidYMid slice" role="img">
+        <circle class="visitor-login-star" cx="60" cy="60" r="1.4" fill="#fff"/>
+        <circle class="visitor-login-star visitor-login-star2" cx="120" cy="40" r="1" fill="#fff"/>
+        <circle class="visitor-login-star visitor-login-star3" cx="90" cy="110" r="1.2" fill="#fff"/>
+        <circle class="visitor-login-star visitor-login-star2" cx="380" cy="70" r="1.2" fill="#fff"/>
+        <circle class="visitor-login-star" cx="420" cy="130" r="1" fill="#fff"/>
+        <circle class="visitor-login-star visitor-login-star3" cx="350" cy="480" r="1.3" fill="#fff"/>
+        <circle class="visitor-login-star visitor-login-star2" cx="60" cy="500" r="1" fill="#fff"/>
+
         <g transform="translate(240,300)">
-          <g class="home-fest-dashring"><circle r="150" fill="none" stroke="#E85D04" stroke-width="1" stroke-dasharray="2 10" opacity=".3"/></g>
-          <g class="home-fest-ring"><circle r="118" fill="none" stroke="#E85D04" stroke-width="1" opacity=".25"/></g>
+          <g class="visitor-login-dashring"><circle r="150" fill="none" stroke="#E85D04" stroke-width="1" stroke-dasharray="2 10" opacity=".3"/></g>
+          <g class="visitor-login-ring"><circle r="118" fill="none" stroke="#E85D04" stroke-width="1" opacity=".25"/></g>
           <circle r="92" fill="none" stroke="#FF9A3C" stroke-width=".6" opacity=".2"/>
 
           <g stroke="#E85D04" stroke-width="1.5" opacity=".4">
@@ -20483,11 +20474,7 @@ const homeFestCompassSvg = `
             <line x1="-150" y1="0" x2="-136" y2="0"/>
             <line x1="150" y1="0" x2="136" y2="0"/>
           </g>
-          <!-- font-size is much bigger here than the login page's own 13 - this whole compass is
-               displayed at a fraction of the login page's ~560px-tall art panel's size, and text
-               doesn't stay legible when shrunk by the same ratio as the rings, so it's boosted
-               back up to read clearly at this compass's actual (small) display size. -->
-          <g fill="#FF9A3C" opacity=".6" font-family="Courier New,monospace" font-size="62" font-weight="700" text-anchor="middle">
+          <g fill="#FF9A3C" opacity=".6" font-family="Courier New,monospace" font-size="13" font-weight="700" text-anchor="middle">
             <text x="0" y="-158">N</text>
             <text x="0" y="170">S</text>
             <text x="-162" y="5">W</text>
@@ -20496,10 +20483,10 @@ const homeFestCompassSvg = `
 
           <circle r="70" fill="#1a2040" stroke="#E85D04" stroke-width="1" opacity=".8"/>
           <circle r="58" fill="#1e2450" stroke="#E85D04" stroke-width=".5" opacity=".6"/>
-          <g class="home-fest-compass-group">
+          <g class="visitor-login-compass-group">
             <polygon points="0,-52 13,-13 52,0 13,13 0,52 -13,13 -52,0 -13,-13" fill="none" stroke="#FF9A3C" stroke-width="1" opacity=".5" transform="rotate(22.5)"/>
           </g>
-          <g class="home-fest-needle">
+          <g class="visitor-login-needle">
             <polygon points="0,-52 13,-13 52,0 13,13 0,52 -13,13 -52,0 -13,-13" fill="#E85D04"/>
             <circle r="19" fill="#B44500"/>
             <circle r="12" fill="#E85D04"/>
@@ -20507,10 +20494,8 @@ const homeFestCompassSvg = `
           </g>
         </g>
       </svg>
-      <path d="M 40 120 Q 150 130 260 105 T 400 82" stroke="#E85D04" stroke-width="1" stroke-dasharray="1 8" fill="none" opacity=".3"/>
-      <circle cx="40" cy="120" r="3" fill="#FF9A3C" opacity=".6"/>
-    </g>
-  </svg>
+    </div>
+  </div>
 `;
 
 const homeFestTickSvg = `<svg viewBox="0 0 10 10"><circle cx="5" cy="5" r="4" fill="none" stroke="#E85D04" stroke-width="1"/><line x1="5" y1="5" x2="5" y2="1.5" stroke="#FF9A3C" stroke-width="1"/></svg>`;
