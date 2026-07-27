@@ -20469,10 +20469,21 @@ const homeFestCompassSvg = `
       <g transform="translate(455,80)">
         <g class="home-fest-dashring"><circle r="70" fill="none" stroke="#E85D04" stroke-width="1" stroke-dasharray="2 8" opacity=".2"/></g>
         <g class="home-fest-ring"><circle r="55" fill="none" stroke="#E85D04" stroke-width="1" opacity=".15"/></g>
-        <!-- Kept well inside the outer dashring (r=70) - .home-fest-banner's aspect-ratio is
-             shorter than this SVG's 900x150 viewBox, so preserveAspectRatio="slice" crops the top
-             and bottom of the viewBox to fit; labels any closer to the original edges (as this
-             group first shipped with, r~60-66) end up cropped off, especially "S". -->
+        <circle r="43" fill="none" stroke="#FF9A3C" stroke-width=".6" opacity=".2"/>
+        <g stroke="#E85D04" stroke-width="1.2" opacity=".35">
+          <line x1="0" y1="-70" x2="0" y2="-63.5"/>
+          <line x1="0" y1="70" x2="0" y2="63.5"/>
+          <line x1="-70" y1="0" x2="-63.5" y2="0"/>
+          <line x1="70" y1="0" x2="63.5" y2="0"/>
+        </g>
+        <!-- Matches the login page's compass (dashring/ring/plain-circle/ticks/N-S-E-W/solid
+             circles/needle, dashboards/event-visitor-dashboard.html's .visitor-login-compass-art),
+             scaled down to this dashring's r=70 (that one's is r=150). Labels sit just inside the
+             dashring rather than just outside it like the login page's do, though - this banner is
+             a short strip, not a tall panel, and .home-fest-banner's aspect-ratio is shorter than
+             this SVG's 900x150 viewBox, so preserveAspectRatio="slice" crops the top and bottom to
+             fit; labels any further out (as far as the login page's proportions would put them)
+             end up cropped off, especially "S". -->
         <g class="home-fest-compass-labels" fill="#FF9A3C" font-family="'Courier New', monospace" font-size="11" font-weight="700" text-anchor="middle" opacity=".55">
           <text x="0" y="-44">N</text>
           <text x="0" y="49">S</text>
