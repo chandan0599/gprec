@@ -605,7 +605,7 @@
     </footer>
 
     <script src="../qrcode-generator.js"></script>
-    <script src="../script.js?v=20260727-3"></script>
+    <script src="../script.js?v=20260727-4"></script>
     <script>
       (() => {
         const festName = getFestName();
@@ -1387,19 +1387,16 @@
             return;
           }
           if (document.querySelector("#visitorMapplsSdkScript")) return;
-          // Mappls' current Web SDK takes the access token as a path segment
-          // (.../api/<token>/map_sdk), not as an access_token query param - the old
-          // ?access_token=... query-param form 403s regardless of whether the token is valid.
           const params = new URLSearchParams({
             v: settings.version || "3.0",
+            access_token: settings.accessToken,
             layer: settings.layer || "vector",
             callback: "initVisitorZoneMapSdk"
           });
           if (settings.plugins) params.set("plugins", settings.plugins);
           const script = document.createElement("script");
           script.id = "visitorMapplsSdkScript";
-          const sdkBase = (settings.sdkUrl || "https://apis.mappls.com/advancedmaps/api").replace(/\/$/, "");
-          script.src = `${sdkBase}/${encodeURIComponent(settings.accessToken)}/map_sdk?${params.toString()}`;
+          script.src = `${settings.sdkUrl || "https://sdk.mappls.com/map/sdk/web"}?${params.toString()}`;
           script.defer = true;
           script.async = true;
           script.onerror = () => {
