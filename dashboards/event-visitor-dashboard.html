@@ -605,7 +605,7 @@
     </footer>
 
     <script src="../qrcode-generator.js"></script>
-    <script src="../script.js?v=20260727-2"></script>
+    <script src="../script.js?v=20260727-3"></script>
     <script>
       (() => {
         const festName = getFestName();
@@ -1366,7 +1366,7 @@
             ["move", "zoom", "rotate", "pitch", "resize"].forEach((eventName) => visitorZoneMapInstance.addListener?.(eventName, positionVisitorZoneLabels));
             setTimeout(onReady, 1200);
           } catch (error) {
-            mapEl.innerHTML = '<div class="visitor-zone-map-error">Map failed to load. Check the Mappls SDK token.</div>';
+            mapEl.innerHTML = '<div class="visitor-zone-map-error">Zone map is temporarily unavailable. Check the event page for venue details.</div>';
           }
         };
         window.initVisitorZoneMapSdk = initVisitorZoneMapSdk;
@@ -1380,24 +1380,33 @@
               onAdminConfigLoaded(loadVisitorZoneMapSdk);
               return;
             }
-            mapEl.innerHTML = '<div class="visitor-zone-map-error">Map SDK token is not configured in Admin Dashboard &gt; Data Integrations &gt; Map SDK.</div>';
+            // Admin-panel setup instructions belong on the admin's own zone map (Event Management
+            // Dashboard), not here - a public visitor can't do anything with "configure this in
+            // Admin Dashboard", so they just get a plain unavailable notice instead.
+            mapEl.innerHTML = '<div class="visitor-zone-map-error">Zone map is temporarily unavailable. Check the event page for venue details.</div>';
             return;
           }
           if (document.querySelector("#visitorMapplsSdkScript")) return;
+          // Mappls' current Web SDK takes the access token as a path segment
+          // (.../api/<token>/map_sdk), not as an access_token query param - the old
+          // ?access_token=... query-param form 403s regardless of whether the token is valid.
           const params = new URLSearchParams({
             v: settings.version || "3.0",
-            access_token: settings.accessToken,
             layer: settings.layer || "vector",
             callback: "initVisitorZoneMapSdk"
           });
           if (settings.plugins) params.set("plugins", settings.plugins);
           const script = document.createElement("script");
           script.id = "visitorMapplsSdkScript";
-          script.src = `${settings.sdkUrl || "https://sdk.mappls.com/map/sdk/web"}?${params.toString()}`;
+          const sdkBase = (settings.sdkUrl || "https://apis.mappls.com/advancedmaps/api").replace(/\/$/, "");
+          script.src = `${sdkBase}/${encodeURIComponent(settings.accessToken)}/map_sdk?${params.toString()}`;
           script.defer = true;
           script.async = true;
           script.onerror = () => {
-            mapEl.innerHTML = '<div class="visitor-zone-map-error">Map SDK failed to load. Check the Map SDK URL and token.</div>';
+            // Same reasoning as the "not configured" message above - a visitor can't act on "check
+            // the Map SDK URL and token", so this stays generic here (the admin's own zone map
+            // still shows the actionable version of this message).
+            mapEl.innerHTML = '<div class="visitor-zone-map-error">Zone map is temporarily unavailable. Check the event page for venue details.</div>';
           };
           document.head.appendChild(script);
         };

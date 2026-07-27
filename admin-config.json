@@ -11,9 +11,9 @@
   },
   "mapSdkSettings": {
     "provider": "mappls",
-    "sdkUrl": "https://sdk.mappls.com/map/sdk/web",
+    "sdkUrl": "https://apis.mappls.com/advancedmaps/api",
     "version": "3.0",
-    "accessToken": "qdonytuzqbpashwfsfqkvbgltqqvyaxqnokk",
+    "accessToken": "",
     "plugins": "",
     "layer": "vector"
   },
