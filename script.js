@@ -20469,6 +20469,12 @@ const homeFestCompassSvg = `
       <g transform="translate(455,80)">
         <g class="home-fest-dashring"><circle r="70" fill="none" stroke="#E85D04" stroke-width="1" stroke-dasharray="2 8" opacity=".2"/></g>
         <g class="home-fest-ring"><circle r="55" fill="none" stroke="#E85D04" stroke-width="1" opacity=".15"/></g>
+        <g class="home-fest-compass-labels" fill="#FF9A3C" font-family="'Courier New', monospace" font-size="11" font-weight="700" text-anchor="middle" opacity=".55">
+          <text x="0" y="-59">N</text>
+          <text x="0" y="66">S</text>
+          <text x="62" y="4">E</text>
+          <text x="-62" y="4">W</text>
+        </g>
         <circle r="34" fill="#1a2040" stroke="#E85D04" stroke-width="1" opacity=".5"/>
         <circle r="27" fill="#1e2450" stroke="#E85D04" stroke-width=".5" opacity=".35"/>
         <g class="home-fest-compass-group">
@@ -20534,16 +20540,16 @@ const renderHomeFestBanner = () => {
           <p class="home-fest-tag">Campus Fest</p>
           <h2 class="home-fest-title">${escapeHtml(festEvent.title)}</h2>
           <p class="home-fest-subtitle">Registration opens soon - check back for event details.</p>
-          <div class="home-fest-meta">
-            <span><span class="dir">N</span> ${formatCampusEventDate(festEvent.date)}</span>
-            <span><span class="dir">E</span> ${escapeHtml(formatCampusEventTime(festEvent))}</span>
-            <span><span class="dir">S</span> ${escapeHtml(festEvent.venue)}</span>
-          </div>
         </div>
         <div class="home-fest-right">
           ${homeFestTimerMarkup(festEvent.title)}
           <a class="home-fest-cta" href="${gprecPageUrl("event-visitor-dashboard.html")}?view=signup">Register Now</a>
         </div>
+      </div>
+      <div class="home-fest-meta">
+        <span><span class="dir">N</span> ${formatCampusEventDate(festEvent.date)}</span>
+        <span><span class="dir">E</span> ${escapeHtml(formatCampusEventTime(festEvent))}</span>
+        <span><span class="dir">S</span> ${escapeHtml(festEvent.venue)}</span>
       </div>
     `;
     startHomeFestCountdown(festEvent);
@@ -20559,17 +20565,17 @@ const renderHomeFestBanner = () => {
         <p class="home-fest-tag">Campus Fest Registration</p>
         <h2 class="home-fest-title">${escapeHtml(event.title)}</h2>
         <p class="home-fest-subtitle">${escapeHtml(event.description || "Register for the upcoming public campus event and download your pass instantly.")}</p>
-        <div class="home-fest-meta">
-          <span><span class="dir">N</span> ${formatCampusEventDate(event.date)}</span>
-          <span><span class="dir">E</span> ${escapeHtml(formatCampusEventTime(event))}</span>
-          <span><span class="dir">S</span> ${escapeHtml(event.venue || "GPREC Campus")}</span>
-          <span>${fee ? `Rs. ${fee.toLocaleString("en-IN")}` : "Free entry"}</span>
-        </div>
       </div>
       <div class="home-fest-right">
         ${homeFestTimerMarkup(event.title)}
         <a class="home-fest-cta" href="${gprecPageUrl("event-visitor-dashboard.html")}?eventId=${encodeURIComponent(event.id)}&view=signup">Register Now</a>
       </div>
+    </div>
+    <div class="home-fest-meta">
+      <span><span class="dir">N</span> ${formatCampusEventDate(event.date)}</span>
+      <span><span class="dir">E</span> ${escapeHtml(formatCampusEventTime(event))}</span>
+      <span><span class="dir">S</span> ${escapeHtml(event.venue || "GPREC Campus")}</span>
+      <span>${fee ? `Rs. ${fee.toLocaleString("en-IN")}` : "Free entry"}</span>
     </div>
   `;
   startHomeFestCountdown(event);

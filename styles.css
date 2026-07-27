@@ -3177,7 +3177,7 @@ a {
   z-index: 4;
   display: block;
   width: min(100% - 48px, 1680px);
-  aspect-ratio: 900 / 150;
+  aspect-ratio: 900 / 132;
   margin: 18px auto 0;
   padding: 0;
   overflow: hidden;
@@ -3250,15 +3250,25 @@ a {
   font-style: italic;
 }
 
+/* Sits under the countdown timer, bottom-center of the whole banner (not tucked under the
+   title/left column) - positioned against .home-fest-banner (the nearest position:relative
+   ancestor), not .home-fest-overlay, since it's a sibling of that row, not a child of it. */
 .home-fest-meta {
+  position: absolute;
+  left: 50%;
+  bottom: 14px;
+  z-index: 2;
   display: flex;
   flex-wrap: wrap;
   justify-content: center;
   gap: 16px;
-  margin-top: 8px;
+  width: max-content;
+  max-width: calc(100% - 60px);
+  margin: 0;
   color: #c7cce0;
   font-family: 'Courier New', monospace;
   font-size: clamp(13px, 1.1vw, 16px);
+  transform: translateX(-50%);
 }
 
 .home-fest-meta span {
@@ -18686,7 +18696,10 @@ body.gprec-orb-chat .gprecian-disclaimer-icon {
 
   .home-fest-banner {
     width: min(100% - 20px, 1180px);
-    min-height: 360px;
+    /* .home-fest-meta now flows after the CTA button here (see its mobile override further
+       down) instead of the desktop bottom-center overlay - needs extra room so it doesn't get
+       clipped by this banner's overflow:hidden. */
+    min-height: 420px;
     aspect-ratio: auto;
     margin-top: 14px;
     border-radius: 12px;
@@ -18736,13 +18749,19 @@ body.gprec-orb-chat .gprecian-disclaimer-icon {
   }
 
   .home-fest-meta {
+    /* Stacked mobile layout is much taller than desktop, so anchoring to the banner's bottom
+       (the base rule's position:absolute) would land it under/behind the CTA button instead of
+       under the timer - let it flow normally after .home-fest-overlay here instead. */
+    position: static;
     display: grid;
     grid-template-columns: 1fr;
     gap: 7px;
     width: 100%;
+    max-width: 100%;
     margin-top: 6px;
     font-size: 0.82rem;
     line-height: 1.35;
+    transform: none;
   }
 
   .home-fest-meta span {
@@ -18754,6 +18773,11 @@ body.gprec-orb-chat .gprecian-disclaimer-icon {
     width: 100%;
     flex-direction: column;
     align-items: stretch;
+    gap: 14px;
+  }
+
+  .home-fest-right-top {
+    flex-direction: column;
     gap: 14px;
   }
 
