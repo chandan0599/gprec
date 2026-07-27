@@ -20469,11 +20469,15 @@ const homeFestCompassSvg = `
       <g transform="translate(455,80)">
         <g class="home-fest-dashring"><circle r="70" fill="none" stroke="#E85D04" stroke-width="1" stroke-dasharray="2 8" opacity=".2"/></g>
         <g class="home-fest-ring"><circle r="55" fill="none" stroke="#E85D04" stroke-width="1" opacity=".15"/></g>
+        <!-- Kept well inside the outer dashring (r=70) - .home-fest-banner's aspect-ratio is
+             shorter than this SVG's 900x150 viewBox, so preserveAspectRatio="slice" crops the top
+             and bottom of the viewBox to fit; labels any closer to the original edges (as this
+             group first shipped with, r~60-66) end up cropped off, especially "S". -->
         <g class="home-fest-compass-labels" fill="#FF9A3C" font-family="'Courier New', monospace" font-size="11" font-weight="700" text-anchor="middle" opacity=".55">
-          <text x="0" y="-59">N</text>
-          <text x="0" y="66">S</text>
-          <text x="62" y="4">E</text>
-          <text x="-62" y="4">W</text>
+          <text x="0" y="-44">N</text>
+          <text x="0" y="49">S</text>
+          <text x="44" y="4">E</text>
+          <text x="-44" y="4">W</text>
         </g>
         <circle r="34" fill="#1a2040" stroke="#E85D04" stroke-width="1" opacity=".5"/>
         <circle r="27" fill="#1e2450" stroke="#E85D04" stroke-width=".5" opacity=".35"/>

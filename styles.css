@@ -25894,10 +25894,10 @@ button.calendar-cell-event {
   text-shadow: 0 0 10px rgba(255, 138, 29, 0.4);
 }
 
-.reveal-directions .rd-n { top: -2px; left: 50%; transform: translateX(-50%); }
-.reveal-directions .rd-e { top: 50%; right: -6px; transform: translateY(-50%); }
-.reveal-directions .rd-s { bottom: -2px; left: 50%; transform: translateX(-50%); }
-.reveal-directions .rd-w { top: 50%; left: -6px; transform: translateY(-50%); }
+.reveal-directions .rd-n { top: -16px; left: 50%; transform: translateX(-50%); }
+.reveal-directions .rd-e { top: 50%; right: -18px; transform: translateY(-50%); }
+.reveal-directions .rd-s { bottom: -16px; left: 50%; transform: translateX(-50%); }
+.reveal-directions .rd-w { top: 50%; left: -18px; transform: translateY(-50%); }
 
 .visitor-reveal-label {
   margin: 0;
