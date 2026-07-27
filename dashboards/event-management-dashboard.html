@@ -399,7 +399,7 @@
     </main>
 
     <script src="../vendor/html2canvas.min.js"></script>
-    <script src="../script.js?v=20260727-7"></script>
+    <script src="../script.js?v=20260727-8"></script>
     <script>
       (() => {
         const role = localStorage.getItem("gprecActiveRole");
@@ -1106,8 +1106,14 @@
                   clickableIcons: false,
                   preserveDrawingBuffer: true
                 });
+                let mapUsageRecorded = false;
                 const onReady = () => {
                   adminZoneMapReady = true;
+                  if (!mapUsageRecorded && typeof recordMapUsage === "function") {
+                    mapUsageRecorded = true;
+                    recordMapUsage({ attemptsDelta: 1, successesDelta: 1, lastContext: "admin" });
+                    recordMapRequestLog({ context: "admin", status: "success" });
+                  }
                   try { mappls.setStyle(adminZoneMapInstance, currentSettings.style || "whiteboard"); } catch (error) {}
                   try { adminZoneMapInstance.resize?.(); } catch (error) {}
                   if (typeof hideMapSdkAttribution === "function") hideMapSdkAttribution();
@@ -1126,6 +1132,10 @@
                 ["move", "zoom", "rotate", "pitch", "resize"].forEach((eventName) => adminZoneMapInstance.addListener?.(eventName, positionAdminZoneMapLabels));
                 setTimeout(onReady, 1200);
               } catch (error) {
+                if (typeof recordMapUsage === "function") {
+                  recordMapUsage({ attemptsDelta: 1, failuresDelta: 1, lastContext: "admin", lastError: String(error?.message || error) });
+                  recordMapRequestLog({ context: "admin", status: "failure", error: String(error?.message || error) });
+                }
                 mapEl.innerHTML = '<div class="admin-zone-map-error">Map failed to load. Check the Mappls SDK token.</div>';
               }
             };
@@ -1181,6 +1191,10 @@
               script.async = true;
               script.onerror = () => {
                 adminZoneMapScriptLoading = false;
+                if (typeof recordMapUsage === "function") {
+                  recordMapUsage({ attemptsDelta: 1, failuresDelta: 1, lastContext: "admin", lastError: "SDK script failed to load" });
+                  recordMapRequestLog({ context: "admin", status: "failure", error: "SDK script failed to load" });
+                }
                 mapEl.innerHTML = '<div class="admin-zone-map-error">Map SDK failed to load. Check the Map SDK URL and token.</div>';
               };
               document.head.appendChild(script);

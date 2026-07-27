@@ -571,6 +571,31 @@ ai_usage_stats_row AS (
   WHERE NOT EXISTS (SELECT 1 FROM ai_usage_stats WHERE id = true)
   LIMIT 1
 ),
+map_request_log_rows AS (
+  SELECT json_agg(entry) AS rows FROM (
+    SELECT json_build_object(
+      'context', context, 'status', status, 'error', error, 'timestamp', extract(epoch FROM created_at) * 1000
+    ) AS entry
+    FROM map_request_log ORDER BY created_at DESC LIMIT 20
+  ) recent
+),
+map_request_log_stats AS (
+  SELECT
+    COUNT(*) FILTER (WHERE status IN ('success', 'failure'))::int AS attempts,
+    COUNT(*) FILTER (WHERE status = 'success')::int AS successes,
+    COUNT(*) FILTER (WHERE status = 'failure')::int AS failures,
+    MAX(created_at) AS last_used_at,
+    (array_agg(context ORDER BY created_at DESC))[1] AS last_context,
+    (array_agg(error ORDER BY created_at DESC))[1] AS last_error
+  FROM map_request_log
+),
+map_usage_stats_row AS (
+  SELECT * FROM map_usage_stats
+  UNION ALL
+  SELECT true, 0, 0, 0, NULL::timestamptz, NULL::text, NULL::text
+  WHERE NOT EXISTS (SELECT 1 FROM map_usage_stats WHERE id = true)
+  LIMIT 1
+),
 activity_log_rows AS (
   SELECT json_agg(entry) AS rows FROM (
     SELECT json_build_object(
@@ -865,6 +890,15 @@ SELECT json_build_object(
     'lastError', COALESCE(NULLIF(ai_usage_stats.last_error, ''), NULLIF(ai_request_log_stats.last_error, ''))
   ) FROM ai_usage_stats_row ai_usage_stats CROSS JOIN ai_request_log_stats),
   'aiRequestLog', COALESCE((SELECT rows FROM ai_request_log_rows), '[]'::json),
+  'mapUsageStats', (SELECT json_build_object(
+    'attempts', GREATEST(map_usage_stats.attempts, COALESCE(map_request_log_stats.attempts, 0)),
+    'successes', GREATEST(map_usage_stats.successes, COALESCE(map_request_log_stats.successes, 0)),
+    'failures', GREATEST(map_usage_stats.failures, COALESCE(map_request_log_stats.failures, 0)),
+    'lastUsedAt', extract(epoch FROM COALESCE(map_usage_stats.last_used_at, map_request_log_stats.last_used_at)) * 1000,
+    'lastContext', COALESCE(map_usage_stats.last_context, map_request_log_stats.last_context),
+    'lastError', COALESCE(NULLIF(map_usage_stats.last_error, ''), NULLIF(map_request_log_stats.last_error, ''))
+  ) FROM map_usage_stats_row map_usage_stats CROSS JOIN map_request_log_stats),
+  'mapRequestLog', COALESCE((SELECT rows FROM map_request_log_rows), '[]'::json),
   'activityLog', COALESCE((SELECT rows FROM activity_log_rows), '[]'::json),
   'fundingContributions', COALESCE((SELECT rows FROM funding_contribution_rows), '[]'::json),
   'alumniAccounts', COALESCE((SELECT rows FROM alumni_account_rows), '[]'::json),
@@ -3546,6 +3580,55 @@ def reset_ai_usage():
     """)
 
 
+def record_map_usage(partial):
+    # Same delta-increments-only reasoning as record_ai_usage above - this is reachable without
+    # login (an anonymous visitor's own page load is what triggers a map load attempt), so it
+    # only ever accepts *Delta values, clamped, never an absolute SET.
+    run_psql("INSERT INTO map_usage_stats (id) VALUES (true) ON CONFLICT (id) DO NOTHING;")
+    clauses = []
+    for col, key in [("attempts", "attemptsDelta"), ("successes", "successesDelta"), ("failures", "failuresDelta")]:
+        value = partial.get(key)
+        if value is None:
+            continue
+        try:
+            delta = int(value)
+        except (TypeError, ValueError):
+            continue
+        delta = max(-100, min(100, delta))
+        clauses.append(f"{col} = {col} + {delta}")
+    for col, key in [("last_context", "lastContext"), ("last_error", "lastError")]:
+        value = partial.get(key)
+        if value is not None:
+            clauses.append(f"{col} = {quote(str(value)[:200])}")
+    if clauses:
+        run_psql(f"UPDATE map_usage_stats SET {', '.join(clauses)}, last_used_at = now() WHERE id = true;")
+
+
+MAP_REQUEST_LOG_STATUSES = {"success", "failure"}
+
+
+def record_map_request_log(entry):
+    status = entry.get("status")
+    status = status if status in MAP_REQUEST_LOG_STATUSES else None
+    context = str(entry.get("context") or "")[:50]
+    error = str(entry.get("error") or "")[:500]
+    run_psql(f"""
+        INSERT INTO map_request_log (context, status, error)
+        VALUES ({quote(context)}, {quote(status)}, {quote(error)});
+        DELETE FROM map_request_log WHERE id NOT IN (SELECT id FROM map_request_log ORDER BY created_at DESC LIMIT 20);
+    """)
+
+
+def reset_map_usage():
+    run_psql("""
+        INSERT INTO map_usage_stats (id) VALUES (true) ON CONFLICT (id) DO NOTHING;
+        UPDATE map_usage_stats SET attempts = 0, successes = 0, failures = 0,
+          last_used_at = NULL, last_context = NULL, last_error = NULL
+        WHERE id = true;
+        DELETE FROM map_request_log;
+    """)
+
+
 def record_activity(scope, actor, action, module):
     run_psql(f"""
         INSERT INTO activity_log (scope, actor, action, module) VALUES ({quote(scope)}, {quote(actor)}, {quote(action)}, {quote(module)});
@@ -5948,6 +6031,20 @@ class PortalHandler(SimpleHTTPRequestHandler):
                 return
             if path == "/api/ai-request-log":
                 record_ai_request_log(payload or {})
+                self.send_json(200, {"ok": True})
+                return
+            if path == "/api/map-usage":
+                record_map_usage(payload or {})
+                self.send_json(200, {"ok": True})
+                return
+            if path == "/api/map-usage/reset":
+                if not require_auth(self, allowed_types=["admin"]):
+                    return
+                reset_map_usage()
+                self.send_json(200, {"ok": True})
+                return
+            if path == "/api/map-request-log":
+                record_map_request_log(payload or {})
                 self.send_json(200, {"ok": True})
                 return
             if path == "/api/activity-log":

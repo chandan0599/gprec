@@ -1039,6 +1039,33 @@ CREATE TABLE IF NOT EXISTS ai_request_log (
 ALTER TABLE IF EXISTS ai_request_log ADD COLUMN IF NOT EXISTS status TEXT;
 ALTER TABLE IF EXISTS ai_request_log DROP COLUMN IF EXISTS success;
 
+-- Same singleton-counter pattern as ai_usage_stats above, but for the Mappls Map SDK (the
+-- Event Zone Map on the visitor/admin event pages) - surfaced in the Admin Dashboard's Map SDK
+-- card so admins can see whether the map is actually loading without needing to check Mappls'
+-- own console.
+CREATE TABLE IF NOT EXISTS map_usage_stats (
+  id BOOLEAN PRIMARY KEY DEFAULT true CHECK (id),
+  attempts INTEGER NOT NULL DEFAULT 0,
+  successes INTEGER NOT NULL DEFAULT 0,
+  failures INTEGER NOT NULL DEFAULT 0,
+  last_used_at TIMESTAMPTZ,
+  last_context TEXT,
+  last_error TEXT
+);
+INSERT INTO map_usage_stats (id) VALUES (true) ON CONFLICT (id) DO NOTHING;
+
+-- Per-attempt Map SDK load log, most recent 20 kept (trimmed on insert - see
+-- record_map_request_log in portal_db_server.py), same pattern as ai_request_log above.
+CREATE TABLE IF NOT EXISTS map_request_log (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  -- "visitor" | "admin" - which zone map (event-visitor-dashboard.html or
+  -- event-management-dashboard.html) this load attempt was for.
+  context TEXT,
+  status TEXT,
+  error TEXT,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+
 -- Generic admin-action audit trail. `scope` distinguishes which dashboard/panel the action
 -- happened in (e.g. 'admin', 'exam_cell') so different "Recent Activity" panels can each filter
 -- to their own scope from the same table.

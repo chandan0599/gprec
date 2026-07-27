@@ -605,7 +605,7 @@
     </footer>
 
     <script src="../qrcode-generator.js"></script>
-    <script src="../script.js?v=20260727-7"></script>
+    <script src="../script.js?v=20260727-8"></script>
     <script>
       (() => {
         const festName = getFestName();
@@ -1354,6 +1354,10 @@
               if (readyHandled) return;
               readyHandled = true;
               visitorZoneMapReady = true;
+              if (typeof recordMapUsage === "function") {
+                recordMapUsage({ attemptsDelta: 1, successesDelta: 1, lastContext: "visitor" });
+                recordMapRequestLog({ context: "visitor", status: "success" });
+              }
               try { mappls.setStyle(visitorZoneMapInstance, visitorZoneSettings.style || "whiteboard"); } catch (error) {}
               if (typeof hideMapSdkAttribution === "function") hideMapSdkAttribution();
               setTimeout(positionVisitorZoneLabels, 250);
@@ -1366,6 +1370,10 @@
             ["move", "zoom", "rotate", "pitch", "resize"].forEach((eventName) => visitorZoneMapInstance.addListener?.(eventName, positionVisitorZoneLabels));
             setTimeout(onReady, 1200);
           } catch (error) {
+            if (typeof recordMapUsage === "function") {
+              recordMapUsage({ attemptsDelta: 1, failuresDelta: 1, lastContext: "visitor", lastError: String(error?.message || error) });
+              recordMapRequestLog({ context: "visitor", status: "failure", error: String(error?.message || error) });
+            }
             mapEl.innerHTML = '<div class="visitor-zone-map-error">Zone map is temporarily unavailable. Check the event page for venue details.</div>';
           }
         };
@@ -1403,6 +1411,10 @@
           script.defer = true;
           script.async = true;
           script.onerror = () => {
+            if (typeof recordMapUsage === "function") {
+              recordMapUsage({ attemptsDelta: 1, failuresDelta: 1, lastContext: "visitor", lastError: "SDK script failed to load" });
+              recordMapRequestLog({ context: "visitor", status: "failure", error: "SDK script failed to load" });
+            }
             // Same reasoning as the "not configured" message above - a visitor can't act on "check
             // the Map SDK URL and token", so this stays generic here (the admin's own zone map
             // still shows the actionable version of this message).

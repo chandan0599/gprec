@@ -11371,6 +11371,30 @@ const recordAiRequestLog = (entry) => {
   return result;
 };
 
+// Same shared-counter pattern as the AI usage tracker above, but for the Mappls Map SDK (the
+// Event Zone Map on the visitor/admin event pages) - surfaced in the Admin Dashboard's Map SDK
+// card so an admin can see whether the map is actually loading for real visitors, not just
+// whether a token is configured.
+const getMapUsageStats = () =>
+  getGprecDbBootstrap()?.mapUsageStats || { attempts: 0, successes: 0, failures: 0, lastUsedAt: 0, lastContext: "", lastError: "" };
+const refreshMapUsageUi = () => {
+  if (!document.querySelector("#mapUsageAttempts")) return;
+  window.setTimeout(() => {
+    if (typeof renderMapUsageStats === "function") renderMapUsageStats();
+  }, 0);
+};
+const recordMapUsage = (partial) => {
+  const result = gprecDbPost("/map-usage", partial);
+  refreshMapUsageUi();
+  return result;
+};
+const getMapRequestLog = () => getGprecDbBootstrap()?.mapRequestLog || [];
+const recordMapRequestLog = (entry) => {
+  const result = gprecDbPost("/map-request-log", entry);
+  refreshMapUsageUi();
+  return result;
+};
+
 // --- Lightweight RAG (retrieval-augmented generation) for GPRECian Bot's live AI path ---
 // No backend/vector DB exists here, so "retrieval" is a simple keyword-overlap match over text
 // chunks compiled from the site's own admin-editable content - FAQ answers, notices, admissions/
@@ -29124,7 +29148,7 @@ if (mapSdkProviderInput) {
     if (mapSdkVersionInput) mapSdkVersionInput.value = settings.version || "";
     if (mapSdkAccessTokenInput) mapSdkAccessTokenInput.value = settings.accessToken || "";
     if (mapSdkPluginsInput) mapSdkPluginsInput.value = settings.plugins || "";
-    if (mapSdkLayerInput) mapSdkLayerInput.value = settings.layer || "";
+    if (mapSdkLayerInput) mapSdkLayerInput.value = settings.layer || "vector";
     if (mapSdkSettingsStatus) mapSdkSettingsStatus.textContent = settings.accessToken ? "Access token configured." : "No access token configured yet.";
   };
   fillMapSdkForm();
@@ -29143,6 +29167,72 @@ if (mapSdkProviderInput) {
     fillMapSdkForm();
   });
 }
+
+// Map SDK Usage - same shared-counter + recent-request-log pattern as the AI Usage Stats panel
+// further down, but for the Mappls Map SDK. Answers "is the map actually loading for visitors"
+// without needing to sign into Mappls' own console (see the outpost.mappls.com note above).
+const renderMapRequestLog = () => {
+  const log = getMapRequestLog();
+  const body = document.querySelector("#mapRequestLogBody");
+  const empty = document.querySelector("#mapRequestLogEmpty");
+  if (!body) return;
+  body.innerHTML = log
+    .map(
+      (entry) => `
+        <tr>
+          <td>${new Date(entry.timestamp).toLocaleTimeString("en-IN")}</td>
+          <td>${escapeHtml(entry.context || "-")}</td>
+          <td><span class="${entry.status === "success" ? "ok" : "warn"}">${entry.status === "success" ? "Success" : "Failed"}</span></td>
+          <td>${entry.error ? escapeHtml(entry.error) : "-"}</td>
+        </tr>`
+    )
+    .join("");
+  empty?.classList.toggle("is-hidden", log.length > 0);
+};
+
+const renderMapUsageStats = () => {
+  const stats = getMapUsageStats();
+  const log = getMapRequestLog();
+  const logCounts = log.reduce(
+    (counts, entry) => {
+      if (entry.status === "success" || entry.status === "failure") counts.attempts += 1;
+      if (entry.status === "success") counts.successes += 1;
+      if (entry.status === "failure") counts.failures += 1;
+      return counts;
+    },
+    { attempts: 0, successes: 0, failures: 0 }
+  );
+  const displayStats = {
+    attempts: Math.max(Number(stats.attempts) || 0, logCounts.attempts),
+    successes: Math.max(Number(stats.successes) || 0, logCounts.successes),
+    failures: Math.max(Number(stats.failures) || 0, logCounts.failures)
+  };
+  const setStat = (id, value) => { const el = document.querySelector(id); if (el) el.textContent = value; };
+  setStat("#mapUsageAttempts", displayStats.attempts);
+  setStat("#mapUsageSuccesses", displayStats.successes);
+  setStat("#mapUsageFailures", displayStats.failures);
+
+  const lastActivity = document.querySelector("#mapUsageLastActivity");
+  if (lastActivity) {
+    const latestLogEntry = log[0];
+    const lastUsedAt = stats.lastUsedAt || latestLogEntry?.timestamp || 0;
+    const lastContext = stats.lastContext || latestLogEntry?.context || "-";
+    const lastError = stats.lastError || latestLogEntry?.error || "";
+    if (lastUsedAt) {
+      lastActivity.textContent = `Last used: ${new Date(lastUsedAt).toLocaleString("en-IN")} (${lastContext})${lastError ? ` - last error: ${lastError}` : ""}`;
+    } else {
+      lastActivity.textContent = "No map load attempts recorded yet.";
+    }
+  }
+  renderMapRequestLog();
+};
+if (document.querySelector("#mapUsageAttempts")) renderMapUsageStats();
+
+document.querySelector("#resetMapUsageStatsButton")?.addEventListener("click", () => {
+  const result = gprecDbPost("/map-usage/reset", {});
+  showFeedToast(result?.ok ? "Map SDK usage stats and log reset." : "Could not reset Map SDK usage stats. Restart the portal API and make sure you are signed in as admin.");
+  renderMapUsageStats();
+});
 
 // See GPREC_UPLOAD_ENDPOINT's comment above - same hostname-relative, protocol-matching fix.
 const GPREC_CONFIG_SAVE_ENDPOINT = `${window.location.protocol}//${window.location.hostname}:8765/admin-config`;

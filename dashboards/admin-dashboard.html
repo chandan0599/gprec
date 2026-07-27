@@ -2102,11 +2102,33 @@
               <label>SDK Version<input type="text" id="mapSdkVersionInput" placeholder="3.0"></label>
               <label>Access Token<input type="password" id="mapSdkAccessTokenInput" placeholder="Mappls web SDK access token" autocomplete="off"></label>
               <label>Plugins<input type="text" id="mapSdkPluginsInput" placeholder="e.g. direction"></label>
-              <label>Layer<input type="text" id="mapSdkLayerInput" placeholder="vector"></label>
+              <label>Layer
+                <select id="mapSdkLayerInput">
+                  <option value="vector">Vector (default - smooth zoom/rotate, smaller data)</option>
+                  <option value="raster">Raster (plain bitmap tiles)</option>
+                </select>
+              </label>
             </div>
             <button type="button" id="saveMapSdkSettingsButton">Save Map SDK</button>
             <p class="admin-add-feedback" id="mapSdkSettingsFeedback" aria-live="polite"></p>
             <p id="mapSdkSettingsStatus"></p>
+
+            <div class="portal-block-head"><h3>Map SDK Usage</h3><span>This site's own count of zone-map load attempts - not Mappls' account quota (see the Outpost link above for that)</span></div>
+            <div class="admin-metric-grid" id="mapUsageStatsGrid">
+              <article><strong id="mapUsageAttempts">0</strong><span>Attempts</span></article>
+              <article><strong id="mapUsageSuccesses">0</strong><span>Successful</span></article>
+              <article><strong id="mapUsageFailures">0</strong><span>Failed</span></article>
+            </div>
+            <p id="mapUsageLastActivity"></p>
+
+            <div class="admin-table-card">
+              <table>
+                <thead><tr><th>Time</th><th>Page</th><th>Status</th><th>Error</th></tr></thead>
+                <tbody id="mapRequestLogBody"></tbody>
+              </table>
+              <p class="lookup-empty" id="mapRequestLogEmpty">No map load attempts recorded yet.</p>
+            </div>
+            <button type="button" id="resetMapUsageStatsButton" class="btn-reject">Reset Usage Stats &amp; Log</button>
           </article>
 
           <article class="admin-card admin-form-card" data-integration="payu">
@@ -2588,6 +2610,6 @@
       </button>
     </div>
 
-    <script src="../script.js?v=20260727-7"></script>
+    <script src="../script.js?v=20260727-8"></script>
   </body>
 </html>
