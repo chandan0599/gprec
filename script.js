@@ -362,6 +362,10 @@ if (gprecRequiredDashboardRole && !gprecAllowAlumniDashboardPreview) {
 // read to show "session expired" instead of a blank form.
 const gprecHandleSessionExpired = () => {
   if (gprecIsAlumniDashboardPreviewRoute) return;
+  // This page never required a role in the first place (e.g. a public dashboard like Women's
+  // Cell that happens to make an incidental authenticated call) - nothing to "expire" here, so
+  // don't force a visitor who was never asked to log in into a login page now.
+  if (!gprecRequiredDashboardRole) return;
   const role = localStorage.getItem("gprecActiveRole");
   // Falls back to *this page's own* required role when there's no active role to key off of -
   // location.replace() doesn't halt script execution, so the rest of this file can still run (and
@@ -1647,7 +1651,15 @@ const renderNotificationList = (items) => {
   const notificationBadge = document.querySelector("#notificationBadge");
   const notificationList = document.querySelector("#notificationList");
   if (!notificationList) return;
-  const persisted = gprecDbRequest("/notifications/mine", { method: "POST", body: {} })?.notifications || [];
+  // Only fetch persisted notifications when actually signed in - some pages that reuse this same
+  // bell (e.g. the public, no-login Women's Cell dashboard, fed from its own notices instead)
+  // have no session token at all, and this endpoint requires one. Calling it anyway would 401,
+  // which gprecHandleSessionExpired() treats as "your session expired" and bounces the visitor to
+  // a login page they never needed in the first place - so just skip straight to the page's own
+  // live items below instead of forcing that redirect on an anonymous visitor.
+  const persisted = localStorage.getItem("gprecSessionToken")
+    ? gprecDbRequest("/notifications/mine", { method: "POST", body: {} })?.notifications || []
+    : [];
   const unreadPersistedCount = persisted.filter((notification) => !notification.isRead).length;
   const totalCount = items.length + unreadPersistedCount;
   if (notificationBadge) {
@@ -18176,6 +18188,15 @@ if (campusLifeClubGallerySelect) {
   // load and again whenever a club is added/removed above, keeping whichever selection still exists.
   const renderCampusLifeClubGallerySelect = () => {
     const clubs = getCampusLifeClubs();
+    // Clubs added/edited before this gallery feature existed (via the flat Add Student Club list
+    // above, which never had an id field until now) would otherwise all show up with the same
+    // blank option value - backfill a stable id the first time this panel loads so each club can
+    // still be told apart in the dropdown.
+    let needsIdBackfill = false;
+    clubs.forEach((club, index) => {
+      if (!club.id) { club.id = `club-legacy-${index}-${Date.now()}`; needsIdBackfill = true; }
+    });
+    if (needsIdBackfill) saveCampusLifeClubs(clubs);
     const previousValue = campusLifeClubGallerySelect.value;
     const optionsHtml =
       `<option value="vsc">Vivekananda Study Circle</option>` +
