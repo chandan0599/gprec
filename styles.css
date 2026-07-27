@@ -2882,6 +2882,7 @@ a {
 
 .nav-links a {
   display: inline-flex;
+  flex-shrink: 0;
   min-height: 40px;
   align-items: center;
   gap: 6px;
@@ -2890,6 +2891,7 @@ a {
   border-radius: 6px;
   font-size: 0.82rem;
   font-weight: 850;
+  white-space: nowrap;
   transition: color 180ms ease, background 180ms ease, box-shadow 180ms ease, transform 180ms ease;
 }
 
@@ -2930,10 +2932,12 @@ a {
 .nav-links .utility-menu {
   position: relative;
   display: inline-flex;
+  flex-shrink: 0;
 }
 
 .nav-links .utility-menu button {
   display: inline-flex;
+  flex-shrink: 0;
   min-height: 40px;
   align-items: center;
   gap: 6px;
@@ -2945,6 +2949,7 @@ a {
   font-size: 0.82rem;
   font-weight: 850;
   font-family: inherit;
+  white-space: nowrap;
   cursor: pointer;
   transition: color 180ms ease, background 180ms ease, box-shadow 180ms ease, transform 180ms ease;
 }
@@ -18249,6 +18254,7 @@ body.gprec-orb-chat .gprecian-disclaimer-icon {
 
   .nav-links .utility-menu button {
     justify-content: flex-start;
+    white-space: normal;
     width: 100%;
   }
 
