@@ -399,7 +399,7 @@
     </main>
 
     <script src="../vendor/html2canvas.min.js"></script>
-    <script src="../script.js?v=20260727-4"></script>
+    <script src="../script.js?v=20260727-5"></script>
     <script>
       (() => {
         const role = localStorage.getItem("gprecActiveRole");
@@ -1165,16 +1165,18 @@
                 }, 8000);
                 return;
               }
+              // Path-based token (.../api/<token>/map_sdk) - see the matching comment in
+              // event-visitor-dashboard.html for how this was confirmed against Mappls' API.
               const params = new URLSearchParams({
                 v: sdkSettings.version || "3.0",
-                access_token: sdkSettings.accessToken,
                 layer: sdkSettings.layer || "vector",
                 callback: "initAdminZoneMapSdk"
               });
               if (sdkSettings.plugins) params.set("plugins", sdkSettings.plugins);
               const script = document.createElement("script");
               script.id = "adminMapplsSdkScript";
-              script.src = `${sdkSettings.sdkUrl || "https://sdk.mappls.com/map/sdk/web"}?${params.toString()}`;
+              const sdkBase = (sdkSettings.sdkUrl || "https://apis.mappls.com/advancedmaps/api").replace(/\/$/, "");
+              script.src = `${sdkBase}/${encodeURIComponent(sdkSettings.accessToken)}/map_sdk?${params.toString()}`;
               script.defer = true;
               script.async = true;
               script.onerror = () => {
@@ -1243,12 +1245,12 @@
               };
               const sdkParams = new URLSearchParams({
                 v: sdkSettings.version || "3.0",
-                access_token: sdkSettings.accessToken || "",
                 layer: sdkSettings.layer || "vector",
                 callback: "initZoneExportMap"
               });
               if (sdkSettings.plugins) sdkParams.set("plugins", sdkSettings.plugins);
-              const sdkSrc = `${sdkSettings.sdkUrl || "https://sdk.mappls.com/map/sdk/web"}?${sdkParams.toString()}`;
+              const sdkExportBase = (sdkSettings.sdkUrl || "https://apis.mappls.com/advancedmaps/api").replace(/\/$/, "");
+              const sdkSrc = `${sdkExportBase}/${encodeURIComponent(sdkSettings.accessToken || "")}/map_sdk?${sdkParams.toString()}`;
               const logoSrc = new URL("../gprec-logo-enhanced.png", window.location.href).href;
               const css = `
                 html, body { margin: 0; padding: 0; background: #eef2f7; }

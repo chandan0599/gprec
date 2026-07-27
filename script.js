@@ -758,7 +758,7 @@ const defaultAdminConfig = {
   googleCalendarApiKey: "",
   payuPaymentLink: "",
   aiSettings: { provider: "", model: "", apiKey: "", baseUrl: "" },
-  mapSdkSettings: { provider: "mappls", sdkUrl: "https://sdk.mappls.com/map/sdk/web", version: "3.0", accessToken: "qdonytuzqbpashwfsfqkvbgltqqvyaxqnokk", plugins: "", layer: "vector" },
+  mapSdkSettings: { provider: "mappls", sdkUrl: "https://apis.mappls.com/advancedmaps/api", version: "3.0", accessToken: "81bca9132d5b2d36c50ecd15439294a9", plugins: "", layer: "vector" },
   libraryApiConfig: { baseUrl: "", apiKey: "" },
   databaseApiConfig: { type: "", baseUrl: "", apiKey: "", username: "", password: "", host: "", port: "", database: "" },
   smsSettings: {
@@ -29083,7 +29083,7 @@ const saveAiSettings = (settings) => {
 
 // Map SDK settings (Mappls, used by the admin/visitor event zone map) - same
 // admin-config-server-backed pattern as AI Settings above.
-const defaultMapSdkSettings = { provider: "mappls", sdkUrl: "https://sdk.mappls.com/map/sdk/web", version: "3.0", accessToken: "qdonytuzqbpashwfsfqkvbgltqqvyaxqnokk", plugins: "", layer: "vector" };
+const defaultMapSdkSettings = { provider: "mappls", sdkUrl: "https://apis.mappls.com/advancedmaps/api", version: "3.0", accessToken: "81bca9132d5b2d36c50ecd15439294a9", plugins: "", layer: "vector" };
 
 const getMapSdkSettings = () => {
   if (adminConfigFieldsLoaded.mapSdkSettings) {
