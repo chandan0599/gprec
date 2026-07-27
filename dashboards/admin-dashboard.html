@@ -2089,6 +2089,7 @@
                 <li>Use a browser/referrer-restricted Mappls web SDK token for production.</li>
                 <li>Zone coordinates are managed in Event Management Dashboard &gt; Visitor Page Content &gt; Zone Map.</li>
                 <li>Leave plugins blank unless a map feature needs them; use <code>direction</code> for route support.</li>
+                <li>To check this token's API usage/quota, sign in at <a href="https://outpost.mappls.com/api/sso/login.jsp" target="_blank" rel="noreferrer">outpost.mappls.com</a> with the Mappls account it belongs to.</li>
               </ul>
             </div>
             <div class="admin-add-grid">
@@ -2097,7 +2098,7 @@
                   <option value="mappls">Mappls</option>
                 </select>
               </label>
-              <label>SDK URL<input type="text" id="mapSdkUrlInput" placeholder="https://sdk.mappls.com/map/sdk/web"></label>
+              <label>SDK URL<input type="text" id="mapSdkUrlInput" placeholder="https://apis.mappls.com/advancedmaps/api"></label>
               <label>SDK Version<input type="text" id="mapSdkVersionInput" placeholder="3.0"></label>
               <label>Access Token<input type="password" id="mapSdkAccessTokenInput" placeholder="Mappls web SDK access token" autocomplete="off"></label>
               <label>Plugins<input type="text" id="mapSdkPluginsInput" placeholder="e.g. direction"></label>
@@ -2587,6 +2588,6 @@
       </button>
     </div>
 
-    <script src="../script.js?v=20260727-6"></script>
+    <script src="../script.js?v=20260727-7"></script>
   </body>
 </html>
