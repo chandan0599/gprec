@@ -17746,7 +17746,7 @@ renderWomenCellDashboard();
 // dashboards/women-cell-admin-dashboard.html - CRUD (add + remove) for each of the six lists that
 // feed the public Women's Cell dashboard, following the same add-form/table/remove-button pattern
 // as the Deans manager on pages/about-us.html's admin panel (see adminDeansManagerBody above).
-const wireAdminCrudList = ({ bodySelector, emptySelector, getItems, saveItems, rowHtml, addButtonSelector, addFeedbackSelector, inputSelectors, buildItem, removeAttr, countSelector, itemLabel }) => {
+const wireAdminCrudList = ({ bodySelector, emptySelector, getItems, saveItems, rowHtml, addButtonSelector, addFeedbackSelector, inputSelectors, buildItem, removeAttr, countSelector, itemLabel, onChange }) => {
   const body = document.querySelector(bodySelector);
   if (!body) return;
   const emptyEl = emptySelector ? document.querySelector(emptySelector) : null;
@@ -17756,6 +17756,9 @@ const wireAdminCrudList = ({ bodySelector, emptySelector, getItems, saveItems, r
     body.innerHTML = items.map((item, index) => rowHtml(item, index)).join("");
     if (emptyEl) emptyEl.classList.toggle("is-hidden", items.length > 0);
     if (countEl) countEl.textContent = String(items.length);
+    // Optional hook for a second admin panel that depends on this same list (e.g. Club Event
+    // Photos' club picker needs to stay in sync whenever a club is added/removed here).
+    onChange?.();
   };
   render();
 
@@ -17943,20 +17946,27 @@ wireAdminCrudList({
 // hand-written in the page itself (motto/committee/report table - too structured for a flat
 // list), only the simpler one-line clubs and services are dynamic.
 const getCampusLifeClubs = () => getSiteContent("campusLifeClubs", [
-  { badge: "BV", name: "Bhuvana Vijayam", tag: "Literary & cultural", description: "Literary and cultural association providing a forum for students to demonstrate their talents in culture and literature." },
-  { badge: "CAD", name: "Center for Awareness & Discussion", tag: "Discussion & quizzes", description: "Works with the objective of familiarizing students with current topics through group discussions and quizzes." },
-  { badge: "IEI", name: "IEI Students' Chapter", tag: "Technical", description: "Conducts seminars on technical topics, quizzes, lectures, and other departmental activities." },
-  { badge: "AoL", name: "Art of Living Forum", tag: "Wellness", description: "Started to bring joy, a stress-free mind, a healthy body, and a blossomed life to students as well as faculty." },
-  { badge: "T&P", name: "T&P Club", tag: "Careers & training", description: "Started to create awareness among students about career opportunities, training needs, and industry expectations." },
-  { badge: "ISTE", name: "ISTE Student Chapter", tag: "Technical education", description: "The Indian Society for Technical Education student chapter, part of GPREC's platform for co-curricular and extra-curricular engagement." },
-  { badge: "N&N", name: "NSS & NCC", tag: "Service & discipline", description: "National Service Scheme and National Cadet Corps units offering students structured community service and disciplined-service training." },
-  { badge: "CC", name: "Coders Club", tag: "Programming", description: "A programming and problem-solving community for students to practice coding outside the classroom." },
-  { badge: "EC", name: "English Club", tag: "Language & communication", description: "Focused on building students' spoken and written English and communication skills." },
-  { badge: "EA", name: "EA (English Association)", tag: "Language & communication", description: "Runs language and communication-focused activities for students alongside the English Club." },
-  { badge: "I-E", name: "I-EEE", tag: "Technical", description: "Student technical chapter organizing department-level activities for EEE students." },
-  { badge: "JG", name: "Jignasa", tag: "Annual event", description: "An annual paper-presentation event run through the student clubs program, with photos from its 2024 edition posted on the college's Jignasa event gallery." }
+  { id: "seed-1", badge: "BV", name: "Bhuvana Vijayam", tag: "Literary & cultural", description: "Literary and cultural association providing a forum for students to demonstrate their talents in culture and literature." },
+  { id: "seed-2", badge: "CAD", name: "Center for Awareness & Discussion", tag: "Discussion & quizzes", description: "Works with the objective of familiarizing students with current topics through group discussions and quizzes." },
+  { id: "seed-3", badge: "IEI", name: "IEI Students' Chapter", tag: "Technical", description: "Conducts seminars on technical topics, quizzes, lectures, and other departmental activities." },
+  { id: "seed-4", badge: "AoL", name: "Art of Living Forum", tag: "Wellness", description: "Started to bring joy, a stress-free mind, a healthy body, and a blossomed life to students as well as faculty." },
+  { id: "seed-5", badge: "T&P", name: "T&P Club", tag: "Careers & training", description: "Started to create awareness among students about career opportunities, training needs, and industry expectations." },
+  { id: "seed-6", badge: "ISTE", name: "ISTE Student Chapter", tag: "Technical education", description: "The Indian Society for Technical Education student chapter, part of GPREC's platform for co-curricular and extra-curricular engagement." },
+  { id: "seed-7", badge: "N&N", name: "NSS & NCC", tag: "Service & discipline", description: "National Service Scheme and National Cadet Corps units offering students structured community service and disciplined-service training." },
+  { id: "seed-8", badge: "CC", name: "Coders Club", tag: "Programming", description: "A programming and problem-solving community for students to practice coding outside the classroom." },
+  { id: "seed-9", badge: "EC", name: "English Club", tag: "Language & communication", description: "Focused on building students' spoken and written English and communication skills." },
+  { id: "seed-10", badge: "EA", name: "EA (English Association)", tag: "Language & communication", description: "Runs language and communication-focused activities for students alongside the English Club." },
+  { id: "seed-11", badge: "I-E", name: "I-EEE", tag: "Technical", description: "Student technical chapter organizing department-level activities for EEE students." },
+  { id: "seed-12", badge: "JG", name: "Jignasa", tag: "Annual event", description: "An annual paper-presentation event run through the student clubs program, with photos from its 2024 edition posted on the college's Jignasa event gallery." }
 ]);
 const saveCampusLifeClubs = (clubs) => saveSiteContent("campusLifeClubs", clubs);
+
+// Vivekananda Study Circle's own event-photo gallery, kept separate from campusLifeClubs since
+// its card (committee, report table) is hand-written in pages/campus-life.html rather than driven
+// off that flat list - but it still gets a photo slideshow like every other club, via its own
+// site-content key and its own #vscGalleryHolder placeholder in that hand-written card.
+const getVscGallery = () => getSiteContent("vscGallery", []);
+const saveVscGallery = (gallery) => saveSiteContent("vscGallery", gallery);
 
 // Every club shows a photo in its badge circle: a real one (club.photo, set from the admin
 // Photo URL field) if uploaded, otherwise a simple line icon matched to the club's Tag by
@@ -17996,9 +18006,35 @@ const getCampusLifeServices = () => getSiteContent("campusLifeServices", [
 ]);
 const saveCampusLifeServices = (services) => saveSiteContent("campusLifeServices", services);
 
+// Event-photo slideshow shown inside a club's expanded card (admin-uploaded via the Club Event
+// Photos panel below) - one photo at a time with Prev/Next, reusing the same
+// data-photos-JSON-attribute + delegated-click approach as the Campus Facilities carousel
+// (see the [data-facility-carousel] handler above), since these cards are re-rendered from JS
+// rather than being static HTML like the facility cards are.
+const clubGalleryHtml = (gallery = []) => {
+  // Every club shows this holder, even with zero photos yet, so it's obvious where a club's
+  // event photos will appear once an admin adds some via the Club Event Photos admin panel.
+  if (!gallery.length) return `<div class="club-gallery club-gallery-empty"><p>No event photos yet.</p></div>`;
+  const urls = gallery.map((photo) => photo.url);
+  const captions = gallery.map((photo) => photo.caption || "");
+  return `
+    <div class="club-gallery" data-club-carousel data-photos="${escapeHtml(JSON.stringify(urls))}" data-captions="${escapeHtml(JSON.stringify(captions))}" data-current-index="0">
+      <img src="${escapeHtml(urls[0])}" alt="" data-club-carousel-img loading="lazy">
+      ${
+        gallery.length > 1
+          ? `<button type="button" class="facility-carousel-nav facility-carousel-prev" data-club-carousel-prev aria-label="Previous photo">&#10094;</button>
+             <button type="button" class="facility-carousel-nav facility-carousel-next" data-club-carousel-next aria-label="Next photo">&#10095;</button>`
+          : ""
+      }
+      <p class="club-gallery-caption" data-club-carousel-caption>${escapeHtml(captions[0])}</p>
+    </div>`;
+};
+
 // `showPhoto: true` (Student Clubs only) swaps the plain letter badge for a real photo when one's
-// been uploaded, or campusLifeClubThemeIcon's themed icon otherwise - Student Affairs' Services
-// keeps the plain letter badge, since those aren't clubs with a "theme" to illustrate.
+// been uploaded, or campusLifeClubThemeIcon's themed icon otherwise, and adds the event-photo
+// slideshow holder below the description (an empty-state placeholder until a club has photos) -
+// Student Affairs' Services keeps the plain letter badge and no slideshow, since those aren't
+// clubs with events to show photos of.
 const renderCampusLifeAccordionList = (container, items, { showPhoto = false } = {}) => {
   if (!container) return;
   container.innerHTML = items
@@ -18018,6 +18054,7 @@ const renderCampusLifeAccordionList = (container, items, { showPhoto = false } =
           </summary>
           <div class="disclosure-accordion-item-body">
             <p class="about-justify">${escapeHtml(item.description)}</p>
+            ${showPhoto ? clubGalleryHtml(item.gallery) : ""}
           </div>
         </details>
       `
@@ -18027,8 +18064,51 @@ const renderCampusLifeAccordionList = (container, items, { showPhoto = false } =
 renderCampusLifeAccordionList(document.querySelector("#campusLifeClubsList"), getCampusLifeClubs(), { showPhoto: true });
 renderCampusLifeAccordionList(document.querySelector("#campusLifeServicesList"), getCampusLifeServices());
 
+// Vivekananda Study Circle isn't in the clubs list above (see getVscGallery's comment), so its
+// slideshow holder is filled in separately here, reusing the same clubGalleryHtml renderer.
+const vscGalleryHolder = document.querySelector("#vscGalleryHolder");
+if (vscGalleryHolder) vscGalleryHolder.innerHTML = clubGalleryHtml(getVscGallery());
+
+// Moves a club/VSC carousel by `delta` slides (wrapping around both ends) and updates its image
+// + caption in place - shared by the manual Prev/Next buttons and the auto-slide timer below.
+const stepClubCarousel = (carousel, delta) => {
+  let photos = [];
+  let captions = [];
+  try { photos = JSON.parse(carousel.dataset.photos || "[]"); } catch { photos = []; }
+  try { captions = JSON.parse(carousel.dataset.captions || "[]"); } catch { captions = []; }
+  if (photos.length <= 1) return;
+  const nextIndex = (Number(carousel.dataset.currentIndex || 0) + delta + photos.length) % photos.length;
+  carousel.dataset.currentIndex = String(nextIndex);
+  const img = carousel.querySelector("[data-club-carousel-img]");
+  if (img) img.src = photos[nextIndex];
+  const captionEl = carousel.querySelector("[data-club-carousel-caption]");
+  if (captionEl) captionEl.textContent = captions[nextIndex] || "";
+};
+
+// Delegated (not per-carousel) since the clubs list above is re-rendered wholesale from JS -
+// listening on the whole Student Clubs panel catches every club's Prev/Next clicks (including
+// VSC's static card) without rewiring anything after a re-render.
+document.querySelector("#student-clubs")?.addEventListener("click", (event) => {
+  const button = event.target.closest("[data-club-carousel-prev], [data-club-carousel-next]");
+  if (!button) return;
+  event.preventDefault();
+  const carousel = button.closest("[data-club-carousel]");
+  if (carousel) stepClubCarousel(carousel, button.matches("[data-club-carousel-prev]") ? -1 : 1);
+});
+
+// Auto-advances every club's slideshow every few seconds, same as clicking Next - a collapsed
+// club's carousel just ticks along unseen until its card is opened, which is harmless.
+window.setInterval(() => {
+  document.querySelectorAll("#student-clubs [data-club-carousel]").forEach((carousel) => stepClubCarousel(carousel, 1));
+}, 4000);
+
 // dashboards/admin-dashboard.html - Web Page Content > Campus Life admin CRUD, same
 // wireAdminCrudList helper as the Women's Cell admin panel above.
+// Reassigned below once the Club Event Photos panel is defined - a plain forward reference (not
+// a TDZ hazard, since it's a `let` initialized right here) so adding/removing a club immediately
+// refreshes that panel's club picker instead of it going stale until the next page load.
+let refreshCampusLifeClubGalleryPicker = () => {};
+
 wireAdminCrudList({
   bodySelector: "#campusLifeClubsAdminBody",
   emptySelector: "#campusLifeClubsAdminEmpty",
@@ -18038,8 +18118,9 @@ wireAdminCrudList({
   addFeedbackSelector: "#campusLifeClubAddFeedback",
   inputSelectors: ["#campusLifeClubBadgeInput", "#campusLifeClubNameInput", "#campusLifeClubTagInput", "#campusLifeClubDescriptionInput", "#campusLifeClubPhotoInput"],
   itemLabel: "Club",
-  buildItem: ([badge, name, tag, description, photo]) => (name && description ? { badge, name, tag, description, photo } : null),
+  buildItem: ([badge, name, tag, description, photo]) => (name && description ? { id: `club-${Date.now()}`, badge, name, tag, description, photo } : null),
   removeAttr: "data-remove-campus-club",
+  onChange: () => refreshCampusLifeClubGalleryPicker(),
   rowHtml: (club, index) => `
     <tr>
       <td>${escapeHtml(club.badge || "")}</td>
@@ -18049,6 +18130,95 @@ wireAdminCrudList({
       <td><button type="button" class="icon-btn-delete" data-remove-campus-club="${index}" aria-label="Remove" title="Remove">${deleteIconSvg}</button></td>
     </tr>`
 });
+
+// Club Event Photos admin panel (Web Page Content > Campus Life) - pick a club (or Vivekananda
+// Study Circle, id "vsc") and upload photos from its events; they show as the auto-sliding
+// Prev/Next slideshow inside that card on the public Campus Life page (see clubGalleryHtml
+// above). Same select-then-manage pattern as the Departments admin's own Gallery panel.
+const campusLifeClubGallerySelect = document.querySelector("#campusLifeClubGallerySelect");
+if (campusLifeClubGallerySelect) {
+  const campusLifeClubGalleryPhotoInput = document.querySelector("#campusLifeClubGalleryPhotoInput");
+  const campusLifeClubGalleryCaptionInput = document.querySelector("#campusLifeClubGalleryCaptionInput");
+  const campusLifeClubGalleryAddButton = document.querySelector("#campusLifeClubGalleryAddButton");
+  const campusLifeClubGalleryFeedback = document.querySelector("#campusLifeClubGalleryFeedback");
+  const campusLifeClubGalleryAdminBody = document.querySelector("#campusLifeClubGalleryAdminBody");
+  const campusLifeClubGalleryAdminEmpty = document.querySelector("#campusLifeClubGalleryAdminEmpty");
+
+  // VSC isn't in campusLifeClubs (see getVscGallery's comment), so these two read/write whichever
+  // store the selected id actually belongs to, letting the rest of this panel treat it uniformly.
+  const getGalleryForSelection = (id) => (id === "vsc" ? getVscGallery() : getCampusLifeClubs().find((item) => item.id === id)?.gallery || []);
+  const saveGalleryForSelection = (id, gallery) => {
+    if (id === "vsc") { saveVscGallery(gallery); return; }
+    const clubs = getCampusLifeClubs();
+    const club = clubs.find((item) => item.id === id);
+    if (!club) return;
+    club.gallery = gallery;
+    saveCampusLifeClubs(clubs);
+  };
+
+  const renderCampusLifeClubGalleryAdmin = () => {
+    if (!campusLifeClubGalleryAdminBody) return;
+    const gallery = getGalleryForSelection(campusLifeClubGallerySelect.value);
+    campusLifeClubGalleryAdminBody.innerHTML = gallery
+      .map(
+        (photo, index) => `
+          <tr>
+            <td><img src="${escapeHtml(photo.url)}" alt="" class="site-photo-thumb"></td>
+            <td>${escapeHtml(photo.caption || "-")}</td>
+            <td class="action-cell"><button type="button" class="icon-btn-delete" data-remove-club-gallery-photo="${index}" aria-label="Remove photo">${deleteIconSvg}</button></td>
+          </tr>`
+      )
+      .join("");
+    if (campusLifeClubGalleryAdminEmpty) campusLifeClubGalleryAdminEmpty.classList.toggle("is-hidden", gallery.length > 0);
+  };
+
+  // Repopulates the dropdown from the current club list (plus the fixed VSC option) - called on
+  // load and again whenever a club is added/removed above, keeping whichever selection still exists.
+  const renderCampusLifeClubGallerySelect = () => {
+    const clubs = getCampusLifeClubs();
+    const previousValue = campusLifeClubGallerySelect.value;
+    const optionsHtml =
+      `<option value="vsc">Vivekananda Study Circle</option>` +
+      clubs.map((club) => `<option value="${escapeHtml(club.id)}">${escapeHtml(club.name)}</option>`).join("");
+    campusLifeClubGallerySelect.innerHTML = optionsHtml;
+    campusLifeClubGallerySelect.value = previousValue === "vsc" || clubs.some((club) => club.id === previousValue) ? previousValue : "vsc";
+    renderCampusLifeClubGalleryAdmin();
+  };
+  refreshCampusLifeClubGalleryPicker = renderCampusLifeClubGallerySelect;
+  renderCampusLifeClubGallerySelect();
+
+  campusLifeClubGallerySelect.addEventListener("change", renderCampusLifeClubGalleryAdmin);
+
+  campusLifeClubGalleryAddButton?.addEventListener("click", async () => {
+    const selectedId = campusLifeClubGallerySelect.value;
+    const file = campusLifeClubGalleryPhotoInput?.files[0];
+    if (!file) {
+      if (campusLifeClubGalleryFeedback) { campusLifeClubGalleryFeedback.textContent = "Choose a photo to upload."; campusLifeClubGalleryFeedback.classList.remove("success"); }
+      return;
+    }
+    try {
+      const uploaded = await readFileAsDataUrl(file, "campus-life/club-gallery");
+      const gallery = [...getGalleryForSelection(selectedId), { url: uploaded.dataUrl, caption: campusLifeClubGalleryCaptionInput?.value.trim() || "" }];
+      saveGalleryForSelection(selectedId, gallery);
+      renderCampusLifeClubGalleryAdmin();
+      if (campusLifeClubGalleryPhotoInput) campusLifeClubGalleryPhotoInput.value = "";
+      if (campusLifeClubGalleryCaptionInput) campusLifeClubGalleryCaptionInput.value = "";
+      if (campusLifeClubGalleryFeedback) { campusLifeClubGalleryFeedback.textContent = "Photo added."; campusLifeClubGalleryFeedback.classList.add("success"); }
+    } catch {
+      if (campusLifeClubGalleryFeedback) { campusLifeClubGalleryFeedback.textContent = "Could not read that photo file. Try a different image."; campusLifeClubGalleryFeedback.classList.remove("success"); }
+    }
+  });
+
+  campusLifeClubGalleryAdminBody?.addEventListener("click", (event) => {
+    const button = event.target.closest("[data-remove-club-gallery-photo]");
+    if (!button) return;
+    const selectedId = campusLifeClubGallerySelect.value;
+    const index = Number(button.dataset.removeClubGalleryPhoto);
+    saveGalleryForSelection(selectedId, getGalleryForSelection(selectedId).filter((_, i) => i !== index));
+    renderCampusLifeClubGalleryAdmin();
+    showFeedToast("Photo removed.");
+  });
+}
 
 wireAdminCrudList({
   bodySelector: "#campusLifeServicesAdminBody",

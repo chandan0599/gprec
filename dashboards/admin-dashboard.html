@@ -961,6 +961,25 @@
             </div>
 
             <article class="admin-card admin-form-card">
+              <h3>Club Event Photos</h3>
+              <p class="field-hint">Pick a club (Vivekananda Study Circle included), then upload photos from its events - they show as an auto-sliding photo slideshow inside that card on the Campus Life page.</p>
+              <label>Club<select class="admin-select" id="campusLifeClubGallerySelect" aria-label="Select club to manage its event photos"></select></label>
+              <div class="admin-add-grid">
+                <label>Photo<input type="file" accept="image/*" id="campusLifeClubGalleryPhotoInput"></label>
+                <label>Caption (optional)<input type="text" id="campusLifeClubGalleryCaptionInput" placeholder="e.g. Jignasa 2024 - Paper Presentation"></label>
+              </div>
+              <button type="button" id="campusLifeClubGalleryAddButton">Add Photo</button>
+              <p class="admin-add-feedback" id="campusLifeClubGalleryFeedback" aria-live="polite"></p>
+            </article>
+            <div class="admin-table-card">
+              <table>
+                <thead><tr><th>Photo</th><th>Caption</th><th></th></tr></thead>
+                <tbody id="campusLifeClubGalleryAdminBody"></tbody>
+              </table>
+              <p class="lookup-empty is-hidden" id="campusLifeClubGalleryAdminEmpty">No photos added yet.</p>
+            </div>
+
+            <article class="admin-card admin-form-card">
               <h3>Add Student Affairs Service</h3>
               <div class="admin-add-grid">
                 <label>Badge (2-3 letters)<input type="text" id="campusLifeServiceBadgeInput" placeholder="e.g. MS"></label>
