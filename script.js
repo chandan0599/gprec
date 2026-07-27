@@ -20471,7 +20471,7 @@ const homeFestCompassSvg = `
            unscaled) - nested in its own <svg> with preserveAspectRatio="xMidYMid meet" (not
            "slice" like the outer banner background) so it's never cropped, just letterboxed to
            fit this shorter, wider banner instead of stretched or cut off. -->
-      <svg x="370" y="1" width="170" height="148" viewBox="0 0 480 560" preserveAspectRatio="xMidYMid meet" aria-hidden="true">
+      <svg x="378" y="3" width="154" height="100" viewBox="0 0 480 560" preserveAspectRatio="xMidYMid meet" aria-hidden="true">
         <g transform="translate(240,300)">
           <g class="home-fest-dashring"><circle r="150" fill="none" stroke="#E85D04" stroke-width="1" stroke-dasharray="2 10" opacity=".3"/></g>
           <g class="home-fest-ring"><circle r="118" fill="none" stroke="#E85D04" stroke-width="1" opacity=".25"/></g>
@@ -20484,10 +20484,10 @@ const homeFestCompassSvg = `
             <line x1="150" y1="0" x2="136" y2="0"/>
           </g>
           <!-- font-size is much bigger here than the login page's own 13 - this whole compass is
-               displayed at roughly 1/4 scale (142px tall vs. the login page's ~560px-tall art
-               panel), and text doesn't stay legible when shrunk by the same ratio as the rings,
-               so it's boosted back up to read clearly at this compass's actual display size. -->
-          <g fill="#FF9A3C" opacity=".6" font-family="Courier New,monospace" font-size="46" font-weight="700" text-anchor="middle">
+               displayed at a fraction of the login page's ~560px-tall art panel's size, and text
+               doesn't stay legible when shrunk by the same ratio as the rings, so it's boosted
+               back up to read clearly at this compass's actual (small) display size. -->
+          <g fill="#FF9A3C" opacity=".6" font-family="Courier New,monospace" font-size="62" font-weight="700" text-anchor="middle">
             <text x="0" y="-158">N</text>
             <text x="0" y="170">S</text>
             <text x="-162" y="5">W</text>
