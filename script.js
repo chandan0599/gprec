@@ -2690,8 +2690,20 @@ const getPlacementDrives = () => getGprecDbBootstrap()?.placementDrives || [];
 // Targeted single-row create/remove, not a full-array replace - a TRUNCATE+reinsert approach would
 // wipe every student's applications (and interview_schedules) on every add/remove, since TRUNCATE
 // CASCADE empties the whole child table regardless of which drive changed.
-const createPlacementDrive = (fields) => gprecDbPost("/placement-drives/create", fields);
-const removePlacementDriveById = (id) => gprecDbPost("/placement-drives/remove", { id });
+// These write to a dedicated placement_drives table, not the generic site_content blob, so they
+// bypass saveSiteContent()'s automatic KB-cache invalidation - without the explicit calls below, a
+// newly added/removed drive silently never reaches the bot's knowledge base until an admin happens
+// to click "Refresh Knowledge Base".
+const createPlacementDrive = (fields) => {
+  const result = gprecDbPost("/placement-drives/create", fields);
+  if (result && typeof invalidateGprecianKnowledgeBaseCache === "function") invalidateGprecianKnowledgeBaseCache();
+  return result;
+};
+const removePlacementDriveById = (id) => {
+  const result = gprecDbPost("/placement-drives/remove", { id });
+  if (result && typeof invalidateGprecianKnowledgeBaseCache === "function") invalidateGprecianKnowledgeBaseCache();
+  return result;
+};
 
 const getPlacementApplications = () => getGprecDbBootstrap()?.placementApplications?.[getCurrentStudentId()] || [];
 
@@ -11282,7 +11294,12 @@ const looksLikeAppSupportQuestion = (text) => {
 // as the singular/plural keyword issues fixed elsewhere, just in the topic allowlist this time.
 const AI_ALLOWED_TOPIC_PATTERNS = [
   /\b(gprec|pulla reddy|colleges?|campus(es)?|admissions?|courses?|departments?|facult(y|ies)|students?|exams?|fees?|scholarships?|placements?|hostels?|librar(y|ies)|notices?|events?|tickets?|pass(es)?|attendance|grades?|timetables?|dashboards?|portals?|websites?|apps?|admins?|databases?|db|data|media|contents?|photos?|videos?|galler(y|ies)|knowledge base|chatbots?|ai)\b/i,
-  /\b(study|academics?|subjects?|homework|assignments?|projects?|research|syllab(us|i)|coding|programming|math|physics|chemistry|engineering|books?|explain(s|ed|ing)?|definitions?|concepts?|exam prep)\b/i
+  /\b(study|academics?|subjects?|homework|assignments?|projects?|research|syllab(us|i)|coding|programming|math|physics|chemistry|engineering|books?|explain(s|ed|ing)?|definitions?|concepts?|exam prep)\b/i,
+  // Real, common student/visitor questions that don't contain any of the two patterns above -
+  // without these, e.g. "how do I get a bonafide certificate" or "what's my CGPA" was wrongly
+  // refused as off-topic before ever reaching the KB/AI, even though both are answerable GPREC
+  // questions.
+  /\b(certificates?|bonafide|transfer certificate|tc|migration certificate|backlogs?|revaluation|supplementary|hall tickets?|admit cards?|internships?|jobs?|careers?|interviews?|resumes?|cgpa|sgpa|results?|medals?|awards?|disclosures?|nba|naac|accreditations?|affiliations?|ragging|anti-ragging|grievances?|counsell?ing|fests?|festivals?|udaan)\b/i
 ];
 const isAllowedAiTopic = (text) => {
   const normalized = normalizeGprecianQuery(text);
@@ -11404,6 +11421,23 @@ const recordMapRequestLog = (entry) => {
 // getters defined later in this file.
 const GPRECIAN_KB_STORAGE_KEY = "gprecAiKnowledgeBase";
 
+// Campus Life's committee sections (Anti-Ragging, Grievance Cell, SC/ST Grievance Cell) are stored
+// as an array of rich-content blocks ({type: "paragraph"|"table", heading, text, headers, rows}),
+// the same shape renderCampusLifeBlocks() turns into HTML - flattened to plain text here instead,
+// for the AI prompt rather than a page.
+const flattenContentBlocksToText = (blocks) =>
+  (blocks || [])
+    .map((block) => {
+      if (block.type === "paragraph") return block.text || "";
+      if (block.type === "table") {
+        const rows = (block.rows || []).map((row) => row.join(" - ")).join("; ");
+        return `${block.heading ? `${block.heading}: ` : ""}${rows}`;
+      }
+      return "";
+    })
+    .filter(Boolean)
+    .join(" ");
+
 const buildGprecianKnowledgeBase = () => {
   const chunks = [];
 
@@ -11453,6 +11487,156 @@ const buildGprecianKnowledgeBase = () => {
     chunks.push({ id: `dept-${dept.code}-about`, text: `${dept.name}: ${dept.about}`, link: deptLink });
     if (dept.vision) chunks.push({ id: `dept-${dept.code}-vision`, text: `${dept.name} Vision: ${dept.vision}`, link: deptLink });
   });
+
+  const placementsLink = { url: gprecPageUrl("training-placements.html"), label: "Open Training & Placements page" };
+  getPlacementDrives()
+    .slice(0, 20)
+    .forEach((drive) =>
+      chunks.push({
+        id: `placement-${drive.id}`,
+        text: `${drive.driveType || "Placement"} drive: ${drive.company} - ${drive.role}. CTC/stipend: ${drive.ctc}. Date: ${drive.date}${drive.sessionTime ? ` at ${drive.sessionTime}` : ""}${drive.venue ? `, venue: ${drive.venue}` : ""}. Mode: ${drive.mode || "not specified"}. Minimum CGPA: ${drive.minCgpa}, max backlogs allowed: ${drive.maxBacklogs}. Eligible branches: ${(drive.branches || []).join(", ") || "all branches"}.${drive.description ? ` Details: ${drive.description}` : ""}`,
+        link: placementsLink
+      })
+    );
+
+  const campusEventsLink = { url: `${gprecPageUrl("index.html")}#notice-board`, label: "View Notice Board for Campus Events" };
+  const todayIso = new Date().toISOString().slice(0, 10);
+  getCampusEvents()
+    .filter((event) => event.isPublic && String(event.date || "") >= todayIso)
+    .forEach((event) =>
+      chunks.push({
+        id: `campus-event-${event.id}`,
+        text: `Campus event: ${event.title} on ${event.date}${event.time ? ` at ${event.time}` : ""}, venue: ${event.venue}. Registration fee: ${Number(event.fee) ? `Rs. ${event.fee}` : "free"}. ${event.description || ""}`,
+        link: campusEventsLink
+      })
+    );
+
+  const careersLink = { url: gprecPageUrl("careers.html"), label: "Open Careers page" };
+  getCareerListings().forEach((job) =>
+    chunks.push({
+      id: `career-${job.id}`,
+      text: `Career opening at GPREC: ${job.title}. ${job.description || ""}`,
+      link: careersLink
+    })
+  );
+
+  const examCellLink = { url: gprecPageUrl("exam-cell.html"), label: "Open Exam Cell page" };
+  const examCell = getExamCellContent();
+  if (examCell.about) chunks.push({ id: "exam-cell-about", text: `Exam Cell: ${examCell.about}`, link: examCellLink });
+  if (examCell.generalRules?.length) {
+    chunks.push({ id: "exam-cell-rules", text: `Exam Cell general examination rules: ${examCell.generalRules.join(" ")}`, link: examCellLink });
+  }
+  if (examCell.malpracticeOffenses?.length) {
+    chunks.push({
+      id: "exam-cell-malpractice",
+      text: `Exam Cell malpractice offenses and punishments: ${examCell.malpracticeOffenses.map((row) => `${row.offense} - ${row.punishment}`).join("; ")}`,
+      link: examCellLink
+    });
+  }
+  if (examCell.courseCompletionNotice) {
+    chunks.push({ id: "exam-cell-completion", text: `Exam Cell course completion policy: ${examCell.courseCompletionNotice.replace(/\*\*/g, "")}`, link: examCellLink });
+  }
+
+  const disclosuresLink = { url: gprecPageUrl("mandatory-disclosures.html"), label: "Open Mandatory Disclosures page" };
+  getDisclosureCategories().forEach((category) => {
+    if (!category.items?.length) return;
+    chunks.push({
+      id: `disclosure-${category.id}`,
+      text: `Mandatory Disclosures - ${category.label}: available documents - ${category.items.map((item) => item.title).join(", ")}.`,
+      link: disclosuresLink
+    });
+  });
+  const nbaRows = getNbaAccreditationRows();
+  if (nbaRows.length) {
+    chunks.push({
+      id: "disclosure-nba",
+      text: `NBA accreditation by year: ${nbaRows.map((row) => `${row.year} - ${row.programs}`).join("; ")}.`,
+      link: disclosuresLink
+    });
+  }
+
+  const rdLink = { url: gprecPageUrl("research-development.html"), label: "Open Research & Development page" };
+  const aboutRd = getAboutRdContent();
+  if (aboutRd.committee) chunks.push({ id: "rd-committee", text: `R&D Committee: ${aboutRd.committee}`, link: rdLink });
+  if (aboutRd.objectives) chunks.push({ id: "rd-objectives", text: `R&D Objectives: ${aboutRd.objectives}`, link: rdLink });
+  if (aboutRd.incentives) chunks.push({ id: "rd-incentives", text: `R&D Faculty & Student Incentives: ${aboutRd.incentives}`, link: rdLink });
+  if (aboutRd.inHouseScheme) chunks.push({ id: "rd-inhouse", text: `R&D In-House Project Scheme: ${aboutRd.inHouseScheme}`, link: rdLink });
+  getResearchDevCategories().forEach((category) => {
+    if (!category.items?.length) return;
+    chunks.push({
+      id: `rd-${category.id}`,
+      text: `Research & Development - ${category.label}: available documents - ${category.items.map((item) => item.title).join(", ")}.`,
+      link: rdLink
+    });
+  });
+
+  const medalsLink = { url: gprecPageUrl("about-us.html"), label: "Open About Us page" };
+  const medalsAwards = getMedalsAwardsContent();
+  const awardsByCategory = {};
+  (medalsAwards.awards || []).forEach((award) => {
+    const category = award.category || "General";
+    (awardsByCategory[category] = awardsByCategory[category] || []).push(
+      award.criteria ? `${award.title} (${award.criteria})` : award.title
+    );
+  });
+  Object.entries(awardsByCategory).forEach(([category, titles]) =>
+    chunks.push({
+      id: `medals-${category.toLowerCase().replace(/[^a-z0-9]+/g, "-")}`,
+      text: `Medals & Awards - ${category}: ${titles.join(", ")}.`,
+      link: medalsLink
+    })
+  );
+  if (medalsAwards.eligibilityNote) {
+    chunks.push({ id: "medals-eligibility", text: `Medals & Awards eligibility: ${medalsAwards.eligibilityNote}`, link: medalsLink });
+  }
+
+  // College Fest - gated on the same admin on/off switch the homepage fest banner uses
+  // (getFestBannerEnabled), so the bot stops volunteering fest details the moment an admin turns
+  // off fest promotion (e.g. once it's over), the same way the banner does.
+  if (getFestBannerEnabled()) {
+    const festLink = { url: gprecPageUrl("event-visitor-dashboard.html"), label: "Open Fest page" };
+    const festName = getFestName();
+    chunks.push({
+      id: "fest-overview",
+      text: `College Fest: ${festName} is on ${getFestDate()}${getFestTime() ? ` at ${getFestTime()}` : ""}, venue: ${getFestVenue()}.`,
+      link: festLink
+    });
+    getFestActivities().forEach((activity) =>
+      chunks.push({
+        id: `fest-activity-${activity.id}`,
+        text: `${festName} activity: ${activity.title}, on ${activity.date}${activity.time ? ` at ${activity.time}` : ""}, venue: ${activity.venue}.${activity.description ? ` ${activity.description}` : ""}`,
+        link: festLink
+      })
+    );
+  }
+
+  // Campus Life governance/committee sections - reporting contacts and committee membership for
+  // ragging and grievances, so a question like "how do I report ragging" gets a real answer with a
+  // link straight to that section instead of the bot only having the generic Code of Conduct line.
+  const antiRaggingText = flattenContentBlocksToText(getCampusLifeAntiRagging());
+  if (antiRaggingText) {
+    chunks.push({
+      id: "anti-ragging",
+      text: `Anti-Ragging: ${antiRaggingText}`,
+      link: { url: `${gprecPageUrl("campus-life.html")}#anti-ragging`, label: "Open Anti-Ragging page" }
+    });
+  }
+  const grievanceText = flattenContentBlocksToText(getCampusLifeGrievanceCellBlocks());
+  if (grievanceText) {
+    chunks.push({
+      id: "grievance-cell",
+      text: `Grievance Redressal Committee: ${grievanceText}`,
+      link: { url: `${gprecPageUrl("campus-life.html")}#grievance-cell`, label: "Open Grievance Cell page" }
+    });
+  }
+  const scstGrievanceText = flattenContentBlocksToText(getCampusLifeScStGrievanceCellBlocks());
+  if (scstGrievanceText) {
+    chunks.push({
+      id: "scst-grievance-cell",
+      text: `SC/ST Grievance Redressal Committee: ${scstGrievanceText}`,
+      link: { url: `${gprecPageUrl("campus-life.html")}#sc-st-grievance-cell`, label: "Open SC/ST Grievance Cell page" }
+    });
+  }
 
   return chunks.filter((chunk) => chunk.text && chunk.text.trim() && !/undefined|null/.test(chunk.text));
 };
@@ -11576,6 +11760,23 @@ const retrieveRelevantChunksSemantic = (question, topN = 4) => {
       score: chunk.score ?? 1,
       link: chunk.link_url ? { url: chunk.link_url, label: chunk.link_label, download: chunk.link_download } : null
     }));
+};
+
+// Fire-and-forget log of a real visitor question that retrieval (semantic search, or its keyword-
+// overlap fallback) found NO relevant chunk for at all - i.e. the live AI answered from general
+// model knowledge with zero grounding in this site's own content. Surfaced in the Admin Dashboard
+// as "Low-confidence questions" so content gaps are found from actual traffic instead of an admin
+// (or Claude) guessing what's missing. Uses fetch() (not gprecDbRequest's synchronous XHR) and is
+// never awaited by its caller - same reasoning as gprecKnowledgeBaseSyncInBackground: this must
+// never add latency to the chat reply the visitor is actively waiting on.
+const recordLowConfidenceQuestion = (question) => {
+  const baseUrl = gprecApiBaseUrl();
+  if (!baseUrl || !question) return;
+  fetch(`${baseUrl}/low-confidence-questions`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ question })
+  }).catch(() => {});
 };
 
 // --- Tool-calling agent -------------------------------------------------------------------
@@ -12646,6 +12847,7 @@ const getGprecianReply = async (question, onToken = null) => {
       const knowledgeBase = getGprecianKnowledgeBase();
       const relevantChunks =
         retrieveRelevantChunksSemantic(trimmedQuestion, 4) || retrieveRelevantChunks(trimmedQuestion, knowledgeBase.chunks, 4);
+      if (!relevantChunks.length) recordLowConfidenceQuestion(trimmedQuestion);
       const augmentedQuestion = relevantChunks.length
         ? `Relevant GPREC website information (use this to answer if it's relevant to the question):\n${relevantChunks.map((c) => `- ${c.text}`).join("\n").slice(0, 900)}\n\nQuestion: ${trimmedQuestion}`
         : trimmedQuestion;
@@ -20198,7 +20400,14 @@ const isAssignedEventVolunteer = (eventId, rollNumber) => {
 // Lets a faculty Event Head edit their own assigned event's details without needing admin access -
 // a purpose-built endpoint with its own server-side permission check (see update_campus_event_as_
 // head in portal_db_server.py), not the generic admin-only /api/site-content saveCampusEvents uses.
-const updateCampusEventAsHead = (eventId, fields) => gprecDbPost("/campus-events/update", { eventId, ...fields });
+// Bypassing saveCampusEvents also means bypassing its automatic KB-cache invalidation, so it's
+// repeated explicitly here - otherwise an Event Head's edit (date/venue/description) never reaches
+// the bot's knowledge base until someone happens to click "Refresh Knowledge Base".
+const updateCampusEventAsHead = (eventId, fields) => {
+  const result = gprecDbPost("/campus-events/update", { eventId, ...fields });
+  if (result && typeof invalidateGprecianKnowledgeBaseCache === "function") invalidateGprecianKnowledgeBaseCache();
+  return result;
+};
 
 // College Fest activities: a separate feature from the public-facing Campus Events above. Fest
 // activities have no registration/fee/gate-scanning - they're internal duty-roster entries (a
@@ -20212,8 +20421,14 @@ const getFestActivities = () => {
 const saveFestActivities = (activities) => saveSiteContent("festActivities", activities);
 // Lets a faculty coordinator manage their own assigned activity's volunteers (and an admin manage
 // any field) without going through the generic admin-only /api/site-content - see
-// update_fest_activity in portal_db_server.py for the server-side permission check.
-const updateFestActivityAsCoordinator = (activityId, fields) => gprecDbPost("/fest-activities/update", { activityId, ...fields });
+// update_fest_activity in portal_db_server.py for the server-side permission check. Same
+// KB-cache-invalidation caveat as updateCampusEventAsHead above - bypassing saveFestActivities
+// means bypassing its automatic invalidation too, so it's repeated explicitly here.
+const updateFestActivityAsCoordinator = (activityId, fields) => {
+  const result = gprecDbPost("/fest-activities/update", { activityId, ...fields });
+  if (result && typeof invalidateGprecianKnowledgeBaseCache === "function") invalidateGprecianKnowledgeBaseCache();
+  return result;
+};
 // The allowlist of faculty emails admin has approved to publish their own fest activities (see
 // create_fest_activity in portal_db_server.py) - a plain site_content array, same admin-only
 // generic save as everything else admin curates directly.
@@ -20222,7 +20437,13 @@ const getFestCoordinators = () => {
   return Array.isArray(saved) ? saved : [];
 };
 const saveFestCoordinators = (emails) => saveSiteContent("festCoordinators", emails);
-const createFestActivityAsCoordinator = (fields) => gprecDbPost("/fest-activities/create", fields);
+// Same KB-cache-invalidation caveat as above - a faculty coordinator publishing their own new
+// activity also bypasses saveFestActivities.
+const createFestActivityAsCoordinator = (fields) => {
+  const result = gprecDbPost("/fest-activities/create", fields);
+  if (result && typeof invalidateGprecianKnowledgeBaseCache === "function") invalidateGprecianKnowledgeBaseCache();
+  return result;
+};
 // The fest's display name (shown on event-visitor-dashboard.html's branding) - admin-set instead
 // of the hardcoded "Campus Fest 2026" placeholder it shipped with.
 const getFestName = () => getSiteContent("festName", "Udaan 2026");
@@ -23303,8 +23524,10 @@ campusEventManagerBody?.addEventListener("click", (event) => {
   // Goes through a dedicated endpoint (not the generic saveCampusEvents array-filter-then-save)
   // so removal also cleans up that event's registrations and any external visitor accounts left
   // with no other remaining registration - see remove_campus_event_registrations in
-  // portal_db_server.py.
-  gprecDbPost("/campus-events/remove", { eventId: removeButton.dataset.campusEventRemove });
+  // portal_db_server.py. Same bypass-of-saveCampusEvents caveat as updateCampusEventAsHead above -
+  // invalidate the KB cache explicitly so a removed event actually stops showing up as "upcoming".
+  const removeResult = gprecDbPost("/campus-events/remove", { eventId: removeButton.dataset.campusEventRemove });
+  if (removeResult && typeof invalidateGprecianKnowledgeBaseCache === "function") invalidateGprecianKnowledgeBaseCache();
   renderCampusEvents();
   renderCampusEventManager();
   recordActivity("Removed campus event", "Campus Events");
@@ -29627,6 +29850,36 @@ const renderAiUsageStats = () => {
       lastActivity.textContent = "No AI requests recorded yet.";
     }
   }
+  // Quick-glance health signal so an admin doesn't have to read the raw counters/log every time -
+  // flags the two failure modes that are easy to miss: a stuck/misconfigured provider (low success
+  // rate on recent completed calls) and a guardrail allowlist that's too strict (high share of
+  // real visitor questions getting redirected as off-topic).
+  const healthEl = document.querySelector("#aiUsageHealth");
+  if (healthEl) {
+    const recentCompleted = log.filter((entry) => entry.status === "success" || entry.status === "failure").slice(0, 20);
+    const recentTotal = log.slice(0, 20).length;
+    const recentOffTopic = log.slice(0, 20).filter((entry) => entry.status === "offTopic").length;
+    let label = "Health: not enough recent activity to tell";
+    let cssClass = "";
+    if (recentCompleted.length >= 3) {
+      const recentSuccessRate = recentCompleted.filter((entry) => entry.status === "success").length / recentCompleted.length;
+      if (recentSuccessRate < 0.5) {
+        label = `Health: degraded - only ${Math.round(recentSuccessRate * 100)}% of the last ${recentCompleted.length} completed calls succeeded. Check the provider connection above.`;
+        cssClass = "warn";
+      }
+    }
+    if (!cssClass && recentTotal >= 5 && recentOffTopic / recentTotal > 0.4) {
+      label = `Health: ${recentOffTopic} of the last ${recentTotal} messages were redirected as off-topic - consider widening the allowed-topic list or the knowledge base.`;
+      cssClass = "warn";
+    }
+    if (!cssClass && (recentCompleted.length >= 3 || recentTotal >= 5)) {
+      label = "Health: OK";
+      cssClass = "ok";
+    }
+    healthEl.textContent = label;
+    healthEl.className = cssClass;
+  }
+
   renderAiRequestLog();
 };
 if (document.querySelector("#aiUsageAttempts")) renderAiUsageStats();
@@ -29757,6 +30010,20 @@ const renderBotFeedback = () => {
     .join("");
 };
 if (document.querySelector("#botFeedbackBody")) renderBotFeedback();
+
+// Companion panel to Bot Feedback above, but sourced from recordLowConfidenceQuestion() instead of
+// a visitor manually flagging an answer - see gprecian_low_confidence_questions in schema.sql.
+const renderLowConfidenceQuestions = () => {
+  const body = document.querySelector("#lowConfidenceQuestionsBody");
+  if (!body) return;
+  const result = gprecDbRequest("/low-confidence-questions/list", { method: "POST" });
+  const items = result?.ok ? result.items : [];
+  document.querySelector("#lowConfidenceQuestionsEmpty")?.classList.toggle("is-hidden", items.length > 0);
+  body.innerHTML = items
+    .map((item) => `<tr><td>${escapeHtml(item.question)}</td><td>${escapeHtml(item.createdAt)}</td></tr>`)
+    .join("");
+};
+if (document.querySelector("#lowConfidenceQuestionsBody")) renderLowConfidenceQuestions();
 
 document.querySelector("#botFeedbackBody")?.addEventListener("click", (event) => {
   const row = event.target.closest("[data-feedback-id]");

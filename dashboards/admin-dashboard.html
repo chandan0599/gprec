@@ -2000,6 +2000,7 @@
               <article><strong id="aiUsageOffTopic">0</strong><span>Off-topic (redirected)</span></article>
             </div>
             <p id="aiUsageLastActivity"></p>
+            <p id="aiUsageHealth"></p>
 
             <div class="admin-table-card">
               <table>
@@ -2043,6 +2044,24 @@
             <div class="bot-feedback-card">
               <div class="bot-feedback-list" id="botFeedbackBody"></div>
               <p class="lookup-empty is-hidden" id="botFeedbackEmpty">No flagged answers right now.</p>
+            </div>
+          </article>
+
+          <article class="admin-card" data-integration="ai">
+            <div class="portal-block-head"><h3>Low-Confidence Questions</h3><span>Real visitor questions the bot had zero grounded content for</span></div>
+            <div class="ai-settings-note">
+              <span class="ai-settings-note-icon">i</span>
+              <ul>
+                <li>Logged automatically whenever both semantic search and the keyword fallback found no relevant knowledge base chunk for a question - the bot answered from general knowledge only.</li>
+                <li>A recurring topic here is a real content gap - add it to the relevant page/content section, then click Refresh Knowledge Base above.</li>
+              </ul>
+            </div>
+            <div class="admin-table-card">
+              <table>
+                <thead><tr><th>Question</th><th>When</th></tr></thead>
+                <tbody id="lowConfidenceQuestionsBody"></tbody>
+              </table>
+              <p class="lookup-empty is-hidden" id="lowConfidenceQuestionsEmpty">No low-confidence questions logged yet.</p>
             </div>
           </article>
 
@@ -2610,6 +2629,6 @@
       </button>
     </div>
 
-    <script src="../script.js?v=20260727-8"></script>
+    <script src="../script.js?v=20260729-kb6"></script>
   </body>
 </html>

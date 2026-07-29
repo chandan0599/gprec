@@ -1039,6 +1039,19 @@ CREATE TABLE IF NOT EXISTS ai_request_log (
 ALTER TABLE IF EXISTS ai_request_log ADD COLUMN IF NOT EXISTS status TEXT;
 ALTER TABLE IF EXISTS ai_request_log DROP COLUMN IF EXISTS success;
 
+-- Every live-AI reply where retrieval (semantic search, or its keyword-overlap fallback) found
+-- zero relevant chunks - i.e. the bot answered from general model knowledge with no grounding in
+-- this site's own content at all. Surfaced in the Admin Dashboard as "Low-confidence questions" so
+-- admins can see real content gaps from actual visitor traffic instead of guessing what to add to
+-- the knowledge base. Most recent 200 kept (trimmed on insert, see record_low_confidence_question
+-- in portal_db_server.py) - enough history to spot a recurring topic without growing unbounded.
+CREATE TABLE IF NOT EXISTS gprecian_low_confidence_questions (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  question TEXT NOT NULL,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+CREATE INDEX IF NOT EXISTS idx_gprecian_low_confidence_created ON gprecian_low_confidence_questions(created_at);
+
 -- Same singleton-counter pattern as ai_usage_stats above, but for the Mappls Map SDK (the
 -- Event Zone Map on the visitor/admin event pages) - surfaced in the Admin Dashboard's Map SDK
 -- card so admins can see whether the map is actually loading without needing to check Mappls'

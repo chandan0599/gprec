@@ -1466,15 +1466,20 @@ def resolve_bot_feedback(feedback_id, correction):
     correction = correction.strip()
     if not correction:
         return False
-    run_psql(f"""
-        UPDATE bot_feedback SET status = 'Approved', correction = {quote(correction)}, reviewed_at = now()
-        WHERE id = {quote(feedback_id)}::uuid;
-    """)
+    # Embed first, mark Approved last - if get_embedding() throws (embedding service down/erroring),
+    # the row must stay 'Pending' so it's still visible for the admin to retry. Doing the status
+    # UPDATE first (the old order) meant a transient embedding failure still left the row marked
+    # Approved, silently dropping it from the pending queue with the correction never actually
+    # reaching the bot's knowledge base.
     embedding = get_embedding(correction)
     run_psql(f"""
         INSERT INTO knowledge_base_chunks (id, chunk_text, embedding, updated_at)
         VALUES ({quote(f"feedback-{feedback_id}")}, {quote(correction)}, {quote(vector_literal(embedding))}::vector, now())
         ON CONFLICT (id) DO UPDATE SET chunk_text = EXCLUDED.chunk_text, embedding = EXCLUDED.embedding, updated_at = now();
+    """)
+    run_psql(f"""
+        UPDATE bot_feedback SET status = 'Approved', correction = {quote(correction)}, reviewed_at = now()
+        WHERE id = {quote(feedback_id)}::uuid;
     """)
     return True
 
@@ -3568,6 +3573,28 @@ def record_ai_request_log(entry):
         VALUES ({quote(provider)}, {quote(model)}, {quote(status)}, {quote(latency_ms)}, {quote(error)});
         DELETE FROM ai_request_log WHERE id NOT IN (SELECT id FROM ai_request_log ORDER BY created_at DESC LIMIT 20);
     """)
+
+
+def record_low_confidence_question(question):
+    question = str(question or "").strip()[:500]
+    if not question:
+        return
+    run_psql(f"""
+        INSERT INTO gprecian_low_confidence_questions (question) VALUES ({quote(question)});
+        DELETE FROM gprecian_low_confidence_questions WHERE id NOT IN (
+            SELECT id FROM gprecian_low_confidence_questions ORDER BY created_at DESC LIMIT 200
+        );
+    """)
+
+
+def list_low_confidence_questions():
+    return run_json("""
+        SELECT COALESCE(json_agg(json_build_object(
+            'id', id::text, 'question', question,
+            'createdAt', to_char(created_at, 'DD Mon, HH12:MI AM')
+        ) ORDER BY created_at DESC), '[]'::json)
+        FROM gprecian_low_confidence_questions;
+    """, [])
 
 
 def reset_ai_usage():
@@ -5690,6 +5717,18 @@ class PortalHandler(SimpleHTTPRequestHandler):
                     return
                 status = (payload.get("status") or "").strip() or None
                 self.send_json(200, {"ok": True, "items": list_bot_feedback(status)})
+                return
+            if path == "/api/low-confidence-questions":
+                # Unauthenticated like /api/bot-feedback above - the bot runs on the public site for
+                # anonymous visitors too, and this is a passive quality signal (which questions had
+                # zero grounded content), not something that needs an account to report.
+                record_low_confidence_question((payload or {}).get("question"))
+                self.send_json(200, {"ok": True})
+                return
+            if path == "/api/low-confidence-questions/list":
+                if not require_auth(self, allowed_types=["admin"]):
+                    return
+                self.send_json(200, {"ok": True, "items": list_low_confidence_questions()})
                 return
             if path == "/api/bot-feedback/resolve":
                 if not require_auth(self, allowed_types=["admin"]):
