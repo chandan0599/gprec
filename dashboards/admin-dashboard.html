@@ -2411,6 +2411,7 @@
             <article class="admin-card"><h3>Academic Reports</h3><p>Attendance, assignment, results, timetable, and course completion exports.</p><select class="admin-select" id="academicReportType" aria-label="Select report type"><option value="attendance">Attendance</option><option value="assignments">Assignments</option><option value="results">Results</option><option value="timetable">Timetable</option></select><button type="button" id="generateAcademicReportButton">Generate Report</button></article>
             <article class="admin-card"><h3>Financial Reports</h3><p>Payment gateway transactions, certificate fees, exam fees, and dues.</p><button type="button" id="openFinanceExportButton">Open Finance Export</button></article>
             <article class="admin-card"><h3>Audit Trail</h3><p>Role/credential changes, notice publishing, hostel request approvals, complaint resolutions, and other admin actions on file.</p><button type="button" id="viewAuditButton">View Audit</button></article>
+            <article class="admin-card"><h3>Attendance Shortage Alerts</h3><p>Notifies every student below 75% attendance college-wide (in-app + their parent dashboard), and SMS/WhatsApp any guardian mobile on file.</p><button type="button" id="sendCollegeWideAttendanceAlertsButton">Send Alerts Now</button><p class="admin-add-feedback" id="collegeWideAttendanceAlertsFeedback" aria-live="polite"></p></article>
           </div>
           <div class="admin-table-card">
             <h3>Recent Audit Activity</h3>
@@ -2438,6 +2439,45 @@
               <tbody id="dataRetentionResultsBody"></tbody>
             </table>
             <p class="lookup-empty is-hidden" id="dataRetentionResultsEmpty">No table currently has rows past its retention cutoff.</p>
+          </div>
+
+          <div class="admin-table-card" id="analyticsTrendsCard">
+            <div class="portal-block-head"><h3>Analytics &amp; Trends</h3><span>Year/department/term aggregates across placements, attendance, fees, and results - data already on file, tied together in one view.</span></div>
+            <button type="button" id="loadAnalyticsTrendsButton">Load Analytics</button>
+            <p class="admin-add-feedback" id="analyticsTrendsFeedback" aria-live="polite"></p>
+
+            <div class="admin-metric-grid" id="feeCollectionStats">
+              <article><strong id="feeCollectionPaid">-</strong><span>Fees Collected</span></article>
+              <article><strong id="feeCollectionPending">-</strong><span>Fees Pending</span></article>
+              <article><strong id="feeCollectionPercent">-</strong><span>% Collected</span></article>
+            </div>
+            <div class="analytics-progress-track" id="feeCollectionProgressTrack" role="img" aria-label="Fee collection progress">
+              <div class="analytics-progress-fill" id="feeCollectionProgressFill"></div>
+            </div>
+
+            <div class="analytics-chart-block" data-analytics-chart="placements">
+              <div class="analytics-chart-head"><h4>Placements by Year</h4><button type="button" class="analytics-table-toggle" data-toggle-table="placements">View as table</button></div>
+              <div class="analytics-chart-svg-wrap" id="placementsChartWrap"></div>
+              <div class="admin-table-card is-hidden" id="placementsTableWrap">
+                <table><thead><tr><th>Year</th><th>Applicants</th><th>Placed</th><th>Placement %</th></tr></thead><tbody id="placementsTableBody"></tbody></table>
+              </div>
+            </div>
+
+            <div class="analytics-chart-block" data-analytics-chart="attendance">
+              <div class="analytics-chart-head"><h4>Attendance by Department</h4><button type="button" class="analytics-table-toggle" data-toggle-table="attendance">View as table</button></div>
+              <div class="analytics-chart-svg-wrap" id="attendanceChartWrap"></div>
+              <div class="admin-table-card is-hidden" id="attendanceTableWrap">
+                <table><thead><tr><th>Department</th><th>Attendance %</th></tr></thead><tbody id="attendanceTableBody"></tbody></table>
+              </div>
+            </div>
+
+            <div class="analytics-chart-block" data-analytics-chart="results">
+              <div class="analytics-chart-head"><h4>Exam Results by Term (% Clear of Backlogs)</h4><button type="button" class="analytics-table-toggle" data-toggle-table="results">View as table</button></div>
+              <div class="analytics-chart-svg-wrap" id="resultsChartWrap"></div>
+              <div class="admin-table-card is-hidden" id="resultsTableWrap">
+                <table><thead><tr><th>Term</th><th>Students</th><th>% Clear</th></tr></thead><tbody id="resultsTableBody"></tbody></table>
+              </div>
+            </div>
           </div>
         </section>
 
@@ -2629,6 +2669,6 @@
       </button>
     </div>
 
-    <script src="../script.js?v=20260729-kb6"></script>
+    <script src="../script.js?v=20260729-features"></script>
   </body>
 </html>

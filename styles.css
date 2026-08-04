@@ -26052,3 +26052,95 @@ button.calendar-cell-event {
   animation: none !important;
   content: none !important;
 }
+
+/* Analytics & Trends panel (Admin Dashboard > Reports & Audit) - single-hue magnitude bars
+   (one measure per category, not multiple simultaneous series, so one validated brand hue is
+   correct here rather than a categorical rainbow - see the dataviz skill's color-formula.md). */
+.analytics-chart-block {
+  margin-top: 20px;
+  padding-top: 16px;
+  border-top: 1px solid var(--line);
+}
+.analytics-chart-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 12px;
+}
+.analytics-chart-head h4 {
+  margin: 0;
+  font-size: 0.95rem;
+  color: var(--navy);
+}
+.analytics-table-toggle {
+  background: none;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  padding: 4px 10px;
+  font-size: 0.78rem;
+  color: var(--muted);
+  cursor: pointer;
+}
+.analytics-table-toggle:hover {
+  border-color: var(--orange);
+  color: var(--orange);
+}
+.analytics-bar-row {
+  display: grid;
+  grid-template-columns: 90px 1fr auto;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 10px;
+}
+.analytics-bar-label {
+  font-size: 0.82rem;
+  color: var(--ink);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.analytics-bar-track {
+  position: relative;
+  height: 10px;
+  background: var(--paper);
+  border-radius: 5px;
+  overflow: hidden;
+}
+.analytics-bar-fill {
+  position: absolute;
+  inset: 0 auto 0 0;
+  height: 100%;
+  background: var(--orange);
+  border-radius: 5px;
+  transition: width 400ms cubic-bezier(0.16, 1, 0.3, 1);
+}
+.analytics-bar-value {
+  font-size: 0.8rem;
+  font-weight: 700;
+  color: var(--navy);
+  text-align: right;
+  white-space: nowrap;
+}
+.analytics-progress-track {
+  position: relative;
+  height: 14px;
+  background: var(--paper);
+  border: 1px solid var(--line);
+  border-radius: 7px;
+  overflow: hidden;
+  margin: 4px 0 16px;
+}
+.analytics-progress-fill {
+  position: absolute;
+  inset: 0 auto 0 0;
+  height: 100%;
+  background: var(--orange);
+  border-radius: 7px 0 0 7px;
+  transition: width 400ms cubic-bezier(0.16, 1, 0.3, 1);
+}
+.analytics-chart-empty {
+  font-size: 0.85rem;
+  color: var(--muted);
+  margin: 0;
+}

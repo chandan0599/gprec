@@ -102,12 +102,12 @@ const hasStudentLogin = () => Boolean(getCurrentStudentId());
 // Keeps logout scoped to just that one role, so it doesn't accidentally clear anyone else's
 // saved session.
 const gprecLogoutKeysByLoginPage = {
-  "student-login.html": ["gprecStudentId", "gprecDemoMode"],
-  "admin-login.html": ["gprecAdminRole", "gprecAdminEmail", "gprecAdminDepartment", "gprecDemoMode"],
-  "faculty-login.html": ["gprecFacultyEmail", "gprecDemoMode"],
-  "non-teaching-login.html": ["gprecNonTeachingEmail", "gprecDemoMode"],
-  "parent-login.html": ["gprecParentStudentId", "gprecDemoMode"],
-  "alumni-login.html": ["gprecAlumniEmail", "gprecAlumniName", "gprecAlumniBatch", "gprecDemoMode"]
+  "student-login.html": ["gprecStudentId"],
+  "admin-login.html": ["gprecAdminRole", "gprecAdminEmail", "gprecAdminDepartment"],
+  "faculty-login.html": ["gprecFacultyEmail"],
+  "non-teaching-login.html": ["gprecNonTeachingEmail"],
+  "parent-login.html": ["gprecParentStudentId"],
+  "alumni-login.html": ["gprecAlumniEmail", "gprecAlumniName", "gprecAlumniBatch"]
 };
 
 // Figures out which saved chat history belongs to the current page/user, so the GPRECian Bot
@@ -211,131 +211,6 @@ const GPREC_ROLE_LOGIN_PAGE = {
   non_teaching: "non-teaching-login.html",
   alumni: "alumni-login.html"
 };
-
-// "Try it as a student/faculty/admin/etc." demo login shortcut (e.g. ?demo=student in the URL) -
-// logs the visitor into a fake session for that role without needing a real account, using sample
-// data. See gprecStartDemoSession() below for how it's triggered.
-const GPREC_DEMO_SESSIONS = {
-  student: {
-    activeRole: "student",
-    dashboard: "student-dashboard.html",
-    entries: { gprecStudentId: "20X51A0501" }
-  },
-  parent: {
-    activeRole: "parent",
-    dashboard: "parent-dashboard.html",
-    entries: { gprecParentStudentId: "20X51A0501" }
-  },
-  faculty: {
-    activeRole: "faculty",
-    dashboard: "faculty-dashboard.html",
-    entries: { gprecFacultyEmail: "k.ramesh@gprec.ac.in" }
-  },
-  non_teaching: {
-    activeRole: "non_teaching",
-    dashboard: "non-teaching-dashboard.html",
-    entries: { gprecNonTeachingEmail: "office.super@gprec.ac.in" }
-  },
-  alumni: {
-    activeRole: "alumni",
-    dashboard: "alumni-dashboard.html",
-    entries: {
-      gprecAlumniEmail: "preview.alumni@gprec.ac.in",
-      gprecAlumniName: "Preview Alumni",
-      gprecAlumniBatch: "2026"
-    }
-  },
-  admin: {
-    activeRole: "admin",
-    dashboard: "admin-dashboard.html",
-    entries: {
-      gprecAdminRole: "College Admin",
-      gprecAdminEmail: "admin@gprec.ac.in",
-      gprecAdminDepartment: "All"
-    }
-  },
-  department: {
-    activeRole: "admin",
-    dashboard: "department-dashboard.html",
-    entries: {
-      gprecAdminRole: "CSE Department Admin",
-      gprecAdminEmail: "cse.admin@gprec.ac.in",
-      gprecAdminDepartment: "CSE"
-    }
-  },
-  hostel: {
-    activeRole: "admin",
-    dashboard: "hostel-dashboard.html",
-    entries: {
-      gprecAdminRole: "Boys Hostel Warden",
-      gprecAdminEmail: "boys.warden@gprec.ac.in",
-      gprecAdminDepartment: "Boys Hostel"
-    }
-  },
-  exam: {
-    activeRole: "admin",
-    dashboard: "exam-cell-dashboard.html",
-    entries: {
-      gprecAdminRole: "Exam Cell Officer",
-      gprecAdminEmail: "exam.cell@gprec.ac.in",
-      gprecAdminDepartment: "Examinations"
-    }
-  },
-  placement: {
-    activeRole: "admin",
-    dashboard: "placement-dashboard.html",
-    entries: {
-      gprecAdminRole: "Placement Cell Officer",
-      gprecAdminEmail: "placement.cell@gprec.ac.in",
-      gprecAdminDepartment: "Placements"
-    }
-  },
-  womencell: {
-    activeRole: "admin",
-    dashboard: "women-cell-admin-dashboard.html",
-    entries: {
-      gprecAdminRole: "Women's Cell Admin",
-      gprecAdminEmail: "womencell.admin@gprec.ac.in",
-      gprecAdminDepartment: "Women's Cell"
-    }
-  }
-};
-GPREC_DEMO_SESSIONS.staff = GPREC_DEMO_SESSIONS.non_teaching;
-GPREC_DEMO_SESSIONS["non-teaching"] = GPREC_DEMO_SESSIONS.non_teaching;
-
-const gprecStartDemoSession = (role) => {
-  const demo = GPREC_DEMO_SESSIONS[role];
-  if (!demo) return null;
-  [
-    "gprecStudentId",
-    "gprecAdminRole",
-    "gprecAdminEmail",
-    "gprecAdminDepartment",
-    "gprecParentStudentId",
-    "gprecNonTeachingEmail",
-    "gprecAlumniEmail",
-    "gprecAlumniName",
-    "gprecAlumniBatch",
-    "gprecDemoMode"
-  ].forEach((key) => localStorage.removeItem(key));
-  localStorage.setItem("gprecSessionToken", `demo-${role}-session`);
-  localStorage.setItem("gprecActiveRole", demo.activeRole);
-  Object.entries(demo.entries).forEach(([key, value]) => localStorage.setItem(key, value));
-  localStorage.setItem("gprecDemoMode", role);
-  return demo;
-};
-
-const gprecDemoRole = new URLSearchParams(window.location.search).get("demo");
-const gprecDemoSession = gprecDemoRole ? gprecStartDemoSession(gprecDemoRole.toLowerCase()) : null;
-if (gprecDemoSession) {
-  const currentDemoRequiredRole = GPREC_DASHBOARD_ROLE[GPREC_CURRENT_ROUTE_FILE];
-  const currentDemoRequiredRoles = Array.isArray(currentDemoRequiredRole)
-    ? currentDemoRequiredRole
-    : [currentDemoRequiredRole].filter(Boolean);
-  if (!currentDemoRequiredRoles.includes(gprecDemoSession.activeRole)) {
-    window.location.replace(gprecPageUrl(gprecDemoSession.dashboard));
-  }
-}
 
 // Runs before any dashboard content renders, on every dashboard page. This is UX-only (avoids a
 // flash of a dashboard that's about to redirect away) - the real boundary is the backend
@@ -1026,7 +901,6 @@ const gprecApiBaseUrl = () => {
   return `${window.location.protocol}//${window.location.hostname}:8766/api`;
 };
 const gprecDbRequest = (path, options = {}) => {
-  if (localStorage.getItem("gprecDemoMode")) return null;
   const baseUrl = gprecApiBaseUrl();
   if (!baseUrl) return null;
   const xhr = new XMLHttpRequest();
@@ -7845,6 +7719,159 @@ document.querySelector("#generateAttendanceShortageButton")?.addEventListener("c
   }
 });
 
+// Proactive half of the shortage report above - instead of an admin having to notice the CSV and
+// act on it manually, this pushes an in-app notification to every shortage student (and their
+// parent dashboard) plus a best-effort SMS/WhatsApp to any guardian mobile on file, in one click.
+document.querySelector("#sendAttendanceShortageAlertsButton")?.addEventListener("click", () => {
+  const deptCode = adminSelectedDepartment();
+  const feedback = document.querySelector("#attendanceShortageFeedback");
+  if (feedback) {
+    feedback.textContent = "Sending alerts...";
+    feedback.classList.remove("success");
+  }
+  const result = gprecDbPost("/attendance-shortage-alerts/send", { departmentCode: deptCode });
+  if (!result?.ok) {
+    if (feedback) feedback.textContent = "Could not send alerts. Make sure you are signed in as admin and try again.";
+    return;
+  }
+  if (feedback) {
+    feedback.textContent = result.totalShortage
+      ? `Notified ${result.studentsNotified} student(s) below 75% attendance for ${deptCode}. Guardian SMS/WhatsApp sent to ${result.guardianSmsSent}, skipped ${result.guardianSmsSkipped} (no mobile on file or gateway not configured).`
+      : `No students below 75% attendance found for ${deptCode} - nothing to send.`;
+    feedback.classList.add("success");
+  }
+});
+
+// Same alert, unscoped (every department) - the Reports & Audit panel's college-wide version.
+document.querySelector("#sendCollegeWideAttendanceAlertsButton")?.addEventListener("click", () => {
+  const feedback = document.querySelector("#collegeWideAttendanceAlertsFeedback");
+  if (feedback) {
+    feedback.textContent = "Sending alerts...";
+    feedback.classList.remove("success");
+  }
+  const result = gprecDbPost("/attendance-shortage-alerts/send", {});
+  if (!result?.ok) {
+    if (feedback) feedback.textContent = "Could not send alerts. Make sure you are signed in as admin and try again.";
+    return;
+  }
+  if (feedback) {
+    feedback.textContent = result.totalShortage
+      ? `Notified ${result.studentsNotified} student(s) below 75% attendance college-wide. Guardian SMS/WhatsApp sent to ${result.guardianSmsSent}, skipped ${result.guardianSmsSkipped}.`
+      : "No students below 75% attendance found college-wide - nothing to send.";
+    feedback.classList.add("success");
+  }
+});
+
+// Analytics & Trends panel - single-hue magnitude bars (one measure per category, e.g. one
+// placement % per year), not a categorical comparison, so one brand hue is the correct color
+// choice here (see the dataviz skill's color-formula.md - this site's own navy/orange/green/red
+// brand palette fails the categorical CVD checks, so multi-series charts elsewhere should NOT
+// reuse it either without re-validating).
+const buildAnalyticsBarRow = (label, value, maxValue, valueText) => {
+  const widthPercent = maxValue > 0 ? Math.max(2, Math.round((value / maxValue) * 100)) : 0;
+  return `
+    <div class="analytics-bar-row" title="${escapeHtml(label)}: ${escapeHtml(valueText)}">
+      <span class="analytics-bar-label">${escapeHtml(label)}</span>
+      <span class="analytics-bar-track"><span class="analytics-bar-fill" style="width:${widthPercent}%"></span></span>
+      <span class="analytics-bar-value">${escapeHtml(valueText)}</span>
+    </div>`;
+};
+
+const renderAnalyticsTrends = () => {
+  const feedback = document.querySelector("#analyticsTrendsFeedback");
+  if (feedback) {
+    feedback.textContent = "Loading...";
+    feedback.classList.remove("success");
+  }
+  const result = gprecDbRequest("/analytics/trends", { method: "POST", body: {} });
+  if (!result?.ok) {
+    if (feedback) feedback.textContent = "Could not load analytics. Make sure you are signed in as admin and try again.";
+    return;
+  }
+  const trends = result.trends || {};
+
+  const fees = trends.feeCollection || {};
+  const total = Number(fees.total) || 0;
+  const paid = Number(fees.paid) || 0;
+  const pending = Number(fees.pending) || 0;
+  const percentCollected = total > 0 ? Math.round((paid / total) * 100) : 0;
+  const setText = (id, value) => { const el = document.querySelector(id); if (el) el.textContent = value; };
+  setText("#feeCollectionPaid", `Rs. ${paid.toLocaleString("en-IN")}`);
+  setText("#feeCollectionPending", `Rs. ${pending.toLocaleString("en-IN")}`);
+  setText("#feeCollectionPercent", total > 0 ? `${percentCollected}%` : "-");
+  const progressFill = document.querySelector("#feeCollectionProgressFill");
+  if (progressFill) progressFill.style.width = `${percentCollected}%`;
+
+  const placements = trends.placementsByYear || [];
+  const placementsChartWrap = document.querySelector("#placementsChartWrap");
+  const placementsTableBody = document.querySelector("#placementsTableBody");
+  if (placementsChartWrap) {
+    const maxApplicants = Math.max(1, ...placements.map((row) => Number(row.applicants) || 0));
+    placementsChartWrap.innerHTML = placements.length
+      ? placements
+          .map((row) => {
+            const placedPercent = row.applicants ? Math.round((row.placed / row.applicants) * 100) : 0;
+            return buildAnalyticsBarRow(String(row.year), Number(row.applicants) || 0, maxApplicants, `${row.placed} placed (${placedPercent}%)`);
+          })
+          .join("")
+      : `<p class="analytics-chart-empty">No placement drive data on file yet.</p>`;
+  }
+  if (placementsTableBody) {
+    placementsTableBody.innerHTML = placements
+      .map((row) => {
+        const placedPercent = row.applicants ? Math.round((row.placed / row.applicants) * 100) : 0;
+        return `<tr><td>${row.year}</td><td>${row.applicants}</td><td>${row.placed}</td><td>${placedPercent}%</td></tr>`;
+      })
+      .join("");
+  }
+
+  const attendanceByDept = trends.attendanceByDepartment || [];
+  const attendanceChartWrap = document.querySelector("#attendanceChartWrap");
+  const attendanceTableBody = document.querySelector("#attendanceTableBody");
+  if (attendanceChartWrap) {
+    attendanceChartWrap.innerHTML = attendanceByDept.length
+      ? attendanceByDept.map((row) => buildAnalyticsBarRow(row.departmentCode, Number(row.percent) || 0, 100, `${row.percent}%`)).join("")
+      : `<p class="analytics-chart-empty">No attendance data on file yet.</p>`;
+  }
+  if (attendanceTableBody) {
+    attendanceTableBody.innerHTML = attendanceByDept.map((row) => `<tr><td>${escapeHtml(row.departmentCode)}</td><td>${row.percent}%</td></tr>`).join("");
+  }
+
+  const examResults = trends.examResultsByTerm || [];
+  const resultsChartWrap = document.querySelector("#resultsChartWrap");
+  const resultsTableBody = document.querySelector("#resultsTableBody");
+  if (resultsChartWrap) {
+    resultsChartWrap.innerHTML = examResults.length
+      ? examResults.map((row) => buildAnalyticsBarRow(row.term, Number(row.clearPercent) || 0, 100, `${row.clearPercent}%`)).join("")
+      : `<p class="analytics-chart-empty">No exam results data on file yet.</p>`;
+  }
+  if (resultsTableBody) {
+    resultsTableBody.innerHTML = examResults
+      .map((row) => `<tr><td>${escapeHtml(row.term)}</td><td>${row.total}</td><td>${row.clearPercent}%</td></tr>`)
+      .join("");
+  }
+
+  if (feedback) {
+    feedback.textContent = "Analytics loaded.";
+    feedback.classList.add("success");
+  }
+};
+document.querySelector("#loadAnalyticsTrendsButton")?.addEventListener("click", renderAnalyticsTrends);
+
+// Table-view toggle required alongside every chart above (accessibility - a table view must exist
+// for anyone who can't read the bars) - swaps which of the two sibling blocks is visible.
+document.querySelectorAll(".analytics-table-toggle").forEach((button) => {
+  button.addEventListener("click", () => {
+    const key = button.dataset.toggleTable;
+    const chartWrap = document.querySelector(`#${key}ChartWrap`);
+    const tableWrap = document.querySelector(`#${key}TableWrap`);
+    const showingTable = !tableWrap?.classList.contains("is-hidden");
+    chartWrap?.classList.toggle("is-hidden", !showingTable);
+    tableWrap?.classList.toggle("is-hidden", showingTable);
+    button.textContent = showingTable ? "View as table" : "View as chart";
+  });
+});
+
 const attendanceSectionFilter = document.querySelector("#attendanceSectionFilter");
 const populateAttendanceSectionFilter = () => {
   if (!attendanceSectionFilter) return;
@@ -9426,13 +9453,58 @@ const initOutingRequestForm = ({ studentId, requestedBy, parentMobileValue, onSa
 
 renderStudentOutingRequests();
 
-if (document.querySelector("#notificationList") && studentOutingBody) {
+// Notification bell: combines every "needs your attention" source this dashboard already tracks
+// into the one bell in the topbar, instead of each living only in its own buried panel. Was
+// previously gated on studentOutingBody existing (so it silently never ran for non-hostel
+// students, since renderNotificationList() is also what triggers the persisted /notifications/mine
+// fetch) - now runs unconditionally whenever the bell markup is present on the page.
+// Deferred via setTimeout(0): getCampusEvents is a const declared later in this file (same
+// TDZ reasoning as buildGprecianKnowledgeBase near the top of the file) - calling it synchronously
+// here, before that declaration is reached, would throw "cannot access before initialization" and
+// abort the rest of this script's execution.
+const renderStudentNotificationBell = () => {
+  if (!document.querySelector("#notificationList")) return;
   const notifyStudentId = getCurrentStudentId();
+
   const outingNotifications = getOutingRequests()
     .filter((request) => request.studentId === notifyStudentId && request.status !== "Pending")
     .map((request) => `Your ${request.outingType || "outing"} request has been ${request.status.toLowerCase()}.`);
-  renderNotificationList(outingNotifications);
-}
+
+  const feeNotifications = (getStudentPendingFeeOverrides()[notifyStudentId] || [])
+    .filter((fee) => !isPendingFeePaid(fee))
+    .map((fee) => ({
+      text: `Pending fee: Rs. ${Number(fee.amount || 0).toLocaleString("en-IN")} for ${fee.application}${fee.dueDate ? `, due ${fee.dueDate}` : ""}.`,
+      link: "#fees"
+    }));
+
+  // Same aggregation studentAttendancePercent() uses for a single class (faculty view), just
+  // across every attendance_entries row for this student instead of one subject - the same
+  // overall-percent computation get_attendance_shortage_report() does server-side.
+  const myAttendanceRecords = (getGprecDbBootstrap()?.attendanceRecords || []).filter((record) =>
+    (record.entries || []).some((entry) => entry.studentId === notifyStudentId)
+  );
+  let myHeld = 0;
+  let myPresent = 0;
+  myAttendanceRecords.forEach((record) => {
+    const entry = record.entries.find((item) => item.studentId === notifyStudentId);
+    if (!entry) return;
+    myHeld += 1;
+    if (entry.present) myPresent += 1;
+  });
+  const myAttendancePercent = myHeld > 0 ? Math.round((myPresent / myHeld) * 100) : null;
+  const attendanceNotifications =
+    myAttendancePercent !== null && myAttendancePercent < 75
+      ? [{ text: `Your overall attendance is ${myAttendancePercent}% - below the required 75%.`, link: "#attendance" }]
+      : [];
+
+  const todayIsoForEvents = new Date().toISOString().slice(0, 10);
+  const eventNotifications = getCampusEvents()
+    .filter((event) => String(event.date || "") >= todayIsoForEvents)
+    .map((event) => ({ text: `Registration open: ${event.title} on ${event.date}.`, link: "#campus-events" }));
+
+  renderNotificationList([...outingNotifications, ...feeNotifications, ...attendanceNotifications, ...eventNotifications]);
+};
+window.setTimeout(renderStudentNotificationBell, 0);
 
 const currentOutingStudentId = getCurrentStudentId();
 if (hostelStudentData[currentOutingStudentId]) {
@@ -13163,7 +13235,6 @@ const handleRolePasswordLogin = ({ form, feedback, email, password, roleType, su
     return;
   }
   Object.entries(localStorageEntries).forEach(([key, value]) => localStorage.setItem(key, value));
-  localStorage.removeItem("gprecDemoMode");
   localStorage.setItem("gprecSessionToken", result.token);
   localStorage.setItem("gprecActiveRole", roleType);
   feedback.textContent = successMessage;
@@ -13246,7 +13317,6 @@ portalForms.forEach((form) => {
       const volunteerLogin = gprecIsVolunteerStudentLogin();
       feedback.textContent = volunteerLogin ? "Event volunteer login successful. Opening volunteer dashboard..." : "Student login successful. Opening student dashboard...";
       feedback.classList.add("success");
-      localStorage.removeItem("gprecDemoMode");
       localStorage.setItem("gprecStudentId", result.rollNo);
       localStorage.setItem("gprecSessionToken", result.token);
       localStorage.setItem("gprecActiveRole", "student");
@@ -13412,7 +13482,6 @@ if (changePasswordForm) {
         showChangeFeedback("Current password is incorrect.", false);
         return;
       }
-      localStorage.removeItem("gprecDemoMode");
       Object.entries(pending.localStorageEntries || {}).forEach(([key, value]) => localStorage.setItem(key, value));
       localStorage.setItem("gprecSessionToken", result.token);
       localStorage.setItem("gprecActiveRole", pending.roleType);
@@ -13550,7 +13619,6 @@ window.handleGoogleAlumniSignIn = (response) => {
         showAlumniPopup("Could not verify your Google sign-in. Please try again.");
         return;
       }
-      localStorage.removeItem("gprecDemoMode");
       localStorage.setItem("gprecAlumniEmail", result.account.email);
       localStorage.setItem("gprecAlumniName", result.account.name || name);
       localStorage.setItem("gprecAlumniBatch", result.account.batchYear || existing.batchYear);
@@ -13657,7 +13725,6 @@ alumniSigninForm?.addEventListener("submit", (event) => {
   }
   alumniAuthFeedback.textContent = "Sign in successful. Opening alumni dashboard...";
   alumniAuthFeedback.classList.add("success");
-  localStorage.removeItem("gprecDemoMode");
   localStorage.setItem("gprecAlumniEmail", account.email);
   localStorage.setItem("gprecAlumniName", account.name || "");
   localStorage.setItem("gprecAlumniBatch", account.batchYear || "");
@@ -13703,7 +13770,6 @@ alumniSignupForm?.addEventListener("submit", (event) => {
   }
   alumniAuthFeedback.textContent = "Account created. Signing you in...";
   alumniAuthFeedback.classList.add("success");
-  localStorage.removeItem("gprecDemoMode");
   localStorage.setItem("gprecAlumniEmail", email);
   localStorage.setItem("gprecAlumniName", name);
   localStorage.setItem("gprecAlumniBatch", batchYear);
@@ -13769,7 +13835,6 @@ document.querySelector("#alumniCompleteButton")?.addEventListener("click", () =>
     alumniAuthFeedback.classList.remove("success");
     return;
   }
-  localStorage.removeItem("gprecDemoMode");
   localStorage.setItem("gprecAlumniEmail", result.account.email);
   localStorage.setItem("gprecAlumniName", name);
   localStorage.setItem("gprecAlumniBatch", batchYear);
@@ -13849,7 +13914,6 @@ if (parentOtpForm) {
       return;
     }
     showParentFeedback("Parent login successful. Opening parent dashboard...", true);
-    localStorage.removeItem("gprecDemoMode");
     localStorage.setItem("gprecParentStudentId", result.studentId);
     localStorage.setItem("gprecSessionToken", result.token);
     localStorage.setItem("gprecActiveRole", "parent");
@@ -28769,7 +28833,31 @@ if (parentDashboardName) {
       const visitingNotifications = getVisitingRequests()
         .filter((request) => request.studentId === parentStudentId && request.status !== "Pending")
         .map((request) => `Your visit request for ${request.visitorName} has been ${request.status.toLowerCase()}.`);
-      renderNotificationList([...outingNotifications, ...visitingNotifications]);
+
+      // Same two "needs attention" sources added to the student dashboard's own bell, scoped to
+      // the linked child instead - a parent should see these here too, not just the student.
+      const childFeeNotifications = (getStudentPendingFeeOverrides()[parentStudentId] || [])
+        .filter((fee) => !isPendingFeePaid(fee))
+        .map((fee) => `Pending fee for ${childRecord.name}: Rs. ${Number(fee.amount || 0).toLocaleString("en-IN")} for ${fee.application}${fee.dueDate ? `, due ${fee.dueDate}` : ""}.`);
+
+      const childAttendanceRecords = (getGprecDbBootstrap()?.attendanceRecords || []).filter((record) =>
+        (record.entries || []).some((entry) => entry.studentId === parentStudentId)
+      );
+      let childHeld = 0;
+      let childPresent = 0;
+      childAttendanceRecords.forEach((record) => {
+        const entry = record.entries.find((item) => item.studentId === parentStudentId);
+        if (!entry) return;
+        childHeld += 1;
+        if (entry.present) childPresent += 1;
+      });
+      const childAttendancePercent = childHeld > 0 ? Math.round((childPresent / childHeld) * 100) : null;
+      const childAttendanceNotifications =
+        childAttendancePercent !== null && childAttendancePercent < 75
+          ? [`${childRecord.name}'s overall attendance is ${childAttendancePercent}% - below the required 75%.`]
+          : [];
+
+      renderNotificationList([...outingNotifications, ...visitingNotifications, ...childFeeNotifications, ...childAttendanceNotifications]);
     }
   }
 }

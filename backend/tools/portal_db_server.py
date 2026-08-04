@@ -2388,6 +2388,72 @@ def get_attendance_shortage_report(department_code):
     """, [])
 
 
+# Same shortage query as get_attendance_shortage_report above, minus the department filter - used
+# by the admin-triggered "Send Attendance Alerts" action, which notifies every shortage student
+# college-wide in one pass rather than one department at a time.
+def get_all_attendance_shortage():
+    return run_json("""
+        SELECT COALESCE(json_agg(json_build_object(
+            'rollNo', roster.student_roll_no, 'name', st.full_name, 'className', st.class_name,
+            'departmentCode', st.department_code,
+            'held', roster.held, 'present', roster.present, 'percent', roster.percent
+        ) ORDER BY roster.percent, roster.student_roll_no), '[]'::json)
+        FROM (
+          SELECT e.student_roll_no,
+            COUNT(*) AS held,
+            SUM(CASE WHEN e.present THEN 1 ELSE 0 END) AS present,
+            ROUND(100.0 * SUM(CASE WHEN e.present THEN 1 ELSE 0 END) / COUNT(*), 1) AS percent
+          FROM attendance_entries e
+          GROUP BY e.student_roll_no
+        ) roster
+        JOIN students st ON st.roll_no = roster.student_roll_no
+        WHERE roster.percent < 75;
+    """, [])
+
+
+# The actual "proactive" half of attendance shortage handling - get_attendance_shortage_report
+# above is a report an admin has to go look at; this pushes an alert to every shortage student
+# (in-app notification, always) and their guardian (SMS/WhatsApp via deliver_parent_notification,
+# best-effort - only sent when a guardian mobile is on file and the configured gateway accepts it).
+# No background scheduler exists in this app (see cleanup_expired_webinars' comment on the same
+# limitation) - this is triggered by the admin "Send Attendance Alerts" button for now. For real
+# unattended scheduling, call this same function from a cron job hitting
+# POST /api/attendance-shortage-alerts/send with an admin session token.
+def send_attendance_shortage_alerts(department_code=None):
+    shortage = get_attendance_shortage_report(department_code) if department_code else get_all_attendance_shortage()
+    sms_sent = 0
+    sms_skipped = 0
+    if shortage:
+        roll_list = ",".join(quote(row["rollNo"]) for row in shortage)
+        guardian_rows = run_json(f"""
+            SELECT COALESCE(json_agg(json_build_object('rollNo', student_roll_no, 'mobile', guardian_mobile)), '[]'::json)
+            FROM guardians WHERE student_roll_no IN ({roll_list}) AND guardian_mobile IS NOT NULL AND guardian_mobile <> '';
+        """, [])
+        mobile_by_roll = {row["rollNo"]: row["mobile"] for row in guardian_rows}
+        for row in shortage:
+            student_message = (
+                f"Your overall attendance is {row['percent']}% ({row['present']}/{row['held']} classes held) - "
+                f"below the required 75%. Please attend classes regularly to avoid being detained from exams."
+            )
+            create_notification("student", row["rollNo"], "Attendance Below 75%", student_message, link="#attendance", source_module="Attendance Alert")
+            create_notification(
+                "parent", row["rollNo"], "Attendance Below 75%",
+                f"{row['name']} ({row['rollNo']}) has {row['percent']}% attendance - below the required 75%.",
+                link="#attendance", source_module="Attendance Alert",
+            )
+            mobile = mobile_by_roll.get(row["rollNo"])
+            if not mobile:
+                sms_skipped += 1
+                continue
+            sms_message = f"GPREC Alert: {row['name']} ({row['rollNo']}) has {row['percent']}% attendance, below the required 75%. Please contact the department."
+            sent, _channel, _error = deliver_parent_notification(mobile, "attendance", sms_message)
+            if sent:
+                sms_sent += 1
+            else:
+                sms_skipped += 1
+    return {"totalShortage": len(shortage), "studentsNotified": len(shortage), "guardianSmsSent": sms_sent, "guardianSmsSkipped": sms_skipped}
+
+
 def get_attendance_section_report(department_code, from_date, to_date, section=""):
     # One row per student per class session (not aggregated like the shortage report above).
     # from_date/to_date are both optional and inclusive (blank edge = no limit on that side).
@@ -3724,6 +3790,55 @@ def replace_library_records(records):
     run_psql(sql)
 
 
+# Year/department/term aggregates for the Admin Dashboard's Analytics & Trends panel - each of
+# these already exists as a per-record table (placement_drives, attendance_entries, fee_dues,
+# student_grades) with its own admin panel, but nothing ties the history together into one view an
+# admin can act on. "Selected" = placed, matching /api/placement-stats' existing convention above.
+def get_analytics_trends():
+    return run_json("""
+        SELECT json_build_object(
+            'placementsByYear', COALESCE((
+                SELECT json_agg(row_to_json(t) ORDER BY t.year) FROM (
+                    SELECT EXTRACT(YEAR FROM pd.drive_date)::int AS year,
+                        COUNT(DISTINCT pa.student_roll_no) FILTER (WHERE pa.status = 'Selected') AS placed,
+                        COUNT(DISTINCT pa.student_roll_no) AS applicants
+                    FROM placement_drives pd
+                    JOIN placement_applications pa ON pa.drive_id = pd.id
+                    WHERE pd.drive_type = 'Placement'
+                    GROUP BY EXTRACT(YEAR FROM pd.drive_date)
+                ) t
+            ), '[]'::json),
+            'attendanceByDepartment', COALESCE((
+                SELECT json_agg(row_to_json(t) ORDER BY t."departmentCode") FROM (
+                    SELECT s.department_code AS "departmentCode",
+                        ROUND(100.0 * SUM(CASE WHEN e.present THEN 1 ELSE 0 END) / COUNT(*), 1) AS percent
+                    FROM attendance_entries e
+                    JOIN students s ON s.roll_no = e.student_roll_no
+                    GROUP BY s.department_code
+                ) t
+            ), '[]'::json),
+            'feeCollection', COALESCE((
+                SELECT row_to_json(t) FROM (
+                    SELECT
+                        COALESCE(SUM(total_fee), 0) AS total,
+                        COALESCE(SUM(paid_amount), 0) AS paid,
+                        COALESCE(SUM(GREATEST(total_fee - paid_amount, 0)), 0) AS pending
+                    FROM fee_dues
+                ) t
+            ), '{}'::json),
+            'examResultsByTerm', COALESCE((
+                SELECT json_agg(row_to_json(t) ORDER BY t.term) FROM (
+                    SELECT term,
+                        COUNT(*) AS total,
+                        ROUND(100.0 * COUNT(*) FILTER (WHERE backlogs = 'NIL') / COUNT(*), 1) AS "clearPercent"
+                    FROM student_grades
+                    GROUP BY term
+                ) t
+            ), '[]'::json)
+        );
+    """, {})
+
+
 class PortalHandler(SimpleHTTPRequestHandler):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, directory=str(ROOT), **kwargs)
@@ -4720,6 +4835,16 @@ class PortalHandler(SimpleHTTPRequestHandler):
                 save_attendance_record(faculty_email, subject_code, section, attendance_date, entries)
                 self.send_json(200, {"ok": True})
                 return
+            if path == "/api/attendance-shortage-alerts/send":
+                # Admin-triggered batch alert (see send_attendance_shortage_alerts's docstring for
+                # why this is a button, not a real cron job - no scheduler exists in this app).
+                # departmentCode is optional - omit it to alert every shortage student college-wide.
+                if not require_auth(self, allowed_types=["admin"]):
+                    return
+                department_code = (payload or {}).get("departmentCode") or None
+                result = send_attendance_shortage_alerts(department_code)
+                self.send_json(200, {"ok": True, **result})
+                return
             if path == "/api/internal-marks":
                 identity = require_auth(self, allowed_types=["admin", "faculty"])
                 if not identity:
@@ -4920,6 +5045,15 @@ class PortalHandler(SimpleHTTPRequestHandler):
                     );
                 """, {})
                 self.send_json(200, {"ok": True, "stats": stats})
+                return
+            if path == "/api/analytics/trends":
+                # Backs the Admin Dashboard's Analytics & Trends panel - year/department/term
+                # aggregates over data that already exists per-record elsewhere (placement_drives,
+                # attendance_entries, fee_dues, student_grades), but with no single view tying the
+                # history together until now.
+                if not require_auth(self, allowed_types=["admin"]):
+                    return
+                self.send_json(200, {"ok": True, "trends": get_analytics_trends()})
                 return
             if path == "/api/interview-schedules":
                 if not require_auth(self, allowed_types=["admin"]):
