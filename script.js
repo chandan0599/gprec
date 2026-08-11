@@ -2322,6 +2322,44 @@ const renderHallTicketReleaseControl = () => {
   if (hallTicketReleaseAtInput) hallTicketReleaseAtInput.value = settings.releaseAt || "";
 };
 
+// Room double-bookings and roll-range overlaps across every branch's exam schedule - purely
+// client-side since getAllExamCellData() already has every branch's data loaded, so a dry-run
+// round trip to the server would just duplicate the same comparison this can do locally.
+// Roll ranges compare as plain strings (same convention as the hall-ticket seat lookup at
+// getExamScheduleForStudent below), not the numeric roll suffix - full roll numbers share a
+// fixed-width, zero-padded format, so string comparison already orders them correctly.
+const findExamCellClashes = () => {
+  const rows = [];
+  Object.entries(getAllExamCellData()).forEach(([branch, list]) => {
+    (list || []).forEach((exam) => rows.push({ ...exam, branch }));
+  });
+  const clashes = [];
+  for (let i = 0; i < rows.length; i++) {
+    for (let j = i + 1; j < rows.length; j++) {
+      const a = rows[i];
+      const b = rows[j];
+      if (a.date !== b.date || a.time !== b.time || a.code === b.code) continue;
+      if (a.room && b.room && a.room === b.room) {
+        clashes.push(`Room ${a.room} is double-booked on ${formatExamDate(a.date)} (${a.time}): ${a.branch} ${a.code} and ${b.branch} ${b.code}.`);
+      }
+      if (a.rollFrom && a.rollTo && b.rollFrom && b.rollTo && a.rollFrom <= b.rollTo && b.rollFrom <= a.rollTo) {
+        clashes.push(`Roll numbers ${a.rollFrom}-${a.rollTo} overlap ${b.rollFrom}-${b.rollTo} on ${formatExamDate(a.date)} (${a.time}): ${a.branch} ${a.code} and ${b.branch} ${b.code}.`);
+      }
+    }
+  }
+  return clashes;
+};
+
+const examCellClashBanner = document.querySelector("#examCellClashBanner");
+const renderExamClashWarnings = () => {
+  if (!examCellClashBanner) return;
+  const clashes = findExamCellClashes();
+  examCellClashBanner.classList.toggle("is-hidden", clashes.length === 0);
+  examCellClashBanner.innerHTML = clashes.length
+    ? `<strong>${clashes.length} scheduling clash${clashes.length > 1 ? "es" : ""} found:</strong><ul>${clashes.map((c) => `<li>${escapeHtml(c)}</li>`).join("")}</ul>`
+    : "";
+};
+
 const renderExamCellAdmin = () => {
   if (!examCellBody) return;
   const data = getExamCellData(currentExamCellBranch());
@@ -2350,6 +2388,7 @@ examCellBranchSelect?.addEventListener("change", () => {
   if (examCellFeedback) examCellFeedback.textContent = "";
   renderExamCellAdmin();
   renderExamCellStats();
+  renderExamClashWarnings();
 });
 
 examCellBody?.addEventListener("click", (event) => {
@@ -2364,6 +2403,7 @@ examCellBody?.addEventListener("click", (event) => {
   if (removed) logExamCellActivity(branch, `Removed room block for ${removed.code} (${removed.rollFrom}–${removed.rollTo})`);
   renderExamCellAdmin();
   renderExamCellStats();
+  renderExamClashWarnings();
   renderExamCellActivity();
 });
 
@@ -2391,6 +2431,7 @@ addExamCellSubjectButton?.addEventListener("click", () => {
   logExamCellActivity(branch, `Added room block for ${code} (${rollFrom}–${rollTo} → ${room})`);
   renderExamCellAdmin();
   renderExamCellStats();
+  renderExamClashWarnings();
   renderExamCellActivity();
   [examCellCodeInput, examCellSubjectInput, examCellDateInput, examCellTimeInput, examCellRollFromInput, examCellRollToInput, examCellRoomInput, examCellStartSeatInput, examCellLocationInput].forEach((input) => {
     if (input) input.value = "";
@@ -2412,6 +2453,7 @@ const commitExamCellEdits = (feedbackMessage) => {
   saveExamCellData(branch, data);
   logExamCellActivity(branch, "Saved exam center details");
   renderExamCellStats();
+  renderExamClashWarnings();
   renderExamCellActivity();
   if (examCellFeedback && feedbackMessage) {
     examCellFeedback.textContent = feedbackMessage;
@@ -2427,6 +2469,7 @@ examCellBody?.addEventListener("input", (event) => {
 
 renderExamCellAdmin();
 renderExamCellStats();
+renderExamClashWarnings();
 renderExamCellActivity();
 renderHallTicketReleaseControl();
 
