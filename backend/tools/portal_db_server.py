@@ -719,7 +719,7 @@ alumni_account_rows AS (
   SELECT json_agg(jsonb_build_object('email', email) || data ORDER BY created_at) AS rows FROM alumni_accounts
 ),
 catalog_rows AS (
-  SELECT json_object_agg(barcode, json_build_object('title', title, 'author', author)) AS catalog
+  SELECT json_object_agg(barcode, json_build_object('title', title, 'author', author, 'status', status)) AS catalog
   FROM library_books
 ),
 library_rows AS (
@@ -741,6 +741,21 @@ library_rows AS (
   FROM library_issues li
   JOIN library_books b ON b.barcode = li.barcode
   JOIN students s ON s.roll_no = li.student_roll_no
+),
+library_hold_rows AS (
+  SELECT json_agg(json_build_object(
+    'id', lh.id::text,
+    'barcode', lh.barcode,
+    'bookTitle', b.title,
+    'rollNumber', lh.student_roll_no,
+    'studentName', s.full_name,
+    'status', lh.status,
+    'requestedAt', to_char(lh.requested_at, 'DD Mon, HH12:MI AM')
+  ) ORDER BY lh.requested_at) AS rows
+  FROM library_holds lh
+  JOIN library_books b ON b.barcode = lh.barcode
+  JOIN students s ON s.roll_no = lh.student_roll_no
+  WHERE lh.status IN ('Waiting', 'Ready')
 ),
 faculty_rows AS (
   SELECT full_name, department_code, email, profile_photo_url, designation,
@@ -968,6 +983,7 @@ SELECT json_build_object(
   ) ORDER BY drive_date) FROM placement_drives), '[]'::json),
   'libraryCatalog', COALESCE((SELECT catalog FROM catalog_rows), '{}'::json),
   'libraryRecords', COALESCE((SELECT rows FROM library_rows), '[]'::json),
+  'libraryHolds', COALESCE((SELECT rows FROM library_hold_rows), '[]'::json),
   'pastExamSchedules', COALESCE((SELECT json_object_agg(term_label, rows) FROM past_exam_rows), '{}'::json),
   'siteContent', COALESCE((SELECT json_object_agg(content_key, content_value) FROM site_content), '{}'::json),
   'feeAmountOverrides', COALESCE((SELECT json_object_agg(application_type, amount) FROM fee_amount_overrides), '{}'::json),
@@ -1029,7 +1045,7 @@ SELECT json_build_object(
 PUBLIC_BOOTSTRAP_SQL = r"""
 WITH
 catalog_rows AS (
-  SELECT json_object_agg(barcode, json_build_object('title', title, 'author', author)) AS catalog
+  SELECT json_object_agg(barcode, json_build_object('title', title, 'author', author, 'status', status)) AS catalog
   FROM library_books
 ),
 faculty_rows AS (
@@ -1126,7 +1142,7 @@ SELF_SERVICE_IDENTITY_TYPES = {"alumni", "event_visitor"}
 SELF_SERVICE_BOOTSTRAP_SQL = r"""
 WITH
 catalog_rows AS (
-  SELECT json_object_agg(barcode, json_build_object('title', title, 'author', author)) AS catalog
+  SELECT json_object_agg(barcode, json_build_object('title', title, 'author', author, 'status', status)) AS catalog
   FROM library_books
 ),
 faculty_rows AS (
@@ -4241,6 +4257,16 @@ def issue_library_book(payload):
         return "No book with that barcode."
     if book.get("status") == "Issued":
         return "That book is already issued to someone."
+    hold_to_fulfill = None
+    if book.get("status") == "Reserved":
+        hold = run_json(f"""
+            SELECT json_build_object('id', id::text, 'studentRollNo', student_roll_no)
+            FROM library_holds WHERE barcode = {quote(barcode)} AND status = 'Ready'
+            ORDER BY ready_at DESC LIMIT 1;
+        """, None)
+        if not hold or hold["studentRollNo"] != roll_no:
+            return "This book is reserved for another student who placed a hold on it."
+        hold_to_fulfill = hold["id"]
     student = run_json(f"SELECT json_build_object('exists', true) FROM students WHERE roll_no = {quote(roll_no)} AND status = 'Active';", None)
     if not student:
         return "No active student with that roll number."
@@ -4249,6 +4275,7 @@ def issue_library_book(payload):
         UPDATE library_books SET status = 'Issued' WHERE barcode = {quote(barcode)};
         INSERT INTO library_issues (barcode, student_roll_no, issued_on, due_on, status)
         VALUES ({quote(barcode)}, {quote(roll_no)}, CURRENT_DATE, CURRENT_DATE + {LIBRARY_LOAN_DAYS}, 'Issued');
+        {f"UPDATE library_holds SET status = 'Fulfilled' WHERE id = {quote(hold_to_fulfill)}::uuid;" if hold_to_fulfill else ""}
         COMMIT;
     """)
     title = run_psql(f"SELECT title FROM library_books WHERE barcode = {quote(barcode)};").strip()
@@ -4283,7 +4310,55 @@ def return_library_book(issue_id):
             f"A fine of Rs. {fine} was recorded for a book returned {row['overdueDays']} day(s) late.",
             link="/dashboards/student-dashboard.html#library", source_module="library",
         )
+    # Hand the book to the next person in the hold queue (if any) instead of leaving it plain
+    # Available - issue_library_book() only lets that specific student check a Reserved book out.
+    next_hold = run_json(f"""
+        SELECT json_build_object('id', id::text, 'studentRollNo', student_roll_no)
+        FROM library_holds WHERE barcode = {quote(row["barcode"])} AND status = 'Waiting'
+        ORDER BY requested_at LIMIT 1;
+    """, None)
+    if next_hold:
+        run_psql(f"""
+            BEGIN;
+            UPDATE library_books SET status = 'Reserved' WHERE barcode = {quote(row["barcode"])};
+            UPDATE library_holds SET status = 'Ready', ready_at = now() WHERE id = {quote(next_hold["id"])}::uuid;
+            COMMIT;
+        """)
+        title = run_psql(f"SELECT title FROM library_books WHERE barcode = {quote(row['barcode'])};").strip()
+        create_notification(
+            "student", next_hold["studentRollNo"], "Book ready for pickup",
+            f'"{title}" is back and reserved for you - pick it up soon.',
+            link="/dashboards/student-dashboard.html#library", source_module="library",
+        )
     return None
+
+
+def place_library_hold(payload, identity):
+    barcode = (payload.get("barcode") or "").strip()
+    if not barcode:
+        return "barcode is required."
+    book = run_json(f"SELECT json_build_object('status', status) FROM library_books WHERE barcode = {quote(barcode)};", None)
+    if not book:
+        return "No book with that barcode."
+    if book.get("status") == "Available":
+        return "This book is available right now - no need to place a hold."
+    existing = run_json(f"""
+        SELECT json_build_object('exists', true) FROM library_holds
+        WHERE barcode = {quote(barcode)} AND student_roll_no = {quote(identity["identityId"])} AND status IN ('Waiting', 'Ready');
+    """, None)
+    if existing:
+        return "You already have a hold on this book."
+    run_psql(f"""
+        INSERT INTO library_holds (barcode, student_roll_no) VALUES ({quote(barcode)}, {quote(identity["identityId"])});
+    """)
+    return None
+
+
+def cancel_library_hold(hold_id, identity):
+    run_psql(f"""
+        DELETE FROM library_holds
+        WHERE id = {quote(hold_id)}::uuid AND student_roll_no = {quote(identity["identityId"])} AND status = 'Waiting';
+    """)
 
 
 def renew_library_book(issue_id):
@@ -4551,7 +4626,7 @@ class PortalHandler(SimpleHTTPRequestHandler):
                 self.send_json(200, run_json(sql, {}))
                 return
             if path == "/api/catalog":
-                self.send_json(200, run_json("SELECT COALESCE(json_object_agg(barcode, json_build_object('title', title, 'author', author)), '{}'::json) FROM library_books;", {}))
+                self.send_json(200, run_json("SELECT COALESCE(json_object_agg(barcode, json_build_object('title', title, 'author', author, 'status', status)), '{}'::json) FROM library_books;", {}))
                 return
             if path == "/api/push/public-key":
                 # Public by design - this is the VAPID applicationServerKey a browser needs to
@@ -4725,6 +4800,23 @@ class PortalHandler(SimpleHTTPRequestHandler):
                 if not require_auth(self):
                     return
                 remove_push_subscription((payload or {}).get("endpoint") or "")
+                self.send_json(200, {"ok": True})
+                return
+            if path == "/api/library/hold":
+                identity = require_auth(self, allowed_types=["student"])
+                if not identity:
+                    return
+                error = place_library_hold(payload or {}, identity)
+                if error:
+                    self.send_json(400, {"ok": False, "error": error})
+                    return
+                self.send_json(200, {"ok": True})
+                return
+            if path == "/api/library/hold/cancel":
+                identity = require_auth(self, allowed_types=["student"])
+                if not identity:
+                    return
+                cancel_library_hold((payload or {}).get("id") or "", identity)
                 self.send_json(200, {"ok": True})
                 return
             if path == "/api/library/add-book":

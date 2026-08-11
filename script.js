@@ -1073,6 +1073,8 @@ const getMessFeedbackSummary = () => getGprecDbBootstrap()?.messFeedbackSummary 
 const saveMessMenu = (hostelName, dayOfWeek, mealType, items) => gprecDbPost("/mess-menu", { hostelName, dayOfWeek, mealType, items });
 const submitMessFeedback = (mealDate, mealType, rating, comments) => gprecDbPost("/mess-feedback", { mealDate, mealType, rating, comments });
 const addLibraryBook = (barcode, title, author) => gprecDbPost("/library/add-book", { barcode, title, author });
+const placeLibraryHold = (barcode) => gprecDbPost("/library/hold", { barcode });
+const cancelLibraryHold = (id) => gprecDbPost("/library/hold/cancel", { id });
 const issueLibraryBook = (barcode, rollNumber) => gprecDbPost("/library/issue", { barcode, rollNumber });
 const returnLibraryBook = (id) => gprecDbPost("/library/return", { id });
 const renewLibraryBook = (id) => gprecDbPost("/library/renew", { id });
@@ -10361,6 +10363,24 @@ if (libraryAdminBody) {
   };
   renderLibraryAdmin();
 
+  const libraryHoldsAdminBody = document.querySelector("#libraryHoldsAdminBody");
+  if (libraryHoldsAdminBody) {
+    const holds = getGprecDbBootstrap()?.libraryHolds || [];
+    document.querySelector("#libraryHoldsAdminEmpty")?.classList.toggle("is-hidden", holds.length > 0);
+    libraryHoldsAdminBody.innerHTML = holds
+      .map(
+        (hold) => `
+          <tr>
+            <td>${escapeHtml(hold.bookTitle)}</td>
+            <td>${escapeHtml(hold.studentName)} (${escapeHtml(hold.rollNumber)})</td>
+            <td><span class="${hold.status === "Ready" ? "ok" : "warn"}">${escapeHtml(hold.status)}</span></td>
+            <td>${escapeHtml(hold.requestedAt)}</td>
+          </tr>
+        `
+      )
+      .join("");
+  }
+
   document.querySelector("#libraryAddBookButton")?.addEventListener("click", () => {
     const barcode = document.querySelector("#libraryAddBarcode").value.trim();
     const title = document.querySelector("#libraryAddTitle").value.trim();
@@ -16044,6 +16064,76 @@ if (studentLibraryBody) {
     });
   };
   renderStudentLibrary();
+
+  const libraryCatalogBody = document.querySelector("#libraryCatalogBody");
+  const studentLibraryHoldsBody = document.querySelector("#studentLibraryHoldsBody");
+  if (libraryCatalogBody || studentLibraryHoldsBody) {
+    const renderLibraryHolds = () => {
+      if (!studentLibraryHoldsBody) return;
+      const myHolds = (getGprecDbBootstrap()?.libraryHolds || []).filter((hold) => hold.rollNumber === currentStudentId);
+      document.querySelector("#studentLibraryHoldsEmpty")?.classList.toggle("is-hidden", myHolds.length > 0);
+      studentLibraryHoldsBody.innerHTML = myHolds
+        .map(
+          (hold) => `
+            <tr>
+              <td>${escapeHtml(hold.bookTitle)}</td>
+              <td><span class="${hold.status === "Ready" ? "ok" : "warn"}">${hold.status === "Ready" ? "Ready for pickup" : "Waiting"}</span></td>
+              <td>${escapeHtml(hold.requestedAt)}</td>
+              <td>${hold.status === "Waiting" ? `<button type="button" class="icon-btn-delete" data-hold-cancel="${hold.id}" aria-label="Cancel hold">${deleteIconSvg}</button>` : "-"}</td>
+            </tr>
+          `
+        )
+        .join("");
+      studentLibraryHoldsBody.querySelectorAll("[data-hold-cancel]").forEach((button) => {
+        button.addEventListener("click", () => {
+          cancelLibraryHold(button.dataset.holdCancel);
+          renderLibraryHolds();
+          renderLibraryCatalog();
+        });
+      });
+    };
+
+    const renderLibraryCatalog = async () => {
+      if (!libraryCatalogBody) return;
+      const catalog = await getLibraryCatalog();
+      const entries = Object.entries(catalog);
+      document.querySelector("#libraryCatalogEmpty")?.classList.toggle("is-hidden", entries.length > 0);
+      const myHoldBarcodes = new Set(
+        (getGprecDbBootstrap()?.libraryHolds || [])
+          .filter((hold) => hold.rollNumber === currentStudentId)
+          .map((hold) => hold.barcode)
+      );
+      libraryCatalogBody.innerHTML = entries
+        .map(([barcode, book]) => {
+          const status = book.status || "Available";
+          const canHold = status !== "Available" && !myHoldBarcodes.has(barcode);
+          return `
+            <tr>
+              <td>${escapeHtml(book.title)}</td>
+              <td>${escapeHtml(book.author || "-")}</td>
+              <td><span class="${status === "Available" ? "ok" : "warn"}">${escapeHtml(status)}</span></td>
+              <td>${canHold ? `<button type="button" data-place-hold="${escapeHtml(barcode)}">Place Hold</button>` : "-"}</td>
+            </tr>
+          `;
+        })
+        .join("");
+      libraryCatalogBody.querySelectorAll("[data-place-hold]").forEach((button) => {
+        button.addEventListener("click", async () => {
+          const result = placeLibraryHold(button.dataset.placeHold);
+          const feedback = document.querySelector("#libraryCatalogFeedback");
+          if (feedback) {
+            feedback.textContent = result?.ok ? "Hold placed - you'll be notified when it's ready." : result?.error || "Couldn't place a hold on this book.";
+            feedback.classList.toggle("success", Boolean(result?.ok));
+          }
+          renderLibraryHolds();
+          await renderLibraryCatalog();
+        });
+      });
+    };
+
+    renderLibraryHolds();
+    renderLibraryCatalog();
+  }
 }
 
 // Free, keyless public API (openlibrary.org) - no API key needed. Maps the
