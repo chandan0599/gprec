@@ -2756,6 +2756,59 @@ def send_attendance_shortage_alerts(department_code=None):
     return {"totalShortage": len(shortage), "studentsNotified": len(shortage), "guardianSmsSent": sms_sent, "guardianSmsSkipped": sms_skipped}
 
 
+# fee_dues rows are the actual "still owed" records - a paid fee is dropped entirely on the next
+# CSV bulk-replace (see replace_pending_fees), not marked Paid. status/detail on this table is
+# free text set from the CSV's "detail" column, not a reliable Pending/Paid enum, so this
+# deliberately filters on due_date alone, not status.
+def get_upcoming_fee_dues(days_ahead=7):
+    return run_json(f"""
+        SELECT COALESCE(json_agg(json_build_object(
+            'rollNo', fd.student_roll_no, 'name', s.full_name, 'feeType', fd.fee_type,
+            'amount', fd.amount, 'dueDate', fd.due_date::text
+        )), '[]'::json)
+        FROM fee_dues fd JOIN students s ON s.roll_no = fd.student_roll_no
+        WHERE fd.due_date BETWEEN CURRENT_DATE AND CURRENT_DATE + {int(days_ahead)};
+    """, [])
+
+
+# Same shape as send_attendance_shortage_alerts above - notifies the student and parent in-app,
+# plus a best-effort guardian SMS/WhatsApp. Mirrors that function's admin-button-now +
+# unattended-cron-later split (see send_fee_reminders_cron.py).
+def send_fee_due_reminders(days_ahead=7):
+    dues = get_upcoming_fee_dues(days_ahead)
+    sms_sent = 0
+    sms_skipped = 0
+    if dues:
+        roll_list = ",".join(quote(row["rollNo"]) for row in dues)
+        guardian_rows = run_json(f"""
+            SELECT COALESCE(json_agg(json_build_object('rollNo', student_roll_no, 'mobile', guardian_mobile)), '[]'::json)
+            FROM guardians WHERE student_roll_no IN ({roll_list}) AND guardian_mobile IS NOT NULL AND guardian_mobile <> '';
+        """, [])
+        mobile_by_roll = {row["rollNo"]: row["mobile"] for row in guardian_rows}
+        for row in dues:
+            student_message = f"Rs. {row['amount']} ({row['feeType']}) is due on {row['dueDate']}. Pay before the due date to avoid late fees."
+            create_notification("student", row["rollNo"], "Fee Due Soon", student_message, link="#payments", source_module="Fee Reminder")
+            create_notification(
+                "parent", row["rollNo"], "Fee Due Soon",
+                f"{row['name']} ({row['rollNo']}) has Rs. {row['amount']} ({row['feeType']}) due on {row['dueDate']}.",
+                link="#payments", source_module="Fee Reminder",
+            )
+            mobile = mobile_by_roll.get(row["rollNo"])
+            if not mobile:
+                sms_skipped += 1
+                continue
+            sms_message = f"GPREC Fee Reminder: Rs. {row['amount']} ({row['feeType']}) for {row['name']} ({row['rollNo']}) is due on {row['dueDate']}. Pay via the parent portal."
+            # kind is all-lowercase, not camelCase "feeReminder" - deliver_parent_notification's
+            # WhatsApp template lookup does kind.capitalize() naively ("feereminder" -> "Feereminder"),
+            # which would mismatch a camelCase kind against the whatsapp*TemplateName key below.
+            sent, _channel, _error = deliver_parent_notification(mobile, "feereminder", sms_message)
+            if sent:
+                sms_sent += 1
+            else:
+                sms_skipped += 1
+    return {"totalDue": len(dues), "studentsNotified": len(dues), "guardianSmsSent": sms_sent, "guardianSmsSkipped": sms_skipped}
+
+
 def get_attendance_section_report(department_code, from_date, to_date, section=""):
     # One row per student per class session (not aggregated like the shortage report above).
     # from_date/to_date are both optional and inclusive (blank edge = no limit on that side).
@@ -5662,6 +5715,14 @@ class PortalHandler(SimpleHTTPRequestHandler):
                     return
                 department_code = (payload or {}).get("departmentCode") or None
                 result = send_attendance_shortage_alerts(department_code)
+                self.send_json(200, {"ok": True, **result})
+                return
+            if path == "/api/fee-due-reminders/send":
+                # Same admin-button-now, cron-later split as attendance alerts above.
+                if not require_auth(self, allowed_types=["admin"]):
+                    return
+                days_ahead = (payload or {}).get("daysAhead") or 7
+                result = send_fee_due_reminders(days_ahead)
                 self.send_json(200, {"ok": True, **result})
                 return
             if path == "/api/internal-marks":

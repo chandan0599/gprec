@@ -652,7 +652,10 @@ const defaultSmsNotifications = {
   whatsappAttendanceTemplateName: "",
   noticesTemplateId: "",
   noticesTemplateVariable: "MESSAGE",
-  whatsappNoticesTemplateName: ""
+  whatsappNoticesTemplateName: "",
+  feereminderTemplateId: "",
+  feereminderTemplateVariable: "MESSAGE",
+  whatsappFeereminderTemplateName: ""
 };
 const defaultAdminConfig = {
   mainCollegeAdmin: "admin@gprec.ac.in",
@@ -5777,6 +5780,9 @@ const smsAttendanceWhatsappTemplateInput = document.querySelector("#smsAttendanc
 const smsNoticesTemplateIdInput = document.querySelector("#smsNoticesTemplateIdInput");
 const smsNoticesTemplateVariableInput = document.querySelector("#smsNoticesTemplateVariableInput");
 const smsNoticesWhatsappTemplateInput = document.querySelector("#smsNoticesWhatsappTemplateInput");
+const smsFeeReminderTemplateIdInput = document.querySelector("#smsFeeReminderTemplateIdInput");
+const smsFeeReminderTemplateVariableInput = document.querySelector("#smsFeeReminderTemplateVariableInput");
+const smsFeeReminderWhatsappTemplateInput = document.querySelector("#smsFeeReminderWhatsappTemplateInput");
 const smsSettingsSaveButtonBottom = document.querySelector("#smsSettingsSaveButtonBottom");
 const smsSettingsFeedbackBottom = document.querySelector("#smsSettingsFeedbackBottom");
 
@@ -5809,6 +5815,9 @@ if (smsSettingsStatus) {
     if (smsNoticesTemplateIdInput) smsNoticesTemplateIdInput.value = notifications.noticesTemplateId;
     if (smsNoticesTemplateVariableInput) smsNoticesTemplateVariableInput.value = notifications.noticesTemplateVariable;
     if (smsNoticesWhatsappTemplateInput) smsNoticesWhatsappTemplateInput.value = notifications.whatsappNoticesTemplateName;
+    if (smsFeeReminderTemplateIdInput) smsFeeReminderTemplateIdInput.value = notifications.feereminderTemplateId;
+    if (smsFeeReminderTemplateVariableInput) smsFeeReminderTemplateVariableInput.value = notifications.feereminderTemplateVariable;
+    if (smsFeeReminderWhatsappTemplateInput) smsFeeReminderWhatsappTemplateInput.value = notifications.whatsappFeereminderTemplateName;
   };
   renderSmsSettingsStatus();
   onAdminConfigLoaded(renderSmsSettingsStatus);
@@ -5835,7 +5844,10 @@ if (smsSettingsStatus) {
         whatsappAttendanceTemplateName: smsAttendanceWhatsappTemplateInput?.value.trim() || "",
         noticesTemplateId: smsNoticesTemplateIdInput?.value.trim() || "",
         noticesTemplateVariable: smsNoticesTemplateVariableInput?.value.trim() || "MESSAGE",
-        whatsappNoticesTemplateName: smsNoticesWhatsappTemplateInput?.value.trim() || ""
+        whatsappNoticesTemplateName: smsNoticesWhatsappTemplateInput?.value.trim() || "",
+        feereminderTemplateId: smsFeeReminderTemplateIdInput?.value.trim() || "",
+        feereminderTemplateVariable: smsFeeReminderTemplateVariableInput?.value.trim() || "MESSAGE",
+        whatsappFeereminderTemplateName: smsFeeReminderWhatsappTemplateInput?.value.trim() || ""
       }
     });
     renderSmsSettingsStatus();
@@ -8044,6 +8056,25 @@ document.querySelector("#sendCollegeWideAttendanceAlertsButton")?.addEventListen
     feedback.textContent = result.totalShortage
       ? `Notified ${result.studentsNotified} student(s) below 75% attendance college-wide. Guardian SMS/WhatsApp sent to ${result.guardianSmsSent}, skipped ${result.guardianSmsSkipped}.`
       : "No students below 75% attendance found college-wide - nothing to send.";
+    feedback.classList.add("success");
+  }
+});
+
+document.querySelector("#sendFeeDueRemindersButton")?.addEventListener("click", () => {
+  const feedback = document.querySelector("#feeDueRemindersFeedback");
+  if (feedback) {
+    feedback.textContent = "Sending reminders...";
+    feedback.classList.remove("success");
+  }
+  const result = gprecDbPost("/fee-due-reminders/send", {});
+  if (!result?.ok) {
+    if (feedback) feedback.textContent = "Could not send reminders. Make sure you are signed in as admin and try again.";
+    return;
+  }
+  if (feedback) {
+    feedback.textContent = result.totalDue
+      ? `Notified ${result.studentsNotified} student(s) with a fee due in the next 7 days. Guardian SMS/WhatsApp sent to ${result.guardianSmsSent}, skipped ${result.guardianSmsSkipped}.`
+      : "No fees due in the next 7 days - nothing to send.";
     feedback.classList.add("success");
   }
 });

@@ -561,6 +561,7 @@
               <p class="lookup-empty" id="pendingFeeOverrideEmpty">No bulk-uploaded pending fees yet.</p>
             </div>
           </article>
+          <article class="admin-card"><h3>Fee Due Reminders</h3><p>Notifies every student with a fee due in the next 7 days (in-app + their parent dashboard), and SMS/WhatsApp any guardian mobile on file. The same check can run unattended via send_fee_reminders_cron.py.</p><button type="button" id="sendFeeDueRemindersButton">Send Reminders Now</button><p class="admin-add-feedback" id="feeDueRemindersFeedback" aria-live="polite"></p></article>
         </section>
 
         <section class="admin-panel" id="grievances">
@@ -2384,6 +2385,17 @@
               <label>SMS Template ID<input type="text" id="smsNoticesTemplateIdInput" placeholder="DLT-approved template ID"></label>
               <label>SMS Template Variable Name<input type="text" id="smsNoticesTemplateVariableInput" placeholder="MESSAGE"></label>
               <label>WhatsApp Template Name<input type="text" id="smsNoticesWhatsappTemplateInput" placeholder="Approved template name in MSG91"></label>
+            </div>
+
+            <h4>Fee due reminder (Admin/cron)</h4>
+            <p>
+              Lets an admin (or the unattended send_fee_reminders_cron.py script) notify students and
+              guardians with a fee due in the next 7 days. Needs its own approved template.
+            </p>
+            <div class="admin-add-grid">
+              <label>SMS Template ID<input type="text" id="smsFeeReminderTemplateIdInput" placeholder="DLT-approved template ID"></label>
+              <label>SMS Template Variable Name<input type="text" id="smsFeeReminderTemplateVariableInput" placeholder="MESSAGE"></label>
+              <label>WhatsApp Template Name<input type="text" id="smsFeeReminderWhatsappTemplateInput" placeholder="Approved template name in MSG91"></label>
             </div>
             <button type="button" id="smsSettingsSaveButtonBottom">Save</button>
             <p class="admin-add-feedback" id="smsSettingsFeedbackBottom" aria-live="polite"></p>
