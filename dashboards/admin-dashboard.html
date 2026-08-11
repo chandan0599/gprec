@@ -714,9 +714,10 @@
           </article>
           <div class="admin-table-card">
             <table>
-              <thead><tr><th>Audience</th><th>Title</th><th>Attachment</th><th></th></tr></thead>
+              <thead><tr><th>Audience</th><th>Title</th><th>Attachment</th><th></th><th></th></tr></thead>
               <tbody id="noticeManagerBody"></tbody>
             </table>
+            <p class="admin-add-feedback" id="noticeBroadcastFeedback" aria-live="polite"></p>
           </div>
         </section>
 
@@ -2328,6 +2329,18 @@
               <label>SMS Template ID<input type="text" id="smsAttendanceTemplateIdInput" placeholder="DLT-approved template ID"></label>
               <label>SMS Template Variable Name<input type="text" id="smsAttendanceTemplateVariableInput" placeholder="MESSAGE"></label>
               <label>WhatsApp Template Name<input type="text" id="smsAttendanceWhatsappTemplateInput" placeholder="Approved template name in MSG91"></label>
+            </div>
+
+            <h4>Notice broadcast (Admin)</h4>
+            <p>
+              Lets an admin also send a notice's title/message as SMS/WhatsApp to its audience
+              (Students/Faculty/Parents/All) from the Notices panel, not just publish it in-app.
+              Needs its own approved template.
+            </p>
+            <div class="admin-add-grid">
+              <label>SMS Template ID<input type="text" id="smsNoticesTemplateIdInput" placeholder="DLT-approved template ID"></label>
+              <label>SMS Template Variable Name<input type="text" id="smsNoticesTemplateVariableInput" placeholder="MESSAGE"></label>
+              <label>WhatsApp Template Name<input type="text" id="smsNoticesWhatsappTemplateInput" placeholder="Approved template name in MSG91"></label>
             </div>
             <button type="button" id="smsSettingsSaveButtonBottom">Save</button>
             <p class="admin-add-feedback" id="smsSettingsFeedbackBottom" aria-live="polite"></p>

@@ -1727,6 +1727,37 @@ def deliver_parent_notification(mobile, kind, message):
     return False, None, wa_error or error
 
 
+# Mobile numbers per notice audience - not every audience has a reliable mobile number on file
+# yet (alumni/admin-staff mobiles aren't collected anywhere in this schema), so those are reported
+# back as unsupported rather than silently sending to nobody.
+NOTICE_AUDIENCE_MOBILE_SQL = {
+    "Students": "SELECT DISTINCT mobile FROM students WHERE status = 'Active' AND mobile IS NOT NULL AND mobile <> ''",
+    "Faculty": "SELECT DISTINCT phone FROM faculty WHERE status = 'Active' AND phone IS NOT NULL AND phone <> ''",
+    "Parents": "SELECT DISTINCT guardian_mobile FROM guardians WHERE guardian_mobile IS NOT NULL AND guardian_mobile <> ''",
+}
+NOTICE_AUDIENCE_MOBILE_SQL["All Users"] = " UNION ".join(NOTICE_AUDIENCE_MOBILE_SQL.values())
+
+
+def broadcast_notice_sms(notice_id):
+    notice = run_json(f"""
+        SELECT json_build_object('title', title, 'body', body, 'audience', audience)
+        FROM notices WHERE id = {quote(notice_id)}::uuid;
+    """, None)
+    if not notice:
+        return "Notice not found.", None
+    sql = NOTICE_AUDIENCE_MOBILE_SQL.get(notice["audience"])
+    if not sql:
+        return f'SMS broadcast isn\'t supported for the "{notice["audience"]}" audience yet (no mobile numbers on file).', None
+    mobiles = [row["mobile"] for row in run_json(f"SELECT json_agg(json_build_object('mobile', m)) FROM ({sql}) t(m);", []) or []]
+    message = f'{notice["title"]}: {notice["body"]}'[:300]
+    sent_count = 0
+    for mobile in mobiles:
+        sent, _channel, _error = deliver_parent_notification(mobile, "notices", message)
+        if sent:
+            sent_count += 1
+    return None, {"total": len(mobiles), "sent": sent_count, "failed": len(mobiles) - sent_count}
+
+
 def verify_vehicle_documents(license_number, vehicle_number):
     # Built for API Setu (apisetu.gov.in), India's government API gateway for DL/RC verification,
     # to a generic best-guess contract untested against real credentials - verify against API
@@ -4462,6 +4493,15 @@ class PortalHandler(SimpleHTTPRequestHandler):
                     return
                 replace_library_records(payload or [])
                 self.send_json(200, run_json(BOOTSTRAP_SQL, {}).get("libraryRecords", []))
+                return
+            if path == "/api/notices/broadcast":
+                if not require_auth(self, allowed_types=["admin"]):
+                    return
+                error, summary = broadcast_notice_sms((payload or {}).get("id") or "")
+                if error:
+                    self.send_json(400, {"ok": False, "error": error})
+                    return
+                self.send_json(200, {"ok": True, "summary": summary})
                 return
             if path == "/api/mentor-profiles":
                 identity = require_auth(self, allowed_types=["alumni"])

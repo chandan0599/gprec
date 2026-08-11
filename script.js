@@ -630,7 +630,10 @@ const defaultSmsNotifications = {
   whatsappGradesTemplateName: "",
   attendanceTemplateId: "",
   attendanceTemplateVariable: "MESSAGE",
-  whatsappAttendanceTemplateName: ""
+  whatsappAttendanceTemplateName: "",
+  noticesTemplateId: "",
+  noticesTemplateVariable: "MESSAGE",
+  whatsappNoticesTemplateName: ""
 };
 const defaultAdminConfig = {
   mainCollegeAdmin: "admin@gprec.ac.in",
@@ -5690,6 +5693,9 @@ const smsGradesWhatsappTemplateInput = document.querySelector("#smsGradesWhatsap
 const smsAttendanceTemplateIdInput = document.querySelector("#smsAttendanceTemplateIdInput");
 const smsAttendanceTemplateVariableInput = document.querySelector("#smsAttendanceTemplateVariableInput");
 const smsAttendanceWhatsappTemplateInput = document.querySelector("#smsAttendanceWhatsappTemplateInput");
+const smsNoticesTemplateIdInput = document.querySelector("#smsNoticesTemplateIdInput");
+const smsNoticesTemplateVariableInput = document.querySelector("#smsNoticesTemplateVariableInput");
+const smsNoticesWhatsappTemplateInput = document.querySelector("#smsNoticesWhatsappTemplateInput");
 const smsSettingsSaveButtonBottom = document.querySelector("#smsSettingsSaveButtonBottom");
 const smsSettingsFeedbackBottom = document.querySelector("#smsSettingsFeedbackBottom");
 
@@ -5719,6 +5725,9 @@ if (smsSettingsStatus) {
     if (smsAttendanceTemplateIdInput) smsAttendanceTemplateIdInput.value = notifications.attendanceTemplateId;
     if (smsAttendanceTemplateVariableInput) smsAttendanceTemplateVariableInput.value = notifications.attendanceTemplateVariable;
     if (smsAttendanceWhatsappTemplateInput) smsAttendanceWhatsappTemplateInput.value = notifications.whatsappAttendanceTemplateName;
+    if (smsNoticesTemplateIdInput) smsNoticesTemplateIdInput.value = notifications.noticesTemplateId;
+    if (smsNoticesTemplateVariableInput) smsNoticesTemplateVariableInput.value = notifications.noticesTemplateVariable;
+    if (smsNoticesWhatsappTemplateInput) smsNoticesWhatsappTemplateInput.value = notifications.whatsappNoticesTemplateName;
   };
   renderSmsSettingsStatus();
   onAdminConfigLoaded(renderSmsSettingsStatus);
@@ -5742,7 +5751,10 @@ if (smsSettingsStatus) {
         whatsappGradesTemplateName: smsGradesWhatsappTemplateInput?.value.trim() || "",
         attendanceTemplateId: smsAttendanceTemplateIdInput?.value.trim() || "",
         attendanceTemplateVariable: smsAttendanceTemplateVariableInput?.value.trim() || "MESSAGE",
-        whatsappAttendanceTemplateName: smsAttendanceWhatsappTemplateInput?.value.trim() || ""
+        whatsappAttendanceTemplateName: smsAttendanceWhatsappTemplateInput?.value.trim() || "",
+        noticesTemplateId: smsNoticesTemplateIdInput?.value.trim() || "",
+        noticesTemplateVariable: smsNoticesTemplateVariableInput?.value.trim() || "MESSAGE",
+        whatsappNoticesTemplateName: smsNoticesWhatsappTemplateInput?.value.trim() || ""
       }
     });
     renderSmsSettingsStatus();
@@ -29690,23 +29702,37 @@ const renderNoticeManager = () => {
           <td>${escapeHtml(notice.audience)}</td>
           <td>${escapeHtml(notice.title)}</td>
           <td>${notice.attachment ? `<a href="${escapeHtml(notice.attachment.dataUrl)}" download="${escapeHtml(notice.attachment.name)}">${escapeHtml(notice.attachment.name)}</a>` : "-"}</td>
+          <td><button type="button" data-notice-broadcast="${notice.id}">Send SMS/WhatsApp</button></td>
           <td><button type="button" class="icon-btn-delete" data-notice-remove="${notice.id}" aria-label="Remove notice">${deleteIconSvg}</button></td>
         </tr>
       `
         )
         .join("")
-    : `<tr><td colspan="4">No notices published yet.</td></tr>`;
+    : `<tr><td colspan="5">No notices published yet.</td></tr>`;
 };
 
 renderNoticeManager();
 
 noticeManagerBody?.addEventListener("click", (event) => {
   const removeButton = event.target.closest("[data-notice-remove]");
-  if (!removeButton) return;
-  removeNotice(removeButton.dataset.noticeRemove);
-  recordActivity("Removed notice", "Notices");
-  renderNoticeManager();
-  renderPublicNoticeBoard();
+  if (removeButton) {
+    removeNotice(removeButton.dataset.noticeRemove);
+    recordActivity("Removed notice", "Notices");
+    renderNoticeManager();
+    renderPublicNoticeBoard();
+    return;
+  }
+  const broadcastButton = event.target.closest("[data-notice-broadcast]");
+  if (broadcastButton) {
+    const feedback = document.querySelector("#noticeBroadcastFeedback");
+    const result = gprecDbPost("/notices/broadcast", { id: broadcastButton.dataset.noticeBroadcast });
+    if (feedback) {
+      feedback.textContent = result?.ok
+        ? `Sent to ${result.summary.sent} of ${result.summary.total} recipient(s).`
+        : result?.error || "Couldn't send this notice as SMS/WhatsApp.";
+      feedback.classList.toggle("success", Boolean(result?.ok));
+    }
+  }
 });
 
 publishNoticeButton?.addEventListener("click", async () => {
