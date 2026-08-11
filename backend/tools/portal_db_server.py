@@ -21,7 +21,6 @@ from urllib.error import URLError, HTTPError
 from cryptography.fernet import Fernet
 from pypdf import PdfReader
 from docx import Document as DocxDocument
-import pyotp
 from py_vapid import Vapid02
 from pywebpush import webpush, WebPushException
 
@@ -1971,7 +1970,7 @@ def get_credential_row(email, role_type=None):
         "SELECT COALESCE((SELECT json_build_object("
         "'roleType', role_type, 'fullName', full_name, 'passwordHash', password_hash, "
         "'passwordSalt', password_salt, 'mustChangePassword', must_change_password, "
-        "'passwordSetAt', extract(epoch from password_set_at), 'totpEnabled', totp_enabled) "
+        "'passwordSetAt', extract(epoch from password_set_at)) "
         f"FROM user_credentials WHERE email = {quote(email)}{role_clause}), 'null'::json);"
     )
     return run_json(sql, None)
@@ -2029,8 +2028,7 @@ SELECT COALESCE((SELECT json_agg(json_build_object(
   'roleType', role_type,
   'fullName', full_name,
   'mustChangePassword', must_change_password,
-  'passwordSetAt', password_set_at::text,
-  'totpEnabled', totp_enabled
+  'passwordSetAt', password_set_at::text
 ) ORDER BY full_name) FROM user_credentials), '[]'::json);
 """
 
@@ -2059,66 +2057,6 @@ SESSION_TIERS = {
 
 def hash_token(token):
     return hashlib.sha256(token.encode("utf-8")).hexdigest()
-
-
-# Admin-only TOTP 2FA (RFC 6238, via pyotp). enroll_totp writes the secret but leaves
-# totp_enabled false - confirm_totp is what actually turns it on, so a half-finished enrollment
-# (secret generated, QR never scanned) can't ever gate a real login.
-TOTP_BACKUP_CODE_COUNT = 8
-
-
-def enroll_totp(email):
-    secret = pyotp.random_base32()
-    run_psql(f"""
-        UPDATE user_credentials SET totp_secret = {quote(secret)}, totp_enabled = false, totp_backup_codes = '{{}}'
-        WHERE email = {quote(email)};
-    """)
-    uri = pyotp.TOTP(secret).provisioning_uri(name=email, issuer_name="GPREC Admin Portal")
-    return uri
-
-
-def confirm_totp(email, code):
-    row = run_json(f"SELECT json_build_object('secret', totp_secret) FROM user_credentials WHERE email = {quote(email)};", None)
-    secret = row.get("secret") if row else None
-    if not secret or not pyotp.TOTP(secret).verify((code or "").strip(), valid_window=1):
-        return None
-    backup_codes = [secrets.token_hex(4) for _ in range(TOTP_BACKUP_CODE_COUNT)]
-    hashed = [hash_token(c) for c in backup_codes]
-    array_sql = "ARRAY[" + ",".join(quote(h) for h in hashed) + "]::text[]"
-    run_psql(f"""
-        UPDATE user_credentials SET totp_enabled = true, totp_backup_codes = {array_sql}
-        WHERE email = {quote(email)};
-    """)
-    return backup_codes
-
-
-def disable_totp(email):
-    run_psql(f"""
-        UPDATE user_credentials SET totp_enabled = false, totp_secret = NULL, totp_backup_codes = '{{}}'
-        WHERE email = {quote(email)};
-    """)
-
-
-def verify_totp_code(email, code):
-    code = (code or "").strip()
-    if not code:
-        return False
-    row = run_json(f"""
-        SELECT json_build_object('secret', totp_secret, 'backupCodes', totp_backup_codes)
-        FROM user_credentials WHERE email = {quote(email)};
-    """, None)
-    if not row or not row.get("secret"):
-        return False
-    if pyotp.TOTP(row["secret"]).verify(code, valid_window=1):
-        return True
-    hashed = hash_token(code)
-    if hashed in (row.get("backupCodes") or []):
-        run_psql(f"""
-            UPDATE user_credentials SET totp_backup_codes = array_remove(totp_backup_codes, {quote(hashed)})
-            WHERE email = {quote(email)};
-        """)
-        return True
-    return False
 
 
 def create_session(identity_type, identity_id, role_label=None):
@@ -4958,47 +4896,12 @@ class PortalHandler(SimpleHTTPRequestHandler):
                 if not must_change:
                     # Token issuance is deliberately skipped when a forced reset is pending, so the
                     # change-password step can't be bypassed by just reusing this response's token.
-                    # Same idea for TOTP below: a pending 2FA challenge also withholds the token.
-                    if role_type == "admin" and row.get("totpEnabled"):
-                        totp_code = (payload.get("totpCode") or "").strip()
-                        if not totp_code:
-                            self.send_json(200, {"ok": True, "mustChange": False, "requiresTotp": True})
-                            return
-                        if not verify_totp_code(email, totp_code):
-                            record_failed_attempt(email)
-                            record_throttle_failure(throttle_key)
-                            self.send_json(200, {"ok": False, "reason": "bad-totp"})
-                            return
                     role_label = None
                     if role_type == "admin":
                         admin_row = get_admin_row(email)
                         role_label = admin_row.get("role") if admin_row else None
                     response["token"] = create_session(role_type, email, role_label)
                 self.send_json(200, response)
-                return
-            if path == "/api/auth/totp/enroll":
-                identity = require_auth(self, allowed_types=["admin"])
-                if not identity:
-                    return
-                uri = enroll_totp(identity["identityId"])
-                self.send_json(200, {"ok": True, "provisioningUri": uri})
-                return
-            if path == "/api/auth/totp/confirm":
-                identity = require_auth(self, allowed_types=["admin"])
-                if not identity:
-                    return
-                backup_codes = confirm_totp(identity["identityId"], (payload or {}).get("code") or "")
-                if not backup_codes:
-                    self.send_json(400, {"ok": False, "error": "Incorrect code. Scan the QR again and try the current code."})
-                    return
-                self.send_json(200, {"ok": True, "backupCodes": backup_codes})
-                return
-            if path == "/api/auth/totp/disable":
-                identity = require_auth(self, allowed_types=["admin"])
-                if not identity:
-                    return
-                disable_totp(identity["identityId"])
-                self.send_json(200, {"ok": True})
                 return
             if path == "/api/auth/change-password":
                 email = (payload.get("email") or "").strip().lower()
