@@ -155,6 +155,15 @@ CREATE TABLE IF NOT EXISTS user_credentials (
   updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
 );
 
+-- TOTP 2FA - admin-only (see the totp_enabled check gating /api/auth/login's token issuance).
+-- totp_secret is written on enroll but totp_enabled stays false until the first code is
+-- confirmed, so a half-finished enrollment can never lock an admin out. Backup codes are stored
+-- hashed (hash_token, same SHA256 already used for session tokens) - never the plaintext, which
+-- is shown to the admin exactly once at confirmation time.
+ALTER TABLE IF EXISTS user_credentials ADD COLUMN IF NOT EXISTS totp_secret TEXT;
+ALTER TABLE IF EXISTS user_credentials ADD COLUMN IF NOT EXISTS totp_enabled BOOLEAN NOT NULL DEFAULT false;
+ALTER TABLE IF EXISTS user_credentials ADD COLUMN IF NOT EXISTS totp_backup_codes TEXT[] NOT NULL DEFAULT '{}';
+
 -- Session tokens for all six login roles (student/parent logins previously never touched the
 -- backend at all - see student-login/parent-otp endpoints - so this is the first real
 -- server-side session concept anywhere in the app, not an extension of an existing one).

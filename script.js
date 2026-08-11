@@ -10177,6 +10177,69 @@ const renderGrievances = () => {
 setTimeout(renderGrievances, 0);
 grievanceStatusFilter?.addEventListener("change", renderGrievances);
 
+// Admin self-service TOTP 2FA (Users & Access panel). Deliberately self-only - the backend
+// enroll/confirm/disable endpoints act on the caller's own session identity, not an arbitrary
+// email, so there's no cross-admin management here (or recovery flow if a device is lost -
+// backup codes shown once at confirm time are the recovery path).
+const totpEnableButton = document.querySelector("#totpEnableButton");
+if (totpEnableButton) {
+  const totpStatusText = document.querySelector("#totpStatusText");
+  const totpEnrollBlock = document.querySelector("#totpEnrollBlock");
+  const totpBackupCodesBlock = document.querySelector("#totpBackupCodesBlock");
+  const totpDisableButton = document.querySelector("#totpDisableButton");
+  const totpFeedback = document.querySelector("#totpFeedback");
+  const adminEmail = localStorage.getItem("gprecAdminEmail") || "";
+
+  const refreshTotpStatus = () => {
+    const credentials = gprecDbRequest("/auth/credentials") || [];
+    const mine = credentials.find((row) => row.email === adminEmail);
+    const enabled = Boolean(mine?.totpEnabled);
+    totpStatusText.textContent = enabled ? "2FA is currently ON for this account." : "2FA is currently OFF for this account.";
+    totpEnableButton.classList.toggle("is-hidden", enabled);
+    totpDisableButton?.classList.toggle("is-hidden", !enabled);
+  };
+  refreshTotpStatus();
+
+  totpEnableButton.addEventListener("click", () => {
+    const result = gprecDbPost("/auth/totp/enroll", {});
+    if (!result?.ok) {
+      totpFeedback.textContent = "Couldn't start 2FA enrollment.";
+      totpFeedback.classList.remove("success");
+      return;
+    }
+    const qr = qrcode(0, "M");
+    qr.addData(result.provisioningUri);
+    qr.make();
+    document.querySelector("#totpQrWrap").innerHTML = qr.createSvgTag(4);
+    totpEnrollBlock.classList.remove("is-hidden");
+    totpBackupCodesBlock.classList.add("is-hidden");
+  });
+
+  document.querySelector("#totpConfirmButton")?.addEventListener("click", () => {
+    const code = document.querySelector("#totpConfirmCodeInput")?.value.trim();
+    const result = gprecDbPost("/auth/totp/confirm", { code });
+    if (!result?.ok) {
+      totpFeedback.textContent = result?.error || "Incorrect code.";
+      totpFeedback.classList.remove("success");
+      return;
+    }
+    document.querySelector("#totpBackupCodesText").textContent = result.backupCodes.join("\n");
+    totpEnrollBlock.classList.add("is-hidden");
+    totpBackupCodesBlock.classList.remove("is-hidden");
+    totpFeedback.textContent = "2FA enabled.";
+    totpFeedback.classList.add("success");
+    refreshTotpStatus();
+  });
+
+  totpDisableButton?.addEventListener("click", () => {
+    gprecDbPost("/auth/totp/disable", {});
+    totpFeedback.textContent = "2FA disabled.";
+    totpFeedback.classList.add("success");
+    totpBackupCodesBlock.classList.add("is-hidden");
+    refreshTotpStatus();
+  });
+}
+
 // Admin "Library" panel - add books to the catalog, issue/return, and see fines. Separate from
 // the CSV bulk-upload path (Data Integrations > Library API), which stays for full re-imports.
 const libraryAdminBody = document.querySelector("#libraryAdminBody");
@@ -13622,8 +13685,8 @@ if (GPREC_CURRENT_ROUTE_FILE === "student-login.html" && gprecIsVolunteerStudent
   setText(card, "button[type='submit']", "Login as Event Volunteer");
 }
 
-const handleRolePasswordLogin = ({ form, feedback, email, password, roleType, successMessage, dashboardUrl, localStorageEntries }) => {
-  const result = gprecAuthPost("/login", { email, password, roleType });
+const handleRolePasswordLogin = ({ form, feedback, email, password, roleType, successMessage, dashboardUrl, localStorageEntries, totpCode }) => {
+  const result = gprecAuthPost("/login", { email, password, roleType, totpCode });
   if (!result) {
     feedback.textContent = "Unable to reach the login server. Make sure the portal API is running and try again.";
     feedback.classList.remove("success");
@@ -13634,9 +13697,18 @@ const handleRolePasswordLogin = ({ form, feedback, email, password, roleType, su
       ? "Too many failed attempts. This account is temporarily locked - try again later."
       : result.reason === "no-credentials"
       ? "No password has been set for this account yet. Ask the admin to set up your login."
+      : result.reason === "bad-totp"
+      ? "Incorrect 2FA code. Try again."
       : "Incorrect password.";
     feedback.classList.remove("success");
-    generateCaptcha(form);
+    if (result.reason !== "bad-totp") generateCaptcha(form);
+    return;
+  }
+  if (result.requiresTotp) {
+    document.querySelector("#adminTotpField")?.classList.remove("is-hidden");
+    document.querySelector("#adminTotpCodeInput")?.focus();
+    feedback.textContent = "Enter your 2FA code to continue.";
+    feedback.classList.remove("success");
     return;
   }
   if (result.mustChange) {
@@ -13682,7 +13754,7 @@ portalForms.forEach((form) => {
   // unchanged, just re-triggered by "submit" instead of the button's "click".
   form.addEventListener("submit", (event) => {
     event.preventDefault();
-    const fields = [...form.querySelectorAll("input")].filter((field) => !field.classList.contains("captcha-input"));
+    const fields = [...form.querySelectorAll("input")].filter((field) => !field.classList.contains("captcha-input") && !field.classList.contains("totp-input"));
     let feedback = form.querySelector(".portal-feedback");
 
     if (!feedback) {
@@ -13793,7 +13865,8 @@ portalForms.forEach((form) => {
           gprecAdminRole: adminRole,
           gprecAdminEmail: adminUser.email,
           gprecAdminDepartment: adminUser.department || "All"
-        }
+        },
+        totpCode: document.querySelector("#adminTotpCodeInput")?.value.trim() || undefined
       });
       return;
     } else if (form.matches(".faculty-login-form")) {

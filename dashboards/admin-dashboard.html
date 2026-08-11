@@ -418,6 +418,23 @@
           <div class="admin-section-head">
             <div><p class="eyebrow">Users & Access</p><h2>Role permissions and login controls.</h2></div>
           </div>
+          <article class="admin-card admin-form-card" id="totpCard">
+            <h3>Two-Factor Authentication (this account)</h3>
+            <p id="totpStatusText">Checking status...</p>
+            <div id="totpEnrollBlock" class="is-hidden">
+              <p>Scan this QR code with an authenticator app (Google Authenticator, Authy, etc.), then enter the 6-digit code it shows.</p>
+              <div id="totpQrWrap"></div>
+              <label>6-digit code<input type="text" id="totpConfirmCodeInput" inputmode="numeric" maxlength="6" placeholder="123456"></label>
+              <button type="button" id="totpConfirmButton">Confirm & Enable</button>
+            </div>
+            <div id="totpBackupCodesBlock" class="is-hidden">
+              <p><strong>Save these backup codes now - shown only once.</strong> Each can be used in place of your authenticator code if you lose access to it.</p>
+              <pre id="totpBackupCodesText"></pre>
+            </div>
+            <button type="button" id="totpEnableButton">Enable 2FA</button>
+            <button type="button" id="totpDisableButton" class="is-hidden">Disable 2FA</button>
+            <p class="admin-add-feedback" id="totpFeedback" aria-live="polite"></p>
+          </article>
           <article class="admin-card admin-form-card main-admin-only" id="adminCreatorCard">
             <h3>Add Admin User</h3>
             <p>Only the main college admin can add new admin email IDs and assign roles.</p>

@@ -57,6 +57,7 @@
           <p class="admin-role-preview" id="adminRolePreview" aria-live="polite">Enter your admin email to see your configured role.</p>
           <label>Password<input type="password" id="adminLoginPassword" placeholder="Enter password" autocomplete="current-password"></label>
           <label><span>Security Check (<span class="captcha-question">? + ?</span>)</span><input type="text" class="captcha-input" inputmode="numeric" autocomplete="off" placeholder="Enter the sum"></label>
+          <label id="adminTotpField" class="is-hidden">6-digit authenticator code (or an 8-character backup code)<input type="text" class="totp-input" id="adminTotpCodeInput" maxlength="8" autocomplete="one-time-code"></label>
           <button type="submit">Login as Admin</button>
           <p class="auth-switch"><a href="forgot-password.html?role=admin">Forgot password?</a></p>
         </form>
