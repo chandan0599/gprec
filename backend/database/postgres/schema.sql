@@ -456,25 +456,6 @@ CREATE TABLE IF NOT EXISTS library_issues (
   status TEXT NOT NULL DEFAULT 'Issued'
 );
 
--- Fine tracking + renewal count, for the targeted issue/return/renew endpoints (as opposed to
--- the CSV-bulk-replace path above, which only ever set issued_on/due_on/returned_on/status).
-ALTER TABLE IF EXISTS library_issues ADD COLUMN IF NOT EXISTS fine_amount NUMERIC(10,2) NOT NULL DEFAULT 0;
-ALTER TABLE IF EXISTS library_issues ADD COLUMN IF NOT EXISTS fine_paid BOOLEAN NOT NULL DEFAULT false;
-ALTER TABLE IF EXISTS library_issues ADD COLUMN IF NOT EXISTS renewed_count INT NOT NULL DEFAULT 0;
-
--- Hold/reservation queue for a currently-issued book. On return, the earliest Waiting hold (if
--- any) becomes Ready and library_books.status moves to 'Reserved' (a third state alongside
--- Available/Issued) so issue_library_book() only lets that specific student check it out, not
--- whoever asks first - see return_library_book()/issue_library_book() in portal_db_server.py.
-CREATE TABLE IF NOT EXISTS library_holds (
-  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  barcode TEXT NOT NULL REFERENCES library_books(barcode),
-  student_roll_no TEXT NOT NULL REFERENCES students(roll_no) ON DELETE CASCADE,
-  status TEXT NOT NULL DEFAULT 'Waiting',
-  requested_at TIMESTAMPTZ NOT NULL DEFAULT now(),
-  ready_at TIMESTAMPTZ
-);
-
 CREATE TABLE IF NOT EXISTS placement_drives (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   company TEXT NOT NULL,

@@ -85,7 +85,6 @@
         <div class="admin-nav" data-admin-target="#fee-management" title="Fee Management" role="button" tabindex="0"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg><span class="admin-nav-text">Fee Management</span></div>
         <div class="admin-nav" data-admin-target="#grievances" title="Grievances" role="button" tabindex="0"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 4 3 20h18Z"/><path d="M12 10v4"/><path d="M12 17h.01"/></svg><span class="admin-nav-text">Grievances</span></div>
         <div class="admin-nav" data-admin-target="#hod-leave-approvals" title="HOD Leave Requests" role="button" tabindex="0"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="4" y="5" width="16" height="15" rx="2"/><path d="M4 10h16M8 3v4M16 3v4"/></svg><span class="admin-nav-text">HOD Leave Requests</span></div>
-        <div class="admin-nav" data-admin-target="#library-admin" title="Library" role="button" tabindex="0"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2Z"/></svg><span class="admin-nav-text">Library</span></div>
         <div class="admin-nav" data-admin-target="#media" title="Media" role="button" tabindex="0"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="4" width="18" height="16" rx="2"/><circle cx="8.5" cy="9.5" r="1.5"/><path d="m4 17 5-5 4 4 3-3 4 4"/></svg><span class="admin-nav-text">Media</span></div>
         <div class="admin-nav" data-admin-target="#staff-leave-approvals" data-admin-roles="College Admin" title="Non-Teaching Staff Leave" role="button" tabindex="0"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="4" y="5" width="16" height="15" rx="2"/><path d="M4 10h16M8 3v4M16 3v4"/></svg><span class="admin-nav-text">Non-Teaching Staff Leave</span></div>
         <div class="admin-nav" data-admin-target="#notices-content" title="Notices" role="button" tabindex="0"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 2h9l5 5v15H6Z"/><path d="M15 2v5h5"/></svg><span class="admin-nav-text">Notices</span></div>
@@ -568,44 +567,6 @@
               <tbody id="grievancesBody"></tbody>
             </table>
             <p class="lookup-empty" id="grievancesEmpty">No grievances found.</p>
-          </div>
-        </section>
-
-        <section class="admin-panel" id="library-admin">
-          <div class="admin-section-head">
-            <div><p class="eyebrow">Library</p><h2>Add books to the catalog, issue/return books, and track fines.</h2></div>
-          </div>
-          <article class="admin-card admin-form-card">
-            <h3>Add Book to Catalog</h3>
-            <label>Barcode<input type="text" id="libraryAddBarcode" placeholder="e.g. BK-1042"></label>
-            <label>Title<input type="text" id="libraryAddTitle" placeholder="Book title"></label>
-            <label>Author<input type="text" id="libraryAddAuthor" placeholder="Author"></label>
-            <button type="button" id="libraryAddBookButton">Add Book</button>
-            <p class="admin-add-feedback" id="libraryAddBookFeedback" aria-live="polite"></p>
-          </article>
-          <article class="admin-card admin-form-card">
-            <h3>Issue Book</h3>
-            <label>Barcode<input type="text" id="libraryIssueBarcode" placeholder="e.g. BK-1042"></label>
-            <label>Student Roll Number<input type="text" id="libraryIssueRollNo" placeholder="e.g. 20X51A0501"></label>
-            <button type="button" id="libraryIssueButton">Issue Book</button>
-            <p class="admin-add-feedback" id="libraryIssueFeedback" aria-live="polite"></p>
-          </article>
-          <div class="admin-table-card">
-            <h3>Issued Books</h3>
-            <table>
-              <thead><tr><th>Book</th><th>Student</th><th>Issued On</th><th>Due Date</th><th>Status</th><th>Fine</th><th>Action</th></tr></thead>
-              <tbody id="libraryAdminBody"></tbody>
-            </table>
-            <p class="lookup-empty" id="libraryAdminEmpty">No books issued yet.</p>
-            <p class="admin-add-feedback" id="libraryAdminActionFeedback" aria-live="polite"></p>
-          </div>
-          <div class="admin-table-card">
-            <h3>Hold Queue</h3>
-            <table>
-              <thead><tr><th>Book</th><th>Student</th><th>Status</th><th>Requested</th></tr></thead>
-              <tbody id="libraryHoldsAdminBody"></tbody>
-            </table>
-            <p class="lookup-empty" id="libraryHoldsAdminEmpty">No active holds.</p>
           </div>
         </section>
 
