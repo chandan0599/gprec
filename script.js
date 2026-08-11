@@ -1045,6 +1045,11 @@ const saveLibraryRecords = async (records) => {
 };
 // Targeted single-book actions - only meaningful for the local/DB-backed catalog above (a real
 // connected library system like Koha/SOUL owns its own issue/return/renew workflow already).
+// Weekly mess menu (warden-edited, hostel_name-keyed) and per-meal feedback averages.
+const getMessMenu = () => getGprecDbBootstrap()?.messMenu || [];
+const getMessFeedbackSummary = () => getGprecDbBootstrap()?.messFeedbackSummary || [];
+const saveMessMenu = (hostelName, dayOfWeek, mealType, items) => gprecDbPost("/mess-menu", { hostelName, dayOfWeek, mealType, items });
+const submitMessFeedback = (mealDate, mealType, rating, comments) => gprecDbPost("/mess-feedback", { mealDate, mealType, rating, comments });
 const addLibraryBook = (barcode, title, author) => gprecDbPost("/library/add-book", { barcode, title, author });
 const issueLibraryBook = (barcode, rollNumber) => gprecDbPost("/library/issue", { barcode, rollNumber });
 const returnLibraryBook = (id) => gprecDbPost("/library/return", { id });
@@ -4538,6 +4543,45 @@ if (adminNavButtons.length > 0 && adminPanels.length > 0) {
     // next tick lets the rest of the file finish defining everything first.
     setTimeout(renderWardenComplaints, 0);
   }
+
+  const wardenMessMenuBody = document.querySelector("#wardenMessMenuBody");
+  if (wardenMessMenuBody && isHostelWarden) {
+    const wardenHostel = storedAdminRole === "Boys Hostel Warden" ? "Boys Hostel" : "Girls Hostel";
+    const messDays = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"];
+    const renderWardenMessMenu = () => {
+      const menu = getMessMenu().filter((row) => row.hostelName === wardenHostel);
+      wardenMessMenuBody.innerHTML = messDays
+        .map((day) => {
+          const forMeal = (mealType) => escapeHtml(menu.find((row) => row.dayOfWeek === day && row.mealType === mealType)?.items || "-");
+          return `<tr><td>${day}</td><td>${forMeal("Breakfast")}</td><td>${forMeal("Lunch")}</td><td>${forMeal("Snacks")}</td><td>${forMeal("Dinner")}</td></tr>`;
+        })
+        .join("");
+      const summaryGrid = document.querySelector("#messFeedbackSummaryGrid");
+      if (summaryGrid) {
+        const summary = getMessFeedbackSummary();
+        summaryGrid.innerHTML = summary.length
+          ? summary.map((row) => `<article><strong>${row.avgRating}/5</strong><span>${escapeHtml(row.mealType)} (${row.count} ratings)</span></article>`).join("")
+          : `<article><strong>-</strong><span>No feedback yet</span></article>`;
+      }
+    };
+    renderWardenMessMenu();
+
+    document.querySelector("#messMenuSaveButton")?.addEventListener("click", () => {
+      const dayOfWeek = document.querySelector("#messMenuDayInput").value;
+      const mealType = document.querySelector("#messMenuMealInput").value;
+      const items = document.querySelector("#messMenuItemsInput").value.trim();
+      const feedback = document.querySelector("#messMenuFeedback");
+      const result = saveMessMenu(wardenHostel, dayOfWeek, mealType, items);
+      if (feedback) {
+        feedback.textContent = result?.ok ? "Menu item saved." : result?.error || "Couldn't save this menu item.";
+        feedback.classList.toggle("success", Boolean(result?.ok));
+      }
+      if (result?.ok) {
+        document.querySelector("#messMenuItemsInput").value = "";
+        renderWardenMessMenu();
+      }
+    });
+  }
 }
 
 // Portrait CR80-style card matching "30_volunteer_id_card_vertical.html". `admin.studentRoll`
@@ -6481,22 +6525,69 @@ const renderHostelSectionInfo = (studentId) => {
   const subtitle = document.querySelector("#hostelSectionSubtitle");
   const grid = document.querySelector("#hostelInfoGrid");
   const notApplicable = document.querySelector("#hostelNotApplicable");
+  const messMenuCard = document.querySelector("#messMenuCard");
+  const messMenuHead = document.querySelector("#messMenuHead");
+  const messFeedbackHead = document.querySelector("#messFeedbackHead");
+  const messFeedbackForm = document.querySelector("#messFeedbackForm");
   if (!subtitle && !grid && !notApplicable) return;
   const student = hostelStudentData[studentId];
   if (!student) {
     if (subtitle) subtitle.textContent = "Day scholar";
     grid?.classList.add("is-hidden");
     notApplicable?.classList.remove("is-hidden");
+    [messMenuCard, messMenuHead, messFeedbackHead, messFeedbackForm].forEach((el) => el?.classList.add("is-hidden"));
     return;
   }
   if (subtitle) subtitle.textContent = "Active hosteler";
   grid?.classList.remove("is-hidden");
   notApplicable?.classList.add("is-hidden");
+  [messMenuCard, messMenuHead, messFeedbackHead, messFeedbackForm].forEach((el) => el?.classList.remove("is-hidden"));
   const allocationText = document.querySelector("#hostelAllocationText");
   if (allocationText) allocationText.textContent = `${student.hostel}, ${student.block}, Room ${student.room}, Bed ${student.bed}`;
   const messText = document.querySelector("#hostelMessText");
   if (messText) messText.textContent = student.mess || "-";
+
+  const menuBody = document.querySelector("#studentMessMenuBody");
+  if (menuBody) {
+    const menu = getMessMenu().filter((row) => row.hostelName === student.hostel);
+    const days = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"];
+    document.querySelector("#studentMessMenuEmpty")?.classList.toggle("is-hidden", menu.length > 0);
+    menuBody.innerHTML = menu.length
+      ? days
+          .filter((day) => menu.some((row) => row.dayOfWeek === day))
+          .map((day) => {
+            const forDay = (mealType) => menu.find((row) => row.dayOfWeek === day && row.mealType === mealType)?.items || "-";
+            return `
+              <tr>
+                <td>${day}</td>
+                <td>${escapeHtml(forDay("Breakfast"))}</td>
+                <td>${escapeHtml(forDay("Lunch"))}</td>
+                <td>${escapeHtml(forDay("Snacks"))}</td>
+                <td>${escapeHtml(forDay("Dinner"))}</td>
+              </tr>
+            `;
+          })
+          .join("")
+      : "";
+  }
 };
+
+const messFeedbackForm = document.querySelector("#messFeedbackForm");
+messFeedbackForm?.addEventListener("submit", (event) => {
+  event.preventDefault();
+  const mealType = document.querySelector("#messFeedbackMealType").value;
+  const rating = document.querySelector("#messFeedbackRating").value;
+  const comments = document.querySelector("#messFeedbackComments").value.trim();
+  const mealDate = new Date().toISOString().slice(0, 10);
+  const result = submitMessFeedback(mealDate, mealType, rating, comments);
+  const feedback = document.querySelector("#messFeedbackFeedback");
+  if (feedback) {
+    feedback.textContent = result?.ok ? "Thanks - your feedback was recorded." : result?.error || "Couldn't submit feedback.";
+    feedback.classList.toggle("success", Boolean(result?.ok));
+    feedback.classList.remove("is-hidden");
+  }
+  if (result?.ok) messFeedbackForm.reset();
+});
 
 // Current Day Timetable (faculty "Current Day Timetable" and student "Current Day Timetable" -
 // both share this exact .current-day-panel/.today-slider markup and this same time-passed logic,

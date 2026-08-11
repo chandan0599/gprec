@@ -282,6 +282,29 @@ CREATE TABLE IF NOT EXISTS hostel_allocations (
   status TEXT NOT NULL DEFAULT 'Active'
 );
 
+-- Weekly mess menu (warden-edited) and per-meal student feedback. Keyed by hostel_name ("Boys
+-- Hostel"/"Girls Hostel") to match the warden identity split already used everywhere else
+-- (see wardenHostel in script.js), not the finer-grained block_name on hostel_allocations above.
+CREATE TABLE IF NOT EXISTS mess_menu (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  hostel_name TEXT NOT NULL,
+  day_of_week TEXT NOT NULL,
+  meal_type TEXT NOT NULL,
+  items TEXT NOT NULL,
+  updated_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+  UNIQUE (hostel_name, day_of_week, meal_type)
+);
+
+CREATE TABLE IF NOT EXISTS mess_feedback (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  student_roll_no TEXT NOT NULL REFERENCES students(roll_no) ON DELETE CASCADE,
+  meal_date DATE NOT NULL,
+  meal_type TEXT NOT NULL,
+  rating INT NOT NULL CHECK (rating BETWEEN 1 AND 5),
+  comments TEXT,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+
 -- Outing/visiting/hostel-leave requests are rich per-type documents (mobile numbers, room/hostel,
 -- visitor relationship, etc.) that the frontend manages as one JS object per record, read-all/
 -- mutate-one/save-all - same JSONB-blob-keyed-by-client-id pattern as student_projects/

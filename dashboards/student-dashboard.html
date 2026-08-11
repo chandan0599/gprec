@@ -463,6 +463,43 @@
           <article><strong>Mess Details</strong><span id="hostelMessText">-</span></article>
         </div>
         <p class="portal-note is-hidden" id="hostelNotApplicable">You're registered as a day scholar - hostel allocation and mess details aren't applicable.</p>
+
+        <div class="portal-block-head" id="messMenuHead"><h3>This Week's Mess Menu</h3></div>
+        <div class="admin-table-card" id="messMenuCard">
+          <table>
+            <thead><tr><th>Day</th><th>Breakfast</th><th>Lunch</th><th>Snacks</th><th>Dinner</th></tr></thead>
+            <tbody id="studentMessMenuBody"></tbody>
+          </table>
+          <p class="lookup-empty" id="studentMessMenuEmpty">No mess menu published yet.</p>
+        </div>
+
+        <div class="portal-block-head" id="messFeedbackHead"><h3>Rate Today's Meal</h3></div>
+        <form class="certificate-form" id="messFeedbackForm">
+          <label>Meal
+            <select id="messFeedbackMealType" required>
+              <option value="">Select meal</option>
+              <option value="Breakfast">Breakfast</option>
+              <option value="Lunch">Lunch</option>
+              <option value="Snacks">Snacks</option>
+              <option value="Dinner">Dinner</option>
+            </select>
+          </label>
+          <label>Rating (1-5)
+            <select id="messFeedbackRating" required>
+              <option value="">Select rating</option>
+              <option value="1">1 - Poor</option>
+              <option value="2">2 - Below Average</option>
+              <option value="3">3 - Average</option>
+              <option value="4">4 - Good</option>
+              <option value="5">5 - Excellent</option>
+            </select>
+          </label>
+          <label>Comments (optional)
+            <textarea rows="3" id="messFeedbackComments" placeholder="Anything the mess should know"></textarea>
+          </label>
+          <button class="payment-open-button" type="submit">Submit Feedback</button>
+          <p class="portal-feedback is-hidden" id="messFeedbackFeedback"></p>
+        </form>
       </section>
 
       <section class="portal-section dashboard-panel" id="outing-request">

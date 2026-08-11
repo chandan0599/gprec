@@ -52,6 +52,7 @@
         <div class="admin-nav" data-admin-target="#hostel-complaints" title="Complaints" role="button" tabindex="0"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 4 3 20h18Z"/><path d="M12 10v4"/><path d="M12 17h.01"/></svg><span class="admin-nav-text">Complaints</span></div>
         <div class="admin-nav" data-admin-target="#hostel-allocation" title="Hostel Allocation" role="button" tabindex="0"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="5" y="3" width="14" height="18" rx="1"/><path d="M9 8h1M14 8h1M9 12h1M14 12h1M9 16h1M14 16h1"/><path d="M10 21v-4h4v4"/></svg><span class="admin-nav-text">Hostel Allocation</span></div>
         <div class="admin-nav" data-admin-target="#hostel-leave-requests" title="Hostel Leave Requests" role="button" tabindex="0"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="4" y="5" width="16" height="15" rx="2"/><path d="M4 10h16M8 3v4M16 3v4"/></svg><span class="admin-nav-text">Hostel Leave Requests</span></div>
+        <div class="admin-nav" data-admin-target="#hostel-mess-menu" title="Mess Menu" role="button" tabindex="0"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 3v18M4 3c0 4 4 4 4 8s-4 4-4 4M20 3v18M14 3v7a3 3 0 0 0 6 0V3M17 3v7"/></svg><span class="admin-nav-text">Mess Menu</span></div>
         <div class="admin-nav" data-admin-target="#hostel-notices" title="Hostel Notices" role="button" tabindex="0"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 8a6 6 0 1 1 12 0c0 4 1.5 5.5 2 6H4c.5-.5 2-2 2-6Z"/><path d="M10 20a2 2 0 0 0 4 0"/></svg><span class="admin-nav-text">Hostel Notices</span></div>
         <div class="admin-nav" data-admin-target="#hostel-outings" title="Outing Requests" role="button" tabindex="0"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 4H6a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h3"/><path d="M14 8l4 4-4 4"/><path d="M18 12H9"/></svg><span class="admin-nav-text">Outing Requests</span></div>
         <div class="admin-nav" data-admin-target="#hostel-student-lookup" title="Student Lookup" role="button" tabindex="0"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m21 21-4.3-4.3"/></svg><span class="admin-nav-text">Student Lookup</span></div>
@@ -187,6 +188,41 @@
           <div class="admin-table-card">
             <h3>All Requests</h3>
             <div class="request-card-list" id="adminHostelLeaveBody"></div>
+          </div>
+        </section>
+
+        <section class="admin-panel" id="hostel-mess-menu">
+          <div class="admin-section-head">
+            <div><p class="eyebrow">Mess Menu</p><h2>Set the weekly mess menu and see student feedback ratings.</h2></div>
+          </div>
+          <article class="admin-card admin-form-card">
+            <h3>Set Menu Item</h3>
+            <label>Day<select id="messMenuDayInput">
+              <option value="Monday">Monday</option>
+              <option value="Tuesday">Tuesday</option>
+              <option value="Wednesday">Wednesday</option>
+              <option value="Thursday">Thursday</option>
+              <option value="Friday">Friday</option>
+              <option value="Saturday">Saturday</option>
+              <option value="Sunday">Sunday</option>
+            </select></label>
+            <label>Meal<select id="messMenuMealInput">
+              <option value="Breakfast">Breakfast</option>
+              <option value="Lunch">Lunch</option>
+              <option value="Snacks">Snacks</option>
+              <option value="Dinner">Dinner</option>
+            </select></label>
+            <label>Items<input type="text" id="messMenuItemsInput" placeholder="e.g. Idli, Sambar, Chutney"></label>
+            <button type="button" id="messMenuSaveButton">Save</button>
+            <p class="admin-add-feedback" id="messMenuFeedback" aria-live="polite"></p>
+          </article>
+          <div class="admin-metric-grid" id="messFeedbackSummaryGrid"></div>
+          <div class="admin-table-card">
+            <h3>This Week's Menu</h3>
+            <table>
+              <thead><tr><th>Day</th><th>Breakfast</th><th>Lunch</th><th>Snacks</th><th>Dinner</th></tr></thead>
+              <tbody id="wardenMessMenuBody"></tbody>
+            </table>
           </div>
         </section>
 

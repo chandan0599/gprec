@@ -333,6 +333,12 @@ hostel_rows AS (
   JOIN students s ON s.roll_no = h.student_roll_no
   LEFT JOIN guardians g ON g.student_roll_no = s.roll_no
 ),
+mess_feedback_rows AS (
+  SELECT json_agg(row_to_json(t)) AS rows FROM (
+    SELECT meal_type AS "mealType", ROUND(AVG(rating), 2) AS "avgRating", COUNT(*) AS count
+    FROM mess_feedback GROUP BY meal_type
+  ) t
+),
 complaint_rows AS (
   SELECT c.*, s.full_name, s.department_code, h.hostel_name, h.room_no
   FROM complaints c
@@ -843,6 +849,10 @@ SELECT json_build_object(
     'resolutionNotes', resolution_notes,
     'updatedAt', to_char(updated_at, 'DD Mon, HH12:MI AM')
   ) ORDER BY created_at DESC) FROM complaint_rows), '[]'::json),
+  'messMenu', COALESCE((SELECT json_agg(json_build_object(
+    'id', id::text, 'hostelName', hostel_name, 'dayOfWeek', day_of_week, 'mealType', meal_type, 'items', items
+  ) ORDER BY hostel_name, day_of_week, meal_type) FROM mess_menu), '[]'::json),
+  'messFeedbackSummary', COALESCE((SELECT rows FROM mess_feedback_rows), '[]'::json),
   'examCellData', COALESCE((SELECT json_object_agg(department_code, rows) FROM exam_rows), '{}'::json),
   'placementDrives', COALESCE((SELECT json_agg(json_build_object(
     'id', id::text,
@@ -3886,6 +3896,45 @@ LIBRARY_FINE_PER_DAY = 2  # keep in sync with LIBRARY_FINE_PER_DAY in script.js
 LIBRARY_MAX_RENEWALS = 2
 
 
+VALID_MESS_MEAL_TYPES = ("Breakfast", "Lunch", "Snacks", "Dinner")
+
+
+def upsert_mess_menu(payload):
+    hostel_name = (payload.get("hostelName") or "").strip()
+    day_of_week = (payload.get("dayOfWeek") or "").strip()
+    meal_type = payload.get("mealType") or ""
+    items = (payload.get("items") or "").strip()
+    if not hostel_name or not day_of_week or meal_type not in VALID_MESS_MEAL_TYPES or not items:
+        return "hostelName, dayOfWeek, a valid mealType, and items are required."
+    run_psql(f"""
+        INSERT INTO mess_menu (hostel_name, day_of_week, meal_type, items)
+        VALUES ({quote(hostel_name)}, {quote(day_of_week)}, {quote(meal_type)}, {quote(items)})
+        ON CONFLICT (hostel_name, day_of_week, meal_type)
+        DO UPDATE SET items = EXCLUDED.items, updated_at = now();
+    """)
+    return None
+
+
+def create_mess_feedback(payload, identity):
+    meal_date = payload.get("mealDate") or ""
+    meal_type = payload.get("mealType") or ""
+    rating = payload.get("rating")
+    comments = payload.get("comments")
+    if meal_type not in VALID_MESS_MEAL_TYPES or not meal_date:
+        return "A valid mealType and mealDate are required."
+    try:
+        rating = int(rating)
+    except (TypeError, ValueError):
+        rating = 0
+    if rating < 1 or rating > 5:
+        return "rating must be between 1 and 5."
+    run_psql(f"""
+        INSERT INTO mess_feedback (student_roll_no, meal_date, meal_type, rating, comments)
+        VALUES ({quote(identity["identityId"])}, {quote(meal_date)}::date, {quote(meal_type)}, {rating}, {quote(comments)});
+    """)
+    return None
+
+
 def add_library_book(payload):
     barcode = (payload.get("barcode") or "").strip()
     title = (payload.get("title") or "").strip()
@@ -4316,6 +4365,25 @@ class PortalHandler(SimpleHTTPRequestHandler):
                     return
                 replace_library_records(payload or [])
                 self.send_json(200, run_json(BOOTSTRAP_SQL, {}).get("libraryRecords", []))
+                return
+            if path == "/api/mess-menu":
+                if not require_auth(self, allowed_types=["admin"]):
+                    return
+                error = upsert_mess_menu(payload or {})
+                if error:
+                    self.send_json(400, {"ok": False, "error": error})
+                    return
+                self.send_json(200, {"ok": True})
+                return
+            if path == "/api/mess-feedback":
+                identity = require_auth(self, allowed_types=["student"])
+                if not identity:
+                    return
+                error = create_mess_feedback(payload or {}, identity)
+                if error:
+                    self.send_json(400, {"ok": False, "error": error})
+                    return
+                self.send_json(200, {"ok": True})
                 return
             if path == "/api/library/add-book":
                 if not require_auth(self, allowed_types=["admin", "faculty"]):
