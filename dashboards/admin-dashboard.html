@@ -2038,7 +2038,14 @@
               <label>Model Name<input type="text" id="aiModelInput" placeholder="e.g. gpt-4o-mini, claude-sonnet-5, gemini-2.5-flash, llama3.2"></label>
               <label>API Key<input type="password" id="aiApiKeyInput" placeholder="Not needed for Ollama" autocomplete="off"></label>
               <label id="aiBaseUrlField" class="is-hidden">Ollama Server URL<input type="text" id="aiBaseUrlInput" placeholder="http://localhost:11434"></label>
+              <label>Knowledge Base Chunks Per Answer<input type="number" id="aiTopNInput" min="1" max="10" placeholder="4"></label>
             </div>
+            <p class="field-hint">
+              How many knowledge-base chunks get retrieved and handed to the model as grounding context per
+              question. Higher finds more context for broad questions but can dilute a narrow one with less
+              relevant text; lower is more precise but may miss context a longer answer needs. 4 is a reasonable
+              default.
+            </p>
             <p class="field-hint is-hidden" id="aiOllamaHint">
               Ollama runs on your own machine, so no API key is needed - just install Ollama, pull a model (e.g.
               <code>ollama pull llama3.2</code>), and make sure it's running (<code>ollama serve</code> or the Ollama
@@ -2102,6 +2109,17 @@
                 <thead><tr><th>Source</th><th>Content</th><th>Link</th></tr></thead>
                 <tbody id="knowledgeBaseTableBody"></tbody>
               </table>
+            </div>
+          </article>
+
+          <article class="admin-card" data-integration="ai">
+            <div class="portal-block-head"><h3>Bot Performance</h3><span>Is the feedback loop actually improving answers over time?</span></div>
+            <div class="admin-metric-grid" id="botPerformanceStatsGrid">
+              <article><strong id="botPerfPending">-</strong><span>Pending Review</span></article>
+              <article><strong id="botPerfApproved">-</strong><span>Corrections Taught</span></article>
+              <article><strong id="botPerfDismissed">-</strong><span>Dismissed</span></article>
+              <article><strong id="botPerfResolutionRate">-</strong><span>Resolution Rate</span></article>
+              <article><strong id="botPerfLowConfidence">-</strong><span>Low-Confidence Questions</span></article>
             </div>
           </article>
 

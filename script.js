@@ -659,7 +659,7 @@ const defaultAdminConfig = {
   googleClientId: "YOUR_GOOGLE_CLIENT_ID.apps.googleusercontent.com",
   googleCalendarApiKey: "",
   payuPaymentLink: "",
-  aiSettings: { provider: "", model: "", apiKey: "", baseUrl: "" },
+  aiSettings: { provider: "", model: "", apiKey: "", baseUrl: "", topN: 4 },
   mapSdkSettings: { provider: "mappls", sdkUrl: "https://apis.mappls.com/advancedmaps/api", version: "3.0", accessToken: "81bca9132d5b2d36c50ecd15439294a9", plugins: "", layer: "vector" },
   libraryApiConfig: { baseUrl: "", apiKey: "" },
   databaseApiConfig: { type: "", baseUrl: "", apiKey: "", username: "", password: "", host: "", port: "", database: "" },
@@ -13473,8 +13473,9 @@ const getGprecianReply = async (question, onToken = null) => {
       // embedding-based search first (finds chunks by meaning); falls back to local keyword
       // overlap if that call fails (backend/Ollama unreachable, or nothing indexed yet).
       const knowledgeBase = getGprecianKnowledgeBase();
+      const topN = Math.min(10, Math.max(1, Number(aiSettings.topN) || 4));
       const relevantChunks =
-        retrieveRelevantChunksSemantic(trimmedQuestion, 4) || retrieveRelevantChunks(trimmedQuestion, knowledgeBase.chunks, 4);
+        retrieveRelevantChunksSemantic(trimmedQuestion, topN) || retrieveRelevantChunks(trimmedQuestion, knowledgeBase.chunks, topN);
       if (!relevantChunks.length) recordLowConfidenceQuestion(trimmedQuestion);
       const augmentedQuestion = relevantChunks.length
         ? `Relevant GPREC website information (use this to answer if it's relevant to the question):\n${relevantChunks.map((c) => `- ${c.text}`).join("\n").slice(0, 900)}\n\nQuestion: ${trimmedQuestion}`
@@ -29996,7 +29997,7 @@ if (webinarManagerBody) {
 
 // AI Settings: stores a provider/model/key locally for future backend integration.
 // Not wired to make live API calls - a static frontend cannot hold a paid API key securely.
-const defaultAiSettings = { provider: "", model: "", apiKey: "", baseUrl: "" };
+const defaultAiSettings = { provider: "", model: "", apiKey: "", baseUrl: "", topN: 4 };
 
 // Hides the map SDK vendor's watermark/attribution badge on the campus map, including any
 // added later (via MutationObserver), since our free-tier plan doesn't require displaying it.
@@ -30291,6 +30292,7 @@ const aiOllamaHint = document.querySelector("#aiOllamaHint");
 const aiOllamaConnectionField = document.querySelector("#aiOllamaConnectionField");
 const checkOllamaConnectionButton = document.querySelector("#checkOllamaConnectionButton");
 const ollamaConnectionStatus = document.querySelector("#ollamaConnectionStatus");
+const aiTopNInput = document.querySelector("#aiTopNInput");
 const saveAiSettingsButton = document.querySelector("#saveAiSettingsButton");
 const aiSettingsFeedback = document.querySelector("#aiSettingsFeedback");
 const aiSettingsStatus = document.querySelector("#aiSettingsStatus");
@@ -30419,6 +30421,7 @@ if (aiProviderInput) {
     if (aiModelInput) aiModelInput.value = settings.model;
     if (aiApiKeyInput) aiApiKeyInput.value = settings.apiKey;
     if (aiBaseUrlInput) aiBaseUrlInput.value = settings.baseUrl;
+    if (aiTopNInput) aiTopNInput.value = settings.topN || 4;
     showOllamaFields(settings.provider === "ollama");
     renderAiSettingsStatus();
     if (getAiSettingsValidation(settings).ok) {
@@ -30436,7 +30439,8 @@ saveAiSettingsButton?.addEventListener("click", async () => {
     provider: aiProviderInput?.value || "",
     model: aiModelInput?.value.trim() || "",
     apiKey: aiApiKeyInput?.value.trim() || "",
-    baseUrl: aiBaseUrlInput?.value.trim() || ""
+    baseUrl: aiBaseUrlInput?.value.trim() || "",
+    topN: Math.min(10, Math.max(1, Number(aiTopNInput?.value) || 4))
   };
   saveAiSettings(settings);
   renderAiSettingsStatus();
@@ -30705,6 +30709,30 @@ document.querySelector("#viewKnowledgeBaseButton")?.addEventListener("click", (e
   if (willShow) renderKnowledgeBaseTable();
 });
 
+// The one number this panel was missing: not just "here's the queue" but "is the queue actually
+// shrinking / is the bot getting better over time." Resolution rate = corrections actually taught
+// vs. dismissed - a low rate means most flags are getting dismissed without a fix, which is worth
+// knowing on its own (either the flags are bad, or corrections aren't being written).
+const renderBotPerformanceStats = () => {
+  const grid = document.querySelector("#botPerformanceStatsGrid");
+  if (!grid) return;
+  const feedbackResult = gprecDbRequest("/bot-feedback/list", { method: "POST", body: {} });
+  const feedbackItems = feedbackResult?.ok ? feedbackResult.items : [];
+  const pending = feedbackItems.filter((item) => item.status === "Pending").length;
+  const approved = feedbackItems.filter((item) => item.status === "Approved").length;
+  const dismissed = feedbackItems.filter((item) => item.status === "Dismissed").length;
+  const resolved = approved + dismissed;
+  const lowConfidenceResult = gprecDbRequest("/low-confidence-questions/list", { method: "POST" });
+  const lowConfidenceCount = lowConfidenceResult?.ok ? lowConfidenceResult.items.length : 0;
+
+  document.querySelector("#botPerfPending").textContent = String(pending);
+  document.querySelector("#botPerfApproved").textContent = String(approved);
+  document.querySelector("#botPerfDismissed").textContent = String(dismissed);
+  document.querySelector("#botPerfResolutionRate").textContent = resolved > 0 ? `${Math.round((approved / resolved) * 100)}%` : "-";
+  document.querySelector("#botPerfLowConfidence").textContent = String(lowConfidenceCount);
+};
+if (document.querySelector("#botPerformanceStatsGrid")) renderBotPerformanceStats();
+
 // The bot's actual feedback/"learning" loop - see bot_feedback in portal_db_server.py. Only
 // Pending items are shown (Approved/Dismissed ones have already been acted on and would just be
 // clutter here); approving calls /bot-feedback/resolve, which both marks the row Approved AND
@@ -30777,10 +30805,14 @@ document.querySelector("#botFeedbackBody")?.addEventListener("click", (event) =>
     }
     const result = gprecDbRequest("/bot-feedback/resolve", { method: "POST", body: { id: feedbackId, correction } });
     showFeedToast(result?.ok ? "Correction taught to the bot." : "Could not save this correction - try again.");
-    if (result?.ok) renderBotFeedback();
+    if (result?.ok) {
+      renderBotFeedback();
+      renderBotPerformanceStats();
+    }
   } else if (event.target.matches("[data-dismiss-feedback]")) {
     gprecDbRequest("/bot-feedback/dismiss", { method: "POST", body: { id: feedbackId } });
     renderBotFeedback();
+    renderBotPerformanceStats();
   }
 });
 
