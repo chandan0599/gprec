@@ -314,6 +314,22 @@ CREATE TABLE IF NOT EXISTS mess_feedback (
   created_at TIMESTAMPTZ NOT NULL DEFAULT now()
 );
 
+-- Web Push subscriptions - one row per browser/device a recipient has enabled push on. Keyed by
+-- endpoint (unique per browser subscription) rather than recipient, since one recipient can have
+-- several (phone + laptop, etc). See send_web_push() in portal_db_server.py, called from the
+-- generic create_notification()/create_notifications_bulk() helpers so every feature that already
+-- pushes into the in-app bell gets real push for free.
+CREATE TABLE IF NOT EXISTS push_subscriptions (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  recipient_type TEXT NOT NULL,
+  recipient_id TEXT NOT NULL,
+  endpoint TEXT NOT NULL UNIQUE,
+  p256dh TEXT NOT NULL,
+  auth TEXT NOT NULL,
+  user_agent TEXT,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+
 -- Alumni mentorship matching. Funding/donations already exist (funding_contributions above) - this
 -- is the separate, previously-missing piece: a mentor directory alumni opt into, and a student
 -- request/accept/decline workflow against it.

@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+import base64
 import datetime
 import hashlib
 import hmac
@@ -21,6 +22,8 @@ from cryptography.fernet import Fernet
 from pypdf import PdfReader
 from docx import Document as DocxDocument
 import pyotp
+from py_vapid import Vapid02
+from pywebpush import webpush, WebPushException
 
 ROOT = Path(__file__).resolve().parents[2]
 # 0.0.0.0 (not 127.0.0.1) so this is reachable from other devices on the same LAN
@@ -59,6 +62,70 @@ def get_or_create_encryption_key():
     BANK_ENCRYPTION_KEY_PATH.write_bytes(key)
     BANK_ENCRYPTION_KEY_PATH.chmod(0o600)
     return key
+
+
+# Web Push (VAPID) keypair - generated once and persisted outside the DB, same as the bank
+# encryption key above. The private key never leaves this file/process; only the public key is
+# ever served to the browser (GET /api/push/public-key), which is exactly what "public" means
+# here - it's the applicationServerKey a browser needs to create a push subscription.
+VAPID_KEYS_PATH = ROOT / "backend" / "tools" / ".vapid_keys.json"
+VAPID_CLAIMS_SUBJECT = os.environ.get("GPREC_VAPID_SUBJECT", "mailto:admin@gprec.ac.in")
+
+
+def get_or_create_vapid_keys():
+    if VAPID_KEYS_PATH.exists():
+        return json.loads(VAPID_KEYS_PATH.read_text(encoding="utf-8"))
+    vapid = Vapid02()
+    vapid.generate_keys()
+    pub_numbers = vapid.public_key.public_numbers()
+    raw_public = b"\x04" + pub_numbers.x.to_bytes(32, "big") + pub_numbers.y.to_bytes(32, "big")
+    raw_private = vapid.private_key.private_numbers().private_value.to_bytes(32, "big")
+    keys = {
+        "publicKey": base64.urlsafe_b64encode(raw_public).rstrip(b"=").decode(),
+        "privateKey": base64.urlsafe_b64encode(raw_private).rstrip(b"=").decode(),
+    }
+    VAPID_KEYS_PATH.write_text(json.dumps(keys), encoding="utf-8")
+    VAPID_KEYS_PATH.chmod(0o600)
+    return keys
+
+
+# Sends a real browser push to every subscription on file for a recipient - called from
+# create_notification()/create_notifications_bulk() below so every feature that already writes
+# into the notifications table gets push for free, with no per-feature push code. Never raises:
+# a subscription that's gone stale (the browser unsubscribed, or the push service returns 404/410)
+# is just deleted; any other failure (network, misconfigured keys) is swallowed the same way
+# send_msg91_sms() swallows SMS gateway failures - a missing push is not worth breaking the
+# in-app notification that already succeeded.
+def send_web_push(recipient_type, recipient_id, title, message, link=None):
+    subscriptions = run_json(f"""
+        SELECT COALESCE(json_agg(json_build_object(
+          'endpoint', endpoint, 'p256dh', p256dh, 'auth', auth
+        )), '[]'::json) FROM push_subscriptions
+        WHERE recipient_type = {quote(recipient_type)} AND recipient_id = {quote(recipient_id)};
+    """, [])
+    if not subscriptions:
+        return
+    keys = get_or_create_vapid_keys()
+    payload = json.dumps({"title": title, "body": message, "link": link or "/"})
+    for sub in subscriptions:
+        subscription_info = {
+            "endpoint": sub["endpoint"],
+            "keys": {"p256dh": sub["p256dh"], "auth": sub["auth"]},
+        }
+        try:
+            webpush(
+                subscription_info=subscription_info,
+                data=payload,
+                vapid_private_key=keys["privateKey"],
+                vapid_claims={"sub": VAPID_CLAIMS_SUBJECT},
+                timeout=5,
+            )
+        except WebPushException as exc:
+            status_code = getattr(exc.response, "status_code", None)
+            if status_code in (404, 410):
+                run_psql(f"DELETE FROM push_subscriptions WHERE endpoint = {quote(sub['endpoint'])};")
+        except Exception:
+            pass
 
 
 _bank_fernet = Fernet(get_or_create_encryption_key())
@@ -1208,6 +1275,7 @@ def create_notification(recipient_type, recipient_id, title, message, link=None,
         INSERT INTO notifications (recipient_type, recipient_id, title, message, link, source_module)
         VALUES ({quote(recipient_type)}, {quote(recipient_id)}, {quote(title)}, {quote(message)}, {quote(link)}, {quote(source_module)});
     """)
+    send_web_push(recipient_type, recipient_id, title, message, link)
 
 
 def create_notifications_bulk(recipient_type, recipient_ids, title, message, link=None, source_module=None):
@@ -1222,6 +1290,8 @@ def create_notifications_bulk(recipient_type, recipient_ids, title, message, lin
         INSERT INTO notifications (recipient_type, recipient_id, title, message, link, source_module)
         VALUES {values};
     """)
+    for rid in recipient_ids:
+        send_web_push(recipient_type, rid, title, message, link)
 
 
 def get_my_notifications(recipient_type, recipient_id):
@@ -4125,6 +4195,28 @@ def create_mess_feedback(payload, identity):
     return None
 
 
+def upsert_push_subscription(payload, identity):
+    subscription = payload.get("subscription") or {}
+    endpoint = subscription.get("endpoint") or ""
+    keys = subscription.get("keys") or {}
+    p256dh = keys.get("p256dh") or ""
+    auth = keys.get("auth") or ""
+    if not endpoint or not p256dh or not auth:
+        return "A valid push subscription (endpoint + keys) is required."
+    run_psql(f"""
+        INSERT INTO push_subscriptions (recipient_type, recipient_id, endpoint, p256dh, auth, user_agent)
+        VALUES ({quote(identity["identityType"])}, {quote(identity["identityId"])}, {quote(endpoint)}, {quote(p256dh)}, {quote(auth)}, {quote(payload.get("userAgent"))})
+        ON CONFLICT (endpoint) DO UPDATE SET
+          recipient_type = EXCLUDED.recipient_type, recipient_id = EXCLUDED.recipient_id,
+          p256dh = EXCLUDED.p256dh, auth = EXCLUDED.auth, user_agent = EXCLUDED.user_agent;
+    """)
+    return None
+
+
+def remove_push_subscription(endpoint):
+    run_psql(f"DELETE FROM push_subscriptions WHERE endpoint = {quote(endpoint)};")
+
+
 def add_library_book(payload):
     barcode = (payload.get("barcode") or "").strip()
     title = (payload.get("title") or "").strip()
@@ -4461,6 +4553,11 @@ class PortalHandler(SimpleHTTPRequestHandler):
             if path == "/api/catalog":
                 self.send_json(200, run_json("SELECT COALESCE(json_object_agg(barcode, json_build_object('title', title, 'author', author)), '{}'::json) FROM library_books;", {}))
                 return
+            if path == "/api/push/public-key":
+                # Public by design - this is the VAPID applicationServerKey a browser needs to
+                # create a push subscription, not a secret (the private key never leaves the server).
+                self.send_json(200, {"publicKey": get_or_create_vapid_keys()["publicKey"]})
+                return
             if path == "/api/issued-books":
                 if not require_auth(self):
                     return
@@ -4612,6 +4709,22 @@ class PortalHandler(SimpleHTTPRequestHandler):
                 if error:
                     self.send_json(400, {"ok": False, "error": error})
                     return
+                self.send_json(200, {"ok": True})
+                return
+            if path == "/api/push/subscribe":
+                identity = require_auth(self)
+                if not identity:
+                    return
+                error = upsert_push_subscription(payload or {}, identity)
+                if error:
+                    self.send_json(400, {"ok": False, "error": error})
+                    return
+                self.send_json(200, {"ok": True})
+                return
+            if path == "/api/push/unsubscribe":
+                if not require_auth(self):
+                    return
+                remove_push_subscription((payload or {}).get("endpoint") or "")
                 self.send_json(200, {"ok": True})
                 return
             if path == "/api/library/add-book":
