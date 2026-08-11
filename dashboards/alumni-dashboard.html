@@ -525,6 +525,27 @@
           <a href="https://www.gprec.ac.in/alumni/" target="_blank" rel="noreferrer"><svg><use href="#icon-file"></use></svg>Alumni Registration Requirements</a>
           <a href="https://www.gprec.ac.in/contact-us/" target="_blank" rel="noreferrer"><svg><use href="#icon-file"></use></svg>Update Alumni Details</a>
         </div>
+
+        <div class="portal-block-head"><h2>Mentorship</h2><span>Opt in to mentor current students</span></div>
+        <div class="profile-accordion-body">
+          <div class="admin-add-grid">
+            <label>Areas of Expertise<input type="text" id="mentorExpertiseInput" placeholder="e.g. Backend engineering, Product management"></label>
+            <label>Max Mentees<input type="number" id="mentorMaxMenteesInput" min="1" value="3"></label>
+          </div>
+          <label>Short Bio<textarea rows="3" id="mentorBioInput" placeholder="A few lines students will see"></textarea></label>
+          <label class="profile-checkbox"><input type="checkbox" id="mentorAvailableInput" checked>Currently available to mentor</label>
+          <button type="button" id="mentorProfileSaveButton">Save Mentor Profile</button>
+          <p class="admin-add-feedback" id="mentorProfileFeedback" aria-live="polite"></p>
+        </div>
+
+        <div class="portal-block-head"><h2>Mentorship Requests</h2></div>
+        <div class="admin-table-card">
+          <table>
+            <thead><tr><th>Student</th><th>Message</th><th>Status</th><th>Action</th></tr></thead>
+            <tbody id="mentorRequestsBody"></tbody>
+          </table>
+          <p class="lookup-empty" id="mentorRequestsEmpty">No mentorship requests yet.</p>
+        </div>
       </section>
 
       <section class="portal-section dashboard-panel" id="alumni-funding">

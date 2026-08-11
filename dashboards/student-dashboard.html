@@ -145,6 +145,7 @@
           <a href="#aptitude-tests" data-dashboard-link>Aptitude Tests</a>
           <a href="#interview-schedule" data-dashboard-link>Interview Schedule</a>
           <a href="#job-recommendations" data-dashboard-link>Job Recommendations</a>
+          <a href="#mentorship" data-dashboard-link>Find a Mentor</a>
         </details>
         <details class="student-menu-group">
           <summary title="Projects"><span class="menu-group-label"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 2h6l3 3v15a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2V5Z"/><path d="M9 9h6M9 13h6M9 17h3"/></svg><span class="menu-group-text">Projects</span></span></summary>
@@ -606,6 +607,7 @@
             <tbody id="studentLibraryBody"></tbody>
           </table>
           <p class="lookup-empty" id="studentLibraryEmpty">No books issued to you right now.</p>
+          <p class="admin-add-feedback" id="studentLibraryActionFeedback" aria-live="polite"></p>
         </div>
       </section>
 
@@ -1261,6 +1263,22 @@
         <div class="portal-info-note"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="11" x2="12" y2="16"></line><circle cx="12" cy="7.5" r="0.6" fill="currentColor" stroke="none"></circle></svg><span>Off-campus openings posted by the Placement Cell. Apply directly via the external link.</span></div>
         <div class="event-grid" id="jobRecommendationGrid"></div>
         <p class="lookup-empty" id="jobRecommendationEmpty">No job recommendations posted yet.</p>
+      </section>
+
+      <section class="portal-section dashboard-panel" id="mentorship">
+        <div class="portal-block-head"><h2>Find a Mentor</h2><span>Alumni who've opted in to mentor current students</span></div>
+        <div class="event-grid" id="mentorDirectoryGrid"></div>
+        <p class="lookup-empty" id="mentorDirectoryEmpty">No mentors available right now.</p>
+        <p class="admin-add-feedback" id="mentorshipRequestFeedback" aria-live="polite"></p>
+
+        <div class="portal-block-head"><h3>My Requests</h3></div>
+        <div class="admin-table-card">
+          <table>
+            <thead><tr><th>Mentor</th><th>Message</th><th>Status</th><th>Sent</th></tr></thead>
+            <tbody id="myMentorshipRequestsBody"></tbody>
+          </table>
+          <p class="lookup-empty" id="myMentorshipRequestsEmpty">No mentorship requests sent yet.</p>
+        </div>
       </section>
 
       <section class="portal-section dashboard-panel" id="projects">

@@ -333,6 +333,29 @@ hostel_rows AS (
   JOIN students s ON s.roll_no = h.student_roll_no
   LEFT JOIN guardians g ON g.student_roll_no = s.roll_no
 ),
+mentor_profile_rows AS (
+  SELECT json_agg(json_build_object(
+    'id', mp.id::text, 'alumniEmail', mp.alumni_email,
+    'alumniName', aa.data->>'name', 'batchYear', aa.data->>'batchYear',
+    'expertiseAreas', mp.expertise_areas, 'bio', mp.bio,
+    'available', mp.available, 'maxMentees', mp.max_mentees,
+    'acceptedCount', (SELECT COUNT(*) FROM mentorship_requests mr WHERE mr.mentor_id = mp.id AND mr.status = 'Accepted')
+  ) ORDER BY mp.created_at DESC) AS rows
+  FROM mentor_profiles mp
+  LEFT JOIN alumni_accounts aa ON aa.email = mp.alumni_email
+),
+mentorship_request_rows AS (
+  SELECT json_agg(json_build_object(
+    'id', mr.id::text, 'studentRollNo', mr.student_roll_no, 'studentName', s.full_name,
+    'mentorId', mr.mentor_id::text, 'mentorEmail', mp.alumni_email, 'mentorName', aa.data->>'name',
+    'message', mr.message, 'status', mr.status,
+    'createdAt', to_char(mr.created_at, 'DD Mon, HH12:MI AM')
+  ) ORDER BY mr.created_at DESC) AS rows
+  FROM mentorship_requests mr
+  JOIN students s ON s.roll_no = mr.student_roll_no
+  JOIN mentor_profiles mp ON mp.id = mr.mentor_id
+  LEFT JOIN alumni_accounts aa ON aa.email = mp.alumni_email
+),
 mess_feedback_rows AS (
   SELECT json_agg(row_to_json(t)) AS rows FROM (
     SELECT meal_type AS "mealType", ROUND(AVG(rating), 2) AS "avgRating", COUNT(*) AS count
@@ -849,6 +872,8 @@ SELECT json_build_object(
     'resolutionNotes', resolution_notes,
     'updatedAt', to_char(updated_at, 'DD Mon, HH12:MI AM')
   ) ORDER BY created_at DESC) FROM complaint_rows), '[]'::json),
+  'mentorProfiles', COALESCE((SELECT rows FROM mentor_profile_rows), '[]'::json),
+  'mentorshipRequests', COALESCE((SELECT rows FROM mentorship_request_rows), '[]'::json),
   'messMenu', COALESCE((SELECT json_agg(json_build_object(
     'id', id::text, 'hostelName', hostel_name, 'dayOfWeek', day_of_week, 'mealType', meal_type, 'items', items
   ) ORDER BY hostel_name, day_of_week, meal_type) FROM mess_menu), '[]'::json),
@@ -3896,6 +3921,78 @@ LIBRARY_FINE_PER_DAY = 2  # keep in sync with LIBRARY_FINE_PER_DAY in script.js
 LIBRARY_MAX_RENEWALS = 2
 
 
+def upsert_mentor_profile(payload, identity):
+    expertise_areas = (payload.get("expertiseAreas") or "").strip()
+    if not expertise_areas:
+        return "expertiseAreas is required."
+    bio = payload.get("bio")
+    available = bool(payload.get("available", True))
+    try:
+        max_mentees = max(1, int(payload.get("maxMentees") or 3))
+    except (TypeError, ValueError):
+        max_mentees = 3
+    run_psql(f"""
+        INSERT INTO mentor_profiles (alumni_email, expertise_areas, bio, available, max_mentees)
+        VALUES ({quote(identity["identityId"])}, {quote(expertise_areas)}, {quote(bio)}, {available}, {max_mentees})
+        ON CONFLICT (alumni_email) DO UPDATE SET
+          expertise_areas = EXCLUDED.expertise_areas, bio = EXCLUDED.bio,
+          available = EXCLUDED.available, max_mentees = EXCLUDED.max_mentees, updated_at = now();
+    """)
+    return None
+
+
+def create_mentorship_request(payload, identity):
+    mentor_id = payload.get("mentorId") or ""
+    message = (payload.get("message") or "").strip()
+    mentor = run_json(f"""
+        SELECT json_build_object(
+          'available', available,
+          'atCapacity', (SELECT COUNT(*) FROM mentorship_requests WHERE mentor_id = {quote(mentor_id)}::uuid AND status = 'Accepted') >= max_mentees
+        ) FROM mentor_profiles WHERE id = {quote(mentor_id)}::uuid;
+    """, None)
+    if not mentor:
+        return "Mentor not found."
+    if not mentor.get("available"):
+        return "This mentor isn't currently accepting requests."
+    if mentor.get("atCapacity"):
+        return "This mentor already has the maximum number of mentees."
+    existing = run_json(f"""
+        SELECT json_build_object('exists', true) FROM mentorship_requests
+        WHERE mentor_id = {quote(mentor_id)}::uuid AND student_roll_no = {quote(identity["identityId"])} AND status = 'Pending';
+    """, None)
+    if existing:
+        return "You already have a pending request with this mentor."
+    run_psql(f"""
+        INSERT INTO mentorship_requests (student_roll_no, mentor_id, message)
+        VALUES ({quote(identity["identityId"])}, {quote(mentor_id)}::uuid, {quote(message)});
+    """)
+    return None
+
+
+def respond_mentorship_request(request_id, status, identity):
+    if status not in ("Accepted", "Declined"):
+        return "status must be Accepted or Declined."
+    row = run_json(f"""
+        SELECT json_build_object('studentRollNo', mr.student_roll_no, 'mentorEmail', mp.alumni_email)
+        FROM mentorship_requests mr JOIN mentor_profiles mp ON mp.id = mr.mentor_id
+        WHERE mr.id = {quote(request_id)}::uuid;
+    """, None)
+    if not row:
+        return "Request not found."
+    if row["mentorEmail"] != identity["identityId"]:
+        return "Not authorized to respond to this request."
+    run_psql(f"""
+        UPDATE mentorship_requests SET status = {quote(status)}, responded_at = now()
+        WHERE id = {quote(request_id)}::uuid;
+    """)
+    create_notification(
+        "student", row["studentRollNo"], "Mentorship request update",
+        f"Your mentorship request was {status.lower()}.",
+        link="/dashboards/student-dashboard.html", source_module="mentorship",
+    )
+    return None
+
+
 VALID_MESS_MEAL_TYPES = ("Breakfast", "Lunch", "Snacks", "Dinner")
 
 
@@ -4365,6 +4462,36 @@ class PortalHandler(SimpleHTTPRequestHandler):
                     return
                 replace_library_records(payload or [])
                 self.send_json(200, run_json(BOOTSTRAP_SQL, {}).get("libraryRecords", []))
+                return
+            if path == "/api/mentor-profiles":
+                identity = require_auth(self, allowed_types=["alumni"])
+                if not identity:
+                    return
+                error = upsert_mentor_profile(payload or {}, identity)
+                if error:
+                    self.send_json(400, {"ok": False, "error": error})
+                    return
+                self.send_json(200, {"ok": True})
+                return
+            if path == "/api/mentorship-requests":
+                identity = require_auth(self, allowed_types=["student"])
+                if not identity:
+                    return
+                error = create_mentorship_request(payload or {}, identity)
+                if error:
+                    self.send_json(400, {"ok": False, "error": error})
+                    return
+                self.send_json(200, {"ok": True})
+                return
+            if path == "/api/mentorship-requests/respond":
+                identity = require_auth(self, allowed_types=["alumni"])
+                if not identity:
+                    return
+                error = respond_mentorship_request((payload or {}).get("id") or "", (payload or {}).get("status") or "", identity)
+                if error:
+                    self.send_json(400, {"ok": False, "error": error})
+                    return
+                self.send_json(200, {"ok": True})
                 return
             if path == "/api/mess-menu":
                 if not require_auth(self, allowed_types=["admin"]):

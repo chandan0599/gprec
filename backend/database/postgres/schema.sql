@@ -305,6 +305,30 @@ CREATE TABLE IF NOT EXISTS mess_feedback (
   created_at TIMESTAMPTZ NOT NULL DEFAULT now()
 );
 
+-- Alumni mentorship matching. Funding/donations already exist (funding_contributions above) - this
+-- is the separate, previously-missing piece: a mentor directory alumni opt into, and a student
+-- request/accept/decline workflow against it.
+CREATE TABLE IF NOT EXISTS mentor_profiles (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  alumni_email TEXT NOT NULL UNIQUE REFERENCES alumni_accounts(email) ON DELETE CASCADE,
+  expertise_areas TEXT NOT NULL,
+  bio TEXT,
+  available BOOLEAN NOT NULL DEFAULT true,
+  max_mentees INT NOT NULL DEFAULT 3,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+  updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+
+CREATE TABLE IF NOT EXISTS mentorship_requests (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  student_roll_no TEXT NOT NULL REFERENCES students(roll_no) ON DELETE CASCADE,
+  mentor_id UUID NOT NULL REFERENCES mentor_profiles(id) ON DELETE CASCADE,
+  message TEXT,
+  status TEXT NOT NULL DEFAULT 'Pending',
+  created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+  responded_at TIMESTAMPTZ
+);
+
 -- Outing/visiting/hostel-leave requests are rich per-type documents (mobile numbers, room/hostel,
 -- visitor relationship, etc.) that the frontend manages as one JS object per record, read-all/
 -- mutate-one/save-all - same JSONB-blob-keyed-by-client-id pattern as student_projects/

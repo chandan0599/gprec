@@ -4133,6 +4133,63 @@ const renderJobRecommendationGrid = () => {
     .join("");
 };
 
+// Alumni mentorship matching - browse available mentors, request one, track request status.
+// Funding/donations already existed (alumni-funding panel); this is the separate directory piece.
+const mentorDirectoryGrid = document.querySelector("#mentorDirectoryGrid");
+if (mentorDirectoryGrid) {
+  const myMentorshipRequestsBody = document.querySelector("#myMentorshipRequestsBody");
+  const studentId = getCurrentStudentId();
+
+  const renderMentorship = () => {
+    const mentors = (getGprecDbBootstrap()?.mentorProfiles || []).filter((m) => m.available && m.acceptedCount < m.maxMentees);
+    document.querySelector("#mentorDirectoryEmpty")?.classList.toggle("is-hidden", mentors.length > 0);
+    mentorDirectoryGrid.innerHTML = mentors
+      .map(
+        (mentor) => `
+          <article class="event-card">
+            <div class="event-card-head"><strong>${escapeHtml(mentor.alumniName || mentor.alumniEmail)}</strong>${mentor.batchYear ? `<span class="event-fee-badge">Batch ${escapeHtml(mentor.batchYear)}</span>` : ""}</div>
+            <p>${escapeHtml(mentor.expertiseAreas)}</p>
+            <small>${escapeHtml(mentor.bio || "")}</small>
+            <input type="text" data-mentor-message="${mentor.id}" placeholder="Optional message (why you'd like this mentor)">
+            <button type="button" class="event-apply-toggle" data-request-mentor="${mentor.id}">Request Mentorship</button>
+          </article>
+        `
+      )
+      .join("");
+    mentorDirectoryGrid.querySelectorAll("[data-request-mentor]").forEach((button) => {
+      button.addEventListener("click", () => {
+        const mentorId = button.dataset.requestMentor;
+        const message = mentorDirectoryGrid.querySelector(`[data-mentor-message="${mentorId}"]`)?.value.trim() || "";
+        const result = gprecDbPost("/mentorship-requests", { mentorId, message });
+        const feedback = document.querySelector("#mentorshipRequestFeedback");
+        if (feedback) {
+          feedback.textContent = result?.ok ? "Mentorship request sent." : result?.error || "Couldn't send this request.";
+          feedback.classList.toggle("success", Boolean(result?.ok));
+        }
+        renderMentorship();
+      });
+    });
+
+    if (myMentorshipRequestsBody) {
+      const myRequests = (getGprecDbBootstrap()?.mentorshipRequests || []).filter((r) => r.studentRollNo === studentId);
+      document.querySelector("#myMentorshipRequestsEmpty")?.classList.toggle("is-hidden", myRequests.length > 0);
+      myMentorshipRequestsBody.innerHTML = myRequests
+        .map(
+          (request) => `
+            <tr>
+              <td>${escapeHtml(request.mentorName || request.mentorEmail)}</td>
+              <td>${escapeHtml(request.message || "-")}</td>
+              <td><span class="${request.status === "Accepted" ? "ok" : request.status === "Declined" ? "warn" : ""}">${escapeHtml(request.status)}</span></td>
+              <td>${escapeHtml(request.createdAt)}</td>
+            </tr>
+          `
+        )
+        .join("");
+    }
+  };
+  renderMentorship();
+}
+
 // Interview Schedules - per-student interview round slots on a Placement/Internship drive, stored
 // in the dedicated interview_schedules table (not bootstrap - fetched directly like
 // renderPlacementRecords/renderPlacementStats already do for other admin-only Placement Cell
@@ -10139,7 +10196,11 @@ if (libraryAdminBody) {
     libraryAdminBody.querySelectorAll("[data-library-return]").forEach((button) => {
       button.addEventListener("click", async () => {
         const result = returnLibraryBook(button.dataset.libraryReturn);
-        if (!result?.ok) alert(result?.error || "Couldn't return this book.");
+        const feedback = document.querySelector("#libraryAdminActionFeedback");
+        if (feedback) {
+          feedback.textContent = result?.ok ? "Book returned." : result?.error || "Couldn't return this book.";
+          feedback.classList.toggle("success", Boolean(result?.ok));
+        }
         renderLibraryAdmin();
       });
     });
@@ -15808,7 +15869,11 @@ if (studentLibraryBody) {
     studentLibraryBody.querySelectorAll("[data-library-renew]").forEach((button) => {
       button.addEventListener("click", async () => {
         const result = renewLibraryBook(button.dataset.libraryRenew);
-        if (!result?.ok) alert(result?.error || "Couldn't renew this book.");
+        const feedback = document.querySelector("#studentLibraryActionFeedback");
+        if (feedback) {
+          feedback.textContent = result?.ok ? "Book renewed." : result?.error || "Couldn't renew this book.";
+          feedback.classList.toggle("success", Boolean(result?.ok));
+        }
         renderStudentLibrary();
       });
     });
@@ -26679,6 +26744,68 @@ if (alumniDashboardName) {
         }
       });
     });
+
+    const mentorProfile = (getGprecDbBootstrap()?.mentorProfiles || []).find((m) => m.alumniEmail === alumniEmail);
+    if (mentorProfile) {
+      const expertiseInput = document.querySelector("#mentorExpertiseInput");
+      if (expertiseInput) expertiseInput.value = mentorProfile.expertiseAreas || "";
+      const bioInput = document.querySelector("#mentorBioInput");
+      if (bioInput) bioInput.value = mentorProfile.bio || "";
+      const maxMenteesInput = document.querySelector("#mentorMaxMenteesInput");
+      if (maxMenteesInput) maxMenteesInput.value = mentorProfile.maxMentees || 3;
+      const availableInput = document.querySelector("#mentorAvailableInput");
+      if (availableInput) availableInput.checked = Boolean(mentorProfile.available);
+    }
+
+    document.querySelector("#mentorProfileSaveButton")?.addEventListener("click", () => {
+      const expertiseAreas = document.querySelector("#mentorExpertiseInput")?.value.trim();
+      const bio = document.querySelector("#mentorBioInput")?.value.trim();
+      const maxMentees = document.querySelector("#mentorMaxMenteesInput")?.value;
+      const available = document.querySelector("#mentorAvailableInput")?.checked;
+      const feedback = document.querySelector("#mentorProfileFeedback");
+      const result = gprecDbPost("/mentor-profiles", { expertiseAreas, bio, maxMentees, available });
+      if (feedback) {
+        feedback.textContent = result?.ok ? "Mentor profile saved." : result?.error || "Couldn't save your mentor profile.";
+        feedback.classList.toggle("success", Boolean(result?.ok));
+      }
+    });
+
+    const mentorRequestsBody = document.querySelector("#mentorRequestsBody");
+    if (mentorRequestsBody) {
+      const renderMentorRequests = () => {
+        const requests = (getGprecDbBootstrap()?.mentorshipRequests || []).filter((r) => r.mentorEmail === alumniEmail);
+        document.querySelector("#mentorRequestsEmpty")?.classList.toggle("is-hidden", requests.length > 0);
+        mentorRequestsBody.innerHTML = requests
+          .map(
+            (request) => `
+              <tr>
+                <td>${escapeHtml(request.studentName)} (${escapeHtml(request.studentRollNo)})</td>
+                <td>${escapeHtml(request.message || "-")}</td>
+                <td><span class="${request.status === "Accepted" ? "ok" : request.status === "Declined" ? "warn" : ""}">${escapeHtml(request.status)}</span></td>
+                <td>${
+                  request.status === "Pending"
+                    ? `<div class="action-cell"><button type="button" data-mentor-request-accept="${request.id}">Accept</button><button type="button" class="btn-reject" data-mentor-request-decline="${request.id}">Decline</button></div>`
+                    : "-"
+                }</td>
+              </tr>
+            `
+          )
+          .join("");
+        mentorRequestsBody.querySelectorAll("[data-mentor-request-accept]").forEach((button) => {
+          button.addEventListener("click", () => {
+            gprecDbPost("/mentorship-requests/respond", { id: button.dataset.mentorRequestAccept, status: "Accepted" });
+            renderMentorRequests();
+          });
+        });
+        mentorRequestsBody.querySelectorAll("[data-mentor-request-decline]").forEach((button) => {
+          button.addEventListener("click", () => {
+            gprecDbPost("/mentorship-requests/respond", { id: button.dataset.mentorRequestDecline, status: "Declined" });
+            renderMentorRequests();
+          });
+        });
+      };
+      renderMentorRequests();
+    }
   }
 }
 
