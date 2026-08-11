@@ -825,6 +825,7 @@ SELECT json_build_object(
   -- ||. Add new top-level keys to whichever half has headroom, not by growing either past ~45.
   'complaints', COALESCE((SELECT json_agg(json_build_object(
     'id', id::text,
+    'ticketNo', 'GRV-' || lpad(ticket_no::text, 5, '0'),
     'studentId', student_roll_no,
     'studentName', full_name,
     'category', category,
@@ -833,7 +834,11 @@ SELECT json_build_object(
     'room', COALESCE(room_no, '-'),
     'subject', subject,
     'description', description,
-    'status', status
+    'status', status,
+    'priority', priority,
+    'assignedToEmail', assigned_to_email,
+    'resolutionNotes', resolution_notes,
+    'updatedAt', to_char(updated_at, 'DD Mon, HH12:MI AM')
   ) ORDER BY created_at DESC) FROM complaint_rows), '[]'::json),
   'examCellData', COALESCE((SELECT json_object_agg(department_code, rows) FROM exam_rows), '{}'::json),
   'placementDrives', COALESCE((SELECT json_agg(json_build_object(
@@ -2072,6 +2077,86 @@ def replace_complaints(records):
         VALUES """ + ",".join(values) + ";"
     sql += " COMMIT;"
     run_psql(sql)
+
+
+VALID_COMPLAINT_PRIORITIES = ("Low", "Medium", "High")
+VALID_COMPLAINT_STATUSES = ("Pending", "In Progress", "Resolved")
+
+
+def create_complaint(payload, identity):
+    # Targeted single-row insert - unlike replace_complaints() above, this can't race with (or
+    # get clobbered by) another student's concurrent complaint action on the same TRUNCATE'd table.
+    category = payload.get("category") or "General"
+    subject = (payload.get("subject") or "Request").strip()
+    description = (payload.get("description") or "").strip()
+    priority = payload.get("priority") if payload.get("priority") in VALID_COMPLAINT_PRIORITIES else "Medium"
+    run_psql(f"""
+        INSERT INTO complaints (student_roll_no, category, subject, description, priority)
+        VALUES ({quote(identity["identityId"])}, {quote(category)}, {quote(subject)}, {quote(description)}, {quote(priority)});
+    """)
+
+
+def cancel_complaint(complaint_id, identity):
+    # Only the filing student, and only while still untouched by staff (Pending).
+    run_psql(f"""
+        DELETE FROM complaints
+        WHERE id = {quote(complaint_id)}::uuid
+          AND student_roll_no = {quote(identity["identityId"])}
+          AND status = 'Pending';
+    """)
+
+
+def authorize_complaint_update(complaint_id, identity):
+    # College Admin and Hostel Wardens (identityType "admin") may resolve any complaint. A
+    # faculty member may only resolve an "Academic" complaint filed by a student in their own
+    # department - there's no is_hod column on faculty (HOD-ness is a client-side-only directory
+    # today, see lookupFacultyRecordByEmail in script.js), so this is the strongest check the
+    # database can actually back; the "HOD Complaints" panel that calls this is itself only shown
+    # to faculty the client-side directory flags as HOD.
+    if identity["identityType"] == "admin":
+        return None
+    if identity["identityType"] == "faculty":
+        row = run_json(f"""
+            SELECT json_build_object(
+              'allowed', c.category = 'Academic' AND f.department_code = s.department_code
+            )
+            FROM complaints c
+            JOIN students s ON s.roll_no = c.student_roll_no
+            JOIN faculty f ON f.email = {quote(identity["identityId"])}
+            WHERE c.id = {quote(complaint_id)}::uuid;
+        """, None)
+        if row and row.get("allowed"):
+            return None
+    return "Not authorized to update this complaint."
+
+
+def update_complaint_status(complaint_id, payload, identity):
+    status = payload.get("status") if payload.get("status") in VALID_COMPLAINT_STATUSES else "In Progress"
+    priority = payload.get("priority") if payload.get("priority") in VALID_COMPLAINT_PRIORITIES else None
+    resolution_notes = payload.get("resolutionNotes")
+    # identityId is the resolver's own email for both "admin" (incl. wardens) and "faculty"
+    # (HOD) identities - self-assign on first action rather than requiring a separate pick-list.
+    resolver_email = identity["identityId"] if identity["identityType"] in ("admin", "faculty") else ""
+    run_psql(f"""
+        UPDATE complaints SET
+          status = {quote(status)},
+          priority = COALESCE({quote(priority)}, priority),
+          resolution_notes = COALESCE({quote(resolution_notes)}, resolution_notes),
+          assigned_to_email = COALESCE(assigned_to_email, NULLIF({quote(resolver_email)}, '')),
+          resolved_at = CASE WHEN {quote(status)} = 'Resolved' THEN now() ELSE resolved_at END,
+          updated_at = now()
+        WHERE id = {quote(complaint_id)}::uuid;
+    """)
+    row = run_json(f"""
+        SELECT json_build_object('student_roll_no', student_roll_no, 'subject', subject)
+        FROM complaints WHERE id = {quote(complaint_id)}::uuid;
+    """, None)
+    if row:
+        create_notification(
+            "student", row["student_roll_no"], "Complaint update",
+            f'Your complaint "{row["subject"]}" is now {status}.',
+            link="/dashboards/student-dashboard.html#complaints", source_module="complaints",
+        )
 
 
 # create/remove are targeted single-row operations, not a full-array replace - the previous
@@ -4047,6 +4132,32 @@ class PortalHandler(SimpleHTTPRequestHandler):
                     return
                 replace_complaints(payload or [])
                 self.send_json(200, run_json(BOOTSTRAP_SQL, {}).get("complaints", []))
+                return
+            if path == "/api/complaints/create":
+                identity = require_auth(self, allowed_types=["student"])
+                if not identity:
+                    return
+                create_complaint(payload or {}, identity)
+                self.send_json(200, {"ok": True})
+                return
+            if path == "/api/complaints/cancel":
+                identity = require_auth(self, allowed_types=["student"])
+                if not identity:
+                    return
+                cancel_complaint((payload or {}).get("id") or "", identity)
+                self.send_json(200, {"ok": True})
+                return
+            if path == "/api/complaints/update-status":
+                identity = require_auth(self)
+                if not identity:
+                    return
+                complaint_id = (payload or {}).get("id") or ""
+                error = authorize_complaint_update(complaint_id, identity)
+                if error:
+                    self.send_json(403, {"ok": False, "error": error})
+                    return
+                update_complaint_status(complaint_id, payload or {}, identity)
+                self.send_json(200, {"ok": True})
                 return
             if path == "/api/placement-drives/create":
                 if not require_auth(self, allowed_types=["admin"]):

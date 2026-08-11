@@ -6,7 +6,7 @@
     <title>Event Management Dashboard | GPREC</title>
     <meta name="description" content="GPREC college fest event management dashboard for admins, faculty coordinators, and student volunteers.">
     <link rel="icon" href="https://www.gprec.ac.in/wp-content/uploads/2017/08/fav.png" sizes="32x32">
-    <link rel="stylesheet" href="../styles.css?v=20260727-1">
+    <link rel="stylesheet" href="../styles.css?v=20260806-pin-active-fix">
   </head>
   <body class="admin-dashboard-page">
     <header class="student-topbar admin-topbar">
@@ -1034,16 +1034,6 @@
                     <span class="visitor-zone-pin-dot">${escapeHtmlSafe(point.label)}</span>
                   </button>
                 `).join("");
-                pinsEl.querySelectorAll("[data-admin-zone-key]").forEach((pin) => {
-                  pin.addEventListener("click", () => {
-                    const point = points.find((item) => item.key === pin.dataset.adminZoneKey);
-                    if (!point || !adminZoneMapInstance) return;
-                    const camera = getAdminZone2dCamera();
-                    try {
-                      adminZoneMapInstance.flyTo({ center: { lat: Number(point.lat), lng: Number(point.lng) }, zoom: 18, pitch: 0, bearing: camera.bearing, duration: 900, essential: true });
-                    } catch (error) {}
-                  });
-                });
               }
               if (legendEl) {
                 const zoneRows = points.filter((point) => point.type === "zone").map((point) => `

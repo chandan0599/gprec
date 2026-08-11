@@ -1113,6 +1113,13 @@
           <label>Description
             <textarea rows="4" id="complaintDescription" placeholder="Describe the issue in detail" required></textarea>
           </label>
+          <label>Priority
+            <select id="complaintPriority">
+              <option value="Low">Low</option>
+              <option value="Medium" selected>Medium</option>
+              <option value="High">High</option>
+            </select>
+          </label>
           <button class="payment-open-button" type="submit">Submit Complaint</button>
           <p class="portal-feedback is-hidden" id="complaintFeedback"></p>
         </form>
@@ -1120,7 +1127,7 @@
         <div class="portal-block-head"><h3>My Complaints</h3></div>
         <div class="admin-table-card">
           <table>
-            <thead><tr><th>Category</th><th>Subject</th><th>Status</th><th></th></tr></thead>
+            <thead><tr><th>Ticket</th><th>Category</th><th>Subject</th><th>Priority</th><th>Status</th><th></th></tr></thead>
             <tbody id="myComplaintsBody"></tbody>
           </table>
           <p class="lookup-empty" id="myComplaintsEmpty">No complaints submitted yet.</p>

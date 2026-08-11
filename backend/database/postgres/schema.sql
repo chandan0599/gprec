@@ -365,6 +365,16 @@ CREATE TABLE IF NOT EXISTS complaints (
   resolved_at TIMESTAMPTZ
 );
 
+-- Grievance-ticketing fields, added on top of the original complaints table. ticket_no is a
+-- short human-readable number for display (the UUID id stays the real key); priority/
+-- assigned_to_email/resolution_notes/updated_at support a real assign-and-resolve workflow
+-- instead of just a status flip.
+ALTER TABLE IF EXISTS complaints ADD COLUMN IF NOT EXISTS ticket_no SERIAL;
+ALTER TABLE IF EXISTS complaints ADD COLUMN IF NOT EXISTS priority TEXT NOT NULL DEFAULT 'Medium';
+ALTER TABLE IF EXISTS complaints ADD COLUMN IF NOT EXISTS assigned_to_email TEXT;
+ALTER TABLE IF EXISTS complaints ADD COLUMN IF NOT EXISTS resolution_notes TEXT;
+ALTER TABLE IF EXISTS complaints ADD COLUMN IF NOT EXISTS updated_at TIMESTAMPTZ NOT NULL DEFAULT now();
+
 CREATE TABLE IF NOT EXISTS library_books (
   barcode TEXT PRIMARY KEY,
   title TEXT NOT NULL,

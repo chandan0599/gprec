@@ -83,6 +83,7 @@
         <div class="admin-nav" data-admin-target="#data-integrations" title="Data Integrations" role="button" tabindex="0"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 7V5a2 2 0 0 1 2-2h2M17 3h2a2 2 0 0 1 2 2v2M21 17v2a2 2 0 0 1-2 2h-2M7 21H5a2 2 0 0 1-2-2v-2"/></svg><span class="admin-nav-text">Data Integrations</span></div>
         <div class="admin-nav" data-admin-target="#feature-ideas" data-admin-roles="College Admin" title="Feature Ideas" role="button" tabindex="0"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 21h6M10 17h4M8.2 14.2a6 6 0 1 1 7.6 0c-.9.7-1.3 1.6-1.4 2.8H9.6c-.1-1.2-.5-2.1-1.4-2.8Z"/></svg><span class="admin-nav-text">Feature Ideas</span></div>
         <div class="admin-nav" data-admin-target="#fee-management" title="Fee Management" role="button" tabindex="0"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg><span class="admin-nav-text">Fee Management</span></div>
+        <div class="admin-nav" data-admin-target="#grievances" title="Grievances" role="button" tabindex="0"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 4 3 20h18Z"/><path d="M12 10v4"/><path d="M12 17h.01"/></svg><span class="admin-nav-text">Grievances</span></div>
         <div class="admin-nav" data-admin-target="#hod-leave-approvals" title="HOD Leave Requests" role="button" tabindex="0"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="4" y="5" width="16" height="15" rx="2"/><path d="M4 10h16M8 3v4M16 3v4"/></svg><span class="admin-nav-text">HOD Leave Requests</span></div>
         <div class="admin-nav" data-admin-target="#media" title="Media" role="button" tabindex="0"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="4" width="18" height="16" rx="2"/><circle cx="8.5" cy="9.5" r="1.5"/><path d="m4 17 5-5 4 4 3-3 4 4"/></svg><span class="admin-nav-text">Media</span></div>
         <div class="admin-nav" data-admin-target="#staff-leave-approvals" data-admin-roles="College Admin" title="Non-Teaching Staff Leave" role="button" tabindex="0"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="4" y="5" width="16" height="15" rx="2"/><path d="M4 10h16M8 3v4M16 3v4"/></svg><span class="admin-nav-text">Non-Teaching Staff Leave</span></div>
@@ -542,6 +543,30 @@
               <p class="lookup-empty" id="pendingFeeOverrideEmpty">No bulk-uploaded pending fees yet.</p>
             </div>
           </article>
+        </section>
+
+        <section class="admin-panel" id="grievances">
+          <div class="admin-section-head">
+            <div><p class="eyebrow">Grievances</p><h2>Every complaint filed portal-wide - academic, hostel, and general - in one queue.</h2></div>
+          </div>
+          <article class="admin-card">
+            <label>Status
+              <select id="grievanceStatusFilter">
+                <option value="">All</option>
+                <option value="Pending">Pending</option>
+                <option value="In Progress">In Progress</option>
+                <option value="Resolved">Resolved</option>
+              </select>
+            </label>
+          </article>
+          <div class="admin-table-card">
+            <h3>All Grievances</h3>
+            <table>
+              <thead><tr><th>Ticket</th><th>Student</th><th>Category</th><th>Subject</th><th>Priority</th><th>Assigned To</th><th>Status</th><th>Resolution Notes</th><th>Updated</th></tr></thead>
+              <tbody id="grievancesBody"></tbody>
+            </table>
+            <p class="lookup-empty" id="grievancesEmpty">No grievances found.</p>
+          </div>
         </section>
 
         <section class="admin-panel" id="hod-leave-approvals">

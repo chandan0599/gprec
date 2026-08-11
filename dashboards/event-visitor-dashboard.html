@@ -6,7 +6,7 @@
     <title>My Event Registrations | GPREC</title>
     <meta name="description" content="View your GPREC public event registrations, passes, and receipts.">
     <link rel="icon" href="https://www.gprec.ac.in/wp-content/uploads/2017/08/fav.png" sizes="32x32">
-    <link rel="stylesheet" href="../styles.css?v=20260727-all-strips-off">
+    <link rel="stylesheet" href="../styles.css?v=20260806-pin-active-fix">
   </head>
   <body class="login-page event-visitor-page gprec-orb-chat">
     <svg class="icon-sprite" aria-hidden="true" focusable="false">
@@ -1481,28 +1481,15 @@
             pin.addEventListener("click", () => {
               if (pin.dataset.zoneIndex === "entrance") {
                 clearVisitorZoneRoute();
-                try {
-                  visitorZoneMapInstance?.flyTo({ center: { lat: visitorZoneEntrance.lat, lng: visitorZoneEntrance.lng }, zoom: 17.4, pitch: 50, bearing: 325, duration: 900, essential: true });
-                } catch (error) {}
                 return;
               }
-              if (pin.dataset.zoneIndex === "theatre") {
-                try {
-                  visitorZoneMapInstance?.flyTo({ center: { lat: visitorOpenAirTheatre.lat, lng: visitorOpenAirTheatre.lng }, zoom: 18.5, pitch: 62, bearing: 330, duration: 900, essential: true });
-                } catch (error) {}
-                return;
-              }
-              if (pin.dataset.zoneIndex === "seating") {
-                try {
-                  visitorZoneMapInstance?.flyTo({ center: { lat: visitorSeatingArea.lat, lng: visitorSeatingArea.lng }, zoom: 18.2, pitch: 55, bearing: 330, duration: 900, essential: true });
-                } catch (error) {}
-                return;
-              }
-              setActiveVisitorZone(pin.dataset.zoneIndex, true);
+              if (pin.dataset.zoneIndex === "theatre") return;
+              if (pin.dataset.zoneIndex === "seating") return;
+              setActiveVisitorZone(pin.dataset.zoneIndex, false);
             });
           });
           listEl.querySelectorAll("[data-zone-list-index]").forEach((row) => {
-            row.addEventListener("click", () => setActiveVisitorZone(row.dataset.zoneListIndex, true));
+            row.addEventListener("click", () => setActiveVisitorZone(row.dataset.zoneListIndex, false));
           });
           initVisitorZoneMapSdk();
           if (visitorZoneMapReady) positionVisitorZoneLabels();

@@ -112,9 +112,14 @@ const gprecLogoutKeysByLoginPage = {
 
 // Figures out which saved chat history belongs to the current page/user, so the GPRECian Bot
 // widget (shared by every page) never mixes up conversations between two different people or
-// roles using the same browser.
+// roles using the same browser. gprecActiveRole is only trusted while actually on a dashboards/
+// page - it's set once at login and never cleared on navigation, so without this folder check a
+// student who chats about their attendance on their dashboard and then browses back to the public
+// homepage (still "logged in" elsewhere in the same browser) would have that same private
+// conversation - attendance %, grades, etc. - restored and shown in the widget on the public page.
 const gprecChatScopeKey = () => {
   if (GPREC_CURRENT_ROUTE_FILE === "event-visitor-dashboard.html") return "event-visitor";
+  if (GPREC_CURRENT_FOLDER !== "dashboards") return "public";
   return localStorage.getItem("gprecActiveRole") || GPREC_CURRENT_FOLDER || "public";
 };
 const gprecChatIdentityKey = () => {
@@ -1134,6 +1139,14 @@ const saveComplaints = (complaints) => {
   if (saved) return;
   localStorage.setItem("gprecComplaints", JSON.stringify(complaints));
 };
+
+// Targeted single-ticket actions (create/cancel/resolve) - preferred over saveComplaints() above,
+// which replaces the whole table and can't safely express "just this one ticket changed."
+const createComplaintTicket = (category, subject, description, priority) =>
+  gprecDbPost("/complaints/create", { category, subject, description, priority });
+const cancelComplaintTicket = (id) => gprecDbPost("/complaints/cancel", { id });
+const resolveComplaintTicket = (id, status, resolutionNotes) =>
+  gprecDbPost("/complaints/update-status", { id, status, resolutionNotes });
 
 // Announcements a faculty member posts to their own class (auto-hidden after 30 days).
 const getClassMessages = () => {
@@ -4459,12 +4472,10 @@ if (adminNavButtons.length > 0 && adminPanels.length > 0) {
 
       wardenComplaintsBody.querySelectorAll("[data-complaint-resolve]").forEach((button) => {
         button.addEventListener("click", () => {
-          const complaints = getComplaints();
-          const item = complaints.find((entry) => entry.id === button.dataset.complaintResolve);
-          if (!item) return;
-          item.status = "Resolved";
-          saveComplaints(complaints);
-          recordActivity(`Resolved complaint from ${item.studentId}`, "Student Support");
+          const id = button.dataset.complaintResolve;
+          const item = getComplaints().find((entry) => entry.id === id);
+          resolveComplaintTicket(id, "Resolved");
+          if (item) recordActivity(`Resolved complaint from ${item.studentId}`, "Student Support");
           renderWardenComplaints();
         });
       });
@@ -6845,10 +6856,6 @@ if (scholarshipBankForm) {
 const complaintForm = document.querySelector("#complaintForm");
 if (complaintForm) {
   const complaintStudentId = getCurrentStudentId();
-  const complaintStudentName = hostelStudentData[complaintStudentId]?.name || defaultStudentProfiles[complaintStudentId]?.name || "Student";
-  const complaintDepartment = hostelStudentData[complaintStudentId]?.branch || defaultStudentProfiles[complaintStudentId]?.branch || "CSE";
-  const complaintHostel = hostelStudentData[complaintStudentId]?.hostel || "-";
-  const complaintRoom = hostelStudentData[complaintStudentId]?.room || "-";
   const isHosteler = Boolean(hostelStudentData[complaintStudentId]);
 
   if (!isHosteler) {
@@ -6865,8 +6872,10 @@ if (complaintForm) {
       .map(
         (item) => `
           <tr>
+            <td>${escapeHtml(item.ticketNo || "-")}</td>
             <td>${item.category}</td>
             <td>${escapeHtml(item.subject)}</td>
+            <td>${escapeHtml(item.priority || "Medium")}</td>
             <td><span class="${complaintStatusClass(item.status)}">${item.status}</span></td>
             <td>${
               item.status === "Pending"
@@ -6880,8 +6889,7 @@ if (complaintForm) {
 
     myComplaintsBody.querySelectorAll("[data-complaint-cancel]").forEach((button) => {
       button.addEventListener("click", () => {
-        const remaining = getComplaints().filter((item) => item.id !== button.dataset.complaintCancel);
-        saveComplaints(remaining);
+        cancelComplaintTicket(button.dataset.complaintCancel);
         renderMyComplaints();
       });
     });
@@ -6893,21 +6901,9 @@ if (complaintForm) {
     const category = document.querySelector("#complaintCategory").value;
     const subject = document.querySelector("#complaintSubject").value.trim();
     const description = document.querySelector("#complaintDescription").value.trim();
+    const priority = document.querySelector("#complaintPriority")?.value || "Medium";
 
-    const complaints = getComplaints();
-    complaints.unshift({
-      id: `complaint-${Date.now()}`,
-      studentId: complaintStudentId,
-      studentName: complaintStudentName,
-      category,
-      department: complaintDepartment,
-      hostel: complaintHostel,
-      room: complaintRoom,
-      subject,
-      description,
-      status: "Pending"
-    });
-    saveComplaints(complaints);
+    createComplaintTicket(category, subject, description, priority);
 
     const feedback = document.querySelector("#complaintFeedback");
     if (feedback) {
@@ -9894,6 +9890,64 @@ const renderAdminVisitingRequests = () => {
 
 renderAdminVisitingRequests();
 
+// College Admin's portal-wide grievance queue - every complaint filed anywhere (student
+// self-service, warden, HOD panels above) in one place, with status/priority/notes editable.
+const grievancesBody = document.querySelector("#grievancesBody");
+const grievancesEmpty = document.querySelector("#grievancesEmpty");
+const grievanceStatusFilter = document.querySelector("#grievanceStatusFilter");
+
+const renderGrievances = () => {
+  if (!grievancesBody) return;
+  const filterValue = grievanceStatusFilter?.value || "";
+  const complaints = getComplaints().filter((item) => !filterValue || item.status === filterValue);
+  grievancesEmpty?.classList.toggle("is-hidden", complaints.length > 0);
+  grievancesBody.innerHTML = complaints
+    .map(
+      (item) => `
+        <tr>
+          <td>${escapeHtml(item.ticketNo || "-")}</td>
+          <td>${resolveStudentDisplayName(item.studentId, item.studentName)} (${escapeHtml(item.studentId)})</td>
+          <td>${escapeHtml(item.category)}</td>
+          <td>${escapeHtml(item.subject)}</td>
+          <td>${escapeHtml(item.priority || "Medium")}</td>
+          <td>${escapeHtml(item.assignedToEmail || "-")}</td>
+          <td>
+            <select data-grievance-status="${item.id}">
+              <option value="Pending" ${item.status === "Pending" ? "selected" : ""}>Pending</option>
+              <option value="In Progress" ${item.status === "In Progress" ? "selected" : ""}>In Progress</option>
+              <option value="Resolved" ${item.status === "Resolved" ? "selected" : ""}>Resolved</option>
+            </select>
+          </td>
+          <td class="action-cell">
+            <input type="text" data-grievance-notes-input="${item.id}" placeholder="Add a note" value="${escapeHtml(item.resolutionNotes || "")}">
+            <button type="button" data-grievance-notes-save="${item.id}">Save</button>
+          </td>
+          <td>${escapeHtml(item.updatedAt || "-")}</td>
+        </tr>
+      `
+    )
+    .join("");
+
+  grievancesBody.querySelectorAll("[data-grievance-status]").forEach((select) => {
+    select.addEventListener("change", () => {
+      resolveComplaintTicket(select.dataset.grievanceStatus, select.value);
+      renderGrievances();
+    });
+  });
+  grievancesBody.querySelectorAll("[data-grievance-notes-save]").forEach((button) => {
+    button.addEventListener("click", () => {
+      const id = button.dataset.grievanceNotesSave;
+      const input = grievancesBody.querySelector(`[data-grievance-notes-input="${id}"]`);
+      const current = getComplaints().find((item) => item.id === id);
+      if (!current) return;
+      resolveComplaintTicket(id, current.status, input?.value || "");
+      renderGrievances();
+    });
+  });
+};
+setTimeout(renderGrievances, 0);
+grievanceStatusFilter?.addEventListener("change", renderGrievances);
+
 // HOD approves/rejects faculty leave requests from their own department (below: a non-teaching
 // staff supervisor's equivalent for their own staff's leave requests).
 const hodLeaveApprovalsBody = document.querySelector("#hodLeaveApprovalsBody");
@@ -10512,14 +10566,68 @@ const formatBotMessageEscapeHtml = (value) =>
     .replace(/"/g, "&quot;")
     .replace(/'/g, "&#39;");
 
+// Applied to already-escaped text (safe to insert our own trusted markup into), so ANY bot
+// answer - not just the attendance card below - picks up the same visual language: bare
+// percentages become small stat badges, and "N pending/approved/..." status counts become
+// ok/warn pills. Deliberately narrow patterns (a number must be directly adjacent) rather than
+// bolding bare English words like "pending" or "above" everywhere, since this also runs over
+// free-form AI-generated replies where those words show up in ordinary prose.
+const highlightBotMessageStats = (escapedText) =>
+  escapedText
+    .replace(/\b(\d{1,3})%(?!\s+requirement)\b/g, '<span class="bot-stat">$1%</span>')
+    .replace(/\b(above)(\s+the\s+\d{1,3}%\s+requirement)\b/gi, '<span class="ok">$1$2</span>')
+    .replace(/\b(below)(\s+the\s+\d{1,3}%\s+requirement)\b/gi, '<span class="warn">$1$2</span>')
+    .replace(/\b(\d+)\s+(pending|ineligible|absent)\b/gi, '<span class="warn">$1 $2</span>')
+    .replace(/\b(\d+)\s+(approved|resolved|eligible|present)\b/gi, '<span class="ok">$1 $2</span>');
+
 const formatBotMessageLine = (line) => {
   const match = line.match(/^([A-Za-z][A-Za-z0-9 /&']{1,32}):\s*(.*)$/);
-  if (!match || !match[2]) return formatBotMessageEscapeHtml(line);
-  return `<strong>${formatBotMessageEscapeHtml(match[1])}:</strong> ${formatBotMessageEscapeHtml(match[2])}`;
+  if (!match || !match[2]) return highlightBotMessageStats(formatBotMessageEscapeHtml(line));
+  return `<strong>${formatBotMessageEscapeHtml(match[1])}:</strong> ${highlightBotMessageStats(formatBotMessageEscapeHtml(match[2]))}`;
 };
 
-const formatBotMessageHtml = (text) =>
-  String(text || "")
+// getLiveAttendanceAnswer (further down this file) composes attendance replies as one plain
+// sentence ("Your current overall attendance is 92% (166/180 classes held...). Subject-wise: DBMS
+// 94%, OS 91%, ..."). That's accurate but reads as a wall of numbers, so when a bot reply matches
+// that exact shape, render it as a small stat card instead - reusing the same .service-amount and
+// .attendance-pill components the real Attendance panel/course tiles already use for this data,
+// rather than inventing new chat-only styling.
+const formatAttendanceCardHtml = (text) => {
+  const match = String(text).match(
+    /^(Your(?: child's)?) current overall attendance is (\d+)% \((\d+)\/(\d+) classes held so far this semester\)\. Subject-wise: ([^.]+)\.\s*(.+)$/
+  );
+  if (!match) return null;
+  const [, who, overall, attended, held, subjectsRaw, statusNote] = match;
+  const subjects = subjectsRaw.split(",").map((part) => {
+    const subjectMatch = part.trim().match(/^(\S+)\s+(\d+)%$/);
+    return subjectMatch ? { code: subjectMatch[1], percent: subjectMatch[2] } : null;
+  });
+  if (!subjects.length || subjects.some((subject) => !subject)) return null;
+
+  const meets = Number(overall) >= 75;
+  const tip = statusNote.includes(" - ") ? statusNote.split(" - ")[1].replace(/\.$/, "") : "";
+  const pills = subjects
+    .map(
+      (subject) =>
+        `<span class="attendance-pill"><strong>${subject.percent}%</strong><span>${formatBotMessageEscapeHtml(subject.code)}</span></span>`
+    )
+    .join("");
+
+  return `
+    <div class="bot-attendance-card">
+      <p class="service-amount">${formatBotMessageEscapeHtml(who)} overall attendance<strong>${overall}%</strong></p>
+      <div class="bot-attendance-pills">${pills}</div>
+      <div class="bot-attendance-footnote">
+        <span>${attended}/${held} classes held so far this semester${tip ? ` &mdash; ${formatBotMessageEscapeHtml(tip)}` : ""}</span>
+        <span class="${meets ? "ok" : "warn"}">${meets ? "Above" : "Below"} 75% requirement</span>
+      </div>
+    </div>`;
+};
+
+const formatBotMessageHtml = (text) => {
+  const attendanceCard = formatAttendanceCardHtml(text);
+  if (attendanceCard) return attendanceCard;
+  return String(text || "")
     .split(/\n{2,}/)
     .map((block) => {
       const lines = block.split("\n").map((line) => line.trim()).filter(Boolean);
@@ -10548,6 +10656,7 @@ const formatBotMessageHtml = (text) =>
     })
     .filter(Boolean)
     .join("");
+};
 
 // Bot replies can suggest real links instead of saying "go to this page" - either a page on this
 // site (opened in a new tab so the chat stays open) or a document to download right there in the
@@ -28502,11 +28611,7 @@ if (facultyDashboardName) {
 
         hodComplaintsBody.querySelectorAll("[data-complaint-resolve]").forEach((button) => {
           button.addEventListener("click", () => {
-            const complaints = getComplaints();
-            const item = complaints.find((entry) => entry.id === button.dataset.complaintResolve);
-            if (!item) return;
-            item.status = "Resolved";
-            saveComplaints(complaints);
+            resolveComplaintTicket(button.dataset.complaintResolve, "Resolved");
             renderHodComplaints();
           });
         });

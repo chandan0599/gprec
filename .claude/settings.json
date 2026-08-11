@@ -13,7 +13,21 @@
       "Bash(cd /Users/lakkavaramsaichandan/gprec.ac.in *)",
       "Bash(rm -rf /tmp/wc-test-site *)",
       "Bash(tar czf *)",
-      "Bash(python3 /private/tmp/claude-501/-Users-lakkavaramsaichandan-gprec-ac-in/d24f1fff-dc2f-49ed-b1f3-88dd6cbf60ba/scratchpad/rollout_orb_chat.py)"
+      "Bash(python3 /private/tmp/claude-501/-Users-lakkavaramsaichandan-gprec-ac-in/d24f1fff-dc2f-49ed-b1f3-88dd6cbf60ba/scratchpad/rollout_orb_chat.py)",
+      "Bash(grep -viE \"escapeHtml|formatBotMessageHtml|sanitiz|\\\\.textContent|template|\\\\`<svg|studentIcon|gprecianUserIcon\")",
+      "Bash(npx playwright *)",
+      "Bash(node mobile_check.js)",
+      "Bash(node /private/tmp/claude-501/-Users-lakkavaramsaichandan-gprec-ac-in/d24f1fff-dc2f-49ed-b1f3-88dd6cbf60ba/scratchpad/test_bugs.js)",
+      "Bash(pkill -f \"backend/tools/static_server.py\")",
+      "Bash(awk 'NR<=18818 && /@media/{line=NR; content=$0} END{print line\": \"content}' /Users/lakkavaramsaichandan/gprec.ac.in/styles.css)",
+      "Bash(timeout 60 npm install playwright --no-save)",
+      "Bash(ls ~/Library/Caches/ms-playwright/ 2>/dev/null)",
+      "Read(//Users/lakkavaramsaichandan/Library/Caches/ms-playwright/**)",
+      "Bash(node /private/tmp/claude-501/-Users-lakkavaramsaichandan-gprec-ac-in/d24f1fff-dc2f-49ed-b1f3-88dd6cbf60ba/scratchpad/test_xss2.js)",
+      "Bash(node _tmp_test_xss2.js)",
+      "Bash(awk -F: '$1 >= 13800 && $1 <= 14200')",
+      "Bash(node _tmp_lowconf_debug.js)",
+      "Bash(pkill -f \"http.server 8934\")"
     ],
     "additionalDirectories": [
       "/private/tmp/wc-test-site"

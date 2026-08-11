@@ -16686,6 +16686,59 @@ img.alumni-post-avatar {
   background: var(--orange);
 }
 
+/* The attendance card formatBotMessageHtml renders (see formatAttendanceCardHtml in script.js) -
+   built from .service-amount and .attendance-pill, the same components the real Attendance panel
+   and course tiles already use for this data, so only the wrapping/wrap-row spacing is new here. */
+.bot-attendance-card .service-amount {
+  margin-bottom: 8px;
+  padding: 8px 12px;
+  font-size: 0.85rem;
+}
+
+.bot-attendance-pills {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin: 0 0 8px;
+}
+
+.bot-attendance-pills .attendance-pill {
+  gap: 6px;
+  padding: 5px 8px;
+}
+
+.bot-attendance-pills .attendance-pill strong {
+  font-size: 0.9rem;
+}
+
+.bot-attendance-footnote {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.8rem;
+  color: var(--muted);
+}
+
+/* The generic stat highlight formatBotMessageLine applies to every bot reply (see
+   highlightBotMessageStats in script.js) - bare percentages get the same tinted-badge treatment
+   as .attendance-pill/.service-amount elsewhere on the site, so any answer with a number in it
+   reads consistently with the richer cards above instead of looking like plain sentences again. */
+.bot-message-body .bot-stat {
+  display: inline-block;
+  padding: 1px 6px;
+  color: var(--navy);
+  border: 1px solid rgba(255, 129, 0, 0.28);
+  border-radius: 999px;
+  background: #fff8ef;
+  font-weight: 800;
+}
+
+.bot-message-body .ok,
+.bot-message-body .warn {
+  margin: 0;
+}
+
 .user-message {
   color: var(--white);
   background: var(--navy);
@@ -24922,12 +24975,33 @@ button.calendar-cell-event {
   background: transparent;
   opacity: 0;
   transform: translate(-50%, -100%);
+  /* Anchors scaling (see .is-active below) at the pin's own tip instead of its box center - the
+     default center origin would grow the box on both sides of that center, and since translate()
+     percentages are fixed to the box's unscaled size, the tip would visibly drift a couple px off
+     its real target coordinate every time .is-active toggles. Bottom-center keeps the tip fixed
+     regardless of scale. */
+  transform-origin: 50% 100%;
   transition: opacity 0.18s ease, transform 0.18s ease;
   cursor: pointer;
 }
 
 .event-visitor-page.admin-dashboard-page .visitor-zone-pin.is-active {
   z-index: 8;
+  transform: translate(-50%, -100%) scale(1.08);
+}
+
+/* The sitewide button:not(:disabled):active rule (top of this file) sets transform: scale(0.96)
+   on every button's press state, with enough specificity (0,2,1) to beat this pin's own
+   translate(-50%,-100%) anchor (0,3,0 here, but only 0,2,0 for the admin-preview variant below) -
+   without this override, pressing/tapping a pin replaces its whole transform with just scale(0.96)
+   and it visibly snaps away from its real target coordinate (dozens of px, not a rounding error)
+   for the duration of the press. Restating the anchor transform here at higher specificity keeps
+   the pin exactly in place no matter what state it's in. */
+.event-visitor-page.admin-dashboard-page .visitor-zone-pin:active {
+  transform: translate(-50%, -100%);
+}
+
+.event-visitor-page.admin-dashboard-page .visitor-zone-pin.is-active:active {
   transform: translate(-50%, -100%) scale(1.08);
 }
 
@@ -25436,6 +25510,23 @@ button.calendar-cell-event {
   overflow: visible;
   transition: opacity 0.18s ease, transform 0.18s ease;
   cursor: pointer;
+}
+
+/* See the matching comment on .event-visitor-page.admin-dashboard-page .visitor-zone-pin:active
+   above - same sitewide button:active rule, same fix. This variant's base selector is only two
+   classes (0,2,0), which the global rule's (0,2,1) already beats even without :active in the mix,
+   so this is the one where the jump was most visible. */
+.admin-zone-sdk-stage .visitor-zone-pin:active {
+  transform: translate(-50%, -100%);
+}
+
+/* Same fix as the :active override above, but for hover: the sitewide
+   .admin-form-card button:hover:not(:disabled) rule (top of this file) has higher
+   specificity (0,3,1) than this pin's own anchor transform (0,2,0) and would otherwise
+   replace translate(-50%,-100%) with its own translateY(-1px), snapping the pin off its
+   real map coordinate for as long as the cursor sits over it. */
+.admin-zone-sdk-stage .visitor-zone-pin:hover:not(:disabled) {
+  transform: translate(-50%, -100%);
 }
 
 .admin-zone-sdk-stage .visitor-zone-pin-dot {
