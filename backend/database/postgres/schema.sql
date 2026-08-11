@@ -393,6 +393,12 @@ CREATE TABLE IF NOT EXISTS library_issues (
   status TEXT NOT NULL DEFAULT 'Issued'
 );
 
+-- Fine tracking + renewal count, for the targeted issue/return/renew endpoints (as opposed to
+-- the CSV-bulk-replace path above, which only ever set issued_on/due_on/returned_on/status).
+ALTER TABLE IF EXISTS library_issues ADD COLUMN IF NOT EXISTS fine_amount NUMERIC(10,2) NOT NULL DEFAULT 0;
+ALTER TABLE IF EXISTS library_issues ADD COLUMN IF NOT EXISTS fine_paid BOOLEAN NOT NULL DEFAULT false;
+ALTER TABLE IF EXISTS library_issues ADD COLUMN IF NOT EXISTS renewed_count INT NOT NULL DEFAULT 0;
+
 CREATE TABLE IF NOT EXISTS placement_drives (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   company TEXT NOT NULL,

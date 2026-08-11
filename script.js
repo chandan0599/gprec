@@ -1043,6 +1043,12 @@ const saveLibraryRecords = async (records) => {
   }
   localStorage.setItem("gprecLibraryRecords", JSON.stringify(records));
 };
+// Targeted single-book actions - only meaningful for the local/DB-backed catalog above (a real
+// connected library system like Koha/SOUL owns its own issue/return/renew workflow already).
+const addLibraryBook = (barcode, title, author) => gprecDbPost("/library/add-book", { barcode, title, author });
+const issueLibraryBook = (barcode, rollNumber) => gprecDbPost("/library/issue", { barcode, rollNumber });
+const returnLibraryBook = (id) => gprecDbPost("/library/return", { id });
+const renewLibraryBook = (id) => gprecDbPost("/library/renew", { id });
 // --- End library backend integration point ----------------------------------------------
 const libraryStatusFor = (record) => {
   if (record.status === "Returned") return { label: "Returned", cls: "ok" };
@@ -9948,6 +9954,78 @@ const renderGrievances = () => {
 setTimeout(renderGrievances, 0);
 grievanceStatusFilter?.addEventListener("change", renderGrievances);
 
+// Admin "Library" panel - add books to the catalog, issue/return, and see fines. Separate from
+// the CSV bulk-upload path (Data Integrations > Library API), which stays for full re-imports.
+const libraryAdminBody = document.querySelector("#libraryAdminBody");
+if (libraryAdminBody) {
+  const libraryAdminEmpty = document.querySelector("#libraryAdminEmpty");
+  const renderLibraryAdmin = async () => {
+    const records = await getLibraryRecords();
+    libraryAdminEmpty?.classList.toggle("is-hidden", records.length > 0);
+    libraryAdminBody.innerHTML = records
+      .map((record) => {
+        const status = libraryStatusFor(record);
+        return `
+          <tr>
+            <td>${escapeHtml(record.bookTitle)}</td>
+            <td>${escapeHtml(record.rollNumber)}</td>
+            <td>${formatExamDate(record.issueDate)}</td>
+            <td>${formatExamDate(record.dueDate)}</td>
+            <td><span class="${status.cls}">${status.label}</span></td>
+            <td>${record.fineAmount ? `Rs. ${record.fineAmount}` : "-"}</td>
+            <td>${
+              record.status !== "Returned"
+                ? `<button type="button" data-library-return="${record.id}">Return</button>`
+                : "-"
+            }</td>
+          </tr>
+        `;
+      })
+      .join("");
+    libraryAdminBody.querySelectorAll("[data-library-return]").forEach((button) => {
+      button.addEventListener("click", async () => {
+        const result = returnLibraryBook(button.dataset.libraryReturn);
+        if (!result?.ok) alert(result?.error || "Couldn't return this book.");
+        renderLibraryAdmin();
+      });
+    });
+  };
+  renderLibraryAdmin();
+
+  document.querySelector("#libraryAddBookButton")?.addEventListener("click", () => {
+    const barcode = document.querySelector("#libraryAddBarcode").value.trim();
+    const title = document.querySelector("#libraryAddTitle").value.trim();
+    const author = document.querySelector("#libraryAddAuthor").value.trim();
+    const feedback = document.querySelector("#libraryAddBookFeedback");
+    const result = addLibraryBook(barcode, title, author);
+    if (feedback) {
+      feedback.textContent = result?.ok ? "Book added to the catalog." : result?.error || "Couldn't add this book.";
+      feedback.classList.toggle("success", Boolean(result?.ok));
+    }
+    if (result?.ok) {
+      document.querySelector("#libraryAddBarcode").value = "";
+      document.querySelector("#libraryAddTitle").value = "";
+      document.querySelector("#libraryAddAuthor").value = "";
+    }
+  });
+
+  document.querySelector("#libraryIssueButton")?.addEventListener("click", () => {
+    const barcode = document.querySelector("#libraryIssueBarcode").value.trim();
+    const rollNumber = document.querySelector("#libraryIssueRollNo").value.trim();
+    const feedback = document.querySelector("#libraryIssueFeedback");
+    const result = issueLibraryBook(barcode, rollNumber);
+    if (feedback) {
+      feedback.textContent = result?.ok ? "Book issued." : result?.error || "Couldn't issue this book.";
+      feedback.classList.toggle("success", Boolean(result?.ok));
+    }
+    if (result?.ok) {
+      document.querySelector("#libraryIssueBarcode").value = "";
+      document.querySelector("#libraryIssueRollNo").value = "";
+      renderLibraryAdmin();
+    }
+  });
+}
+
 // HOD approves/rejects faculty leave requests from their own department (below: a non-teaching
 // staff supervisor's equivalent for their own staff's leave requests).
 const hodLeaveApprovalsBody = document.querySelector("#hodLeaveApprovalsBody");
@@ -15553,25 +15631,35 @@ if (studentCurriculumBody) {
 
 const studentLibraryBody = document.querySelector("#studentLibraryBody");
 if (studentLibraryBody) {
-  (async () => {
   const currentStudentId = getCurrentStudentId();
-  const myBooks = (await getLibraryRecords()).filter((record) => record.rollNumber === currentStudentId);
-  document.querySelector("#studentLibraryEmpty")?.classList.toggle("is-hidden", myBooks.length > 0);
-  studentLibraryBody.innerHTML = myBooks
-    .map((record) => {
-      const status = libraryStatusFor(record);
-      return `
-        <tr>
-          <td>${record.bookTitle}</td>
-          <td>${record.author || "-"}</td>
-          <td>${formatExamDate(record.issueDate)}</td>
-          <td>${formatExamDate(record.dueDate)}</td>
-          <td><span class="${status.cls}">${status.label}</span></td>
-        </tr>
-      `;
-    })
-    .join("");
-  })();
+  const renderStudentLibrary = async () => {
+    const myBooks = (await getLibraryRecords()).filter((record) => record.rollNumber === currentStudentId);
+    document.querySelector("#studentLibraryEmpty")?.classList.toggle("is-hidden", myBooks.length > 0);
+    studentLibraryBody.innerHTML = myBooks
+      .map((record) => {
+        const status = libraryStatusFor(record);
+        const canRenew = record.status !== "Returned" && (record.renewedCount || 0) < 2 && new Date(new Date().toDateString()) <= parseLocalDateOnly(record.dueDate);
+        return `
+          <tr>
+            <td>${record.bookTitle}</td>
+            <td>${record.author || "-"}</td>
+            <td>${formatExamDate(record.issueDate)}</td>
+            <td>${formatExamDate(record.dueDate)}</td>
+            <td><span class="${status.cls}">${status.label}</span></td>
+            <td>${canRenew ? `<button type="button" data-library-renew="${record.id}">Renew</button>` : "-"}</td>
+          </tr>
+        `;
+      })
+      .join("");
+    studentLibraryBody.querySelectorAll("[data-library-renew]").forEach((button) => {
+      button.addEventListener("click", async () => {
+        const result = renewLibraryBook(button.dataset.libraryRenew);
+        if (!result?.ok) alert(result?.error || "Couldn't renew this book.");
+        renderStudentLibrary();
+      });
+    });
+  };
+  renderStudentLibrary();
 }
 
 // Free, keyless public API (openlibrary.org) - no API key needed. Maps the

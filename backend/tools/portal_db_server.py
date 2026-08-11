@@ -636,7 +636,10 @@ library_rows AS (
     'issueDate', li.issued_on::text,
     'dueDate', li.due_on::text,
     'returnDate', li.returned_on::text,
-    'status', li.status
+    'status', li.status,
+    'fineAmount', li.fine_amount,
+    'finePaid', li.fine_paid,
+    'renewedCount', li.renewed_count
   ) ORDER BY li.issued_on DESC) AS rows
   FROM library_issues li
   JOIN library_books b ON b.barcode = li.barcode
@@ -3875,6 +3878,102 @@ def replace_library_records(records):
     run_psql(sql)
 
 
+# Targeted issue/return/renew - the CSV bulk-replace above stays for catalog import and for
+# sites without a real library system connected, but per-book actions need single-row writes,
+# not a TRUNCATE-and-reinsert of every other student's issued books.
+LIBRARY_LOAN_DAYS = 14
+LIBRARY_FINE_PER_DAY = 2  # keep in sync with LIBRARY_FINE_PER_DAY in script.js
+LIBRARY_MAX_RENEWALS = 2
+
+
+def add_library_book(payload):
+    barcode = (payload.get("barcode") or "").strip()
+    title = (payload.get("title") or "").strip()
+    author = (payload.get("author") or "").strip()
+    if not barcode or not title:
+        return "barcode and title are required."
+    run_psql(f"""
+        INSERT INTO library_books (barcode, title, author)
+        VALUES ({quote(barcode)}, {quote(title)}, {quote(author or '-')})
+        ON CONFLICT (barcode) DO UPDATE SET title = EXCLUDED.title, author = EXCLUDED.author;
+    """)
+    return None
+
+
+def issue_library_book(payload):
+    barcode = (payload.get("barcode") or "").strip()
+    roll_no = (payload.get("rollNumber") or "").strip().upper()
+    if not barcode or not roll_no:
+        return "barcode and rollNumber are required."
+    book = run_json(f"SELECT json_build_object('status', status) FROM library_books WHERE barcode = {quote(barcode)};", None)
+    if not book:
+        return "No book with that barcode."
+    if book.get("status") == "Issued":
+        return "That book is already issued to someone."
+    student = run_json(f"SELECT json_build_object('exists', true) FROM students WHERE roll_no = {quote(roll_no)} AND status = 'Active';", None)
+    if not student:
+        return "No active student with that roll number."
+    run_psql(f"""
+        BEGIN;
+        UPDATE library_books SET status = 'Issued' WHERE barcode = {quote(barcode)};
+        INSERT INTO library_issues (barcode, student_roll_no, issued_on, due_on, status)
+        VALUES ({quote(barcode)}, {quote(roll_no)}, CURRENT_DATE, CURRENT_DATE + {LIBRARY_LOAN_DAYS}, 'Issued');
+        COMMIT;
+    """)
+    title = run_psql(f"SELECT title FROM library_books WHERE barcode = {quote(barcode)};").strip()
+    create_notification(
+        "student", roll_no, "Book issued",
+        f'"{title}" has been issued to you. Due back in {LIBRARY_LOAN_DAYS} days.',
+        link="/dashboards/student-dashboard.html#library", source_module="library",
+    )
+    return None
+
+
+def return_library_book(issue_id):
+    row = run_json(f"""
+        SELECT json_build_object(
+          'barcode', barcode, 'overdueDays', GREATEST(0, CURRENT_DATE - due_on),
+          'studentRollNo', student_roll_no
+        ) FROM library_issues WHERE id = {quote(issue_id)}::uuid AND status != 'Returned';
+    """, None)
+    if not row:
+        return "Issue record not found, or already returned."
+    fine = row["overdueDays"] * LIBRARY_FINE_PER_DAY
+    run_psql(f"""
+        BEGIN;
+        UPDATE library_issues SET status = 'Returned', returned_on = CURRENT_DATE, fine_amount = {fine}
+        WHERE id = {quote(issue_id)}::uuid;
+        UPDATE library_books SET status = 'Available' WHERE barcode = {quote(row["barcode"])};
+        COMMIT;
+    """)
+    if fine > 0:
+        create_notification(
+            "student", row["studentRollNo"], "Library fine",
+            f"A fine of Rs. {fine} was recorded for a book returned {row['overdueDays']} day(s) late.",
+            link="/dashboards/student-dashboard.html#library", source_module="library",
+        )
+    return None
+
+
+def renew_library_book(issue_id):
+    row = run_json(f"""
+        SELECT json_build_object(
+          'status', status, 'renewedCount', renewed_count, 'isOverdue', due_on < CURRENT_DATE
+        ) FROM library_issues WHERE id = {quote(issue_id)}::uuid;
+    """, None)
+    if not row or row.get("status") == "Returned":
+        return "Issue record not found, or already returned."
+    if row.get("isOverdue"):
+        return "Overdue books can't be renewed - return it first."
+    if row.get("renewedCount", 0) >= LIBRARY_MAX_RENEWALS:
+        return f"Already renewed the maximum of {LIBRARY_MAX_RENEWALS} times."
+    run_psql(f"""
+        UPDATE library_issues SET due_on = due_on + {LIBRARY_LOAN_DAYS}, renewed_count = renewed_count + 1
+        WHERE id = {quote(issue_id)}::uuid;
+    """)
+    return None
+
+
 # Year/department/term aggregates for the Admin Dashboard's Analytics & Trends panel - each of
 # these already exists as a per-record table (placement_drives, attendance_entries, fee_dues,
 # student_grades) with its own admin panel, but nothing ties the history together into one view an
@@ -4188,6 +4287,49 @@ class PortalHandler(SimpleHTTPRequestHandler):
                     return
                 replace_library_records(payload or [])
                 self.send_json(200, run_json(BOOTSTRAP_SQL, {}).get("libraryRecords", []))
+                return
+            if path == "/api/library/add-book":
+                if not require_auth(self, allowed_types=["admin", "faculty"]):
+                    return
+                error = add_library_book(payload or {})
+                if error:
+                    self.send_json(400, {"ok": False, "error": error})
+                    return
+                self.send_json(200, {"ok": True})
+                return
+            if path == "/api/library/issue":
+                if not require_auth(self, allowed_types=["admin", "faculty"]):
+                    return
+                error = issue_library_book(payload or {})
+                if error:
+                    self.send_json(400, {"ok": False, "error": error})
+                    return
+                self.send_json(200, {"ok": True})
+                return
+            if path == "/api/library/return":
+                if not require_auth(self, allowed_types=["admin", "faculty"]):
+                    return
+                error = return_library_book((payload or {}).get("id") or "")
+                if error:
+                    self.send_json(400, {"ok": False, "error": error})
+                    return
+                self.send_json(200, {"ok": True})
+                return
+            if path == "/api/library/renew":
+                identity = require_auth(self, allowed_types=["admin", "faculty", "student"])
+                if not identity:
+                    return
+                issue_id = (payload or {}).get("id") or ""
+                if identity["identityType"] == "student":
+                    owner = run_json(f"SELECT json_build_object('ok', true) FROM library_issues WHERE id = {quote(issue_id)}::uuid AND student_roll_no = {quote(identity['identityId'])};", None)
+                    if not owner:
+                        self.send_json(403, {"ok": False, "error": "Not your issued book."})
+                        return
+                error = renew_library_book(issue_id)
+                if error:
+                    self.send_json(400, {"ok": False, "error": error})
+                    return
+                self.send_json(200, {"ok": True})
                 return
             if path == "/api/auth/set-password":
                 # Genesis exception: admin-login.html's "First-Time Setup" card calls this to
