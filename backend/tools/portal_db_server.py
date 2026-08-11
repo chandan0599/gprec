@@ -4018,7 +4018,36 @@ def get_analytics_trends():
                     FROM student_grades
                     GROUP BY term
                 ) t
-            ), '[]'::json)
+            ), '[]'::json),
+            -- ctc is free text ("3.6 LPA", not a number), entered by whoever posts the drive - the
+            -- leading numeric run is pulled out for aggregation/sorting; rows where that fails
+            -- (no digits at all) contribute a null ctcValue rather than breaking the whole query.
+            'placementsByCompany', COALESCE((
+                SELECT json_agg(row_to_json(t) ORDER BY t.selected DESC, t.company) FROM (
+                    SELECT pd.company,
+                        MAX(pd.ctc) AS ctc,
+                        MAX((regexp_match(pd.ctc, '[0-9.]+'))[1]::numeric) AS "ctcValue",
+                        COUNT(DISTINCT pa.student_roll_no) FILTER (WHERE pa.status = 'Selected') AS selected,
+                        COUNT(DISTINCT pa.student_roll_no) AS applicants
+                    FROM placement_drives pd
+                    JOIN placement_applications pa ON pa.drive_id = pd.id
+                    WHERE pd.drive_type = 'Placement'
+                    GROUP BY pd.company
+                ) t
+            ), '[]'::json),
+            'packageStats', COALESCE((
+                SELECT row_to_json(t) FROM (
+                    SELECT
+                        ROUND(AVG(v.ctc_value), 2) AS "avgCtc",
+                        MAX(v.ctc_value) AS "maxCtc",
+                        MIN(v.ctc_value) AS "minCtc"
+                    FROM (
+                        SELECT (regexp_match(ctc, '[0-9.]+'))[1]::numeric AS ctc_value
+                        FROM placement_drives WHERE drive_type = 'Placement'
+                    ) v
+                    WHERE v.ctc_value IS NOT NULL
+                ) t
+            ), '{}'::json)
         );
     """, {})
 

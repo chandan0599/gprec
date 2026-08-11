@@ -7870,6 +7870,26 @@ const renderAnalyticsTrends = () => {
       .join("");
   }
 
+  const packageStats = trends.packageStats || {};
+  setText("#packageStatsAvg", packageStats.avgCtc != null ? `${packageStats.avgCtc} LPA` : "-");
+  setText("#packageStatsMax", packageStats.maxCtc != null ? `${packageStats.maxCtc} LPA` : "-");
+  setText("#packageStatsMin", packageStats.minCtc != null ? `${packageStats.minCtc} LPA` : "-");
+
+  const byCompany = trends.placementsByCompany || [];
+  const companyChartWrap = document.querySelector("#companyPlacementsChartWrap");
+  const companyTableBody = document.querySelector("#companyPlacementsTableBody");
+  if (companyChartWrap) {
+    const maxSelected = Math.max(1, ...byCompany.map((row) => Number(row.selected) || 0));
+    companyChartWrap.innerHTML = byCompany.length
+      ? byCompany.map((row) => buildAnalyticsBarRow(row.company, Number(row.selected) || 0, maxSelected, `${row.selected} selected of ${row.applicants} (${row.ctc || "-"})`)).join("")
+      : `<p class="analytics-chart-empty">No placement drive data on file yet.</p>`;
+  }
+  if (companyTableBody) {
+    companyTableBody.innerHTML = byCompany
+      .map((row) => `<tr><td>${escapeHtml(row.company)}</td><td>${escapeHtml(row.ctc || "-")}</td><td>${row.applicants}</td><td>${row.selected}</td></tr>`)
+      .join("");
+  }
+
   const attendanceByDept = trends.attendanceByDepartment || [];
   const attendanceChartWrap = document.querySelector("#attendanceChartWrap");
   const attendanceTableBody = document.querySelector("#attendanceTableBody");
