@@ -3134,25 +3134,33 @@ a {
   max-width: min(70%, 480px);
   width: fit-content;
   margin: 0;
-  padding: 8px 18px;
+  /* Padding/font-size matched to .hero-dots (8px padding, 10px dots) so the caption pill and the
+     dots pill read as the same visual scale, not one dominating the other. */
+  padding: 8px 14px;
   overflow: hidden;
   border-radius: 999px;
   background: rgba(4, 40, 74, 0.55);
   backdrop-filter: blur(10px);
-  font-size: 0.82rem;
+  font-size: 0.5rem;
   font-weight: 800;
   white-space: nowrap;
   text-overflow: ellipsis;
   transform: translateX(-50%);
 }
 
-/* .hero p (further down this file) sets a dark, muted color for the hero lede text - that
-   selector's specificity (a class + a type) beats plain .hero-slide-caption alone, since this is
-   also a <p> sitting directly inside .hero. Scoping the color here to .hero .hero-slide-caption
-   guarantees it wins instead of silently inheriting that unrelated dark color. */
+/* .hero p (further down this file) sets a dark, muted color AND a font-size clamp() for the hero
+   lede text - that selector's specificity (a class + a type) beats plain .hero-slide-caption
+   alone, since this is also a <p> sitting directly inside .hero. Scoping color/font-size here to
+   .hero .hero-slide-caption guarantees they win instead of silently inheriting that unrelated
+   lede styling (this is why editing font-size on .hero-slide-caption alone above had no visible
+   effect on the home hero - only the About Us history gallery, which isn't inside .hero). */
 .hero .hero-slide-caption,
 .about-gallery .hero-slide-caption {
   color: var(--white);
+}
+
+.hero .hero-slide-caption {
+  font-size: 0.5rem;
 }
 
 .hero-slide-caption:empty {
@@ -3161,8 +3169,8 @@ a {
 
 .about-gallery .hero-slide-caption {
   bottom: 16px;
-  font-size: 0.76rem;
-  padding: 5px 14px;
+  font-size: 0.5rem;
+  padding: 8px 14px;
 }
 
 .hero-info {
