@@ -33,7 +33,7 @@ PORT = 8766
 # origin(s) here once this is hosted anywhere other than localhost. The LAN IP entry lets a phone
 # on the same WiFi hit this API (update it if your Mac's local IP changes).
 ALLOWED_ORIGINS = {"http://127.0.0.1:8080", "http://localhost:8080", "http://192.168.1.17:8080"}
-PSQL = "/Applications/Postgres.app/Contents/Versions/18/bin/psql"
+PSQL = os.environ.get("GPREC_PSQL_PATH", "psql")
 DB_NAME = os.environ.get("GPREC_DB_NAME", "gprec_dev")
 DB_SCHEMA = os.environ.get("GPREC_DB_SCHEMA", "gprec_erp")
 DB_USER = os.environ.get("GPREC_DB_USER", "gprec_dev")
