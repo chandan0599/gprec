@@ -5,3 +5,4 @@ tools/.bank_encryption.key
 backend/tools/.bank_encryption.key
 backend/tools/.vapid_keys.json
 node_modules/
+.claude/settings.local.json

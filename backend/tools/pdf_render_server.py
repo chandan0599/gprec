@@ -12,6 +12,7 @@ Form 16, hall ticket, fee challan) or /render-png (ticket-stub passes: event/bus
 and gets back bytes sized exactly to the rendered content. If this server isn't running, script.js
 falls back to the html2canvas path so the download button still works either way.
 """
+import os
 import re
 from html import escape as html_escape
 from pathlib import Path
@@ -28,12 +29,15 @@ from playwright.sync_api import sync_playwright
 # 0.0.0.0 without adding real authentication first.
 HOST = "127.0.0.1"
 PORT = 8767
-# Same allowed-origins convention as portal_db_server.py.
+# Same allowed-origins convention as portal_db_server.py - set GPREC_ALLOWED_ORIGINS
+# (comma-separated) to add the real deployed origin(s) instead of editing this default.
 ALLOWED_ORIGINS = {
     "http://127.0.0.1:8080",
     "http://localhost:8080",
     "http://127.0.0.1:8766",
     "http://localhost:8766",
+} | {
+    origin.strip() for origin in os.environ.get("GPREC_ALLOWED_ORIGINS", "").split(",") if origin.strip()
 }
 
 app = Flask(__name__)
