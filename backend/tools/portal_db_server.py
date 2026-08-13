@@ -41,10 +41,6 @@ DB_PASSWORD = os.environ.get("GPREC_DB_PASSWORD", "")
 DB_HOST = os.environ.get("GPREC_DB_HOST", "localhost")
 DB_PORT = os.environ.get("GPREC_DB_PORT", "5432")
 
-# reCAPTCHA for the public event registration/login forms, which have no GPREC login gate to fall
-# back on. The secret key stays server-side-only via an env var, never committed.
-RECAPTCHA_SECRET_KEY = os.environ.get("RECAPTCHA_SECRET_KEY", "")
-
 # Encryption-at-rest for financial PII (bank account details) so a compromised DB dump/backup
 # doesn't reveal plaintext account numbers/IFSC codes. Key is generated once and persisted
 # outside the DB; set GPREC_BANK_ENCRYPTION_KEY to pin a specific key (e.g. in production).
@@ -1350,27 +1346,6 @@ def hash_password(password, salt_hex=None):
 def verify_password(password, salt_hex, hash_hex):
     _, computed = hash_password(password, salt_hex)
     return hmac.compare_digest(computed, hash_hex)
-
-
-def verify_recaptcha(token):
-    # If no secret key is configured yet, fail open rather than locking out every public
-    # registration/login - matches this app's convention of degrading gracefully when an
-    # integration isn't configured, rather than a hard 500.
-    if not RECAPTCHA_SECRET_KEY:
-        return True
-    if not token:
-        return False
-    try:
-        request = Request(
-            "https://www.google.com/recaptcha/api/siteverify",
-            data=f"secret={RECAPTCHA_SECRET_KEY}&response={token}".encode("utf-8"),
-            method="POST",
-        )
-        with urlopen(request, timeout=8) as response:
-            result = json.loads(response.read().decode("utf-8"))
-        return bool(result.get("success"))
-    except (URLError, HTTPError, TimeoutError, ValueError):
-        return False
 
 
 # Self-hosted CAPTCHA (math question) for the public event forms - no external site key needed.

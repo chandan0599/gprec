@@ -66,7 +66,6 @@ below). None of them should be hardcoded in source or committed to git.
 | `GPREC_PSQL_PATH` | Only needed if `psql` isn't on `PATH` |
 | `GPREC_ALLOWED_ORIGINS` | Comma-separated list adding your real `https://yourdomain.com` origin (CORS) |
 | `GPREC_BANK_ENCRYPTION_KEY` | Pin a specific Fernet key for bank-detail encryption-at-rest, instead of the auto-generated `backend/tools/.bank_encryption.key` file (still fine to use, just make sure it's backed up and never committed) |
-| `RECAPTCHA_SECRET_KEY` | For the public event registration/login forms |
 
 **Before going live**, also rotate what's currently in `admin-config.json` (it's git-tracked and
 was written assuming local-only use): the PostgreSQL password/`databaseApiConfig` block, and any
