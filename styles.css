@@ -16523,13 +16523,24 @@ img.alumni-post-avatar {
   height: 34px;
   flex: 0 0 34px;
   place-items: center;
-  padding: 0 0 2px;
   color: var(--white);
   border: 1px solid rgba(255, 255, 255, 0.22);
   border-radius: 999px;
   background: rgba(255, 255, 255, 0.10);
-  font: 900 1.3rem/1 Arial, sans-serif;
   cursor: pointer;
+}
+
+/* Matches .gprecian-expand svg exactly (same stroke width/size) - the close button used to be a
+   bold (font-weight 900) text "x", which read noticeably heavier than this thin-stroke expand
+   icon right next to it. */
+.gprecian-close svg {
+  width: 17px;
+  height: 17px;
+  stroke: currentColor;
+  stroke-width: 2.1;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  fill: none;
 }
 
 .gprecian-expand {
