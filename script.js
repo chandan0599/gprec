@@ -114,9 +114,6 @@ const GPREC_CURRENT_FILE = window.location.pathname.split("/").pop() || "index.h
 const GPREC_CURRENT_ROUTE_FILE = GPREC_CURRENT_FILE.endsWith(".html") ? GPREC_CURRENT_FILE : `${GPREC_CURRENT_FILE}.html`;
 const gprecIsAlumniDashboardPreviewRoute = window.location.pathname.includes("/dashboards/alumni-dashboard");
 const getCurrentStudentId = () => (localStorage.getItem("gprecStudentId") || "").trim().toUpperCase();
-const normalizeDobDigits = (value) => String(value || "").replace(/\D/g, "");
-const hasStudentLogin = () => Boolean(getCurrentStudentId());
-
 // What to remove from storage when logging out, keyed by which login page the person used.
 // Keeps logout scoped to just that one role, so it doesn't accidentally clear anyone else's
 // saved session.
@@ -185,16 +182,6 @@ const clearGprecianChatHistory = () => {
   [gprecianChatStorageKey(), ...gprecianLegacyChatStorageKeys()].forEach((key) => {
     localStorage.removeItem(key);
     sessionStorage.removeItem(key);
-  });
-};
-
-const clearAllGprecianChatHistoryForCurrentBrowser = () => {
-  const prefixes = ["gprecianChatHistory:", "gprecianChatHistory:v2:"];
-  [localStorage, sessionStorage].forEach((storage) => {
-    for (let index = storage.length - 1; index >= 0; index -= 1) {
-      const key = storage.key(index);
-      if (key && prefixes.some((prefix) => key.startsWith(prefix))) storage.removeItem(key);
-    }
   });
 };
 
@@ -1008,30 +995,6 @@ const saveSiteContent = (key, value) => {
   return result;
 };
 
-const getLibraryCatalog = async () => {
-  const databaseCatalog = getGprecDbBootstrap()?.libraryCatalog;
-  if (databaseCatalog && Object.keys(databaseCatalog).length) return databaseCatalog;
-  const apiConfig = getLibraryApiConfig();
-  if (apiConfig?.baseUrl) {
-    try {
-      const response = await fetch(`${apiConfig.baseUrl}/catalog`, { headers: libraryApiHeaders(apiConfig, false) });
-      if (response.ok) return response.json(); // expected shape: { [barcode]: { title, author } }
-    } catch {
-      // Real API unreachable - fall through to the local catalog below.
-    }
-  }
-  try {
-    return JSON.parse(localStorage.getItem("gprecLibraryCatalog") || "{}");
-  } catch {
-    return {};
-  }
-};
-// The real catalog is owned by the external library system once one is connected, so this
-// never calls the API; it just stores the CSV-uploaded data used as a local fallback.
-const saveLibraryCatalog = async (catalog) => {
-  localStorage.setItem("gprecLibraryCatalog", JSON.stringify(catalog));
-};
-
 const getLibraryRecords = async () => {
   const databaseRecords = getGprecDbBootstrap()?.libraryRecords;
   if (Array.isArray(databaseRecords)) return databaseRecords;
@@ -1049,24 +1012,6 @@ const getLibraryRecords = async () => {
   } catch {
     return [];
   }
-};
-const saveLibraryRecords = async (records) => {
-  const saved = gprecDbPost("/issued-books", records);
-  if (saved) return;
-  const apiConfig = getLibraryApiConfig();
-  if (apiConfig?.baseUrl) {
-    try {
-      const response = await fetch(`${apiConfig.baseUrl}/issued-books`, {
-        method: "PUT",
-        headers: libraryApiHeaders(apiConfig, true),
-        body: JSON.stringify(records)
-      });
-      if (response.ok) return;
-    } catch {
-      // Real API unreachable - fall through and save locally so the action isn't lost.
-    }
-  }
-  localStorage.setItem("gprecLibraryRecords", JSON.stringify(records));
 };
 // Weekly mess menu (warden-edited, hostel_name-keyed) and per-meal feedback averages.
 const getMessMenu = () => getGprecDbBootstrap()?.messMenu || [];
@@ -3737,18 +3682,6 @@ const renderDefaultRegistrationNotice = () => {
   `;
   spotlightGrid.prepend(article);
   spotlightGrid.scrollTop = 0;
-};
-
-const createSpotlightPosterArticle = (poster) => {
-  const article = document.createElement("article");
-  article.className = "spotlight-card spotlight-card-poster";
-  article.setAttribute("data-spotlight-poster", poster.id);
-    const thumbHtml = poster.imageUrl ? `<img src="${poster.imageUrl}" alt="${escapeHtml(poster.title)}" class="spotlight-card-media">` : `<span class="spotlight-card-placeholder">Poster</span>`;
-    const textHtml = `<div class="spotlight-card-body"><strong>${escapeHtml(poster.type || "Poster")}</strong><span>${escapeHtml(poster.title)}</span></div>`;
-    article.innerHTML = poster.link
-      ? `<a class="spotlight-card-link" href="${escapeHtml(poster.link)}">${thumbHtml}${textHtml}</a>`
-      : `${thumbHtml}${textHtml}`;
-    return article;
 };
 
 // Same csvField/downloadCsv helpers already used by the Academic/Financial report exports and
@@ -6560,8 +6493,6 @@ const resolveStudentRoomHostel = (studentId, fallbackRoom, fallbackHostel) => {
   const student = hostelStudentData[studentId];
   return { room: student?.room || fallbackRoom || "-", hostel: student?.hostel || fallbackHostel || "-" };
 };
-const resolveStudentMobile = (studentId, fallbackMobile) =>
-  defaultStudentProfiles[studentId]?.mobile || fallbackMobile || "-";
 const resolveParentMobile = (studentId, fallbackMobile) =>
   defaultStudentProfiles[studentId]?.parentMobile || hostelStudentData[studentId]?.parentMobile || fallbackMobile || "-";
 
@@ -14523,13 +14454,6 @@ const buildImageOnlyPdf = (jpegBytes, pixelWidth, pixelHeight, pageWidth, pageHe
   return new Blob(chunks, { type: "application/pdf" });
 };
 
-const SEMESTER_YEAR_LABELS = {
-  "I Semester": "1st Yr", "II Semester": "1st Yr",
-  "III Semester": "2nd Yr", "IV Semester": "2nd Yr",
-  "V Semester": "3rd Yr", "VI Semester": "3rd Yr",
-  "VII Semester": "4th Yr", "VIII Semester": "4th Yr"
-};
-
 // Real-HTML + native-PNG portrait ID-card scaffold - the shape behind both "28_temp_id_card.html"
 // and "29_volunteer_id_card.html", which are pixel-identical in structure/CSS, differing only in
 // copy. PORTRAIT_ID_CSS/buildPortraitIdHtml are defined further down but are safe to reference
@@ -20969,8 +20893,6 @@ const saveFestVenue = (venue) => saveSiteContent("festVenue", venue);
 // leave it on and let the automatic expiry handle hiding it once the fest is over.
 const getFestBannerEnabled = () => getSiteContent("festBannerEnabled", true);
 const saveFestBannerEnabled = (enabled) => saveSiteContent("festBannerEnabled", enabled);
-const getFestVisitorTheme = () => getSiteContent("festVisitorTheme", "minimal");
-const saveFestVisitorTheme = (theme) => saveSiteContent("festVisitorTheme", theme || "minimal");
 const getFestVisitorCompassPosition = () => getSiteContent("festVisitorCompassPosition", "right");
 
 // Admin-editable content blocks for the public event-visitor-dashboard.html page (Event
@@ -21100,7 +21022,6 @@ const getVisitorBlurbs = () => {
   return saved && typeof saved === "object" ? { ...VISITOR_BLURB_DEFAULTS, ...saved } : VISITOR_BLURB_DEFAULTS;
 };
 const saveVisitorBlurbs = (blurbs) => saveSiteContent("visitorBlurbs", blurbs);
-const saveFestVisitorCompassPosition = (position) => saveSiteContent("festVisitorCompassPosition", position || "right");
 
 // The app drawer's Event Management Dashboard shortcut always shows on admin/faculty/student
 // dashboards (the markup itself starts is-hidden only as a no-flash-of-unstyled-content guard -
@@ -21534,41 +21455,6 @@ const wrapCanvasText = (ctx, text, x, y, maxWidth, lineHeight, maxLines = 2) => 
     lines[lines.length - 1] = `${last}…`;
   }
   lines.forEach((lineText, lineIndex) => ctx.fillText(lineText, x, y + lineIndex * lineHeight));
-};
-
-const canvasTextLines = (ctx, text, maxWidth) => {
-  const words = String(text || "").split(/\s+/).filter(Boolean);
-  if (!words.length) return ["-"];
-  const lines = [];
-  let line = "";
-  words.forEach((word) => {
-    const test = line ? `${line} ${word}` : word;
-    if (ctx.measureText(test).width > maxWidth && line) {
-      lines.push(line);
-      line = word;
-    } else {
-      line = test;
-    }
-  });
-  if (line) lines.push(line);
-  return lines;
-};
-
-const drawFittedCanvasText = (ctx, text, x, y, maxWidth, { maxLines = 2, maxFontSize = 20, minFontSize = 12, weight = 800, color = "#04284a" } = {}) => {
-  let fontSize = maxFontSize;
-  let lines = [];
-  while (fontSize >= minFontSize) {
-    ctx.font = `${weight} ${fontSize}px Arial, sans-serif`;
-    lines = canvasTextLines(ctx, text || "-", maxWidth);
-    if (lines.length <= maxLines && lines.every((line) => ctx.measureText(line).width <= maxWidth)) break;
-    fontSize -= 1;
-  }
-  ctx.font = `${weight} ${fontSize}px Arial, sans-serif`;
-  ctx.fillStyle = color;
-  const lineHeight = Math.max(16, Math.round(fontSize * 1.18));
-  const visibleLines = lines.slice(0, maxLines);
-  visibleLines.forEach((lineText, lineIndex) => ctx.fillText(lineText, x, y + lineIndex * lineHeight));
-  return { lines: visibleLines.length, lineHeight, height: visibleLines.length * lineHeight };
 };
 
 // Each ticket-stub mockup's own eticket-tag icon (24x24 viewBox path data, transcribed verbatim
@@ -22201,86 +22087,6 @@ const makeShortPassId = (prefix, parts) => {
   let hash = 0;
   for (let i = 0; i < source.length; i += 1) hash = (hash * 31 + source.charCodeAt(i)) >>> 0;
   return `${prefix}-${hash.toString(36).toUpperCase().padStart(6, "0").slice(-6)}`;
-};
-
-const A4_DOC_COLORS = {
-  NAVY_DEEP: "#0a1730",
-  NAVY: "#0f1f3d",
-  AMBER: "#e8821a",
-  AMBER_SOFT: "#f0a34d",
-  CREAM: "#faf6ee",
-  INK: "#0f1f3d",
-  MUTED: "#6b7180",
-  LINE: "#e3ddd0"
-};
-const a4DocRoundedRectPath = (ctx, x, y, w, h, r) => {
-  const rr = Math.min(r, w / 2, h / 2);
-  ctx.beginPath();
-  ctx.moveTo(x + rr, y);
-  ctx.arcTo(x + w, y, x + w, y + h, rr);
-  ctx.arcTo(x + w, y + h, x, y + h, rr);
-  ctx.arcTo(x, y + h, x, y, rr);
-  ctx.arcTo(x, y, x + w, y, rr);
-  ctx.closePath();
-};
-
-// Shared header band (logo + org name + doc number, top right) for the A4-sheet document family
-// (Pay Slip, Form 16) - matches "34_pay_slip.html"/"35_form_16.html"'s identical header chrome.
-const drawA4DocHeader = async (ctx, cardW, docNoLabel, docNo, sizes = {}) => {
-  const { orgNameSize = 15, orgSubSize = 9.5, docNoLabelSize = 10, docNoSize = 14, padX = 32 } = sizes;
-  const { NAVY, NAVY_DEEP, AMBER_SOFT, CREAM } = A4_DOC_COLORS;
-  const headH = 78;
-  const headGrad = ctx.createLinearGradient(0, 0, cardW * 0.5, headH);
-  headGrad.addColorStop(0, NAVY);
-  headGrad.addColorStop(1, NAVY_DEEP);
-  ctx.fillStyle = headGrad;
-  ctx.fillRect(0, 0, cardW, headH);
-
-  const logoImg = new Image();
-  await new Promise((resolve) => {
-    logoImg.onload = resolve;
-    logoImg.onerror = resolve;
-    logoImg.src = gprecLogoUrl;
-  });
-  // Logo beside a two-line org name + department (matching the mockup's `.org-name`/`.org-sub`
-  // hierarchy - a single plain line loses the bold-college-name/muted-subtitle distinction).
-  let textX = padX;
-  if (logoImg.naturalWidth) {
-    const logoH = 26;
-    const logoW = (logoH * logoImg.naturalWidth) / logoImg.naturalHeight;
-    ctx.drawImage(logoImg, padX, (headH - logoH) / 2, logoW, logoH);
-    textX = padX + logoW + 14;
-  }
-  ctx.fillStyle = CREAM;
-  ctx.font = `700 ${orgNameSize}px Fraunces`;
-  ctx.fillText("G Pulla Reddy Engineering College", textX, 38);
-  ctx.fillStyle = "rgba(250,246,238,0.65)";
-  ctx.font = `400 ${orgSubSize}px Inter`;
-  ctx.fillText("Human Resources Department", textX, 56);
-
-  ctx.textAlign = "right";
-  ctx.fillStyle = AMBER_SOFT;
-  ctx.font = `700 ${docNoLabelSize}px 'Space Mono'`;
-  ctx.fillText(docNoLabel, cardW - padX, 32);
-  ctx.font = `700 ${docNoSize}px 'Space Mono'`;
-  ctx.fillStyle = CREAM;
-  ctx.fillText(docNo, cardW - padX, 52);
-  ctx.textAlign = "left";
-  return headH;
-};
-
-// Shared footer bar for the A4-sheet document family.
-const drawA4DocFooter = (ctx, cardW, y, text, fontSize = 10) => {
-  const { NAVY } = A4_DOC_COLORS;
-  const h = 32;
-  ctx.fillStyle = NAVY;
-  ctx.fillRect(0, y, cardW, h);
-  ctx.fillStyle = "rgba(250,246,238,0.6)";
-  ctx.textAlign = "center";
-  ctx.font = `400 ${fontSize}px 'Space Mono'`;
-  ctx.fillText(text, cardW / 2, y + h / 2 + 3);
-  ctx.textAlign = "left";
-  return h;
 };
 
 // Builds the muted-label/bold-value segments for the pay slip's bank line, matching

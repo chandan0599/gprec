@@ -15,7 +15,6 @@ falls back to the html2canvas path so the download button still works either way
 import os
 import re
 from html import escape as html_escape
-from pathlib import Path
 
 from flask import Flask, request, Response
 from playwright.sync_api import sync_playwright
