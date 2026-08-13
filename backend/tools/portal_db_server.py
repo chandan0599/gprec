@@ -34,10 +34,10 @@ PORT = 8766
 # on the same WiFi hit this API (update it if your Mac's local IP changes).
 ALLOWED_ORIGINS = {"http://127.0.0.1:8080", "http://localhost:8080", "http://192.168.1.17:8080"}
 PSQL = "/Applications/Postgres.app/Contents/Versions/18/bin/psql"
-DB_NAME = os.environ.get("GPREC_DB_NAME", "lakkavaramsaichandan")
+DB_NAME = os.environ.get("GPREC_DB_NAME", "gprec_dev")
 DB_SCHEMA = os.environ.get("GPREC_DB_SCHEMA", "gprec_erp")
-DB_USER = os.environ.get("GPREC_DB_USER", "lakkavaramsaichandan")
-DB_PASSWORD = os.environ.get("GPREC_DB_PASSWORD", "REDACTED")
+DB_USER = os.environ.get("GPREC_DB_USER", "gprec_dev")
+DB_PASSWORD = os.environ.get("GPREC_DB_PASSWORD", "")
 DB_HOST = os.environ.get("GPREC_DB_HOST", "localhost")
 DB_PORT = os.environ.get("GPREC_DB_PORT", "5432")
 

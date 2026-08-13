@@ -25,11 +25,11 @@
     "type": "postgres",
     "baseUrl": "",
     "apiKey": "",
-    "username": "lakkavaramsaichandan",
-    "password": "REDACTED",
+    "username": "",
+    "password": "",
     "host": "localhost",
     "port": "5432",
-    "database": "lakkavaramsaichandan"
+    "database": ""
   },
   "smsSettings": {
     "provider": "msg91",
