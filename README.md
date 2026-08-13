@@ -98,18 +98,20 @@ it, use **Forgot password?** on the login form instead.
 
 | Module | What it's for |
 | --- | --- |
-| Overview | Portal-wide counts, system health, and a directory of every dashboard and integration. |
+| Overview | Portal-wide counts, system health, a directory of every dashboard/integration, and an Analytics & Trends panel (placements, attendance, fee collection, exam pass rates). |
 | Calendar | Academic dates and reminders shown on the student and faculty dashboards. |
 | Campus Events | Fest and activity listings shown on the public Campus Life page. |
 | Contact Messages | Submissions from the public Contact Us form. |
-| Data Integrations | Google, PayU, AI, library, database, and SMS/KYC connection settings. |
+| Data Integrations | Google, PayU, AI (chatbot config plus a Bot Performance panel), Map SDK usage stats, library, database, and SMS/KYC connection settings. |
 | Feature Ideas | Describe a feature in plain English and get a draft approach and starter code for a developer to review. |
-| Fee Management | Student fee structures, dues, and payment tracking. |
+| Fee Management | Student fee structures, dues, payment tracking, and one-click SMS/WhatsApp fee-due reminders. |
+| Grievances | Every complaint filed portal-wide (academic, hostel, general) in one queue, with status tracking and resolution notes. |
 | HOD Leave Requests | Leave approvals routed to department HODs. |
 | Media | Photos and media used across the public site and dashboards. |
 | Non-Teaching Staff Leave | Leave approvals for non-teaching staff. |
-| Notices | Notices published to students, faculty, and other dashboards. |
+| Notices | Notices published to students, faculty, and other dashboards, with optional SMS/WhatsApp broadcast. |
 | Poster Design | Event poster builder for campus events. |
+| Register for Event | Faculty/Admin self-registration as a campus/fest event attendee, alongside the public/student flow. |
 | Reports & Audit | Academic/financial report exports, the admin audit trail, and the data retention policy reference. |
 | Site Maintenance | Take the public site or individual dashboards offline, with an optional advance-warning banner. |
 | Transportation | Bus routes and transportation records. |
