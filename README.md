@@ -11,19 +11,44 @@ For deploying this for real (not just running it locally), see [PRODUCTION.md](P
 
 ## Structure
 
-| Path | What it is |
+### Frontend
+
+| File / folder | What it's used for |
 | --- | --- |
 | `index.html` | Public homepage. |
 | `pages/` | Public pages (About, Admissions, Careers, Contact, Fee Structure, ...) and the six role login pages (`admin-login`, `student-login`, `faculty-login`, `parent-login`, `alumni-login`, `non-teaching-login`). |
 | `dashboards/` | Role-based dashboards: admin, student, faculty, parent, alumni, department, placement, exam cell, hostel, non-teaching, plus event-management/volunteer/visitor dashboards. |
-| `file_templates/` | Printable HTML templates (ID cards, passes, hall tickets, fee challan, pay slip, Form 16, event posters, certificates). |
-| `backend/tools/` | Local Python servers (see below). |
-| `backend/database/postgres/` | `schema.sql` / `seed.sql` for the `gprec_erp` schema, and its own [README](backend/database/postgres/README.md). |
+| `file_templates/` | Printable HTML templates (ID cards, passes, hall tickets, fee challan, pay slip, Form 16, event posters, certificates) - the design source `script.js`'s poster/pass/card builders mirror, not files loaded directly at runtime. |
+| `script.js` | Single shared JS file driving every page - nav, dashboards, auth, forms, and every dashboard's client-side logic. |
+| `styles.css` | Single shared stylesheet for every page. |
+| `manifest.json` | PWA manifest (name, icons, standalone display) that makes the site installable. |
+| `sw.js` | Service worker. Deliberately does no page/asset caching (would fight the `?v=` cache-busting on `script.js`/`styles.css`) - its only job is Web Push: showing a notification when one arrives and focusing/opening the right page on click. |
+| `qrcode-generator.js` | Vendored third-party library for generating QR codes (ID cards, passes, event check-in). |
+| `vendor/html2canvas.min.js` | Vendored third-party library for client-side PDF/image rendering - the fallback path when `pdf_render_server.py` isn't running. |
+| `gprec-logo-enhanced.png`, `icon-192.png`, `icon-512.png` | Site logo and PWA install icons. |
+| `admin-config.json` | Local, git-tracked runtime config (main admin contact, integration keys, SMS/KYC settings, admin directory) written by the admin dashboard via `admin_config_server.py`. |
 | `uploads/` | User-uploaded files (profile pictures, assignments, notices, media, site photos, etc.), written by the admin config server. |
-| `admin-config.json` | Local, git-tracked runtime config (main admin contact, integration keys, SMS/KYC settings, admin directory) written by the admin dashboard. |
-| `script.js` | Single shared JS file driving every page (nav, dashboards, auth, forms). |
-| `styles.css` | Single shared stylesheet. |
-| `qrcode-generator.js`, `html2canvas.min.js` | Vendored third-party libraries used for QR codes and client-side PDF/image rendering. |
+
+### Backend (`backend/tools/`)
+
+| File | What it's used for |
+| --- | --- |
+| `portal_db_server.py` | The Postgres-backed API (port 8766) - authentication, bootstrap data, and every read/write operation the dashboards call. |
+| `admin_config_server.py` | Handles `admin-config.json` writes and file uploads (port 8765). Binds to `127.0.0.1` only - see the file's own comment for why. |
+| `pdf_render_server.py` | Optional Playwright-based HTML-to-PDF/PNG rendering (port 8767) for pay slips, hall tickets, passes, etc. - pixel-perfect vs. the `html2canvas` fallback. |
+| `static_server.py` | Dev-only static file server (port 8080) - a Live Server replacement that doesn't auto-refresh on `admin-config.json`/`uploads/` writes. Not used in production (nginx serves those files directly instead). |
+| `send_fee_reminders_cron.py` | Thin CLI wrapper that calls the same function the admin dashboard's "Send Fee Reminders Now" button uses, for unattended OS-level cron scheduling. |
+| `send_attendance_alerts_cron.py` | Same pattern as above, for the "Send Attendance Alerts" button (students below 75% attendance). |
+| `start_servers.sh` | Starts `portal_db_server.py`, `static_server.py`, and `pdf_render_server.py` for local dev (safe to re-run - kills previous instances first). |
+| `stop_servers.sh` | Stops whatever `start_servers.sh` started. |
+
+### Database (`backend/database/postgres/`)
+
+| File | What it's used for |
+| --- | --- |
+| `schema.sql` | Creates the `gprec_erp` schema and all 86 tables. Load this for a real deployment. |
+| `seed.sql` | Fake demo data (sample students, admins, etc.) for local dev only - never load this in production. |
+| `README.md` | Setup instructions specific to the database. |
 
 ## Running locally
 
