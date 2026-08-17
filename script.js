@@ -20,25 +20,6 @@ const sanitizeExternalUrl = (value) => {
   return escapeHtml(trimmed);
 };
 
-// PWA install + service worker registration, done here (once, in the one shared script.js) rather
-// than adding a <link rel="manifest"> and registration snippet to every individual HTML page -
-// manifest.json/sw.js are served from the site root, so a root-relative path resolves correctly
-// no matter which folder (dashboards/, pages/, root) the current page lives in.
-if (!document.querySelector('link[rel="manifest"]')) {
-  const manifestLink = document.createElement("link");
-  manifestLink.rel = "manifest";
-  manifestLink.href = "/manifest.json";
-  document.head.appendChild(manifestLink);
-}
-if ("serviceWorker" in navigator) {
-  window.addEventListener("load", () => {
-    navigator.serviceWorker.register("/sw.js").catch(() => {
-      // Not fatal - the site works fully without an installed service worker, just without
-      // offline installability or push notifications.
-    });
-  });
-}
-
 // Which folder each page lives in (dashboards/, pages/, or the root for index.html). Needed
 // because this one script.js file is shared by every page, so a link to another page has to be
 // built relative to wherever the current page actually is - see gprecPageUrl() below.
@@ -1495,66 +1476,6 @@ if (notificationDropdownHead && !notificationDropdownHead.querySelector("#notifi
     });
   });
   notificationDropdownHead.appendChild(clearAllButton);
-}
-
-// Real browser push, on top of the in-app bell above - only offered where the browser and this
-// session actually support it. Uses the same notification-clear-all button styling (26px circular
-// icon button) rather than a new class, just with a bell icon and a toggled color for on/off.
-const urlBase64ToUint8Array = (base64String) => {
-  const padding = "=".repeat((4 - (base64String.length % 4)) % 4);
-  const base64 = (base64String + padding).replace(/-/g, "+").replace(/_/g, "/");
-  const raw = atob(base64);
-  return Uint8Array.from([...raw].map((char) => char.charCodeAt(0)));
-};
-
-if (
-  notificationDropdownHead
-  && !notificationDropdownHead.querySelector("#notificationPushToggle")
-  && "serviceWorker" in navigator
-  && "PushManager" in window
-  && localStorage.getItem("gprecSessionToken")
-) {
-  const pushToggleButton = document.createElement("button");
-  pushToggleButton.type = "button";
-  pushToggleButton.id = "notificationPushToggle";
-  pushToggleButton.className = "notification-clear-all";
-  pushToggleButton.innerHTML = `<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 8a6 6 0 1 1 12 0c0 4 1.5 5.5 2 6H4c.5-.5 2-2 2-6Z"/><path d="M10 20a2 2 0 0 0 4 0"/></svg>`;
-
-  const refreshPushToggleState = async () => {
-    const registration = await navigator.serviceWorker.ready.catch(() => null);
-    const subscription = await registration?.pushManager.getSubscription().catch(() => null);
-    const on = Boolean(subscription);
-    pushToggleButton.style.color = on ? "var(--green)" : "";
-    pushToggleButton.setAttribute("aria-label", on ? "Push notifications on - click to turn off" : "Enable push notifications");
-    pushToggleButton.title = pushToggleButton.getAttribute("aria-label");
-    return subscription;
-  };
-  refreshPushToggleState();
-
-  pushToggleButton.addEventListener("click", async (event) => {
-    event.stopPropagation();
-    const registration = await navigator.serviceWorker.ready.catch(() => null);
-    if (!registration) return;
-    const existing = await registration.pushManager.getSubscription().catch(() => null);
-    if (existing) {
-      gprecDbRequest("/push/unsubscribe", { method: "POST", body: { endpoint: existing.endpoint } });
-      await existing.unsubscribe();
-      refreshPushToggleState();
-      return;
-    }
-    const permission = await Notification.requestPermission();
-    if (permission !== "granted") return;
-    const keyResponse = gprecDbRequest("/push/public-key");
-    if (!keyResponse?.publicKey) return;
-    const subscription = await registration.pushManager.subscribe({
-      userVisibleOnly: true,
-      applicationServerKey: urlBase64ToUint8Array(keyResponse.publicKey)
-    });
-    gprecDbRequest("/push/subscribe", { method: "POST", body: { subscription: subscription.toJSON(), userAgent: navigator.userAgent } });
-    refreshPushToggleState();
-  });
-
-  notificationDropdownHead.appendChild(pushToggleButton);
 }
 
 // items is the page's own hand-built list of pending-action strings (unread by nature, no

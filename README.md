@@ -21,11 +21,9 @@ For deploying this for real (not just running it locally), see [PRODUCTION.md](P
 | `file_templates/` | Printable HTML templates (ID cards, passes, hall tickets, fee challan, pay slip, Form 16, event posters, certificates) - the design source `script.js`'s poster/pass/card builders mirror, not files loaded directly at runtime. |
 | `script.js` | Single shared JS file driving every page - nav, dashboards, auth, forms, and every dashboard's client-side logic. |
 | `styles.css` | Single shared stylesheet for every page. |
-| `manifest.json` | PWA manifest (name, icons, standalone display) that makes the site installable. |
-| `sw.js` | Service worker. Deliberately does no page/asset caching (would fight the `?v=` cache-busting on `script.js`/`styles.css`) - its only job is Web Push: showing a notification when one arrives and focusing/opening the right page on click. |
 | `qrcode-generator.js` | Vendored third-party library for generating QR codes (ID cards, passes, event check-in). |
 | `vendor/html2canvas.min.js` | Vendored third-party library for client-side PDF/image rendering - the fallback path when `pdf_render_server.py` isn't running. |
-| `gprec-logo-enhanced.png`, `icon-192.png`, `icon-512.png` | Site logo and PWA install icons. |
+| `gprec-logo-enhanced.png` | Site logo. |
 | `admin-config.json` | Local, git-tracked runtime config (main admin contact, integration keys, SMS/KYC settings, admin directory) written by the admin dashboard via `admin_config_server.py`. |
 | `uploads/` | User-uploaded files (profile pictures, assignments, notices, media, site photos, etc.), written by the admin config server. |
 
