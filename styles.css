@@ -4439,40 +4439,26 @@ button + .admin-add-feedback {
   display: none;
 }
 
-/* Flat backdrop matching the login mock - the richer multi-radial-gradient above is for the
-   post-login fest pages; the sign-in screen is just a centered card on a plain dark field. */
 .event-visitor-page.login-page {
   background: #0A1024;
-  background-image: none;
 }
 
-.event-visitor-page.login-page,
-.event-visitor-page.login-page .login-header,
-.event-visitor-page.login-page .visitor-fest-login,
-.event-visitor-page.login-page .visitor-login-card,
-.event-visitor-page.login-page .visitor-fest-hero,
-.event-visitor-page.login-page .role-login-card {
-  border-color: transparent !important;
-  background-color: #0A1024 !important;
-  background-image: none !important;
-  box-shadow: none !important;
-  backdrop-filter: none !important;
+.visitor-fest-hero {
+  background: radial-gradient(circle at 30% 20%, #1c2650, #0a1226 70%);
+  box-shadow: none;
+  backdrop-filter: none;
 }
 
-.event-visitor-page.login-page::before,
-.event-visitor-page.login-page::after,
-.event-visitor-page.login-page .visitor-fest-login::before,
-.event-visitor-page.login-page .visitor-fest-login::after,
-.event-visitor-page.login-page .visitor-login-card::before,
-.event-visitor-page.login-page .visitor-login-card::after,
-.event-visitor-page.login-page .visitor-fest-hero::before,
-.event-visitor-page.login-page .visitor-fest-hero::after {
-  display: none !important;
-  content: none !important;
+.event-visitor-page .role-login-card {
+  border: 0;
+  border-radius: 0;
+  background: #101632;
+  box-shadow: none;
+  backdrop-filter: none;
 }
 
-.event-visitor-page.login-page #visitorLoginMain .visitor-login-compass-art {
-  display: none !important;
+.event-visitor-page .role-login-card::before {
+  display: none;
 }
 
 .event-visitor-page.login-page .visitor-scroll-compass {
@@ -4501,7 +4487,7 @@ button + .admin-add-feedback {
 }
 
 .event-visitor-page .login-header {
-  border-bottom: 0;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.14);
   background: rgba(4, 9, 25, 0.66);
   box-shadow: none;
   backdrop-filter: blur(18px);
@@ -4585,9 +4571,7 @@ button + .admin-add-feedback {
   height: 640px;
   overflow: hidden;
   border-radius: 14px;
-  background: #0A1024;
-  border: 0;
-  box-shadow: none;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
 }
 
 .visitor-fest-hero {
@@ -4606,10 +4590,6 @@ button + .admin-add-feedback {
   background: #0A1024;
   box-shadow: none;
   backdrop-filter: none;
-}
-
-.visitor-fest-hero > .visitor-login-compass-art {
-  display: none;
 }
 
 .visitor-login-brand-top,

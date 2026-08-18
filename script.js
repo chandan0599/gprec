@@ -99,12 +99,12 @@ const getCurrentStudentId = () => (localStorage.getItem("gprecStudentId") || "")
 // Keeps logout scoped to just that one role, so it doesn't accidentally clear anyone else's
 // saved session.
 const gprecLogoutKeysByLoginPage = {
-  "student-login.html": ["gprecStudentId"],
-  "admin-login.html": ["gprecAdminRole", "gprecAdminEmail", "gprecAdminDepartment"],
-  "faculty-login.html": ["gprecFacultyEmail"],
-  "non-teaching-login.html": ["gprecNonTeachingEmail"],
-  "parent-login.html": ["gprecParentStudentId"],
-  "alumni-login.html": ["gprecAlumniEmail", "gprecAlumniName", "gprecAlumniBatch"]
+  "student-login.html": ["gprecStudentId", "gprecDemoMode"],
+  "admin-login.html": ["gprecAdminRole", "gprecAdminEmail", "gprecAdminDepartment", "gprecDemoMode"],
+  "faculty-login.html": ["gprecFacultyEmail", "gprecDemoMode"],
+  "non-teaching-login.html": ["gprecNonTeachingEmail", "gprecDemoMode"],
+  "parent-login.html": ["gprecParentStudentId", "gprecDemoMode"],
+  "alumni-login.html": ["gprecAlumniEmail", "gprecAlumniName", "gprecAlumniBatch", "gprecDemoMode"]
 };
 
 // Figures out which saved chat history belongs to the current page/user, so the GPRECian Bot
@@ -203,6 +203,133 @@ const GPREC_ROLE_LOGIN_PAGE = {
   non_teaching: "non-teaching-login.html",
   alumni: "alumni-login.html"
 };
+
+// "Try it as a student/faculty/admin/etc." demo login shortcut (e.g. ?demo=student in the URL) -
+// logs the visitor into a fake session for that role for a look-around overview, using sample
+// data. See gprecStartDemoSession() below for how it's triggered. gprecDbRequest short-circuits to
+// null while demo mode is active (below), so this never touches the real backend/database - the
+// dashboard just renders whatever it has for an empty/no-data session.
+const GPREC_DEMO_SESSIONS = {
+  student: {
+    activeRole: "student",
+    dashboard: "student-dashboard.html",
+    entries: { gprecStudentId: "20X51A0501" }
+  },
+  parent: {
+    activeRole: "parent",
+    dashboard: "parent-dashboard.html",
+    entries: { gprecParentStudentId: "20X51A0501" }
+  },
+  faculty: {
+    activeRole: "faculty",
+    dashboard: "faculty-dashboard.html",
+    entries: { gprecFacultyEmail: "k.ramesh@gprec.ac.in" }
+  },
+  non_teaching: {
+    activeRole: "non_teaching",
+    dashboard: "non-teaching-dashboard.html",
+    entries: { gprecNonTeachingEmail: "office.super@gprec.ac.in" }
+  },
+  alumni: {
+    activeRole: "alumni",
+    dashboard: "alumni-dashboard.html",
+    entries: {
+      gprecAlumniEmail: "preview.alumni@gprec.ac.in",
+      gprecAlumniName: "Preview Alumni",
+      gprecAlumniBatch: "2026"
+    }
+  },
+  admin: {
+    activeRole: "admin",
+    dashboard: "admin-dashboard.html",
+    entries: {
+      gprecAdminRole: "College Admin",
+      gprecAdminEmail: "admin@gprec.ac.in",
+      gprecAdminDepartment: "All"
+    }
+  },
+  department: {
+    activeRole: "admin",
+    dashboard: "department-dashboard.html",
+    entries: {
+      gprecAdminRole: "CSE Department Admin",
+      gprecAdminEmail: "cse.admin@gprec.ac.in",
+      gprecAdminDepartment: "CSE"
+    }
+  },
+  hostel: {
+    activeRole: "admin",
+    dashboard: "hostel-dashboard.html",
+    entries: {
+      gprecAdminRole: "Boys Hostel Warden",
+      gprecAdminEmail: "boys.warden@gprec.ac.in",
+      gprecAdminDepartment: "Boys Hostel"
+    }
+  },
+  exam: {
+    activeRole: "admin",
+    dashboard: "exam-cell-dashboard.html",
+    entries: {
+      gprecAdminRole: "Exam Cell Officer",
+      gprecAdminEmail: "exam.cell@gprec.ac.in",
+      gprecAdminDepartment: "Examinations"
+    }
+  },
+  placement: {
+    activeRole: "admin",
+    dashboard: "placement-dashboard.html",
+    entries: {
+      gprecAdminRole: "Placement Cell Officer",
+      gprecAdminEmail: "placement.cell@gprec.ac.in",
+      gprecAdminDepartment: "Placements"
+    }
+  },
+  womencell: {
+    activeRole: "admin",
+    dashboard: "women-cell-admin-dashboard.html",
+    entries: {
+      gprecAdminRole: "Women's Cell Admin",
+      gprecAdminEmail: "womencell.admin@gprec.ac.in",
+      gprecAdminDepartment: "Women's Cell"
+    }
+  }
+};
+GPREC_DEMO_SESSIONS.staff = GPREC_DEMO_SESSIONS.non_teaching;
+GPREC_DEMO_SESSIONS["non-teaching"] = GPREC_DEMO_SESSIONS.non_teaching;
+
+const gprecStartDemoSession = (role) => {
+  const demo = GPREC_DEMO_SESSIONS[role];
+  if (!demo) return null;
+  [
+    "gprecStudentId",
+    "gprecAdminRole",
+    "gprecAdminEmail",
+    "gprecAdminDepartment",
+    "gprecParentStudentId",
+    "gprecNonTeachingEmail",
+    "gprecAlumniEmail",
+    "gprecAlumniName",
+    "gprecAlumniBatch",
+    "gprecDemoMode"
+  ].forEach((key) => localStorage.removeItem(key));
+  localStorage.setItem("gprecSessionToken", `demo-${role}-session`);
+  localStorage.setItem("gprecActiveRole", demo.activeRole);
+  Object.entries(demo.entries).forEach(([key, value]) => localStorage.setItem(key, value));
+  localStorage.setItem("gprecDemoMode", role);
+  return demo;
+};
+
+const gprecDemoRole = new URLSearchParams(window.location.search).get("demo");
+const gprecDemoSession = gprecDemoRole ? gprecStartDemoSession(gprecDemoRole.toLowerCase()) : null;
+if (gprecDemoSession) {
+  const currentDemoRequiredRole = GPREC_DASHBOARD_ROLE[GPREC_CURRENT_ROUTE_FILE];
+  const currentDemoRequiredRoles = Array.isArray(currentDemoRequiredRole)
+    ? currentDemoRequiredRole
+    : [currentDemoRequiredRole].filter(Boolean);
+  if (!currentDemoRequiredRoles.includes(gprecDemoSession.activeRole)) {
+    window.location.replace(gprecPageUrl(gprecDemoSession.dashboard));
+  }
+}
 
 // Runs before any dashboard content renders, on every dashboard page. This is UX-only (avoids a
 // flash of a dashboard that's about to redirect away) - the real boundary is the backend
@@ -899,6 +1026,7 @@ const gprecApiBaseUrl = () => {
   return `${window.location.protocol}//${window.location.hostname}:8766/api`;
 };
 const gprecDbRequest = (path, options = {}) => {
+  if (localStorage.getItem("gprecDemoMode")) return null;
   const baseUrl = gprecApiBaseUrl();
   if (!baseUrl) return null;
   const xhr = new XMLHttpRequest();
@@ -10715,8 +10843,8 @@ const gprecianAnswers = [
   }
 ];
 
-const studentIcon =
-  '<svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="m4 6 8-3 8 3-8 3zM7 8v3M17 8v3M9 12a3 3 0 1 0 6 0M5 21c.7-3.2 3.4-5 7-5s6.3 1.8 7 5"/></svg>';
+const gprecianBotIcon =
+  '<svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M6 9h12v9H6zM12 9V6M13 5a1 1 0 1 1-2 0 1 1 0 0 1 2 0ZM10.5 13a1 1 0 1 1-2 0 1 1 0 0 1 2 0ZM15.5 13a1 1 0 1 1-2 0 1 1 0 0 1 2 0ZM9 16h6"/></svg>';
 const gprecianUserIcon =
   '<svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><circle cx="12" cy="8" r="4"/><path d="M4 20c0-4 3.5-7 8-7s8 3 8 7"/></svg>';
 
@@ -10857,7 +10985,7 @@ const addGprecianMessage = (text, type = "bot", links = [], question = null) => 
 
   const avatar = document.createElement("span");
   avatar.className = type === "user" ? "chat-avatar user-avatar" : "chat-avatar bot-avatar";
-  avatar.innerHTML = type === "user" ? gprecianUserIcon : studentIcon;
+  avatar.innerHTML = type === "user" ? gprecianUserIcon : gprecianBotIcon;
 
   if (type === "user") {
     const message = document.createElement("p");
@@ -10961,7 +11089,7 @@ const addGprecianBotReply = async (replyFactory, question = null) => {
   try {
     const typingRow = document.createElement("div");
     typingRow.className = "chat-row bot-row";
-    typingRow.innerHTML = `<span class="chat-avatar bot-avatar">${studentIcon}</span><div class="bot-message gprecian-typing"><span class="gprecian-typing-dots"><span></span><span></span><span></span></span><span class="gprecian-stream-preview"></span></div>`;
+    typingRow.innerHTML = `<span class="chat-avatar bot-avatar">${gprecianBotIcon}</span><div class="bot-message gprecian-typing"><span class="gprecian-typing-dots"><span></span><span></span><span></span></span><span class="gprecian-stream-preview"></span></div>`;
     gprecianMessages.appendChild(typingRow);
     gprecianMessages.scrollTop = gprecianMessages.scrollHeight;
 

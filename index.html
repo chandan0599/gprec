@@ -10,7 +10,7 @@
     <link rel="preconnect" href="https://www.gprec.ac.in">
     <link rel="icon" href="https://www.gprec.ac.in/wp-content/uploads/2017/08/fav.png" sizes="32x32">
     <link rel="apple-touch-icon" href="https://www.gprec.ac.in/wp-content/uploads/2017/08/fav.png">
-    <link rel="stylesheet" href="styles.css?v=20260811-chat-close-svg">
+    <link rel="stylesheet" href="styles.css?v=20260818-compass-fix">
   </head>
   <body class="gprec-orb-chat">
     <svg class="icon-sprite" aria-hidden="true" focusable="false">
@@ -18,6 +18,7 @@
       <symbol id="icon-campus" viewBox="0 0 24 24"><path d="M3 21h18M5 21V9l7-4 7 4v12M9 21v-7h6v7M8 10h.01M12 10h.01M16 10h.01"/></symbol>
       <symbol id="icon-users" viewBox="0 0 24 24"><path d="M16 19c0-2.2-1.8-4-4-4s-4 1.8-4 4M12 12a4 4 0 1 0 0-8 4 4 0 0 0 0 8ZM20 19c0-1.7-1.1-3.2-2.7-3.8M17 5.3a3 3 0 0 1 0 5.4M4 19c0-1.7 1.1-3.2 2.7-3.8M7 5.3a3 3 0 0 0 0 5.4"/></symbol>
       <symbol id="icon-student" viewBox="0 0 24 24"><path d="m4 6 8-3 8 3-8 3zM7 8v3M17 8v3M9 12a3 3 0 1 0 6 0M5 21c.7-3.2 3.4-5 7-5s6.3 1.8 7 5"/></symbol>
+      <symbol id="icon-gprecian-bot" viewBox="0 0 24 24"><path d="M6 9h12v9H6zM12 9V6M13 5a1 1 0 1 1-2 0 1 1 0 0 1 2 0ZM10.5 13a1 1 0 1 1-2 0 1 1 0 0 1 2 0ZM15.5 13a1 1 0 1 1-2 0 1 1 0 0 1 2 0ZM9 16h6"/></symbol>
       <symbol id="icon-briefcase" viewBox="0 0 24 24"><path d="M10 6V5a2 2 0 0 1 2-2h0a2 2 0 0 1 2 2v1M4 8h16v11H4zM4 12h16M10 12v2h4v-2"/></symbol>
       <symbol id="icon-file" viewBox="0 0 24 24"><path d="M6 3h8l4 4v14H6zM14 3v5h5M9 13h6M9 17h6"/></symbol>
       <symbol id="icon-user-check" viewBox="0 0 24 24"><path d="M15 19c0-2.2-1.8-4-4-4s-4 1.8-4 4M11 12a4 4 0 1 0 0-8 4 4 0 0 0 0 8ZM16 11l2 2 4-5"/></symbol>
@@ -81,12 +82,16 @@
                 <a href="pages/parent-login.html"><svg><use href="#icon-key"></use></svg>Parent Login</a>
                 <a href="pages/faculty-login.html"><svg><use href="#icon-users"></use></svg>Faculty Login</a>
                 <a href="pages/non-teaching-login.html"><svg><use href="#icon-briefcase"></use></svg>Staff Login</a>
+                <a href="pages/student-login.html?demo=student"><svg><use href="#icon-user-check"></use></svg>Student Demo</a>
+                <a href="pages/faculty-login.html?demo=faculty"><svg><use href="#icon-users"></use></svg>Faculty Demo</a>
+                <a href="pages/admin-login.html?demo=admin"><svg><use href="#icon-server"></use></svg>Admin Demo</a>
               </div>
             </div>
             <div class="utility-menu">
               <button type="button"><svg><use href="#icon-award"></use></svg>Alumni</button>
               <div class="utility-dropdown">
                 <a href="pages/alumni-login.html"><svg><use href="#icon-key"></use></svg>Alumni Login</a>
+                <a href="pages/alumni-login.html?demo=alumni"><svg><use href="#icon-award"></use></svg>Alumni Demo</a>
                 <a href="pages/certificate-request.html"><svg><use href="#icon-file"></use></svg>Request Certificate</a>
                 <a href="https://alumni.gprec.ac.in/" target="_blank" rel="noreferrer"><svg><use href="#icon-users"></use></svg>Alumni Association</a>
                 <a href="https://www.gprec.ac.in/alumni/alumni-directory/" target="_blank" rel="noreferrer"><svg><use href="#icon-book"></use></svg>Alumni Directory</a>
@@ -392,7 +397,7 @@
       <section class="gprecian-panel" aria-label="GPRECian student help chat">
         <div class="gprecian-head">
           <div class="gprecian-title">
-            <span class="gprecian-avatar bot-avatar"><svg><use href="#icon-student"></use></svg></span>
+            <span class="gprecian-avatar bot-avatar"><svg><use href="#icon-gprecian-bot"></use></svg></span>
             <div>
               <strong>GPRECian Bot</strong>
               <span>AI student help</span>
@@ -452,6 +457,6 @@
       <button class="photo-lightbox-nav photo-lightbox-next" type="button" id="photoLightboxNext" aria-label="Next photo">&rsaquo;</button>
     </div>
 
-    <script src="script.js?v=20260729-features"></script>
+    <script src="script.js?v=20260818-demo-login"></script>
   </body>
 </html>
