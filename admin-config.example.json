@@ -2,7 +2,7 @@
   "mainCollegeAdmin": "admin@gprec.ac.in",
   "googleClientId": "YOUR_GOOGLE_CLIENT_ID.apps.googleusercontent.com",
   "googleCalendarApiKey": "",
-  "payuPaymentLink": "https://api.payu.in/webcheckoutpro/re3-20260629/4cd07f41dbd118a20fcc363f4da22704/recommendedlink",
+  "payuPaymentLink": "",
   "aiSettings": {
     "provider": "ollama",
     "model": "qwen2.5:7b",
@@ -13,7 +13,7 @@
     "provider": "mappls",
     "sdkUrl": "https://apis.mappls.com/advancedmaps/api",
     "version": "3.0",
-    "accessToken": "81bca9132d5b2d36c50ecd15439294a9",
+    "accessToken": "",
     "plugins": "",
     "layer": "vector"
   },
@@ -29,7 +29,8 @@
     "password": "",
     "host": "localhost",
     "port": "5432",
-    "database": ""
+    "database": "",
+    "schema": "gprec_erp"
   },
   "smsSettings": {
     "provider": "msg91",
