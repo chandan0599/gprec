@@ -1013,9 +1013,16 @@ const clearDatabaseApiConfig = () => {
 
 let gprecDbBootstrap = null;
 let gprecDbBootstrapTried = false;
+// Static hosts that are known to never run this app's own backend on any port - guessing
+// hostname:8766 against one of these would just hang every gprecDbRequest() (they're synchronous
+// XHRs with no way to set a timeout) until the browser's own connection timeout, freezing the
+// whole page load. GitHub Pages (this app's demo deployment target) is the concrete case.
+const GPREC_STATIC_HOST_SUFFIXES = [".github.io", ".netlify.app", ".vercel.app", ".pages.dev", ".surge.sh"];
+const gprecIsKnownStaticHost = GPREC_STATIC_HOST_SUFFIXES.some((suffix) => window.location.hostname.endsWith(suffix));
 const gprecApiBaseUrl = () => {
   const configured = defaultAdminConfig.databaseApiConfig?.baseUrl || defaultAdminConfig.libraryApiConfig?.baseUrl || "";
   if (configured) return configured.replace(/\/$/, "");
+  if (gprecIsKnownStaticHost) return "";
   // When running the portal locally, the API server lives on port 8766, on whatever host the page
   // itself was loaded from - a hardcoded 127.0.0.1 only works when browsing from the same machine
   // the server runs on, which breaks phone/LAN testing (the phone's own 127.0.0.1 isn't the Mac).
