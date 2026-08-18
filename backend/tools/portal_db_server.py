@@ -31,12 +31,29 @@ PORT = 8766
 # on the same WiFi hit this API (update it if your Mac's local IP changes).
 ALLOWED_ORIGINS = {"http://127.0.0.1:8080", "http://localhost:8080", "http://192.168.1.17:8080"}
 PSQL = os.environ.get("GPREC_PSQL_PATH", "psql")
-DB_NAME = os.environ.get("GPREC_DB_NAME", "gprec_dev")
-DB_SCHEMA = os.environ.get("GPREC_DB_SCHEMA", "gprec_erp")
-DB_USER = os.environ.get("GPREC_DB_USER", "gprec_dev")
-DB_PASSWORD = os.environ.get("GPREC_DB_PASSWORD", "")
-DB_HOST = os.environ.get("GPREC_DB_HOST", "localhost")
-DB_PORT = os.environ.get("GPREC_DB_PORT", "5432")
+
+ADMIN_CONFIG_PATH = ROOT / "admin-config.json"
+
+
+def read_admin_config():
+    try:
+        return json.loads(ADMIN_CONFIG_PATH.read_text(encoding="utf-8"))
+    except Exception:
+        return {}
+
+
+# admin-config.json's databaseApiConfig (what the Admin Dashboard's Database Connection panel
+# saves) is the single source for connection details - gitignored, so it's safe to hold real
+# credentials, in production too. Falls back to the gprec_dev/gprec_erp placeholder defaults only
+# when a field is left blank. GPREC_PSQL_PATH isn't a connection detail (it's which local psql
+# binary to run) so that one stays env-var-only.
+_db_config = read_admin_config().get("databaseApiConfig") or {}
+DB_NAME = _db_config.get("database") or "gprec_dev"
+DB_SCHEMA = _db_config.get("schema") or "gprec_erp"
+DB_USER = _db_config.get("username") or "gprec_dev"
+DB_PASSWORD = _db_config.get("password") or ""
+DB_HOST = _db_config.get("host") or "localhost"
+DB_PORT = _db_config.get("port") or "5432"
 
 # Encryption-at-rest for financial PII (bank account details) so a compromised DB dump/backup
 # doesn't reveal plaintext account numbers/IFSC codes. Key is generated once and persisted
@@ -1338,8 +1355,6 @@ def get_payment_history(student_roll_no):
     return run_json(sql, [])
 
 
-ADMIN_CONFIG_PATH = ROOT / "admin-config.json"
-
 # Plagiarism check only reads PDF/Word content - no OCR/image support in this environment.
 PLAGIARISM_EXTRACTABLE_MIMES = {
     "application/pdf": "pdf",
@@ -1371,13 +1386,6 @@ def extract_text_from_upload(file_url, file_mime):
     except Exception:
         return None
     return None
-
-
-def read_admin_config():
-    try:
-        return json.loads(ADMIN_CONFIG_PATH.read_text(encoding="utf-8"))
-    except Exception:
-        return {}
 
 
 # --- GPRECian Bot knowledge base: real (embedding-based) semantic search -----------------------

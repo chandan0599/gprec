@@ -633,7 +633,7 @@ const defaultAdminConfig = {
   aiSettings: { provider: "", model: "", apiKey: "", baseUrl: "", topN: 4 },
   mapSdkSettings: { provider: "mappls", sdkUrl: "https://apis.mappls.com/advancedmaps/api", version: "3.0", accessToken: "81bca9132d5b2d36c50ecd15439294a9", plugins: "", layer: "vector" },
   libraryApiConfig: { baseUrl: "", apiKey: "" },
-  databaseApiConfig: { type: "", baseUrl: "", apiKey: "", username: "", password: "", host: "", port: "", database: "" },
+  databaseApiConfig: { type: "", baseUrl: "", apiKey: "", username: "", password: "", host: "", port: "", database: "", schema: "" },
   smsSettings: {
     provider: "msg91",
     authKey: "",
@@ -875,12 +875,12 @@ const getDatabaseApiConfig = () => {
 };
 const saveDatabaseApiConfig = (config) => {
   localStorage.setItem("gprecDatabaseApiConfig", JSON.stringify(config));
-  defaultAdminConfig.databaseApiConfig = { type: "", baseUrl: "", apiKey: "", username: "", password: "", host: "", port: "", database: "", ...config };
+  defaultAdminConfig.databaseApiConfig = { type: "", baseUrl: "", apiKey: "", username: "", password: "", host: "", port: "", database: "", schema: "", ...config };
   adminConfigFieldsLoaded.databaseApiConfig = true;
 };
 const clearDatabaseApiConfig = () => {
   localStorage.removeItem("gprecDatabaseApiConfig");
-  defaultAdminConfig.databaseApiConfig = { type: "", baseUrl: "", apiKey: "", username: "", password: "", host: "", port: "", database: "" };
+  defaultAdminConfig.databaseApiConfig = { type: "", baseUrl: "", apiKey: "", username: "", password: "", host: "", port: "", database: "", schema: "" };
   adminConfigFieldsLoaded.databaseApiConfig = true;
 };
 
@@ -5811,6 +5811,7 @@ const mysqlJdbcPreview = document.querySelector("#mysqlJdbcPreview");
 const postgresHostInput = document.querySelector("#postgresHostInput");
 const postgresPortInput = document.querySelector("#postgresPortInput");
 const postgresDatabaseInput = document.querySelector("#postgresDatabaseInput");
+const postgresSchemaInput = document.querySelector("#postgresSchemaInput");
 const postgresUserInput = document.querySelector("#postgresUserInput");
 const postgresPasswordInput = document.querySelector("#postgresPasswordInput");
 const postgresJdbcPreview = document.querySelector("#postgresJdbcPreview");
@@ -5868,6 +5869,7 @@ if (databaseApiStatus) {
         if (postgresHostInput) postgresHostInput.value = config.host || "";
         if (postgresPortInput) postgresPortInput.value = config.port || "";
         if (postgresDatabaseInput) postgresDatabaseInput.value = config.database || "";
+        if (postgresSchemaInput) postgresSchemaInput.value = config.schema || "";
         if (postgresUserInput) postgresUserInput.value = config.username || "";
         if (postgresPasswordInput) postgresPasswordInput.value = config.password || "";
       }
@@ -5921,6 +5923,7 @@ if (databaseApiStatus) {
       const host = (isMysql ? mysqlHostInput : postgresHostInput)?.value.trim() || "";
       const port = (isMysql ? mysqlPortInput : postgresPortInput)?.value.trim() || "";
       const database = (isMysql ? mysqlDatabaseInput : postgresDatabaseInput)?.value.trim() || "";
+      const schema = isMysql ? "" : (postgresSchemaInput?.value.trim() || "");
       const username = (isMysql ? mysqlUserInput : postgresUserInput)?.value.trim() || "";
       const password = (isMysql ? mysqlPasswordInput : postgresPasswordInput)?.value || "";
       if (!host || !database) {
@@ -5930,7 +5933,7 @@ if (databaseApiStatus) {
         }
         return;
       }
-      saveDatabaseApiConfig({ type, host, port, database, username, password });
+      saveDatabaseApiConfig({ type, host, port, database, schema, username, password });
     }
     renderDatabaseApiStatus();
     if (databaseApiFeedback) {
@@ -6018,7 +6021,7 @@ if (databaseApiStatus) {
     if (databaseApiKey) databaseApiKey.value = "";
     [phpBaseUrlInput, phpUsernameInput, phpPasswordInput,
       mysqlHostInput, mysqlPortInput, mysqlDatabaseInput, mysqlUserInput, mysqlPasswordInput,
-      postgresHostInput, postgresPortInput, postgresDatabaseInput, postgresUserInput, postgresPasswordInput
+      postgresHostInput, postgresPortInput, postgresDatabaseInput, postgresSchemaInput, postgresUserInput, postgresPasswordInput
     ].forEach((input) => { if (input) input.value = ""; });
     updateJdbcPreviews();
     renderDatabaseApiStatus();
@@ -29808,6 +29811,7 @@ const getCurrentIntegrationConfig = () => ({
     host: "",
     port: "",
     database: "",
+    schema: "",
     ...(getDatabaseApiConfig() || {})
   },
   smsSettings: {

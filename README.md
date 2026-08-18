@@ -24,7 +24,8 @@ For deploying this for real (not just running it locally), see [PRODUCTION.md](P
 | `qrcode-generator.js` | Vendored third-party library for generating QR codes (ID cards, passes, event check-in). |
 | `vendor/html2canvas.min.js` | Vendored third-party library for client-side PDF/image rendering - the fallback path when `pdf_render_server.py` isn't running. |
 | `gprec-logo-enhanced.png` | Site logo. |
-| `admin-config.json` | Local, git-tracked runtime config (main admin contact, integration keys, SMS/KYC settings, admin directory) written by the admin dashboard via `admin_config_server.py`. |
+| `admin-config.json` | Local, gitignored runtime config (main admin contact, integration keys, DB connection, SMS/KYC settings, admin directory) written by the admin dashboard via `admin_config_server.py`. Copy `admin-config.example.json` to `admin-config.json` to bootstrap one - never commit the real file, it holds live credentials. |
+| `admin-config.example.json` | Git-tracked template for the above, with every secret field left blank. |
 | `uploads/` | User-uploaded files (profile pictures, assignments, notices, media, site photos, etc.), written by the admin config server. |
 
 ### Backend (`backend/tools/`)

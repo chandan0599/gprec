@@ -59,20 +59,23 @@ psql -U gprec_prod -d gprec_prod -f backend/database/postgres/schema.sql
 Set these wherever you run the services (e.g. an `/etc/gprec.env` file loaded by systemd - see
 below). None of them should be hardcoded in source or committed to git.
 
+PostgreSQL connection details (host, port, database, username, password, schema) are **not**
+environment variables - they come entirely from `admin-config.json`'s `databaseApiConfig`, via the
+Admin Dashboard's Database Connection panel. Fill that in (or edit the file directly) after the
+services are up. See [backend/database/postgres/README.md](backend/database/postgres/README.md).
+
 | Variable | Purpose |
 | --- | --- |
-| `GPREC_DB_NAME`, `GPREC_DB_USER`, `GPREC_DB_PASSWORD`, `GPREC_DB_HOST`, `GPREC_DB_PORT` | PostgreSQL connection (defaults in `portal_db_server.py` are dev-only placeholders - override every one of them) |
-| `GPREC_DB_SCHEMA` | Defaults to `gprec_erp`, only override if you changed `schema.sql` |
 | `GPREC_PSQL_PATH` | Only needed if `psql` isn't on `PATH` |
 | `GPREC_ALLOWED_ORIGINS` | Comma-separated list adding your real `https://yourdomain.com` origin (CORS) |
 | `GPREC_BANK_ENCRYPTION_KEY` | Pin a specific Fernet key for bank-detail encryption-at-rest, instead of the auto-generated `backend/tools/.bank_encryption.key` file (still fine to use, just make sure it's backed up and never committed) |
 
-**Before going live**, also rotate what's currently in `admin-config.json` (it's git-tracked and
-was written assuming local-only use): the PostgreSQL password/`databaseApiConfig` block, and any
-provider keys under `smsSettings`/`kycSettings`/`aiSettings` you plan to actually use. If this
-repo's history has ever been pushed anywhere with real production secrets in it, rotate those
-credentials at the source (DB, SMS/KYC provider, payment gateway) - editing the file afterward
-doesn't remove them from git history.
+`admin-config.json` is gitignored (copy `admin-config.example.json` to bootstrap one) precisely so
+it's safe to put real values - PostgreSQL credentials, and any provider keys under
+`smsSettings`/`kycSettings`/`aiSettings` - directly in it on the production server. If this repo's
+history has ever been pushed anywhere with real secrets committed to a *tracked* `admin-config.json`
+before this file was gitignored, rotate those credentials at the source (DB, SMS/KYC provider,
+payment gateway) - untracking the file doesn't remove old values from git history.
 
 ## 6. Run the backend services
 
