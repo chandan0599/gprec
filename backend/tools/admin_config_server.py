@@ -109,7 +109,7 @@ class AdminConfigHandler(BaseHTTPRequestHandler):
             length = int(self.headers.get("Content-Length", "0"))
             incoming = json.loads(self.rfile.read(length).decode("utf-8") or "{}")
             with ADMIN_CONFIG_LOCK:
-                current = json.loads(CONFIG_PATH.read_text(encoding="utf-8"))
+                current = json.loads(CONFIG_PATH.read_text(encoding="utf-8")) if CONFIG_PATH.exists() else {}
                 for key in INTEGRATION_KEYS:
                     if key in incoming:
                         current[key] = incoming[key]

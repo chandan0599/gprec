@@ -70,7 +70,8 @@ services are up. See [backend/database/postgres/README.md](backend/database/post
 | `GPREC_ALLOWED_ORIGINS` | Comma-separated list adding your real `https://yourdomain.com` origin (CORS) |
 | `GPREC_BANK_ENCRYPTION_KEY` | Pin a specific Fernet key for bank-detail encryption-at-rest, instead of the auto-generated `backend/tools/.bank_encryption.key` file (still fine to use, just make sure it's backed up and never committed) |
 
-`admin-config.json` is gitignored (copy `admin-config.example.json` to bootstrap one) precisely so
+`admin-config.json` is gitignored - it doesn't need to exist ahead of time, the first Save from
+any Admin Dashboard Integrations panel creates it - precisely so
 it's safe to put real values - PostgreSQL credentials, and any provider keys under
 `smsSettings`/`kycSettings`/`aiSettings` - directly in it on the production server. If this repo's
 history has ever been pushed anywhere with real secrets committed to a *tracked* `admin-config.json`
